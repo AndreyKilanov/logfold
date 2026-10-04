@@ -78,12 +78,20 @@ def logdelta_count(path: Path) -> int:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=ROOT / "bench" / "data")
-    parser.add_argument("--datasets", nargs="*", default=["nginx_100mb", "app_100mb", "loghub_100mb", "highcard_10mb"])
+    parser.add_argument("--datasets", nargs="*", default=None, help="generated datasets, default: the four 100 MB sets")
+    parser.add_argument("--files", nargs="*", type=Path, default=[], help="your own log files")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
-    table: dict[str, dict[str, int]] = {}
-    for name in args.datasets:
-        path = args.data / f"{name}.log"
+    names = (
+        args.datasets
+        if args.datasets is not None
+        else ([] if args.files else ["nginx_100mb", "app_100mb", "loghub_100mb", "highcard_10mb"])
+    )
+    inputs = [(name, args.data / f"{name}.log") for name in names] + [
+        (f"real:{file.stem}", file) for file in args.files
+    ]
+    table: dict[str, dict[str, int]] = json.loads(args.out.read_text(encoding="utf-8")) if args.out.exists() else {}
+    for name, path in inputs:
         row = {
             "logfold (no masks)": logfold_count(path, masked=False),
             "Drain3 (no masks)": drain3_count(path, masked=False),
@@ -95,7 +103,7 @@ def main() -> None:
         }
         table[name] = row
         print(name, row, flush=True)
-    args.out.write_text(json.dumps(table, indent=2), encoding="utf-8")
+        args.out.write_text(json.dumps(table, indent=2), encoding="utf-8")
 
 
 if __name__ == "__main__":

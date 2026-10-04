@@ -81,7 +81,7 @@ def logfold(*args: str) -> list[str]:
     return [PYTHON, "-m", "logfold", *args]
 
 
-def analyze_commands(path: Path, masked: bool) -> dict[str, list[str]]:
+def analyze_commands(path: Path, masked: bool, chunk_mb: int = 8) -> dict[str, list[str]]:
     common = ["-f", "plain", "--top", "1", "-q", "--engine", "native"]
     mask_flag: list[str] = [] if masked else ["--no-masks"]
     commands = {
@@ -96,7 +96,7 @@ def analyze_commands(path: Path, masked: bool) -> dict[str, list[str]]:
             "--threads",
             str(CORES),
             "--chunk-mb",
-            "8",
+            str(chunk_mb),
         ),
         "Drain3 (Python)": [
             PYTHON,
@@ -198,11 +198,23 @@ def environment() -> dict[str, object]:
 
 
 def save(out: Path, results: dict[str, object]) -> None:
-    """Write ``environment.json`` and one ``<scenario>.json`` per scenario into ``out``."""
+    """Write ``environment.json`` and one ``<scenario>.json`` per scenario into ``out``.
+
+    Rows already stored for the same tool and dataset are replaced; every other stored row is kept.
+    """
     (out / "environment.json").write_text(json.dumps(results["environment"], indent=2, default=str), encoding="utf-8")
     scenarios = sorted({str(run["scenario"]) for run in results["runs"]})  # type: ignore[attr-defined]
     for scenario in scenarios:
         rows = [run for run in results["runs"] if run["scenario"] == scenario]  # type: ignore[attr-defined]
+        path = out / f"{scenario}.json"
+        if path.exists():
+            fresh = {(row["tool"], row["dataset"]) for row in rows}
+            kept = [
+                row
+                for row in json.loads(path.read_text(encoding="utf-8"))["runs"]
+                if (row["tool"], row["dataset"]) not in fresh
+            ]
+            rows = kept + rows
         payload = {"scenario": scenario, "runs": rows}
         (out / f"{scenario}.json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
 
@@ -226,7 +238,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=ROOT / "bench" / "data")
     parser.add_argument("--size-mb", type=int, default=100)
-    parser.add_argument("--datasets", nargs="*", default=["nginx", "app", "loghub", "highcard"])
+    parser.add_argument("--datasets", nargs="*", default=None, help="generated datasets (default: all four)")
+    parser.add_argument("--files", nargs="*", type=Path, default=[], help="your own log files (analyze scenarios only)")
+    parser.add_argument("--label-prefix", default="real:", help="prefix of the dataset name of --files")
+    parser.add_argument("--chunk-mb", type=int, default=8, help="chunk size of the multi-threaded logfold runs")
     parser.add_argument("--scenario", nargs="*", default=["analyze-bare", "analyze-masked", "diff"])
     parser.add_argument("--repeat", type=int, default=3)
     parser.add_argument("--timeout", type=float, default=1800)
@@ -240,17 +255,24 @@ def main() -> None:
         "args": vars(args) | {"data": str(args.data)},
         "runs": [],
     }
+    generated = (
+        args.datasets if args.datasets is not None else ([] if args.files else ["nginx", "app", "loghub", "highcard"])
+    )
+    inputs: list[tuple[str, Path, bool]] = []
+    for name in generated:
+        label = name if args.size_mb == 100 else f"{name}@{args.size_mb}MB"
+        inputs.append((label, args.data / f"{name}_{args.size_mb}mb.log", True))
+    inputs += [(f"{args.label_prefix}{file.stem}", file, False) for file in args.files]
     for scenario in args.scenario:
-        for name in args.datasets:
-            path = args.data / f"{name}_{args.size_mb}mb.log"
+        for name, path, generated_pair in inputs:
             if scenario == "diff":
-                after = args.data / f"{name}_{args.size_mb}mb_b.log"
-                if not after.exists():
+                after = path.with_name(path.stem + "_b" + path.suffix)
+                if not generated_pair or not after.exists():
                     continue
                 commands = diff_commands(path, after)
                 size = path.stat().st_size + after.stat().st_size
             else:
-                commands = analyze_commands(path, masked=scenario == "analyze-masked")
+                commands = analyze_commands(path, masked=scenario == "analyze-masked", chunk_mb=args.chunk_mb)
                 size = path.stat().st_size
             for tool, command in commands.items():
                 if any(fragment.lower() in tool.lower() for fragment in args.skip):
@@ -262,13 +284,13 @@ def main() -> None:
                     if sample.returncode != 0:
                         break
                     print(
-                        f"{scenario:15} {name:9} {tool:36} #{attempt + 1}: {sample.wall_s:7.2f}s rc={sample.returncode}",
+                        f"{scenario:15} {name:16} {tool:36} #{attempt + 1}: {sample.wall_s:7.2f}s rc={sample.returncode}",
                         flush=True,
                     )
                 results["runs"].append(  # type: ignore[union-attr]
                     {
                         "scenario": scenario,
-                        "dataset": name if args.size_mb == 100 else f"{name}@{args.size_mb}MB",
+                        "dataset": name,
                         "tool": tool,
                         "input_bytes": size,
                         "command": [Path(c).name if os.sep in c and not c.startswith("-") else c for c in command],

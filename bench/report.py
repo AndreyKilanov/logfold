@@ -91,7 +91,8 @@ def main() -> None:
         if not run.get("failed"):
             peaks[key] = max(peaks.get(key, 0.0), float(run["peak_mb_max"]))  # type: ignore[arg-type]
     order = ["nginx", "app", "loghub", "highcard", "highcard@10MB"]
-    datasets = [name for name in order if any(r["dataset"] == name for r in runs)]
+    present = {str(r["dataset"]) for r in runs}
+    datasets = [name for name in order if name in present] + sorted(present - set(order))
     out = [
         "# Benchmark results",
         "",

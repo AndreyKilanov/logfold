@@ -71,3 +71,17 @@ python bench/gen.py --out bench/data --size-mb 100 --variant b --only nginx app
 python bench/run.py --repeat 3
 python bench/report.py
 ```
+
+## Real data (multi-gigabyte files)
+
+```
+python bench/download_loghub2.py                       # HDFS, Spark, Thunderbird, BGL into bench/data/loghub2
+python bench/run.py --files bench/data/loghub2/*.txt --chunk-mb 64 --scenario analyze-bare analyze-masked --repeat 2
+python bench/equivalence.py --files bench/data/loghub2/*.txt --out bench/results/templates.json
+python bench/report.py
+```
+
+`--files` adds the files as datasets named `real:<name>`; stored results for the same tool and dataset are replaced and
+all others are kept. Drain3 needs minutes per gigabyte; `--skip drain3` leaves it out, `--timeout` bounds every run.
+`diff` is only run for the generated pairs.
+
