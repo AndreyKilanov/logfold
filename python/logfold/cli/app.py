@@ -83,8 +83,14 @@ def root(
     version: Annotated[
         bool, typer.Option("--version", callback=_version, is_eager=True, help="Show the version.")
     ] = False,
+    plugins_dir: Annotated[
+        list[Path] | None,
+        typer.Option("--plugins-dir", help="Also load plugins from this folder (repeatable)."),
+    ] = None,
 ) -> None:
     """Fold large logs into templates and compare two runs."""
+    for folder in plugins_dir or ():
+        registry.add_plugin_directory(folder)
 
 
 def _stdout_console() -> Console:

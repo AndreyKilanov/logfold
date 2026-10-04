@@ -18,6 +18,9 @@ logfold reads log files that may contain attacker-controlled text and writes rep
   the package and asks for confirmation. The catalog is bundled with logfold; it is downloaded (over HTTPS, never
   followed to plain HTTP) only for an explicit `--online` or `--catalog URL`, and `LOGFOLD_OFFLINE=1` forbids that.
   `analyze` and `diff` never use the network.
+- Your own plugin folder is read from the user's config folder, `LOGFOLD_PLUGIN_PATH` and `--plugins-dir`, never from the
+  current directory. On POSIX a folder or file that everybody can write to, or that belongs to another user, is skipped.
+  `LOGFOLD_NO_USER_PLUGINS=1` switches the implicit folders off.
 - The Markdown and CSV reporters neutralize log content: table cells cannot be broken out of, and CSV cells that a
   spreadsheet would read as a formula get a leading apostrophe.
 - Example messages in reports are raw log lines and may contain secrets or personal data. Use `--examples masked` or

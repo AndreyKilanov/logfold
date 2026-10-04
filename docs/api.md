@@ -163,6 +163,7 @@ All errors raised on purpose derive from `LogfoldError`.
 | `DiffMatcher` | protocol of a diff matcher |
 | `MaskRule`, `DEFAULT_MASKS` | masking rules |
 | `register_format`, `register_reporter`, `register_matcher` | register at runtime |
+| `add_plugin_directory(path)`, `plugin_directories()`, `default_plugin_dir()` | load the plugins of a folder; the folders that are searched without being asked; the user plugin folder |
 | `plugin_sources()` | every registered format, reporter and matcher as `(kind, name, source)`, where `source` is `built-in` or the providing package |
 | `get_format`, `get_reporter`, `get_matcher`, `format_names`, `reporter_names` | look up registered extensions |
 
