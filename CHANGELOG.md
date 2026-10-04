@@ -5,6 +5,15 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ## [Unreleased]
 
+### Fixed
+
+- HTML reports: the headers of numeric columns are right-aligned like their values.
+
+### Changed
+
+- `diff` shows the engine and the elapsed time in seconds in the console summary, the text report and the HTML report,
+  like `analyze` does.
+
 ## [0.1.0] - 2026-10-04
 
 ### Added
