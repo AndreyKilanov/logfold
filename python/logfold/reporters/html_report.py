@@ -34,7 +34,7 @@ background:var(--card);color:var(--fg);margin:8px 0}.wrap{overflow-x:auto;border
 border-radius:8px;background:var(--card)}table{border-collapse:collapse;width:100%}
 th,td{padding:6px 10px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
 th{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap}tr:last-child td{border-bottom:0}
-td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+th.n,td.n{text-align:right}td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
 .t{font-family:ui-monospace,Consolas,monospace;font-size:13px;overflow-wrap:anywhere}.v{color:var(--var);font-weight:600}
 .bar{display:inline-block;height:8px;background:var(--bar);border-radius:3px;vertical-align:middle;margin-right:6px}
 .lvl{font-size:11px;padding:1px 6px;border-radius:9px;border:1px solid var(--line);color:var(--muted)}
@@ -54,6 +54,18 @@ document.querySelectorAll('input[data-filter]').forEach(function(box){
   });
 });
 """
+
+
+def _head(*columns: tuple[str, bool]) -> str:
+    """Build a table head; numeric columns get a right-aligned header that sits above their right-aligned cells."""
+    cells = "".join(f'<th class="n">{name}</th>' if numeric else f"<th>{name}</th>" for name, numeric in columns)
+    return f"<thead><tr>{cells}</tr></thead>"
+
+
+_ANALYSIS_HEAD = _head(("#", True), ("count", True), ("share", True), ("level", False), ("template", False))
+_DIFF_HEAD = _head(
+    ("before", True), ("after", True), ("share", True), ("change", True), ("level", False), ("template", False)
+)
 
 
 def _sha(text: str) -> str:
@@ -135,8 +147,8 @@ def _analysis_body(result: AnalysisResult, limit: int) -> str:
             f"of {_count(len(result.templates))} templates.</div>"
         )
     table = (
-        '<div class="wrap"><table id="templates"><thead><tr><th>#</th><th>count</th><th>share</th><th>level</th>'
-        f"<th>template</th></tr></thead><tbody>{_analysis_rows(shown, run.records)}</tbody></table></div>"
+        f'<div class="wrap"><table id="templates">{_ANALYSIS_HEAD}'
+        f"<tbody>{_analysis_rows(shown, run.records)}</tbody></table></div>"
         if shown
         else '<div class="empty">No templates.</div>'
     )
@@ -175,8 +187,7 @@ def _diff_section(title: str, entries: Sequence[DiffEntry], kind: str, limit: in
         note = f'<div class="warn">Showing {_count(len(shown))} of {_count(len(entries))}.</div>'
     return (
         f"<h2>{escape(title)} ({_count(len(entries))})</h2>{note}"
-        f'<div class="wrap"><table id="{table_id}"><thead><tr><th>before</th><th>after</th><th>share</th>'
-        f"<th>change</th><th>level</th><th>template</th></tr></thead>"
+        f'<div class="wrap"><table id="{table_id}">{_DIFF_HEAD}'
         f"<tbody>{_diff_rows(shown, kind)}</tbody></table></div>"
     )
 
