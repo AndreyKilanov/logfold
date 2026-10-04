@@ -6,7 +6,7 @@
   "ram_gb": 34.2,
   "python": "3.13.0",
   "tools": {
-    "logfold": "logfold 0.2.0 plus the unreleased performance changes of main (run 5); runs 1-4: logfold 0.1.0.dev0",
+    "logfold": "logfold 0.2.0 plus the unreleased performance changes of main",
     "logdrain": "logdrain 0.3.2",
     "logdelta": "logdelta 0.3.4",
     "drain3": "drain3 0.9.11"

@@ -88,5 +88,5 @@ kept apart (counts stay exact, and a warning says so).
 - Rows come from several runs on the same machine (marked per row by `measured_in` in the files in `results/`);
   repeated measurements agreed within about 5%. The logfold rows are from run 5 (logfold 0.2.0 plus the performance
   changes of `main` made after it, measured in a clean environment with no plugin packages installed); the Drain3,
-  logdrain and logdelta rows are from runs 1-4 on the same machine.
+  logdrain and logdelta rows are from earlier runs on the same machine.
 - Absolute numbers will differ on Linux and with a cold cache.

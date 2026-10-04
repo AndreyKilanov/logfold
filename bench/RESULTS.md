@@ -4,7 +4,7 @@ Protocol: [`PROTOCOL.md`](PROTOCOL.md). Raw data: [`results/`](results).
 
 Machine: Windows-11-10.0.26200-SP0, 8 physical / 16 logical cores, 34.2 GB RAM, Python 3.13.0.
 
-Tools: logfold: logfold 0.2.0 plus the unreleased performance changes of main (run 5); runs 1-4: logfold 0.1.0.dev0; logdrain: logdrain 0.3.2; logdelta: logdelta 0.3.4; drain3: drain3 0.9.11.
+Tools: logfold: logfold 0.2.0 plus the unreleased performance changes of main; logdrain: logdrain 0.3.2; logdelta: logdelta 0.3.4; drain3: drain3 0.9.11.
 
 Wall time of the median of the repeats in seconds, with throughput in MB/s in brackets. Best per column in bold.
 
@@ -129,6 +129,6 @@ kept apart (counts stay exact, and a warning says so).
 - Rows come from several runs on the same machine (marked per row by `measured_in` in the files in `results/`);
   repeated measurements agreed within about 5%. The logfold rows are from run 5 (logfold 0.2.0 plus the performance
   changes of `main` made after it, measured in a clean environment with no plugin packages installed); the Drain3,
-  logdrain and logdelta rows are from runs 1-4 on the same machine.
+  logdrain and logdelta rows are from earlier runs on the same machine.
 - Absolute numbers will differ on Linux and with a cold cache.
 
