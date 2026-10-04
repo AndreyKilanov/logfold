@@ -92,11 +92,78 @@ result); the parallel mode builds one tree per 8 MiB chunk and merges them.
 
 - Parallel speed-ups are 5x to 37x; the 16-thread mode processes 480-1,700 MB/s without masks and 650-950 MB/s with masks.
 - Memory does not follow the input: 44-54 MB with one thread and 110-134 MB with 16 threads for files of 0.7-1.6 GB.
-- `thunderbird` is the slow case for one thread: 70 s without masks (13 MB/s) against 32 s with them. It has the most
-  templates of the four in the sequential mode (5,529 without masks), which is consistent with the cost per line growing
-  with the number of templates a line is compared with (see [High-cardinality data](RESULTS.md#high-cardinality-data));
-  this run does not isolate that cause.
+- `thunderbird` is the slow case for one thread: 70 s without masks (13 MB/s) against 32 s with them. The cause is
+  explained and measured in [Why one thread is slow on Thunderbird](#why-one-thread-is-slow-on-thunderbird) below.
 - Masks cost time on `bgl` and `hdfs` but save it on `thunderbird`, because they remove most of the distinct templates.
+
+## Why one thread is slow on Thunderbird
+
+One thread needs 5 s for BGL (719 MB) and 70 s for Thunderbird (886 MB) although both are read as `plain` and look alike.
+The time per line is not constant: it grows with the number of templates the line has to be compared with. Measured with
+temporary counters in the miner (not part of the library), sequential mode:
+
+| file, mode | templates | largest leaf (templates) | posting-list entries walked per line | candidates scored per line | time |
+|---|---:|---:|---:|---:|---:|
+| bgl, masked | 156 | 9 | 0 (a leaf gets the index from 16 templates) | 0 | 5.4 s |
+| bgl, no masks | 647 | 171 | 141 | 46 | 5.1 s |
+| thunderbird, masked | 1,098 | 395 | 726 | 117 | 29.1 s |
+| thunderbird, no masks | 5,529 | 822 | 1,060 | 419 | 67.7 s |
+
+**How the search works.** The tree routes a line by its token count and, with the default depth 4, by its **first token**
+(a token with a digit is routed to the wildcard child). Inside the leaf, the line is compared with the templates that
+share at least one token with it, found through an inverted index: for every token of the line the index lists the
+templates that hold the same token at the same position, and the lists are walked in full.
+
+**Why Thunderbird is slow.**
+
+1. In `plain` the whole line is the message, and the first token of 99.999% of the Thunderbird lines (5,376,074 of
+   5,376,117) is the constant `-` (BGL: 93%), as in `- 1131523501 2005.11.09 aadmin1 Nov 10 00:05:01 src@aadmin1 ...`. The first token does not separate
+   anything, so a leaf holds **all templates with the same token count**: only 35-41 leaves for 1,000-5,500 templates,
+   up to 822 templates in one leaf.
+2. The header fields (unix time, date, host name, user and host) are part of the message. Without masks they fragment the
+   templates (5,529 of them), and with masks they still leave tokens such as host names.
+3. A token that every template of the leaf shares, `-` in position 0 above all, has an index list **as long as the leaf**,
+   and the list is walked for every line. That alone is up to 400-800 entries per line (the size of the largest leaves); together with the other shared tokens
+   (month, user and host) it is the 700-1,100 entries per line above, and 117-419 templates are then scored.
+4. The cost therefore grows with the number of templates in a leaf (more templates, more entries per line), which is why
+   it climbs while the file is read:
+
+| lines read (no masks, `plain`) | 0.5 M | 1 M | 2 M | 3 M | 4 M |
+|---|---:|---:|---:|---:|---:|
+| templates so far | 2,006 | 4,015 | 4,814 | 5,025 | 5,174 |
+| time per line | 4.4 us | 11.1 us | 14.4 us | 13.4 us | 12.7 us |
+
+**Check: cut the useless prefix.** The same first 2 million lines, read with a regex format whose `msg` group starts at the
+program name (`^\S+ \d+ \S+ \S+ [A-Za-z]{3} +\d+ \d\d:\d\d:\d\d \S+ (?P<msg>.*)$`), so the first token of the message
+mostly tells programs apart:
+
+| 2 M lines, sequential | `plain` (whole line) | prefix cut | change |
+|---|---:|---:|---:|
+| masked: time | 13.0 s | 2.7 s | 4.8x faster |
+| masked: leaves / templates / largest leaf | 35 / 1,085 / 393 | 343 / 752 / 55 | |
+| masked: index entries per line | 1,002 | 41 | |
+| no masks: time | 29.9 s | 2.4 s | 12x faster |
+| no masks: leaves / templates / largest leaf | 35 / 4,814 / 791 | 238 / 768 / 60 | |
+| no masks: index entries per line | 1,158 | 19 | |
+
+With the prefix cut the run costs about what BGL costs per byte (330 MB in 2.4 s is 140 MB/s, the speed of the BGL
+one-thread run). Both runs were made with the counters built in, so absolute times are slightly higher than in the tables above; the
+comparison between the two columns is fair.
+
+**Why the parallel mode gains more than the thread count.** A parallel chunk is 8 MiB, about 50,000 Thunderbird lines. A
+chunk tree holds far fewer templates than the tree of the whole file, so its leaves stay small and the cost per line stays at
+the cheap end of the curve above. The speed-up of 24x-37x on `thunderbird` is therefore more than the thread count: the single-thread run is
+slow for the reason above, not the parallel one. The price is the larger number of templates returned (see above).
+
+**What to do.**
+
+- Give logfold a format that cuts the header: a `regex:` format with a `msg` group (or a format plugin) so that the message
+  starts at the informative part.
+- Use masking: it halves the time here and removes most fragmentation.
+- Use the parallel mode (the default above 64 MiB), which avoids the large leaves.
+- For the library: walking index lists of tokens that all templates of a leaf share adds the same amount to every
+  candidate and could be skipped without changing the result. This is an optimization candidate, not done here (it must
+  keep the output identical to the reference engine, `docs/ALGORITHM.md`).
 
 ## Limitations
 
