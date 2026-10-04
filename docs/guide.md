@@ -1,5 +1,8 @@
 # logfold guide
 
+This guide walks through the typical tasks. For the complete lists of options and signatures see the
+[command-line reference](cli.md) and the [Python API reference](api.md).
+
 ## Install
 
 ```
@@ -24,6 +27,9 @@ result.to_json("report.json")  # schema: docs/schema/analysis-v1.schema.json
 ```
 logfold analyze app.log --top 20 --out report.html
 ```
+
+Several files can form one run (`analyze(["app.log.1.gz", "app.log"])` in Python, `logfold analyze app.log.1.gz app.log`
+on the command line), `-` reads standard input and gzip files are detected by content.
 
 A template looks like `user <*> failed login from <IP>`: `<*>` is a variable part, `<IP>`, `<NUM>`, `<UUID>`, `<TS>`,
 `<HEX>` and `<PATH>` are values replaced by the default masking rules before mining.
