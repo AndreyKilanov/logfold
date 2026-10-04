@@ -124,7 +124,7 @@ def test_matchers_pair_reworded_templates(plugin: ModuleType) -> None:
     assert plugin.FirstWordMatcher().match(["a b"], ["c d"]) == []
 
 
-@pytest.mark.parametrize("matcher", ["first_word", "jaccard"])
+@pytest.mark.parametrize("matcher", ["example-first-word", "example-jaccard"])
 def test_matcher_changes_the_diff_result(plugin: ModuleType, monkeypatch: pytest.MonkeyPatch, matcher: str) -> None:
     monkeypatch.setattr(registry, "_matchers", dict(registry._matchers))
     registry.register_matcher(plugin.FirstWordMatcher())

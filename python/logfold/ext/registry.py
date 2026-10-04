@@ -30,6 +30,7 @@ _formats: dict[str, FormatSpec | Format] = {}
 _reporters: dict[str, Reporter] = {}
 _matchers: dict[str, DiffMatcher] = {}
 _plugins_loaded = False
+_origins: dict[tuple[str, str], str] = {}
 _SPEC_TYPES = (PlainFormat, JsonFormat, RegexFormat)
 
 
@@ -81,17 +82,59 @@ def load_plugins(force: bool = False) -> None:
     if _plugins_loaded and not force:
         return
     _plugins_loaded = True
-    targets: dict[str, Callable[[str, Any], None]] = {
-        GROUP_FORMATS: lambda name, obj: register_format(name, _resolve(obj)),
-        GROUP_REPORTERS: lambda _name, obj: register_reporter(_resolve(obj)),
-        GROUP_MATCHERS: lambda _name, obj: register_matcher(_resolve(obj)),
+    targets: dict[str, tuple[str, Callable[[str, Any], str]]] = {
+        GROUP_FORMATS: ("format", _load_format),
+        GROUP_REPORTERS: ("reporter", _load_reporter),
+        GROUP_MATCHERS: ("matcher", _load_matcher),
     }
-    for group, register in targets.items():
+    for group, (kind, load) in targets.items():
         for entry in metadata.entry_points(group=group):
             try:
-                register(entry.name, entry.load())
+                name = load(entry.name, entry.load())
             except Exception:
                 logger.warning("failed to load logfold plugin %s from group %s", entry.name, group, exc_info=True)
+                continue
+            _origins[(kind, name)] = _origin(entry)
+
+
+def _load_format(name: str, obj: Any) -> str:
+    register_format(name, _resolve(obj))
+    return name
+
+
+def _load_reporter(_name: str, obj: Any) -> str:
+    reporter = _resolve(obj)
+    register_reporter(reporter)
+    return str(reporter.name)
+
+
+def _load_matcher(_name: str, obj: Any) -> str:
+    matcher = _resolve(obj)
+    register_matcher(matcher)
+    return str(matcher.name)
+
+
+def _origin(entry: metadata.EntryPoint) -> str:
+    dist = getattr(entry, "dist", None)
+    if dist is None:
+        return entry.value
+    return f"{dist.name} {dist.version}"
+
+
+def plugin_sources() -> list[tuple[str, str, str]]:
+    """Return every registered format, reporter and matcher with the place it came from.
+
+    Returns:
+        Sorted ``(kind, name, source)`` triples. ``kind`` is ``format``, ``reporter`` or ``matcher``; ``source`` is
+        ``built-in`` or ``<distribution> <version>`` of the installed plugin package.
+    """
+    load_plugins()
+    rows = [
+        (kind, name, _origins.get((kind, name), "built-in"))
+        for kind, names in (("format", _formats), ("reporter", _reporters), ("matcher", _matchers))
+        for name in names
+    ]
+    return sorted(rows)
 
 
 def get_format(name: str) -> FormatSpec:

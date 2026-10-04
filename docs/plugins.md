@@ -9,41 +9,26 @@ entry points as soon as it is installed, with no configuration.
 | Reporter | one more output format of a result | `logfold.reporters` | `result.render("NAME")` |
 | Diff matcher | a rule that pairs reworded templates in `diff` | `logfold.matchers` | `--matcher NAME`, `matcher="NAME"` |
 
-A complete, installable package with three formats, two reporters and two matchers is in
-[`examples/logfold-example-plugin`](../examples/logfold-example-plugin); every snippet below comes from it.
+logfold ships a set of [default plugins](#default-plugins), `logfold plugins` [lists, checks and installs](#managing-plugins)
+more, and [Writing a plugin](#writing-a-plugin) explains how to make your own. A complete, installable package with
+three formats, two reporters and two matchers is in [`examples/logfold-example-plugin`](../examples/logfold-example-plugin).
 
-## Using plugins
+## Default plugins
 
-Install the package into the environment that runs logfold:
+They are part of `pip install logfold`; nothing else has to be installed.
 
-```
-pip install "logfold[cli]"
-pip install ./examples/logfold-example-plugin
-```
-
-Check that logfold sees it:
-
-```
-logfold formats          # new formats are listed next to the built-in ones
-logfold info             # versions, engine, and the names of all formats and reporters
-```
-
-`logfold info` lists formats and reporters; matchers are listed when you ask for an unknown one (the error names the
-known ones).
-
-### A format
+| Kind | Name | What it does |
+|---|---|---|
+| format | `logfmt` | `key=value` lines such as `ts=2026-10-04T10:00:01Z level=warn msg="slow query" took=412ms` |
+| format | `serilog-clef` | Serilog compact JSON (`@t`, `@m` / `@mt`, `@l`) |
+| reporter | `markdown` | Markdown tables for an analysis or a diff |
+| reporter | `csv` | one template per row, for spreadsheets and scripts |
+| matcher | `jaccard` | pairs templates whose words overlap by at least 60%, so a reworded message is one template |
 
 ```
-logfold analyze examples/logfold-example-plugin/samples/app.logfmt --format logfmt
+logfold analyze app.logfmt --format logfmt
+logfold diff before.logfmt after.logfmt --format logfmt --matcher jaccard
 ```
-
-```python
-result = logfold.analyze("app.logfmt", format="logfmt")
-```
-
-### A reporter
-
-Reporters are used from Python. A plugin reporter renders text for both kinds of results it declares:
 
 ```python
 result = logfold.analyze("app.logfmt", format="logfmt")
@@ -51,23 +36,91 @@ print(result.render("markdown", top=10))
 open("templates.csv", "w", encoding="utf-8").write(result.render("csv"))
 ```
 
-`result.render(...)` raises `ConfigError` for an unknown reporter, or for a result kind the reporter does not support.
-The command line `--out` chooses among the built-in reporters by file suffix (`.html`, `.json`, `.txt`); it does not
-select plugin reporters.
-
-### A diff matcher
-
-```
-logfold diff before.logfmt after.logfmt --format logfmt --matcher jaccard
-```
-
-```python
-logfold.diff("before.logfmt", "after.logfmt", format="logfmt", matcher="first_word")
-```
+Reporters are used from Python. `result.render(...)` raises `ConfigError` for an unknown reporter, or for a result kind
+the reporter does not support. The command line `--out` chooses among the built-in report formats by file suffix
+(`.html`, `.json`, `.txt`); it does not select plugin reporters.
 
 With the built-in `exact` matcher a reworded message (`retry failed after 3 attempts` -> `retry gave up after 3
 attempts`) is one *new* and one *disappeared* template. A matcher pairs them, and `diff` compares the pair as one
-template.
+template. The reporters neutralize log content for their target: CSV cells that a spreadsheet would read as a formula
+(`=`, `+`, `-`, `@`) get a leading apostrophe, and Markdown table cells cannot be broken by `|` or backticks.
+
+A plugin package that registers the same name replaces a default one; pick another name unless you mean to.
+
+## Managing plugins
+
+```
+logfold plugins list                       # every format, reporter and matcher, and where it comes from
+logfold plugins check                      # plugins of the catalog that are not installed yet
+logfold plugins install NAME               # install one of them (asks for confirmation)
+```
+
+`list` marks the default and built-in ones as `built-in` and the others with the package that provides them. It is the
+quickest way to see that an installed plugin was found (`logfold formats` and `logfold info` show the names too).
+
+The **catalog** is a short list of known plugin packages. By default it is the one bundled with your version of logfold:
+`check` works offline, and new plugins show up after `pip install -U logfold`. To see the newest list without upgrading:
+
+```
+logfold plugins check --online             # fetches the latest catalog over HTTPS
+logfold plugins check --catalog my.json    # a file or an https URL of your own
+```
+
+`LOGFOLD_OFFLINE=1` forbids every network access of these commands. Nothing else in logfold reads the catalog, and
+`analyze` and `diff` never use the network.
+
+`install` accepts only names that are in the catalog. It shows the package, the version constraint, the description and
+where the catalog came from, asks for confirmation (`--yes` skips the question) and runs
+`python -m pip install <package><constraint>` in the environment that runs logfold. A plugin is Python code that runs
+with your privileges, so read what is offered. A catalog is validated strictly (safe names, version constraints,
+printable text, size limits), so an entry cannot smuggle options into pip. If pip is not available in the environment
+(for example a `uv` environment), the command says so and prints the package to install with your installer.
+
+The catalog format:
+
+```json
+{
+  "schema_version": 1,
+  "plugins": [
+    {
+      "name": "haproxy",
+      "kinds": ["format"],
+      "package": "logfold-haproxy",
+      "specifier": ">=0.2,<1",
+      "description": "HAProxy HTTP logs",
+      "homepage": "https://example.org/logfold-haproxy"
+    }
+  ]
+}
+```
+
+`kinds` is a non-empty list of `format`, `reporter` and `matcher`; `specifier` and `homepage` are optional. The bundled
+catalog is `python/logfold/plugins/catalog.json` in the repository, and the file on the `main` branch is what
+`--online` reads. To list your plugin there, open a pull request that adds an entry.
+
+## Using other plugin packages
+
+Install the package into the environment that runs logfold, then check that logfold sees it:
+
+```
+pip install ./examples/logfold-example-plugin
+logfold plugins list          # the new names appear with the package as the source
+logfold formats               # formats are also listed here
+logfold info                  # versions, engine, and the names of all formats and reporters
+```
+
+The example package registers its plugins as `example-logfmt`, `example-markdown`, `example-jaccard` and so on, so they
+never replace the default ones:
+
+```
+logfold analyze examples/logfold-example-plugin/samples/app.logfmt --format example-logfmt
+logfold diff before.logfmt after.logfmt --format example-logfmt --matcher example-jaccard
+```
+
+```python
+result = logfold.analyze("app.logfmt", format="example-logfmt")
+print(result.render("example-markdown", top=10))
+```
 
 ## Writing a plugin
 
@@ -263,10 +316,12 @@ Build and upload like any Python package (`python -m build`, then `twine upload 
 | `failed to load logfold plugin ...` on stderr | the module of the entry point cannot be imported; the traceback follows the message |
 | `FormatError: pattern has no named group` | `message_group`, `time_group` or `level_group` names a group that the pattern does not define |
 | the timestamp column is empty | the `time_group` text does not match `ts_format`; try the pattern and the format on one line first |
+| `logfold plugins install` says that pip is not available | the environment has no pip (a `uv` environment, for example); install the printed package with your installer |
 | `reporter 'x' does not support diff results` | add `"diff"` to the reporter's `kinds` and handle `DiffResult` |
 
 ## Security
 
 A plugin is Python code and runs with your privileges as soon as logfold loads it (reporters and matchers on import and
 use, formats on import). Install plugins only from sources you trust. A format specification is data and cannot run
-code, but a regular expression with catastrophic backtracking can be slow; keep patterns anchored and simple.
+code, but a pattern that backtracks badly can be slow in the pure-Python engine (the Rust engine matches in linear
+time); keep patterns anchored and simple.

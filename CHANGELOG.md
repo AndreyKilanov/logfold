@@ -5,6 +5,17 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ## [Unreleased]
 
+### Added
+
+- Default plugins inside `pip install logfold`: formats `logfmt` and `serilog-clef`, reporters `markdown` and `csv`
+  (CSV cells that a spreadsheet would read as a formula are neutralized), diff matcher `jaccard`.
+- `logfold plugins list|check|install`: list every format, reporter and matcher with its source, show the plugins of a
+  catalog that are not installed yet, and install one with pip after confirmation. The catalog is bundled and works
+  offline; `--online` fetches the latest one over HTTPS, `--catalog` takes a file or an HTTPS URL, and
+  `LOGFOLD_OFFLINE=1` forbids network access.
+- `logfold.ext.plugin_sources()`.
+- Plugins guide (`docs/plugins.md`) and an example plugin package (`examples/logfold-example-plugin`).
+
 ### Fixed
 
 - HTML reports: the headers of numeric columns are right-aligned like their values.

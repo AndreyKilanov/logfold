@@ -1,0 +1,149 @@
+"""The ``logfold plugins`` command group: list, check and install plugins."""
+
+from __future__ import annotations
+
+import json
+import sys
+from typing import Annotated
+
+import typer
+from rich.console import Console
+from rich.markup import escape
+from rich.table import Table
+
+from logfold.cli import exit_codes
+from logfold.errors import LogfoldError
+from logfold.ext import registry
+from logfold.plugins import catalog as plugin_catalog
+
+plugins_app = typer.Typer(
+    name="plugins",
+    help="List, check and install logfold plugins (formats, reporters, diff matchers).",
+    no_args_is_help=True,
+    add_completion=False,
+)
+
+Online = Annotated[
+    bool,
+    typer.Option("--online", help="Fetch the latest catalog over HTTPS instead of the one bundled with logfold."),
+]
+CatalogSource = Annotated[
+    str | None,
+    typer.Option("--catalog", help="Catalog file or HTTPS URL; overrides --online."),
+]
+AsJson = Annotated[bool, typer.Option("--json", help="Print JSON instead of a table.")]
+
+
+def _stdout() -> Console:
+    return Console(file=sys.stdout, highlight=False)
+
+
+def _stderr() -> Console:
+    return Console(file=sys.stderr, highlight=False)
+
+
+def _fail(error: Exception) -> typer.Exit:
+    _stderr().print(f"[red]error:[/red] {escape(str(error))}", highlight=False)
+    return typer.Exit(exit_codes.ERROR)
+
+
+def _load(online: bool, catalog: str | None) -> plugin_catalog.Catalog:
+    try:
+        return plugin_catalog.load(catalog, online)
+    except LogfoldError as error:
+        raise _fail(error) from None
+
+
+@plugins_app.command("list")
+def list_plugins(as_json: AsJson = False) -> None:
+    """List the formats, reporters and diff matchers that are available, and where each one comes from."""
+    rows = registry.plugin_sources()
+    if as_json:
+        payload = [{"kind": kind, "name": name, "source": source} for kind, name, source in rows]
+        sys.stdout.write(json.dumps(payload, indent=2) + "\n")
+        return
+    table = Table(show_header=True, header_style="bold", box=None, pad_edge=False)
+    for column in ("kind", "name", "source"):
+        table.add_column(column)
+    for kind, name, source in rows:
+        table.add_row(kind, escape(name), escape(source))
+    _stdout().print(table)
+
+
+@plugins_app.command("check")
+def check(online: Online = False, catalog: CatalogSource = None, as_json: AsJson = False) -> None:
+    """Show the plugins of the catalog that are not installed yet.
+
+    By default the catalog bundled with this version of logfold is used and nothing is downloaded. --online fetches the
+    latest one over HTTPS; set LOGFOLD_OFFLINE=1 to forbid that.
+    """
+    loaded = _load(online, catalog)
+    new = plugin_catalog.new_plugins(loaded)
+    if as_json:
+        payload = {
+            "catalog": loaded.source,
+            "new": [
+                {
+                    "name": e.name,
+                    "kinds": list(e.kinds),
+                    "package": e.package,
+                    "requirement": e.requirement,
+                    "description": e.description,
+                    "homepage": e.homepage,
+                }
+                for e in new
+            ],
+        }
+        sys.stdout.write(json.dumps(payload, indent=2) + "\n")
+        return
+    console = _stdout()
+    console.print(f"catalog: {escape(loaded.source)}, {len(loaded.entries)} plugin(s), {len(new)} not installed")
+    if not new:
+        console.print("No new plugins.")
+        return
+    table = Table(show_header=True, header_style="bold", box=None, pad_edge=False)
+    for column in ("name", "kinds", "package", "description"):
+        table.add_column(column, overflow="fold")
+    for entry in new:
+        table.add_row(escape(entry.name), ", ".join(entry.kinds), escape(entry.requirement), escape(entry.description))
+    console.print(table)
+    console.print("\nInstall one with: [bold]logfold plugins install NAME[/bold]")
+
+
+@plugins_app.command("install")
+def install(
+    name: Annotated[str, typer.Argument(help="Plugin name from 'logfold plugins check'.")],
+    online: Online = False,
+    catalog: CatalogSource = None,
+    yes: Annotated[bool, typer.Option("--yes", "-y", help="Do not ask for confirmation.")] = False,
+) -> None:
+    """Install a plugin of the catalog with pip into the environment that runs logfold.
+
+    A plugin is Python code that runs with your privileges: only plugins of the catalog can be installed, and the
+    package and version are shown before anything happens.
+    """
+    loaded = _load(online, catalog)
+    entry = loaded.find(name)
+    if entry is None:
+        known = ", ".join(e.name for e in loaded.entries) or "none"
+        raise _fail(LogfoldError(f"unknown plugin {name!r}; the catalog has: {known}"))
+    console = _stdout()
+    if plugin_catalog.is_installed(entry.package):
+        console.print(f"{escape(entry.package)} is already installed.")
+        return
+    console.print(f"plugin:   {escape(entry.name)} ({', '.join(entry.kinds)})")
+    console.print(f"package:  {escape(entry.requirement)}")
+    if entry.description:
+        console.print(f"about:    {escape(entry.description)}")
+    if entry.homepage:
+        console.print(f"homepage: {escape(entry.homepage)}")
+    console.print(f"catalog:  {escape(loaded.source)}")
+    if not yes and not typer.confirm("Install it? It will run code on this machine", default=False):
+        raise _fail(LogfoldError("cancelled"))
+    try:
+        code = plugin_catalog.install(entry)
+    except LogfoldError as error:
+        raise _fail(error) from None
+    if code != 0:
+        raise _fail(LogfoldError(f"pip failed with exit code {code}"))
+    console.print(f"Installed {escape(entry.package)}. Run 'logfold plugins list' to see what it adds.")

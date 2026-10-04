@@ -27,7 +27,9 @@ New templates (2)
   See [benchmarks](https://github.com/AndreyKilanov/logfold/blob/main/bench/RESULTS.md).
 - **A Python library first.** `analyze()` and `diff()` return plain, immutable dataclasses; reports are JSON (versioned
   schema), self-contained HTML or text.
-- **Extensible.** Formats, reporters and diff matchers are plugins discovered through entry points.
+- **Extensible.** Formats, reporters and diff matchers are plugins discovered through entry points; a default set
+  (`logfmt`, `serilog-clef`, `markdown`, `csv`, `jaccard`) ships with logfold and `logfold plugins` lists, checks and
+  installs more.
 
 ## Install
 
@@ -58,6 +60,7 @@ logfold analyze app.log --top 30 --out report.html          # fold one run into 
 logfold diff before.log after.log --fail-on-new-alerts      # exit code 2 in CI when something new is wrong
 logfold formats                                             # list the log formats
 logfold info                                                # versions and engine availability, for bug reports
+logfold plugins check                                       # plugins you do not have yet; `install NAME` adds one
 logfold --version
 ```
 

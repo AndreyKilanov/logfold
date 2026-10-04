@@ -12,17 +12,17 @@ license = "MIT"
 dependencies = ["logfold>=0.1.0"]
 
 [project.entry-points."logfold.formats"]
-logfmt = "logfold_example_plugin:LOGFMT"
-serilog-clef = "logfold_example_plugin:SERILOG_CLEF"
-ci-blocks = "logfold_example_plugin:CI_BLOCKS"
+example-logfmt = "logfold_example_plugin:LOGFMT"
+example-serilog-clef = "logfold_example_plugin:SERILOG_CLEF"
+example-ci-blocks = "logfold_example_plugin:CI_BLOCKS"
 
 [project.entry-points."logfold.reporters"]
-markdown = "logfold_example_plugin:MarkdownReporter"
-csv = "logfold_example_plugin:CsvReporter"
+example-markdown = "logfold_example_plugin:MarkdownReporter"
+example-csv = "logfold_example_plugin:CsvReporter"
 
 [project.entry-points."logfold.matchers"]
-first_word = "logfold_example_plugin:FirstWordMatcher"
-jaccard = "logfold_example_plugin:JaccardMatcher"
+example-first-word = "logfold_example_plugin:FirstWordMatcher"
+example-jaccard = "logfold_example_plugin:JaccardMatcher"
 
 [tool.setuptools]
 packages = ["logfold_example_plugin"]

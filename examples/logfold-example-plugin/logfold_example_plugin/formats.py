@@ -11,7 +11,7 @@ from logfold.ext import JsonFormat, PlainFormat, RegexFormat
 __all__ = ["CI_BLOCKS", "LOGFMT", "SERILOG_CLEF"]
 
 LOGFMT = RegexFormat(
-    name="logfmt",
+    name="example-logfmt",
     pattern=r"^ts=(?P<ts>\S+) level=(?P<lvl>\w+) (?P<msg>.*)$",
     message_group="msg",
     time_group="ts",
@@ -24,7 +24,7 @@ The timestamp is ISO-8601, so no ``ts_format`` is needed. The message is everyth
 """
 
 SERILOG_CLEF = JsonFormat(
-    name="serilog-clef",
+    name="example-serilog-clef",
     message_keys=("@m", "@mt"),
     time_keys=("@t",),
     level_keys=("@l",),
@@ -36,7 +36,7 @@ SERILOG_CLEF = JsonFormat(
 """
 
 CI_BLOCKS = PlainFormat(
-    name="ci-blocks",
+    name="example-ci-blocks",
     record_start=r"^=== ",
     multiline=True,
 )
