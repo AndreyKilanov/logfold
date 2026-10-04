@@ -78,7 +78,7 @@ engine is tested against it for exact equality.
 
 ## Development
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) and [CLAUDE.md](CLAUDE.md) (branches, commits, issues, definition of done).
+See [CONTRIBUTING.md](CONTRIBUTING.md) (branches, commits, issues, definition of done).
 
 ## License
 

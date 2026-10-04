@@ -18,8 +18,6 @@ build/
 python/logfold/*.pyd
 python/logfold/*.so
 
-# Local working folder (plans, reports, drafts). Never committed.
-
 # Benchmark data and raw results (large, reproducible by scripts)
 /bench/data/
 /bench/results/raw/
