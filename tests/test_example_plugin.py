@@ -5,13 +5,13 @@ from __future__ import annotations
 import csv
 import importlib
 import io
+import re
 import sys
 from collections.abc import Iterator
 from pathlib import Path
 from types import ModuleType
 
 import pytest
-import tomllib
 
 import logfold
 from conftest import requires_native
@@ -37,14 +37,14 @@ def _templates(result: logfold.AnalysisResult) -> dict[str, tuple[int, str | Non
 
 
 def test_every_entry_point_of_the_example_resolves(plugin: ModuleType) -> None:
-    project = tomllib.loads((PLUGIN_DIR / "pyproject.toml").read_text(encoding="utf-8"))
-    groups = project["project"]["entry-points"]
-    assert set(groups) == {"logfold.formats", "logfold.reporters", "logfold.matchers"}
-    for group in groups.values():
-        for target in group.values():
-            module, _, attribute = target.partition(":")
-            assert module == "logfold_example_plugin"
-            assert hasattr(plugin, attribute), target
+    text = (PLUGIN_DIR / "pyproject.toml").read_text(encoding="utf-8")
+    groups = set(re.findall(r'^\[project\.entry-points\."([\w.]+)"\]$', text, re.MULTILINE))
+    assert groups == {"logfold.formats", "logfold.reporters", "logfold.matchers"}
+    targets = re.findall(r'^[\w-]+ = "([\w.]+):(\w+)"$', text, re.MULTILINE)
+    assert len(targets) == 7
+    for module, attribute in targets:
+        assert module == "logfold_example_plugin"
+        assert hasattr(plugin, attribute), attribute
 
 
 def test_logfmt_format(plugin: ModuleType) -> None:
