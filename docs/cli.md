@@ -97,6 +97,8 @@ List, check and install plugins (formats, reporters, diff matchers). See the [pl
 logfold plugins list [--json]
 logfold plugins check [--online] [--catalog SOURCE] [--json]
 logfold plugins install NAME [--online] [--catalog SOURCE] [--yes]
+logfold plugins dir
+logfold plugins new KIND NAME [--dir FOLDER] [--force]
 ```
 
 | Command | What it does |
@@ -104,6 +106,8 @@ logfold plugins install NAME [--online] [--catalog SOURCE] [--yes]
 | `list` | every format, reporter and diff matcher with its source: `built-in` or the package that provides it |
 | `check` | the plugins of the catalog whose package is not installed yet, with an install hint |
 | `install NAME` | shows the package, version constraint and catalog, asks for confirmation and runs `python -m pip install` for a plugin of the catalog |
+| `dir` | where logfold looks for your own plugin files, and whether that folder exists |
+| `new KIND NAME` | writes a working plugin template (`format`, `reporter` or `matcher`) into the plugin folder; `--dir` chooses another folder, `--force` overwrites |
 
 | Option | Default | Meaning |
 |---|---|---|
@@ -111,6 +115,9 @@ logfold plugins install NAME [--online] [--catalog SOURCE] [--yes]
 | `--catalog` | | a catalog file or an HTTPS URL; overrides `--online` |
 | `--json` | off | print JSON instead of a table (`list`, `check`) |
 | `--yes`, `-y` | off | do not ask for confirmation (`install`) |
+
+`logfold --plugins-dir FOLDER ...` (an option of `logfold` itself, repeatable) also loads the plugins of a folder; see
+[your own plugins in a folder](plugins.md#your-own-plugins-in-a-folder).
 
 Without `--online` and `--catalog` nothing is downloaded. `LOGFOLD_OFFLINE=1` makes every network access of these
 commands an error. `install` accepts only names from the catalog; a declined confirmation, an unknown name, an invalid
@@ -135,3 +142,5 @@ Errors are printed as one line on standard error; `--debug` adds the traceback.
 - `LOGFOLD_ENGINE=auto|native|python` selects the engine when `--engine` is not given. `python` forces the slow
   reference engine.
 - `LOGFOLD_OFFLINE=1` forbids the network access of `logfold plugins check|install --online` and `--catalog URL`.
+- `LOGFOLD_PLUGIN_PATH` adds plugin folders (separated like `PATH`); `LOGFOLD_NO_USER_PLUGINS=1` switches off the
+  plugin folder and `LOGFOLD_PLUGIN_PATH`.

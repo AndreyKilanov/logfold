@@ -13,7 +13,12 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   catalog that are not installed yet, and install one with pip after confirmation. The catalog is bundled and works
   offline; `--online` fetches the latest one over HTTPS, `--catalog` takes a file or an HTTPS URL, and
   `LOGFOLD_OFFLINE=1` forbids network access.
-- `logfold.ext.plugin_sources()`.
+- Plugins from your own folder, without packaging: a `.py` file or package in the plugin folder (`%APPDATA%\logfold\plugins`,
+  `~/.config/logfold/plugins`), in `LOGFOLD_PLUGIN_PATH` or given with `--plugins-dir` provides `FORMATS`, `REPORTERS` and
+  `MATCHERS`. `logfold plugins dir` shows the folder, `logfold plugins new KIND NAME` writes a working template there.
+  Nothing is loaded from the current directory; world-writable or foreign files are skipped on POSIX;
+  `LOGFOLD_NO_USER_PLUGINS=1` switches the implicit folders off.
+- `logfold.ext.plugin_sources()`, `add_plugin_directory()`, `plugin_directories()` and `default_plugin_dir()`.
 - Plugins guide (`docs/plugins.md`) and an example plugin package (`examples/logfold-example-plugin`).
 
 ### Fixed

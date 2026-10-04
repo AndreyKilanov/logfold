@@ -6,10 +6,13 @@ from logfold.ext.formats import Format, FormatSpec, JsonFormat, PlainFormat, Reg
 from logfold.ext.masks import DEFAULT_MASKS, MaskRule
 from logfold.ext.matchers import DiffMatcher
 from logfold.ext.registry import (
+    add_plugin_directory,
+    default_plugin_dir,
     format_names,
     get_format,
     get_matcher,
     get_reporter,
+    plugin_directories,
     plugin_sources,
     register_format,
     register_matcher,
@@ -28,10 +31,13 @@ __all__ = [
     "PlainFormat",
     "RegexFormat",
     "Reporter",
+    "add_plugin_directory",
+    "default_plugin_dir",
     "format_names",
     "get_format",
     "get_matcher",
     "get_reporter",
+    "plugin_directories",
     "plugin_sources",
     "register_format",
     "register_matcher",

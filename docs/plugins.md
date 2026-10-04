@@ -122,7 +122,74 @@ result = logfold.analyze("app.logfmt", format="example-logfmt")
 print(result.render("example-markdown", top=10))
 ```
 
+## Your own plugins in a folder
+
+No packaging is needed for a plugin that is only yours: put a Python file into the plugin folder and logfold loads it,
+in the terminal as well as from Python.
+
+```
+logfold plugins dir                    # where logfold looks, and whether the folder exists
+logfold plugins new format my-fmt      # writes a working template there: also `reporter` and `matcher`
+```
+
+The folder is `%APPDATA%\logfold\plugins` on Windows and `$XDG_CONFIG_HOME/logfold/plugins` (usually
+`~/.config/logfold/plugins`) elsewhere. `logfold plugins new KIND NAME` creates `NAME.py` in it (it never overwrites
+without `--force`; `--dir` writes somewhere else). Edit the file, then run `logfold plugins list`: the plugin is there,
+and its source is the path of the file.
+
+A plugin file lists what it provides in three module-level lists, all optional:
+
+```python
+from logfold.ext import RegexFormat
+
+
+class Shout:  # a reporter: name, kinds, render()
+    name = "shout"
+    kinds = ("analysis",)
+
+    def render(self, result, **options):
+        return "\n".join(t.text.upper() for t in result.top(5)) + "\n"
+
+
+FORMATS = [
+    RegexFormat(
+        name="mine",
+        pattern=r"^(?P<ts>\S+) (?P<lvl>\w+) (?P<msg>.*)$",
+        message_group="msg",
+        time_group="ts",
+        level_group="lvl",
+    )
+]
+REPORTERS = [Shout]  # classes are created without arguments; instances work too
+MATCHERS = []  # diff matchers: objects with name and match()
+```
+
+A folder with an `__init__.py` is loaded as a package, so a bigger plugin can have several files and relative imports.
+Files and folders whose names start with `_` or `.` are skipped, as is everything that is not Python. Plugins are
+loaded in alphabetical order, after the installed plugin packages; if two use the same name, the later one wins, so a
+file in your folder can deliberately replace a default plugin (`logfold plugins list` shows which one is active).
+
+More folders:
+
+```
+logfold --plugins-dir ./team-plugins analyze app.log --format mine      # for one run, repeatable
+```
+
+`LOGFOLD_PLUGIN_PATH` takes more folders for every run (separated like `PATH`), and from Python
+`logfold.ext.add_plugin_directory(path)` loads one on the spot.
+
+**Safety.** A plugin file is Python code that runs with your privileges when logfold starts to look up a format, a
+reporter or a matcher (not for `--version` or `--help`). That is why logfold only reads folders you named or your own
+config folder, never the current directory, so running logfold inside a downloaded project does not execute anything
+from it. On Linux and macOS a folder or file that everybody can write to, or that belongs to another user, is skipped
+with a warning. A broken file is skipped with a warning and never stops logfold. `LOGFOLD_NO_USER_PLUGINS=1` switches
+off the config folder and `LOGFOLD_PLUGIN_PATH` (use it in CI and on shared machines); a folder passed with
+`--plugins-dir` is your explicit choice and still loads.
+
 ## Writing a plugin
+
+A plugin is either a file in your plugin folder (see above) or a package that you install; the contracts are the same.
+A package is the way to share a plugin.
 
 ### Package layout
 
@@ -316,6 +383,7 @@ Build and upload like any Python package (`python -m build`, then `twine upload 
 | `failed to load logfold plugin ...` on stderr | the module of the entry point cannot be imported; the traceback follows the message |
 | `FormatError: pattern has no named group` | `message_group`, `time_group` or `level_group` names a group that the pattern does not define |
 | the timestamp column is empty | the `time_group` text does not match `ts_format`; try the pattern and the format on one line first |
+| my file in the plugin folder is not listed | `logfold plugins dir` shows the folder; the file must end in `.py`, must not start with `_` or `.`, and `FORMATS`, `REPORTERS` or `MATCHERS` must be lists; warnings explain the rest (a world-writable file is skipped, `LOGFOLD_NO_USER_PLUGINS` is set) |
 | `logfold plugins install` says that pip is not available | the environment has no pip (a `uv` environment, for example); install the printed package with your installer |
 | `reporter 'x' does not support diff results` | add `"diff"` to the reporter's `kinds` and handle `DiffResult` |
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -7,6 +8,8 @@ import pytest
 import logfold
 from corpora import CORPORA, write
 from logfold.engines import native
+
+os.environ.setdefault("LOGFOLD_NO_USER_PLUGINS", "1")  # the tests must not depend on the plugins of whoever runs them
 
 requires_native = pytest.mark.skipif(not native.is_available(), reason="native extension is not built")
 
