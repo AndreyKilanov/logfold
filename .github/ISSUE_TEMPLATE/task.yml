@@ -1,0 +1,22 @@
+name: Task
+description: Planned development task (usually maps to a development plan item)
+labels: ["type:task"]
+body:
+  - type: input
+    id: plan
+    attributes:
+      label: Plan reference
+      description: "Plan task id, e.g. S3.4"
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Definition of done
+      description: Measurable exit criteria.
+    validations:
+      required: true

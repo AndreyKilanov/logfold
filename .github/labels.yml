@@ -1,0 +1,20 @@
+- {name: "type:bug", color: d73a4a}
+- {name: "type:feature", color: a2eeef}
+- {name: "type:task", color: 0075ca}
+- {name: "type:perf", color: fbca04}
+- {name: "type:docs", color: 0e8a16}
+- {name: "area:core", color: ededed}
+- {name: "area:io", color: ededed}
+- {name: "area:engine", color: ededed}
+- {name: "area:py", color: ededed}
+- {name: "area:python", color: ededed}
+- {name: "area:cli", color: ededed}
+- {name: "area:formats", color: ededed}
+- {name: "area:reporters", color: ededed}
+- {name: "area:diff", color: ededed}
+- {name: "area:bench", color: ededed}
+- {name: "area:ci", color: ededed}
+- {name: "priority:p0", color: b60205}
+- {name: "priority:p1", color: d93f0b}
+- {name: "priority:p2", color: fef2c0}
+- {name: "good first issue", color: 7057ff}
