@@ -17,4 +17,12 @@
 - {name: "priority:p0", color: b60205}
 - {name: "priority:p1", color: d93f0b}
 - {name: "priority:p2", color: fef2c0}
+- {name: "stage:S1", color: 5319e7}
+- {name: "stage:S2", color: 5319e7}
+- {name: "stage:S3", color: 5319e7}
+- {name: "stage:S4", color: 5319e7}
+- {name: "stage:S5", color: 5319e7}
+- {name: "stage:S6", color: 5319e7}
+- {name: "stage:S7", color: 5319e7}
+- {name: "stage:G2", color: 5319e7}
 - {name: "good first issue", color: 7057ff}
