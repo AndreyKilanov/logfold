@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/AndreyKilanov/logfold/docs/schema/diff-v1.schema.json",
+  "title": "logfold diff report, schema version 1",
+  "type": "object",
+  "required": [
+    "schema_version", "kind", "meta", "before", "after", "config", "metrics", "warnings", "summary",
+    "new_templates", "disappeared", "changed"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "kind": { "const": "diff" },
+    "meta": { "type": "object" },
+    "before": { "$ref": "analysis-v1.schema.json#/$defs/run" },
+    "after": { "$ref": "analysis-v1.schema.json#/$defs/run" },
+    "config": {
+      "type": "object",
+      "required": ["threshold_ratio", "min_count", "min_new_count", "recount", "matcher"],
+      "properties": {
+        "threshold_ratio": { "type": "number", "minimum": 1 },
+        "min_count": { "type": "integer", "minimum": 0 },
+        "min_new_count": { "type": "integer", "minimum": 0 },
+        "recount": { "type": "boolean" },
+        "matcher": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "metrics": { "$ref": "analysis-v1.schema.json#/$defs/metrics" },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "summary": {
+      "type": "object",
+      "required": ["new", "new_alerts", "disappeared", "changed", "unchanged"],
+      "properties": {
+        "new": { "type": "integer", "minimum": 0 },
+        "new_alerts": { "type": "integer", "minimum": 0 },
+        "disappeared": { "type": "integer", "minimum": 0 },
+        "changed": { "type": "integer", "minimum": 0 },
+        "unchanged": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "new_templates": { "$ref": "#/$defs/entries" },
+    "disappeared": { "$ref": "#/$defs/entries" },
+    "changed": { "$ref": "#/$defs/entries" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id", "text", "before_count", "after_count", "before_share", "after_share", "ratio", "level", "levels",
+          "example", "first_seen", "last_seen"
+        ],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[0-9a-f]{16}$" },
+          "text": { "type": "string" },
+          "before_count": { "type": "integer", "minimum": 0 },
+          "after_count": { "type": "integer", "minimum": 0 },
+          "before_share": { "type": "number", "minimum": 0, "maximum": 1 },
+          "after_share": { "type": "number", "minimum": 0, "maximum": 1 },
+          "ratio": { "type": ["number", "null"] },
+          "level": { "enum": ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", null] },
+          "levels": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 1 } },
+          "example": { "type": ["string", "null"] },
+          "first_seen": { "type": ["string", "null"] },
+          "last_seen": { "type": ["string", "null"] }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

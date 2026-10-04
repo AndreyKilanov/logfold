@@ -1,0 +1,124 @@
+[build-system]
+requires = ["maturin>=1.9,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "logfold"
+dynamic = ["version"]
+description = "Fold large logs into templates and compare two runs. Rust core, Python API and CLI."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Andrey Kilanov" }]
+keywords = ["logs", "log-parsing", "drain", "templates", "diff", "observability"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: System Administrators",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Rust",
+  "Topic :: System :: Logging",
+  "Typing :: Typed",
+]
+dependencies = []
+
+[project.optional-dependencies]
+cli = ["typer>=0.12", "rich>=13"]
+all = ["logfold[cli]"]
+dev = [
+  "pytest>=8",
+  "pytest-cov",
+  "hypothesis>=6",
+  "ruff>=0.6",
+  "mypy>=1.11",
+  "import-linter>=2.0",
+  "jsonschema>=4",
+  "typer>=0.12",
+  "rich>=13",
+]
+
+[project.scripts]
+logfold = "logfold.cli:main"
+
+[tool.maturin]
+python-source = "python"
+module-name = "logfold._core"
+manifest-path = "crates/logfold-py/Cargo.toml"
+strip = true
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+src = ["python", "tests"]
+extend-exclude = ["scratch"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "RUF", "D", "PT", "PL", "T20"]
+ignore = ["PLR0913", "PLR0917", "PLR2004", "D203", "D213", "PLR0911", "PLR0912", "PLR0915", "RUF012"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D", "PLR", "PLC0415", "T20", "PT011"]
+"bench/**" = ["D", "PLR", "T20"]
+"eval/**" = ["D", "PLR", "T20"]
+"python/logfold/cli/**" = ["T20"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+mypy_path = "python"
+packages = ["logfold"]
+
+[[tool.mypy.overrides]]
+module = ["typer.*", "rich.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = ["slow: long-running tests"]
+
+[tool.importlinter]
+root_package = "logfold"
+exclude_type_checking_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Layered architecture"
+type = "layers"
+# grimp cannot resolve the compiled logfold._core and falls back to the package root.
+ignore_imports = ["logfold.engines.native -> logfold"]
+layers = [
+  "logfold.cli",
+  "logfold.api",
+  "logfold.engines | logfold.formats | logfold.reporters | logfold.comparison",
+  "logfold.model",
+  "logfold.ext",
+  "logfold.config | logfold._version",
+  "logfold.errors",
+]
+
+[[tool.importlinter.contracts]]
+name = "Native extension is imported only by the native engine adapter"
+type = "forbidden"
+source_modules = [
+  "logfold.cli",
+  "logfold.api",
+  "logfold.formats",
+  "logfold.reporters",
+  "logfold.comparison",
+  "logfold.model",
+  "logfold.ext",
+  "logfold.config",
+  "logfold.errors",
+]
+forbidden_modules = ["logfold._core"]

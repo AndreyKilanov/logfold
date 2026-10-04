@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/AndreyKilanov/logfold/docs/schema/analysis-v1.schema.json",
+  "title": "logfold analysis report, schema version 1",
+  "type": "object",
+  "required": ["schema_version", "kind", "meta", "run", "metrics", "warnings", "template_count", "templates"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "kind": { "const": "analysis" },
+    "meta": { "$ref": "#/$defs/meta" },
+    "run": { "$ref": "#/$defs/run" },
+    "metrics": { "$ref": "#/$defs/metrics" },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "template_count": { "type": "integer", "minimum": 0 },
+    "templates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "text", "count", "share", "first_seen", "last_seen", "level", "levels", "example"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[0-9a-f]{16}$" },
+          "text": { "type": "string" },
+          "count": { "type": "integer", "minimum": 1 },
+          "share": { "type": "number", "minimum": 0, "maximum": 1 },
+          "first_seen": { "type": ["string", "null"] },
+          "last_seen": { "type": ["string", "null"] },
+          "level": { "enum": ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", null] },
+          "levels": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 1 } },
+          "example": { "type": ["string", "null"] }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "meta": {
+      "type": "object",
+      "required": ["schema_version", "algo_version", "logfold_version", "config_hash", "format", "degraded"],
+      "properties": {
+        "schema_version": { "type": "integer" },
+        "algo_version": { "type": "integer" },
+        "logfold_version": { "type": "string" },
+        "config_hash": { "type": "string" },
+        "format": { "type": "string" },
+        "degraded": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "run": {
+      "type": "object",
+      "required": ["name", "files", "lines", "records", "unparsed", "bytes", "tz_aware", "overflowed", "unparsed_ratio"],
+      "properties": {
+        "name": { "type": "string" },
+        "files": { "type": "integer", "minimum": 1 },
+        "lines": { "type": "integer", "minimum": 0 },
+        "records": { "type": "integer", "minimum": 0 },
+        "unparsed": { "type": "integer", "minimum": 0 },
+        "bytes": { "type": "integer", "minimum": 0 },
+        "tz_aware": { "type": "boolean" },
+        "overflowed": { "type": "boolean" },
+        "unparsed_ratio": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "metrics": {
+      "type": "object",
+      "required": [
+        "engine", "strategy", "threads", "chunks", "wall_total_s", "wall_mine_s", "wall_merge_s", "wall_recount_s",
+        "wall_freeze_s"
+      ],
+      "properties": {
+        "engine": { "enum": ["native", "python"] },
+        "strategy": { "enum": ["sequential", "chunked"] },
+        "threads": { "type": "integer", "minimum": 1 },
+        "chunks": { "type": "integer", "minimum": 0 },
+        "wall_total_s": { "type": "number" },
+        "wall_mine_s": { "type": "number" },
+        "wall_merge_s": { "type": "number" },
+        "wall_recount_s": { "type": "number" },
+        "wall_freeze_s": { "type": "number" }
+      },
+      "additionalProperties": false
+    }
+  }
+}
