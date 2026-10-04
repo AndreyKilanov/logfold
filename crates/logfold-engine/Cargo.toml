@@ -1,0 +1,20 @@
+[package]
+name = "logfold-engine"
+description = "Application layer of logfold: mining pipeline, execution strategies, progress and cancellation."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+logfold-core = { path = "../logfold-core" }
+logfold-io = { path = "../logfold-io" }
+thiserror = "2"
+
+[dev-dependencies]
+tempfile = "3"

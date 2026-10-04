@@ -1,0 +1,18 @@
+[package]
+name = "logfold-core"
+description = "Pure domain core of logfold: masking, tokenization, Drain template tree, merge, freeze."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+ahash = "0.8"
+regex = "1"
+sha2 = "0.10"
+thiserror = "2"

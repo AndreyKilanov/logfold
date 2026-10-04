@@ -1,0 +1,22 @@
+[package]
+name = "logfold-py"
+description = "PyO3 binding exposing the logfold engine as logfold._core."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[lib]
+name = "_core"
+crate-type = ["cdylib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+logfold-core = { path = "../logfold-core" }
+logfold-io = { path = "../logfold-io" }
+logfold-engine = { path = "../logfold-engine" }
+pyo3 = { version = "0.29", features = ["abi3-py310"] }

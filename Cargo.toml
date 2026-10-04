@@ -1,0 +1,34 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/logfold-core",
+    "crates/logfold-io",
+    "crates/logfold-engine",
+    "crates/logfold-py",
+    "crates/logfold-bench",
+]
+
+[workspace.package]
+version = "0.1.0-dev.0"
+edition = "2021"
+rust-version = "1.80"
+license = "MIT"
+authors = ["Andrey Kilanov"]
+repository = "https://github.com/AndreyKilanov/logfold"
+publish = false
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+all = { level = "deny", priority = -1 }
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+opt-level = 3
+debug = "line-tables-only"
+
+[profile.bench]
+inherits = "release"
