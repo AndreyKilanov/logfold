@@ -1,7 +1,7 @@
 """Benchmark runner: logfold against Drain3, logdrain and logdelta.
 
 Every command runs as a separate process; the runner records wall time, CPU time (user + system) and peak working set
-with ``psutil``. Results go to ``bench/results/<date>/results.json``; ``bench/report.py`` renders the Markdown tables.
+with ``psutil``. Results go to ``bench/results/results.json``; ``bench/report.py`` renders the Markdown tables.
 The protocol is described in ``bench/PROTOCOL.md``.
 
 Usage::
@@ -22,7 +22,6 @@ import subprocess
 import sys
 import time
 from dataclasses import asdict, dataclass
-from datetime import date
 from pathlib import Path
 
 import psutil
@@ -188,7 +187,6 @@ def tool_versions() -> dict[str, str]:
 
 def environment() -> dict[str, object]:
     return {
-        "date": date.today().isoformat(),
         "os": platform.platform(),
         "cpu": platform.processor(),
         "cores_logical": CORES,
@@ -225,7 +223,7 @@ def main() -> None:
     parser.add_argument("--skip", nargs="*", default=[], help="tool name fragments to leave out, for example drain3")
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args()
-    out = args.out or ROOT / "bench" / "results" / date.today().isoformat() / "results.json"
+    out = args.out or ROOT / "bench" / "results" / "results.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     results: dict[str, object] = {
         "environment": environment(),

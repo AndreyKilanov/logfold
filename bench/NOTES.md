@@ -72,7 +72,6 @@ kept apart (counts stay exact, and a warning says so).
 
 - One machine (Windows 11, i7-10700K, 8 cores / 16 threads), warm page cache, generated data (nginx, app, Loghub-2k
   derived loghub, highcard); Loghub-2.0 could not be downloaded.
-- Several rows were measured in different runs on the same machine (see `measured_in` in
-  `results/final/part_combined.json`): Drain3 on nginx and app in the first run, logfold, logdrain and logdelta on nginx and
-  app, and the diff scenario in the second, loghub and highcard in the third. Repeated measurements agreed within about 5%.
+- Rows come from several runs on the same machine (marked per row by `measured_in` in `results/results.json`);
+  repeated measurements agreed within about 5%.
 - Absolute numbers will differ on Linux and with a cold cache.

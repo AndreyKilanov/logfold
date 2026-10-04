@@ -1,4 +1,4 @@
-"""Render ``bench/results/<date>/results.json`` as Markdown tables (``bench/RESULTS.md``).
+"""Render ``bench/results/results.json`` as Markdown tables (``bench/RESULTS.md``).
 
 Usage::
 
@@ -15,11 +15,11 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def latest_results() -> list[Path]:
-    folders = sorted(p.parent for p in (ROOT / "bench" / "results").glob("*/*.json"))
-    if not folders:
+def default_results() -> list[Path]:
+    path = ROOT / "bench" / "results" / "results.json"
+    if not path.exists():
         raise SystemExit("no results found; run bench/run.py first")
-    return sorted(folders[-1].glob("part*.json"))
+    return [path]
 
 
 def fmt_time(run: dict[str, object]) -> str:
@@ -76,7 +76,7 @@ def table(
 
 
 def main() -> None:
-    paths = [Path(arg) for arg in sys.argv[1:]] or latest_results()
+    paths = [Path(arg) for arg in sys.argv[1:]] or default_results()
     parts = [json.loads(path.read_text(encoding="utf-8")) for path in paths]
     env = parts[0]["environment"]
     all_runs = [run for part in parts for run in part["runs"]]
@@ -92,7 +92,7 @@ def main() -> None:
     out = [
         "# Benchmark results",
         "",
-        f"Date: {env['date']}. Protocol: [`PROTOCOL.md`](PROTOCOL.md). Raw data: {raw}.",
+        f"Protocol: [`PROTOCOL.md`](PROTOCOL.md). Raw data: {raw}.",
         "",
         f"Machine: {env['os']}, {env['cores_physical']} physical / {env['cores_logical']} logical cores, "
         f"{env['ram_gb']} GB RAM, Python {env['python']}.",
