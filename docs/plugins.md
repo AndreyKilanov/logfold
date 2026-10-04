@@ -1,0 +1,272 @@
+# Plugins
+
+logfold can be extended with three kinds of plugins. A plugin is an ordinary Python package; logfold finds it through
+entry points as soon as it is installed, with no configuration.
+
+| Kind | Adds | Entry point group | Used as |
+|---|---|---|---|
+| Format | a way to read one more log format | `logfold.formats` | `--format NAME`, `format="NAME"` |
+| Reporter | one more output format of a result | `logfold.reporters` | `result.render("NAME")` |
+| Diff matcher | a rule that pairs reworded templates in `diff` | `logfold.matchers` | `--matcher NAME`, `matcher="NAME"` |
+
+A complete, installable package with three formats, two reporters and two matchers is in
+[`examples/logfold-example-plugin`](../examples/logfold-example-plugin); every snippet below comes from it.
+
+## Using plugins
+
+Install the package into the environment that runs logfold:
+
+```
+pip install "logfold[cli]"
+pip install ./examples/logfold-example-plugin
+```
+
+Check that logfold sees it:
+
+```
+logfold formats          # new formats are listed next to the built-in ones
+logfold info             # versions, engine, and the names of all formats and reporters
+```
+
+`logfold info` lists formats and reporters; matchers are listed when you ask for an unknown one (the error names the
+known ones).
+
+### A format
+
+```
+logfold analyze examples/logfold-example-plugin/samples/app.logfmt --format logfmt
+```
+
+```python
+result = logfold.analyze("app.logfmt", format="logfmt")
+```
+
+### A reporter
+
+Reporters are used from Python. A plugin reporter renders text for both kinds of results it declares:
+
+```python
+result = logfold.analyze("app.logfmt", format="logfmt")
+print(result.render("markdown", top=10))
+open("templates.csv", "w", encoding="utf-8").write(result.render("csv"))
+```
+
+`result.render(...)` raises `ConfigError` for an unknown reporter, or for a result kind the reporter does not support.
+The command line `--out` chooses among the built-in reporters by file suffix (`.html`, `.json`, `.txt`); it does not
+select plugin reporters.
+
+### A diff matcher
+
+```
+logfold diff before.logfmt after.logfmt --format logfmt --matcher jaccard
+```
+
+```python
+logfold.diff("before.logfmt", "after.logfmt", format="logfmt", matcher="first_word")
+```
+
+With the built-in `exact` matcher a reworded message (`retry failed after 3 attempts` -> `retry gave up after 3
+attempts`) is one *new* and one *disappeared* template. A matcher pairs them, and `diff` compares the pair as one
+template.
+
+## Writing a plugin
+
+### Package layout
+
+```
+my-logfold-plugin/
+  pyproject.toml
+  my_plugin/
+    __init__.py
+```
+
+```toml
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "my-logfold-plugin"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = ["logfold>=0.1.0"]
+
+[project.entry-points."logfold.formats"]
+logfmt = "my_plugin:LOGFMT"
+
+[project.entry-points."logfold.reporters"]
+csv = "my_plugin:CsvReporter"
+
+[project.entry-points."logfold.matchers"]
+jaccard = "my_plugin:JaccardMatcher"
+```
+
+Each line is `name = "module:attribute"`. The attribute can be:
+
+- the object itself (a format specification, or a reporter or matcher instance);
+- a class: logfold creates one instance without arguments;
+- a function without arguments that returns the object.
+
+A format is registered under the entry point **name**; keep it equal to the `name` of the specification. A reporter or
+a matcher is registered under its `name` attribute. Registering a name twice replaces the earlier registration, so a
+plugin can override a built-in name; avoid that. A plugin that fails to import is skipped with a warning
+(`failed to load logfold plugin ...`, printed to standard error) and never breaks logfold.
+
+### A format
+
+A format is **data, not code**. You describe the format; the engine compiles the description into a fast parser, so the
+plugin costs nothing per line and works the same in the Rust and the Python engine. There are three specifications,
+all in `logfold.ext`.
+
+`RegexFormat`: a regular expression with named groups. It is searched in the first line of a record, so anchor it with
+`^`.
+
+```python
+from logfold.ext import RegexFormat
+
+LOGFMT = RegexFormat(
+    name="logfmt",
+    pattern=r"^ts=(?P<ts>\S+) level=(?P<lvl>\w+) (?P<msg>.*)$",
+    message_group="msg",
+    time_group="ts",
+    level_group="lvl",
+)
+```
+
+| Field | Meaning |
+|---|---|
+| `pattern` | regular expression with named groups |
+| `message_group` | group with the message; without it the whole first line is the message |
+| `time_group`, `ts_format` | group with the timestamp and its `strptime`-style format; ISO-8601 when `ts_format` is omitted |
+| `level_group` | group with the level; TRACE, DEBUG, INFO, WARN, ERROR and FATAL (and common spellings such as `warning`) are recognized, other values give no level |
+| `multiline` | join lines that do not match `pattern` to the previous record (stack traces) |
+
+`ts_format` understands `%Y %y %m %d %e %H %M %S %f %z %b %B %j %T %%`; any other character must match literally.
+Timestamps without a zone are read as UTC.
+
+`JsonFormat`: one JSON object per line. Give the candidate keys; the first key present wins.
+
+```python
+from logfold.ext import JsonFormat
+
+SERILOG_CLEF = JsonFormat(
+    name="serilog-clef",
+    message_keys=("@m", "@mt"),
+    time_keys=("@t",),
+    level_keys=("@l",),
+)
+```
+
+`PlainFormat`: the whole line is the message. With `record_start` and `multiline` it groups lines into records.
+
+```python
+from logfold.ext import PlainFormat
+
+CI_BLOCKS = PlainFormat(name="ci-blocks", record_start=r"^=== ", multiline=True)
+```
+
+Invalid specifications (a bad regular expression, a group that does not exist, `multiline` without `record_start`)
+raise `FormatError` when the object is created, so a mistake shows up on import.
+
+For a one-off format you do not need a plugin: `--format "regex:<pattern>"` takes a pattern with the same named groups
+(`message`/`msg`, `timestamp`/`ts`/`time`, `level`/`lvl`).
+
+### A reporter
+
+A reporter turns a result into text. It sees only the public result model ([API reference](api.md#results)), never the
+engine.
+
+```python
+from logfold import AnalysisResult, DiffResult
+
+
+class CsvReporter:
+    name = "csv"
+    kinds = ("analysis", "diff")
+
+    def render(self, result: AnalysisResult | DiffResult, **options: object) -> str: ...
+```
+
+| Member | Meaning |
+|---|---|
+| `name` | the name used in `result.render(name)` |
+| `kinds` | `"analysis"`, `"diff"` or both; `render` is called only for these kinds |
+| `render(result, **options)` | returns the document as text; `options` are whatever the caller passes (`top=10`) |
+
+Tell `AnalysisResult` and `DiffResult` apart with `isinstance(result, DiffResult)`. Log lines are untrusted input:
+templates and examples can contain markup, so escape them for the format you produce (the built-in HTML reporter
+escapes everything; the CSV reporter relies on the `csv` module's quoting).
+
+### A diff matcher
+
+`diff` mines both runs into one shared template tree, so templates present in both runs are matched by logfold itself.
+A matcher only sees the rest: the template texts present in a single run.
+
+```python
+from collections.abc import Sequence
+
+
+class JaccardMatcher:
+    name = "jaccard"
+
+    def match(self, before_only: Sequence[str], after_only: Sequence[str]) -> list[tuple[int, int]]: ...
+```
+
+`match` returns pairs `(i, j)` meaning `before_only[i]` and `after_only[j]` describe the same event. Every index may
+occur at most once. The lists are short (only templates that changed between runs), so a simple quadratic comparison is
+fine. A matcher is created without arguments; for a tunable one, subclass it and register the subclass.
+
+### Without packaging
+
+For a script or a notebook, register the objects at runtime. Nothing needs to be installed:
+
+```python
+from logfold.ext import register_format, register_matcher, register_reporter
+
+register_format("logfmt", LOGFMT)
+register_reporter(CsvReporter())
+register_matcher(JaccardMatcher())
+```
+
+### Testing
+
+Test a plugin without installing it. Format specifications can be passed to `analyze` directly, reporters and matchers
+are plain objects:
+
+```python
+def test_logfmt():
+    result = logfold.analyze("samples/app.logfmt", format=LOGFMT, engine="python")
+    assert {t.text: t.count for t in result.templates} == {...}
+
+
+def test_matcher_changes_the_diff(monkeypatch):
+    register_matcher(JaccardMatcher())
+    paired = logfold.diff("before.logfmt", "after.logfmt", format=LOGFMT, matcher="jaccard")
+    assert not paired.new_templates
+```
+
+Run a format with both `engine="native"` and `engine="python"` and compare: they must give the same templates. The
+example package does this, see [`tests/test_example_plugin.py`](../tests/test_example_plugin.py). Also test that every
+entry point in `pyproject.toml` resolves to an existing attribute.
+
+### Publishing
+
+Build and upload like any Python package (`python -m build`, then `twine upload dist/*`). Name it
+`logfold-<something>`, depend on `logfold>=0.1.0`, and state in your README which logfold versions you tested.
+
+## Troubleshooting
+
+| Symptom | Check |
+|---|---|
+| the format is not in `logfold formats` | the package is installed in **the same environment** as the `logfold` you run (`python -m pip list`); the entry point group is spelled `logfold.formats`; reinstall after changing `pyproject.toml` |
+| `unknown format 'x'; known formats: ...` | the entry point name, not the module name, is the format name |
+| `failed to load logfold plugin ...` on stderr | the module of the entry point cannot be imported; the traceback follows the message |
+| `FormatError: pattern has no named group` | `message_group`, `time_group` or `level_group` names a group that the pattern does not define |
+| the timestamp column is empty | the `time_group` text does not match `ts_format`; try the pattern and the format on one line first |
+| `reporter 'x' does not support diff results` | add `"diff"` to the reporter's `kinds` and handle `DiffResult` |
+
+## Security
+
+A plugin is Python code and runs with your privileges as soon as logfold loads it (reporters and matchers on import and
+use, formats on import). Install plugins only from sources you trust. A format specification is data and cannot run
+code, but a regular expression with catastrophic backtracking can be slow; keep patterns anchored and simple.

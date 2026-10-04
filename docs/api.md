@@ -164,7 +164,7 @@ All errors raised on purpose derive from `LogfoldError`.
 | `get_format`, `get_reporter`, `get_matcher`, `format_names`, `reporter_names` | look up registered extensions |
 
 Plugins are discovered through the entry-point groups `logfold.formats`, `logfold.reporters` and `logfold.matchers`;
-see [Extending logfold](guide.md#extending-logfold).
+see the [plugins guide](plugins.md).
 
 ## Compatibility
 

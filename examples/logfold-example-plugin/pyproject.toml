@@ -5,20 +5,24 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "logfold-example-plugin"
 version = "0.1.0"
-description = "Example logfold plugin: a log format, a Markdown reporter and a diff matcher."
+description = "Example logfold plugins: three log formats, two reporters and two diff matchers."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 dependencies = ["logfold>=0.1.0"]
 
 [project.entry-points."logfold.formats"]
-example = "logfold_example_plugin:EXAMPLE"
+logfmt = "logfold_example_plugin:LOGFMT"
+serilog-clef = "logfold_example_plugin:SERILOG_CLEF"
+ci-blocks = "logfold_example_plugin:CI_BLOCKS"
 
 [project.entry-points."logfold.reporters"]
 markdown = "logfold_example_plugin:MarkdownReporter"
+csv = "logfold_example_plugin:CsvReporter"
 
 [project.entry-points."logfold.matchers"]
 first_word = "logfold_example_plugin:FirstWordMatcher"
+jaccard = "logfold_example_plugin:JaccardMatcher"
 
 [tool.setuptools]
 packages = ["logfold_example_plugin"]

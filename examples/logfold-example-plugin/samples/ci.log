@@ -1,0 +1,9 @@
+=== job build started
+  compiling 12 files
+  warning: unused variable x
+=== job test started
+  running 48 tests
+  FAILED test_login
+=== job build started
+  compiling 15 files
+  warning: unused variable y

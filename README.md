@@ -66,6 +66,9 @@ logfold --version
 - [Guide](https://github.com/AndreyKilanov/logfold/blob/main/docs/guide.md): formats, parameters, plugins, engines.
 - [Command-line reference](https://github.com/AndreyKilanov/logfold/blob/main/docs/cli.md): every command, option and
   exit code.
+- [Plugins](https://github.com/AndreyKilanov/logfold/blob/main/docs/plugins.md): use and write formats, reporters and
+  diff matchers; a complete example package is in
+  [`examples/logfold-example-plugin`](https://github.com/AndreyKilanov/logfold/tree/main/examples/logfold-example-plugin).
 - [Python API reference](https://github.com/AndreyKilanov/logfold/blob/main/docs/api.md): `analyze`, `diff`, results,
   configuration, errors, reporters and extension points.
 - [Algorithm](https://github.com/AndreyKilanov/logfold/blob/main/docs/ALGORITHM.md), [JSON
