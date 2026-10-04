@@ -121,6 +121,10 @@ struct Scratch {
     seen: Vec<u32>,
     total: Vec<u32>,
     touched: Vec<u32>,
+    /// `(list length, position)` of every token position of the message that has an index list.
+    order: Vec<(u32, u32)>,
+    /// Positions whose lists are not walked, see [`DrainMiner::best_indexed`].
+    skipped: Vec<u32>,
 }
 
 impl Scratch {
@@ -416,13 +420,39 @@ impl DrainMiner {
 
     /// Same result as [`Self::best_in`] over the leaf's clusters, found through the inverted index.
     ///
-    /// Only clusters sharing at least one token position with the message can reach the similarity threshold
-    /// (`needed >= 1`), so only those are scored, and ties still resolve to the earliest created cluster.
+    /// A cluster reaches the threshold only if it holds the message's token at `needed` or more positions. Leave out the
+    /// `needed - 1` positions whose index lists are the longest: such a cluster still appears in the list of at least one
+    /// remaining position, so only those lists are walked. The tokens behind the long lists are the ones that most
+    /// clusters of a leaf share (a constant first token, a month, a host), so skipping them is what keeps a large leaf
+    /// cheap. The clusters found are then completed by comparing the left-out positions directly, which gives the same
+    /// totals as a full walk and therefore the same winner (most exact matches, then most wildcards, then the earliest
+    /// cluster).
     fn best_indexed<T: Tokens>(&self, index: &LeafIndex, needed: u32, tokens: &T) -> Option<usize> {
         SCRATCH.with(|cell| {
-            let mut scratch = cell.borrow_mut();
+            let mut guard = cell.borrow_mut();
+            let scratch = &mut *guard;
             scratch.begin(self.clusters.len());
+            scratch.order.clear();
             for position in 0..tokens.count() {
+                if let Some(list) = index.exact[position].get(tokens.at(position)) {
+                    scratch.order.push((list.len() as u32, position as u32));
+                }
+            }
+            let listed = scratch.order.len();
+            if listed < needed as usize {
+                return None;
+            }
+            let skip = needed as usize - 1;
+            if skip > 0 {
+                scratch.order.select_nth_unstable_by(skip - 1, |a, b| b.0.cmp(&a.0));
+            }
+            scratch.skipped.clear();
+            for slot in 0..skip {
+                let position = scratch.order[slot].1;
+                scratch.skipped.push(position);
+            }
+            for slot in skip..listed {
+                let position = scratch.order[slot].1 as usize;
                 let token = tokens.at(position);
                 if let Some(list) = index.exact[position].get(token) {
                     for &id in list {
@@ -434,11 +464,21 @@ impl DrainMiner {
             }
             let mut best: Option<(u32, u32, u32)> = None;
             for &id in &scratch.touched {
-                let total = scratch.total[id as usize];
+                let cluster = &self.clusters[id as usize];
+                let mut total = scratch.total[id as usize];
+                if total + (skip as u32) < needed {
+                    continue;
+                }
+                for &position in &scratch.skipped {
+                    // A position with an index list holds a literal token, never the wildcard, so equality is a match.
+                    if &*cluster.tokens[position as usize] == tokens.at(position as usize) {
+                        total += 1;
+                    }
+                }
                 if total < needed {
                     continue;
                 }
-                let params = self.clusters[id as usize].wild;
+                let params = cluster.wild;
                 let better = match best {
                     None => true,
                     Some((best_id, best_total, best_params)) => {
@@ -698,6 +738,71 @@ mod tests {
         let result = texts(left);
         assert_eq!(result[0], ("user <*> failed login".to_string(), 5));
         assert_eq!(result[1], ("disk full on sda".to_string(), 1));
+    }
+
+    fn next(state: &mut u64) -> u64 {
+        *state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1_442_695_040_888_963_407);
+        *state >> 33
+    }
+
+    /// A line with a constant first token (one big leaf per length). Every line belongs to one of 40 families that fix
+    /// about half of the positions; some positions draw from tiny pools (shared by many templates, so their index
+    /// lists are long) and the others from large pools.
+    fn crowded_line(state: &mut u64, length: usize) -> Vec<Box<[u8]>> {
+        let family = next(state) % 40;
+        let mut words: Vec<Box<[u8]>> = vec![b"-".to_vec().into()];
+        for position in 1..length {
+            let word = match position % 5 {
+                0 => format!("s{position}x{}", next(state) % 2),
+                1 => format!("m{position}x{}", next(state) % 30),
+                _ if (family as usize + position) % 2 == 0 => format!("f{family}p{position}"),
+                _ => format!("r{position}x{}", next(state) % 5000),
+            };
+            words.push(word.into_bytes().into());
+        }
+        words
+    }
+
+    #[test]
+    fn indexed_search_equals_the_plain_scan() {
+        let mut configs_with_an_index = 0;
+        let mut all_matches = 0;
+        for (sim_th, seed) in [(0.4, 11_u64), (0.1, 12), (0.7, 13), (0.95, 14)] {
+            let cfg = MinerConfig::new(4, sim_th, 100, 100_000).unwrap();
+            let mut miner = DrainMiner::new(cfg, 1);
+            let mut state = seed;
+            for round in 0..6000 {
+                let length = 6 + round % 14;
+                let line = crowded_line(&mut state, length);
+                let text = line.iter().map(|t| String::from_utf8_lossy(t).into_owned()).collect::<Vec<_>>().join(" ");
+                feed(&mut miner, 0, &text);
+            }
+            if miner.nodes.iter().any(|n| n.index.is_some()) {
+                configs_with_an_index += 1;
+            }
+            let mut compared = 0;
+            let mut matched = 0;
+            for round in 0..4000 {
+                let length = 6 + round % 14;
+                let mut line = crowded_line(&mut state, length);
+                if round % 3 == 0 {
+                    // an unseen token at a random position, and a repeated one elsewhere
+                    let at = 1 + (next(&mut state) as usize) % (length - 1);
+                    line[at] = b"never-seen".to_vec().into();
+                }
+                let tokens = BoxedTokens(&line);
+                let reference =
+                    miner.search(&tokens).and_then(|leaf| miner.best_in(&miner.nodes[leaf as usize].clusters, &tokens));
+                let indexed = miner.find_match(&tokens);
+                assert_eq!(indexed, reference, "sim_th {sim_th}, probe {round}");
+                compared += 1;
+                matched += usize::from(indexed.is_some());
+            }
+            assert_eq!(compared, 4000);
+            all_matches += matched;
+        }
+        assert!(all_matches > 500, "the probes must find matches too ({all_matches})");
+        assert!(configs_with_an_index >= 3, "most configurations must have leaves with an index");
     }
 
     #[test]
