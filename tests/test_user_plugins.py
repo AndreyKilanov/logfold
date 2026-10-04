@@ -233,25 +233,38 @@ def test_a_missing_explicit_folder_is_reported(home: Path, tmp_path: Path, caplo
     assert any("does not exist" in record.getMessage() for record in caplog.records)
 
 
-@pytest.mark.skipif(os.name != "posix", reason="permission bits are checked on POSIX only")
-def test_folders_and_files_that_everybody_can_write_are_not_loaded(
-    plugin_dir: Path, caplog: pytest.LogCaptureFixture
-) -> None:
+posix_only = pytest.mark.skipif(os.name != "posix", reason="permission bits are checked on POSIX only")
+
+
+@posix_only
+def test_a_file_that_everybody_can_write_is_not_loaded(plugin_dir: Path, caplog: pytest.LogCaptureFixture) -> None:
     path = write(plugin_dir, "mine.py", PLUGIN)
     path.chmod(path.stat().st_mode | stat.S_IWOTH)
     with caplog.at_level(logging.WARNING, logger="logfold"):
         registry.load_plugins(force=True)
     assert "mine" not in registry.format_names()
     assert any("other users can change" in record.getMessage() for record in caplog.records)
+
+
+@posix_only
+def test_a_folder_that_everybody_can_write_is_not_loaded(plugin_dir: Path, caplog: pytest.LogCaptureFixture) -> None:
+    write(plugin_dir, "mine.py", PLUGIN)
+    plugin_dir.chmod(0o777)
+    try:
+        with caplog.at_level(logging.WARNING, logger="logfold"):
+            registry.load_plugins(force=True)
+    finally:
+        plugin_dir.chmod(0o755)
+    assert "mine" not in registry.format_names()
+    assert any("other users can change" in record.getMessage() for record in caplog.records)
+
+
+@posix_only
+def test_group_write_access_is_allowed(plugin_dir: Path) -> None:
+    path = write(plugin_dir, "mine.py", PLUGIN)
     path.chmod(0o664)
     registry.load_plugins(force=True)
     assert "mine" in registry.format_names()
-    plugin_dir.chmod(0o777)
-    caplog.clear()
-    with caplog.at_level(logging.WARNING, logger="logfold"):
-        registry.load_plugins(force=True)
-    assert "mine" not in registry.format_names()
-    plugin_dir.chmod(0o755)
 
 
 @pytest.mark.parametrize("kind", templates.KINDS)
