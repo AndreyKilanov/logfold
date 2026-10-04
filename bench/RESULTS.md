@@ -15,7 +15,7 @@ Wall time of the median of the repeats in seconds, with throughput in MB/s in br
 | Drain3 (Python) | 5.26 (20) | 9.03 (12) | 21.95 (5) | - | - | 41 |
 | logfold 1 thread | 0.62 (170) | 0.71 (149) | 1.39 (75) | 4.44 (24) | 2.33 (4) | 283 |
 | logfold 16 threads | **0.37 (285)** | **0.37 (281)** | **0.82 (128)** | 8.72 (12) | 2.84 (4) | 1,885 |
-| logdrain (Rust) | 5.27 (20) | 5.02 (21) | 2.24 (47) | - | 0.56 (19) | 1,289 |
+| logdrain (Rust) | 5.27 (20) | 5.02 (21) | 2.24 (47) | 3.31 (32) | 0.56 (19) | 1,289 |
 | logfold high-cardinality mode | - | - | - | **1.44 (73)** | **0.53 (20)** | 54 |
 
 ## Analyze, with masking
@@ -25,8 +25,8 @@ Wall time of the median of the repeats in seconds, with throughput in MB/s in br
 | Drain3 (Python) | 26.82 (4) | 24.62 (4) | 35.37 (3) | - | - | 41 |
 | logfold 1 thread | 1.13 (93) | 0.96 (109) | 1.83 (57) | 5.93 (18) | 2.54 (4) | 283 |
 | logfold 16 threads | **0.46 (227)** | **0.42 (247)** | **0.85 (124)** | 8.46 (12) | 2.92 (4) | 1,885 |
-| logdrain (Rust) | 1.49 (70) | 5.57 (19) | 2.91 (36) | - | **0.58 (18)** | 1,289 |
-| logdelta (Rust) | 7.34 (14) | 4.93 (21) | 6.99 (15) | - | 4.83 (2) | 154 |
+| logdrain (Rust) | 1.49 (70) | 5.57 (19) | 2.91 (36) | 3.78 (28) | **0.58 (18)** | 1,289 |
+| logdelta (Rust) | 7.34 (14) | 4.93 (21) | 6.99 (15) | 415.32 (0) | 4.83 (2) | 634 |
 | logfold high-cardinality mode | - | - | - | **3.03 (35)** | 0.68 (15) | 54 |
 
 ## Diff of two 100 MB runs (throughput counts both files)
@@ -36,7 +36,7 @@ Wall time of the median of the repeats in seconds, with throughput in MB/s in br
 | logfold diff 1 thread | 3.38 (62) | 2.90 (72) | 283 |
 | logfold diff 16 threads | 0.80 (263) | 0.71 (294) | 1,885 |
 | logfold diff 16 threads, --no-recount | **0.57 (368)** | **0.50 (419)** | 1,885 |
-| logdelta diff (Rust) | 14.84 (14) | 11.60 (18) | 154 |
+| logdelta diff (Rust) | 14.84 (14) | 11.60 (18) | 634 |
 
 
 ## Reading the numbers
@@ -101,9 +101,12 @@ trees of 10⁵ templates costs more than parallelism saves), and the result is a
 | logfold, default, 1 thread | 2.33 s | 4.44 s |
 | logfold, default, 16 threads | 2.84 s | 8.72 s |
 | logfold, high-cardinality mode | **0.53 s** | **1.44 s** |
-| logdrain (does different work, see above) | 0.56 s | not measured |
-| logdelta | 4.83 s (masks) | not measured |
-| Drain3 | 461 s (one run) | not measured |
+| logdrain (does different work, see above) | 0.56 s | 3.31 s (3.78 s with masks) |
+| logdelta (masks) | 4.83 s | **415 s** |
+| Drain3 | 461 s (one run) | not measured (hours; see below) |
+
+logdelta's time grows much faster than the data (4.83 s for 10 MB, 415 s for 100 MB). Drain3 already needed 461 s for
+10 MB, so it was not attempted on 100 MB. At this size logfold's mode is 2.3× faster than logdrain and 290× faster than logdelta.
 
 The time of the 10 MB run is dominated by interpreter start-up and imports (about 0.4 s); inside the library the same file
 takes 0.14 s. With masking the mode needs 0.68 s and 3.03 s. The price of the mode: templates beyond the first 5000 are not

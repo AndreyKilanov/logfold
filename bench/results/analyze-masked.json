@@ -1013,6 +1013,82 @@
         }
       ],
       "measured_in": "run 3"
+    },
+    {
+      "scenario": "analyze-masked",
+      "dataset": "highcard",
+      "tool": "logdrain (Rust)",
+      "input_bytes": 104857681,
+      "command": [
+        "logdrain.EXE",
+        "highcard_100mb.log",
+        "--format",
+        "csv",
+        "--min-size",
+        "999999999",
+        "--sim-th",
+        "0.4",
+        "--depth",
+        "4",
+        "--masks",
+        "uuid,hex32,ipv4"
+      ],
+      "wall_median_s": 3.7826485499972478,
+      "wall_min_s": 3.770428699994227,
+      "wall_max_s": 3.7948684000002686,
+      "cpu_median_s": 3.7421875,
+      "peak_mb_max": 795.488256,
+      "runs": [
+        {
+          "wall_s": 3.7948684000002686,
+          "cpu_s": 3.765625,
+          "peak_mb": 795.488256,
+          "returncode": 0
+        },
+        {
+          "wall_s": 3.770428699994227,
+          "cpu_s": 3.71875,
+          "peak_mb": 795.406336,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 4"
+    },
+    {
+      "scenario": "analyze-masked",
+      "dataset": "highcard",
+      "tool": "logdelta (Rust)",
+      "input_bytes": 104857681,
+      "command": [
+        "logdelta.EXE",
+        "templates",
+        "highcard_100mb.log",
+        "--threshold",
+        "0.4",
+        "--json",
+        "-n",
+        "1"
+      ],
+      "wall_median_s": 415.31655569999566,
+      "wall_min_s": 414.033634899999,
+      "wall_max_s": 416.5994764999923,
+      "cpu_median_s": 413.21875,
+      "peak_mb_max": 634.298368,
+      "runs": [
+        {
+          "wall_s": 416.5994764999923,
+          "cpu_s": 414.28125,
+          "peak_mb": 634.298368,
+          "returncode": 0
+        },
+        {
+          "wall_s": 414.033634899999,
+          "cpu_s": 412.15625,
+          "peak_mb": 634.14272,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 4"
     }
   ]
 }

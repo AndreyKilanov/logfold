@@ -833,6 +833,44 @@
         }
       ],
       "measured_in": "run 3"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "highcard",
+      "tool": "logdrain (Rust)",
+      "input_bytes": 104857681,
+      "command": [
+        "logdrain.EXE",
+        "highcard_100mb.log",
+        "--format",
+        "csv",
+        "--min-size",
+        "999999999",
+        "--sim-th",
+        "0.4",
+        "--depth",
+        "4"
+      ],
+      "wall_median_s": 3.314452149999852,
+      "wall_min_s": 3.2800120000028983,
+      "wall_max_s": 3.3488922999968054,
+      "cpu_median_s": 3.265625,
+      "peak_mb_max": 794.046464,
+      "runs": [
+        {
+          "wall_s": 3.3488922999968054,
+          "cpu_s": 3.296875,
+          "peak_mb": 794.046464,
+          "returncode": 0
+        },
+        {
+          "wall_s": 3.2800120000028983,
+          "cpu_s": 3.234375,
+          "peak_mb": 794.038272,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 4"
     }
   ]
 }

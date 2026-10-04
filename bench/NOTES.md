@@ -60,9 +60,12 @@ trees of 10⁵ templates costs more than parallelism saves), and the result is a
 | logfold, default, 1 thread | 2.33 s | 4.44 s |
 | logfold, default, 16 threads | 2.84 s | 8.72 s |
 | logfold, high-cardinality mode | **0.53 s** | **1.44 s** |
-| logdrain (does different work, see above) | 0.56 s | not measured |
-| logdelta | 4.83 s (masks) | not measured |
-| Drain3 | 461 s (one run) | not measured |
+| logdrain (does different work, see above) | 0.56 s | 3.31 s (3.78 s with masks) |
+| logdelta (masks) | 4.83 s | **415 s** |
+| Drain3 | 461 s (one run) | not measured (hours; see below) |
+
+logdelta's time grows much faster than the data (4.83 s for 10 MB, 415 s for 100 MB). Drain3 already needed 461 s for
+10 MB, so it was not attempted on 100 MB. At this size logfold's mode is 2.3× faster than logdrain and 290× faster than logdelta.
 
 The time of the 10 MB run is dominated by interpreter start-up and imports (about 0.4 s); inside the library the same file
 takes 0.14 s. With masking the mode needs 0.68 s and 3.03 s. The price of the mode: templates beyond the first 5000 are not
