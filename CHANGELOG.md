@@ -5,6 +5,8 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-04
+
 ### Added
 
 - Default plugins inside `pip install logfold`: formats `logfmt` and `serilog-clef`, reporters `markdown` and `csv`
