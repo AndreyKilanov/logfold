@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import errno
 import json
 import subprocess
 import sys
@@ -9,6 +10,7 @@ import pytest
 from typer.testing import CliRunner
 
 import logfold
+import logfold.cli.app as cli_app
 from logfold.cli import exit_codes
 from logfold.cli.app import app
 from test_diff import synthetic_pair
@@ -170,3 +172,25 @@ def test_high_cardinality_flag(tmp_path: Path) -> None:
     payload = json.loads(result.stdout)
     assert payload["template_count"] <= 5010
     assert payload["run"]["overflowed"] is True
+
+
+def test_closed_output_pipe_ends_quietly() -> None:
+    script = "import logfold.cli.app as a; a.app = lambda: [print('x' * 100) for _ in range(200_000)]; a.run()"
+    child = subprocess.Popen([sys.executable, "-c", script], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    assert child.stdout is not None
+    assert child.stderr is not None
+    child.stdout.readline()
+    child.stdout.close()
+    stderr = child.stderr.read()
+    child.stderr.close()
+    assert child.wait(timeout=60) == exit_codes.ERROR
+    assert stderr == b""
+
+
+def test_unrelated_os_errors_are_not_swallowed(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fail() -> None:
+        raise OSError(errno.EACCES, "denied")
+
+    monkeypatch.setattr(cli_app, "app", fail)
+    with pytest.raises(OSError, match="denied"):
+        cli_app.run()
