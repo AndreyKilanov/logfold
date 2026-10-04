@@ -13,6 +13,7 @@ Usage::
 from __future__ import annotations
 
 import argparse
+import glob
 import json
 import os
 import platform
@@ -234,6 +235,15 @@ def summarize(samples: list[Sample]) -> dict[str, object]:
     }
 
 
+def expand(patterns: list[Path]) -> list[Path]:
+    """Expand wildcards in file arguments (PowerShell and cmd leave them to the program)."""
+    files: list[Path] = []
+    for pattern in patterns:
+        matches = sorted(glob.glob(str(pattern)))
+        files += [Path(m) for m in matches] if matches else [pattern]
+    return files
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=ROOT / "bench" / "data")
@@ -248,6 +258,7 @@ def main() -> None:
     parser.add_argument("--skip", nargs="*", default=[], help="tool name fragments to leave out, for example drain3")
     parser.add_argument("--out", type=Path, default=None, help="directory for the result files")
     args = parser.parse_args()
+    args.files = expand(args.files)
     out = args.out or ROOT / "bench" / "results"
     out.mkdir(parents=True, exist_ok=True)
     results: dict[str, object] = {

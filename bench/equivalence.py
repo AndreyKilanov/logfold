@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import glob
 import io
 import json
 import re
@@ -75,6 +76,15 @@ def logdelta_count(path: Path) -> int:
     return len(data) if isinstance(data, list) else -1
 
 
+def expand(patterns: list[Path]) -> list[Path]:
+    """Expand wildcards in file arguments (PowerShell and cmd leave them to the program)."""
+    files: list[Path] = []
+    for pattern in patterns:
+        matches = sorted(glob.glob(str(pattern)))
+        files += [Path(m) for m in matches] if matches else [pattern]
+    return files
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=ROOT / "bench" / "data")
@@ -82,6 +92,7 @@ def main() -> None:
     parser.add_argument("--files", nargs="*", type=Path, default=[], help="your own log files")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
+    args.files = expand(args.files)
     names = (
         args.datasets
         if args.datasets is not None
