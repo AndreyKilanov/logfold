@@ -1,0 +1,77 @@
+{
+  "dataset": "Loghub-2.0",
+  "official_copy": "https://zenodo.org/record/8275861",
+  "used_copy": {
+    "host": "Hugging Face",
+    "repository": "bolu61/loghub_2",
+    "revision": "4a98d3eb30522891b340609d17fa34709a1d44d2",
+    "note": "unofficial upload; plain text, one log line per line, no ground truth"
+  },
+  "papers": [
+    "Jiang et al., A Large-scale Evaluation for Log Parsing Techniques: How Far are We? ISSTA 2024, arXiv:2308.10828",
+    "Zhu et al., Loghub: A Large Collection of System Log Datasets for AI-driven Log Analytics, ISSRE 2023, arXiv:2008.06448"
+  ],
+  "verified": {
+    "date": "2026-10-04",
+    "command": "python bench/download_loghub2.py --verify",
+    "result": "size and SHA-256 of the local files equal the pinned values"
+  },
+  "files": {
+    "bgl": {
+      "path": "data/bgl.txt",
+      "bytes": 719447452,
+      "sha256": "1bd8cb4a8b163b5085d21d8e0d4cd844e01748cdcc0888c6380e0fb34ca85591",
+      "lines": 4631261,
+      "unparsed": 0,
+      "first_line": "- 1117838570 2005.06.03 R02-M1-N0-C:J12-U11 2005-06-03-15.42.50.363779 R02-M1-N0-C:J12-U11 RAS KERNEL INFO instruction cache parity error corrected",
+      "templates": {
+        "masked_16": 158,
+        "masked_1": 156,
+        "bare_16": 952,
+        "bare_1": 647
+      }
+    },
+    "hdfs": {
+      "path": "data/hdfs.txt",
+      "bytes": 1565682217,
+      "sha256": "e8987f909b97ce975d65f773a4e1eae7aadab455a38db2aa29ed30ae8b96f166",
+      "lines": 11167740,
+      "unparsed": 0,
+      "first_line": "081109 203518 143 INFO dfs.DataNode$DataXceiver: Receiving block blk_-1608999687919862906 src: /10.250.19.102:54106 dest: /10.250.19.102:50010",
+      "templates": {
+        "masked_16": 34,
+        "masked_1": 34,
+        "bare_16": 341,
+        "bare_1": 43
+      }
+    },
+    "spark": {
+      "path": "data/spark.txt",
+      "bytes": 1629352119,
+      "sha256": "74da349d7202a13194aa02ca2dd0ccb18a130656d002b94eb6b0e78e92bf6823",
+      "lines": 16075117,
+      "unparsed": 0,
+      "first_line": "17/03/14 21:40:22 INFO executor.CoarseGrainedExecutorBackend: Registered signal handlers for [TERM, HUP, INT]",
+      "templates": {
+        "masked_16": 196,
+        "masked_1": 190,
+        "bare_16": 4570,
+        "bare_1": 1839
+      }
+    },
+    "thunderbird": {
+      "path": "data/thunderbird.txt",
+      "bytes": 886308864,
+      "sha256": "29847ee32db96aab25e10ddc0b7f119a7932e2a00fa23a0d1e106da6db1a1d42",
+      "lines": 5376118,
+      "unparsed": 0,
+      "first_line": "- 1131523501 2005.11.09 aadmin1 Nov 10 00:05:01 src@aadmin1 in.tftpd[14620]: tftp: client does not accept options",
+      "templates": {
+        "masked_16": 2488,
+        "masked_1": 1098,
+        "bare_16": 12752,
+        "bare_1": 5529
+      }
+    }
+  }
+}

@@ -105,6 +105,15 @@ token count; counts stay exact) and runs sequentially, because merging huge tree
 On a 10 MB file with about 84 000 distinct lines this turns 2.0 s into 0.14 s. A warning tells you when the cap was hit,
 also without the mode.
 
+### Lines that start with a long header
+
+With `--format plain` the whole line is the message, including timestamps and host names. The miner routes a line by its
+token count and its first token, so when almost every line starts with the same token, all templates of one length share
+one leaf and every line is compared with a lot of them. On a 886 MB real log (Thunderbird) this made one thread 12 times
+slower than the same lines with the header cut off. Prefer a format that starts the message at the informative part
+(`--format "regex:<pattern>"` with a `msg` group, or a format plugin), or use masking and the default parallel mode. The
+measurements are in [`bench/LOGHUB2.md`](../bench/LOGHUB2.md).
+
 ## Extending logfold
 
 Plugins are ordinary Python packages that declare entry points.

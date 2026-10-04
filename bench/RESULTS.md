@@ -124,7 +124,8 @@ kept apart (counts stay exact, and a warning says so).
 ## Limitations
 
 - One machine (Windows 11, i7-10700K, 8 cores / 16 threads), warm page cache, generated data (nginx, app, Loghub-2k
-  derived loghub, highcard); Loghub-2.0 could not be downloaded.
+  derived loghub, highcard). The large real Loghub-2.0 files are measured separately for logfold only, see
+  [`LOGHUB2.md`](LOGHUB2.md).
 - Rows come from several runs on the same machine (marked per row by `measured_in` in the files in `results/`);
   repeated measurements agreed within about 5%.
 - Absolute numbers will differ on Linux and with a cold cache.
