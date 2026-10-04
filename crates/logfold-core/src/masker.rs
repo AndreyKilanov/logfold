@@ -210,6 +210,17 @@ mod tests {
             b"10.0.0.1",
             b"::",
             b"abcdef12-1234-1234-1234-123456789abc",
+            b"x2026-10-04 12:00:01",
+            b"blk_-123",
+            b"job_2008",
+            b"A1b2c3d4-",
+            b"1234-",
+            b"deadbeef-dead-beef-dead-beefdeadbeef",
+            b"zz",
+            b"20260-1",
+            b"1.2.3.4.5",
+            b"v1.2.3",
+            b"0x",
         ];
         let mut state: u64 = 0x9E37_79B9_7F4A_7C15;
         let mut next = || {
