@@ -109,6 +109,9 @@ also without the mode.
 
 Plugins are ordinary Python packages that declare entry points.
 
+A complete, installable package with a format, a Markdown reporter and a diff matcher is in
+[`examples/logfold-example-plugin`](../examples/logfold-example-plugin).
+
 ```toml
 [project.entry-points."logfold.formats"]
 haproxy = "my_plugin:HAPROXY"

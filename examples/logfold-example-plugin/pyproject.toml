@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "logfold-example-plugin"
+version = "0.1.0"
+description = "Example logfold plugin: a log format, a Markdown reporter and a diff matcher."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = ["logfold>=0.1.0"]
+
+[project.entry-points."logfold.formats"]
+example = "logfold_example_plugin:EXAMPLE"
+
+[project.entry-points."logfold.reporters"]
+markdown = "logfold_example_plugin:MarkdownReporter"
+
+[project.entry-points."logfold.matchers"]
+first_word = "logfold_example_plugin:FirstWordMatcher"
+
+[tool.setuptools]
+packages = ["logfold_example_plugin"]
