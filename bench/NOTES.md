@@ -28,11 +28,20 @@ logfold reproduces Drain3's templates (also on all 16 Loghub-2k sets, `eval/resu
 same number of templates as logfold on all three datasets (it cannot run without masks), so its timings compare equal
 work.
 
-**logdrain does different work.** In its code, numeric parametrization (on by default) wildcards only tokens made of
-digits only (`is_numeric_token`), while Drain3 treats any token containing a digit as variable. IPs, timestamps and ids
-therefore stay literal and open new tree branches: hundreds of thousands of clusters and more than 1 GB of memory. The
-CLI exposes neither that option nor custom masks. Its timings are not a like-for-like comparison, and the library's own
-figure (1–2 M lines/s per core) was not reproduced through its CLI.
+**logdrain does different work** (from its source, version 0.3.2):
+
+- Numeric parametrization (on by default) wildcards only tokens made of digits only (`is_numeric_token`), while Drain3
+  treats any token containing a digit as variable. IPs, timestamps and ids therefore stay literal and open new tree
+  branches: hundreds of thousands of clusters and more than 1 GB of memory.
+- Every tree leaf keeps at most 100 clusters (`max_clusters_per_leaf`) and evicts the oldest (LRU). This bounds the work
+  per line, but templates can be lost; logfold keeps every template until `max_templates` is reached.
+- It is an online miner with per-template time statistics and a thread-safe sharded tree; it returns a cluster id per
+  line, does not compare two runs, and has no masks by default.
+- The CLI exposes none of these options, nor custom masks. The leaf cap is the likely reason for its speed on
+  high-cardinality data (not tested by changing it).
+
+Its timings are therefore not a like-for-like comparison, and the library's own figure (1–2 M lines/s per core) was not
+reproduced through its CLI.
 
 The `loghub` dataset was regenerated once: the first version randomised every digit, which produced a different date on
 every line (`77/82/51`) and made logdelta create 81 145 templates. Real logs change dates slowly, so the generator now
@@ -60,7 +69,7 @@ trees of 10⁵ templates costs more than parallelism saves), and the result is a
 | logfold, default, 1 thread | 2.33 s | 4.44 s |
 | logfold, default, 16 threads | 2.84 s | 8.72 s |
 | logfold, high-cardinality mode | **0.53 s** | **1.44 s** |
-| logdrain (does different work, see above) | 0.56 s | 3.31 s (3.78 s with masks) |
+| logdrain (does different work, see above; its leaf cap bounds the work per line) | 0.56 s | 3.31 s (3.78 s with masks) |
 | logdelta (masks) | 4.83 s | **415 s** |
 | Drain3 | 461 s (one run) | not measured (hours; see below) |
 
