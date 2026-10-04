@@ -5,6 +5,8 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-04
+
 ### Added
 
 - `logfold.analyze()` and `logfold.diff()`; `logfold analyze`, `logfold diff`, `logfold formats`, `logfold info`.
