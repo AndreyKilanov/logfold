@@ -17,11 +17,12 @@ from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import IO, Any, cast
 
-from logfold.config import MaskRule, MiningConfig
+from logfold.config import MiningConfig
 from logfold.engines import _timeparse as tp
 from logfold.engines.base import MineRequest, MiningResult, ProgressCallback, RunInfo, RunStatsData, TemplateStats
-from logfold.errors import ConfigError, FormatError, SourceError
+from logfold.errors import FormatError, SourceError
 from logfold.ext.formats import FormatSpec, JsonFormat, PlainFormat, RegexFormat
+from logfold.ext.masks import Masker
 from logfold.model import RunMetrics
 
 WILDCARD = "<*>"
@@ -31,13 +32,6 @@ _TICK_BYTES = 16 << 20
 _DIGIT = re.compile("[0-9]")
 
 ParsedRecord = tuple[str, "int | None", bool, "int | None"]
-
-
-def _literal(token: str) -> Callable[[re.Match[str]], str]:
-    def replace(_match: re.Match[str]) -> str:
-        return token
-
-    return replace
 
 
 def _truncate_example(message: str) -> str:
@@ -285,7 +279,7 @@ def _score(template: list[str], tokens: list[str]) -> tuple[int, int]:
             params += 1
         elif t == m:
             exact += 1
-    return exact + params, params
+    return exact, params
 
 
 def _generalize(cluster: _Cluster, tokens: list[str]) -> None:
@@ -293,24 +287,6 @@ def _generalize(cluster: _Cluster, tokens: list[str]) -> None:
     for position, token in enumerate(template):
         if token != WILDCARD and token != tokens[position]:
             template[position] = WILDCARD
-
-
-class _Masker:
-    def __init__(self, rules: tuple[MaskRule, ...]) -> None:
-        self._rules: list[tuple[re.Pattern[str], str]] = []
-        for rule in rules:
-            try:
-                compiled = re.compile(rule.pattern, re.ASCII if rule.ascii else 0)
-            except re.error as error:
-                raise ConfigError(f"invalid mask rule {rule.name!r}: {error}") from error
-            if compiled.search("") is not None:
-                raise ConfigError(f"invalid mask rule {rule.name!r}: pattern matches the empty string")
-            self._rules.append((compiled, rule.token))
-
-    def mask(self, text: str) -> str:
-        for compiled, token in self._rules:
-            text = compiled.sub(_literal(token), text)
-        return text
 
 
 class _Parser:
@@ -528,7 +504,7 @@ class PythonEngine:
         """
         started = time.perf_counter()
         parser = _Parser(request.format)
-        masker = _Masker(request.mining.masks)
+        masker = Masker(request.mining.masks)
         splitter = re.compile("[^" + re.escape(request.mining.delimiters) + "]+")
         n_runs = len(request.runs)
         miner = _Miner(request.mining, n_runs)

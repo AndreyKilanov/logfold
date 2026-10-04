@@ -71,12 +71,85 @@ pub struct RecordMeta<'a> {
 pub(crate) struct Cluster {
     pub(crate) tokens: Vec<Box<[u8]>>,
     pub(crate) stats: Vec<RunStats>,
+    wild: u32,
+}
+
+impl Cluster {
+    pub(crate) fn new(tokens: Vec<Box<[u8]>>, stats: Vec<RunStats>) -> Self {
+        let wild = tokens.iter().filter(|t| &***t == WILDCARD).count() as u32;
+        Cluster { tokens, stats, wild }
+    }
+}
+
+/// Leaves with at least this many clusters get an inverted index so that matching does not scan them linearly.
+const INDEX_MIN_CLUSTERS: usize = 16;
+
+/// Inverted index of a leaf: for every token position, the clusters that hold a given literal token.
+///
+/// Entries are never removed. An entry becomes stale when its position is generalized; readers verify the
+/// cluster's current token, so a stale entry is simply ignored. Wildcards never count as matches, so they are not
+/// indexed.
+struct LeafIndex {
+    exact: Vec<HashMap<Box<[u8]>, Vec<u32>, RandomState>>,
+}
+
+impl LeafIndex {
+    fn new(length: usize) -> Self {
+        LeafIndex { exact: (0..length).map(|_| HashMap::default()).collect() }
+    }
+
+    fn add(&mut self, id: u32, tokens: &[Box<[u8]>]) {
+        for (position, token) in tokens.iter().enumerate() {
+            if &**token != WILDCARD {
+                self.exact[position].entry(token.clone()).or_default().push(id);
+            }
+        }
+    }
 }
 
 #[derive(Default)]
 struct Node {
     children: HashMap<Box<[u8]>, u32, RandomState>,
     clusters: Vec<u32>,
+    index: Option<Box<LeafIndex>>,
+}
+
+/// Per-thread counters reused by indexed matching; a generation stamp avoids clearing between calls.
+#[derive(Default)]
+struct Scratch {
+    stamp: u32,
+    seen: Vec<u32>,
+    total: Vec<u32>,
+    touched: Vec<u32>,
+}
+
+impl Scratch {
+    fn begin(&mut self, clusters: usize) {
+        self.stamp = self.stamp.wrapping_add(1);
+        if self.stamp == 0 {
+            self.seen.fill(0);
+            self.stamp = 1;
+        }
+        if self.seen.len() < clusters {
+            self.seen.resize(clusters, 0);
+            self.total.resize(clusters, 0);
+        }
+        self.touched.clear();
+    }
+
+    fn hit(&mut self, id: u32) {
+        let slot = id as usize;
+        if self.seen[slot] != self.stamp {
+            self.seen[slot] = self.stamp;
+            self.total[slot] = 0;
+            self.touched.push(id);
+        }
+        self.total[slot] += 1;
+    }
+}
+
+thread_local! {
+    static SCRATCH: std::cell::RefCell<Scratch> = std::cell::RefCell::new(Scratch::default());
 }
 
 trait Tokens {
@@ -131,7 +204,9 @@ pub(crate) fn update_stats(stats: &mut RunStats, rec: &RecordMeta<'_>) {
     }
 }
 
-fn score<T: Tokens>(template: &[Box<[u8]>], tokens: &T) -> (usize, usize) {
+/// Scores `template` against `tokens`; gives up (`None`) as soon as the exact matches cannot reach `floor`.
+fn score_bounded<T: Tokens>(template: &[Box<[u8]>], tokens: &T, floor: usize) -> Option<(usize, usize)> {
+    let n = template.len();
     let mut exact = 0;
     let mut params = 0;
     for (index, token) in template.iter().enumerate() {
@@ -140,8 +215,11 @@ fn score<T: Tokens>(template: &[Box<[u8]>], tokens: &T) -> (usize, usize) {
         } else if &**token == tokens.at(index) {
             exact += 1;
         }
+        if exact + (n - index - 1) < floor {
+            return None;
+        }
     }
-    (exact + params, params)
+    (exact >= floor).then_some((exact, params))
 }
 
 /// Result of [`DrainMiner::assign`].
@@ -252,7 +330,7 @@ impl DrainMiner {
         let mut stats = vec![RunStats::default(); self.n_runs];
         update_stats(&mut stats[run], rec);
         let template: Vec<Box<[u8]>> = (0..tokens.len()).map(|i| Box::from(tokens.get(i))).collect();
-        self.insert_cluster(Cluster { tokens: template, stats });
+        self.insert_cluster(Cluster::new(template, stats));
     }
 
     /// Merges `other` into `self` in cluster creation order (see `docs/ALGORITHM.md` §6).
@@ -302,7 +380,7 @@ impl DrainMiner {
         let mut ordered: Vec<Cluster> = Vec::new();
         for (index, cluster) in self.clusters.into_iter().enumerate() {
             if let Some(run_stats) = stats.remove(&(index as u32)) {
-                ordered.push(Cluster { tokens: cluster.tokens, stats: run_stats });
+                ordered.push(Cluster::new(cluster.tokens, run_stats));
             }
         }
         for (length, run_stats) in unmatched {
@@ -312,7 +390,7 @@ impl DrainMiner {
                 }
             }
             let tokens = (0..length).map(|_| Box::from(WILDCARD)).collect();
-            ordered.push(Cluster { tokens, stats: run_stats });
+            ordered.push(Cluster::new(tokens, run_stats));
         }
         (freeze_clusters(ordered), flags)
     }
@@ -326,26 +404,80 @@ impl DrainMiner {
 
     fn find_match<T: Tokens>(&self, tokens: &T) -> Option<usize> {
         let leaf = self.search(tokens)?;
-        self.best_in(&self.nodes[leaf as usize].clusters, tokens)
+        let node = &self.nodes[leaf as usize];
+        if let Some(index) = &node.index {
+            let needed = (self.cfg.threshold_micro * tokens.count() as u64).div_ceil(1_000_000);
+            if needed >= 1 {
+                return self.best_indexed(index, needed as u32, tokens);
+            }
+        }
+        self.best_in(&node.clusters, tokens)
+    }
+
+    /// Same result as [`Self::best_in`] over the leaf's clusters, found through the inverted index.
+    ///
+    /// Only clusters sharing at least one token position with the message can reach the similarity threshold
+    /// (`needed >= 1`), so only those are scored, and ties still resolve to the earliest created cluster.
+    fn best_indexed<T: Tokens>(&self, index: &LeafIndex, needed: u32, tokens: &T) -> Option<usize> {
+        SCRATCH.with(|cell| {
+            let mut scratch = cell.borrow_mut();
+            scratch.begin(self.clusters.len());
+            for position in 0..tokens.count() {
+                let token = tokens.at(position);
+                if let Some(list) = index.exact[position].get(token) {
+                    for &id in list {
+                        if &*self.clusters[id as usize].tokens[position] == token {
+                            scratch.hit(id);
+                        }
+                    }
+                }
+            }
+            let mut best: Option<(u32, u32, u32)> = None;
+            for &id in &scratch.touched {
+                let total = scratch.total[id as usize];
+                if total < needed {
+                    continue;
+                }
+                let params = self.clusters[id as usize].wild;
+                let better = match best {
+                    None => true,
+                    Some((best_id, best_total, best_params)) => {
+                        total > best_total
+                            || (total == best_total
+                                && (params > best_params || (params == best_params && id < best_id)))
+                    }
+                };
+                if better {
+                    best = Some((id, total, params));
+                }
+            }
+            best.map(|(id, _, _)| id as usize)
+        })
     }
 
     fn best_in<T: Tokens>(&self, candidates: &[u32], tokens: &T) -> Option<usize> {
         let n = tokens.count();
+        let needed = (self.cfg.threshold_micro * n as u64).div_ceil(1_000_000) as usize;
         let mut best: Option<(usize, usize, usize)> = None;
         for &index in candidates {
-            let (total, params) = score(&self.clusters[index as usize].tokens, tokens);
+            let floor = best.map_or(needed, |(_, exact, _)| exact.max(needed));
+            let Some((exact, params)) = score_bounded(&self.clusters[index as usize].tokens, tokens, floor) else {
+                continue;
+            };
             let better = match best {
                 None => true,
-                Some((_, best_total, best_params)) => {
-                    total > best_total || (total == best_total && params > best_params)
+                Some((_, best_exact, best_params)) => {
+                    exact > best_exact || (exact == best_exact && params > best_params)
                 }
             };
             if better {
-                best = Some((index as usize, total, params));
+                best = Some((index as usize, exact, params));
+                if exact == n && params == 0 {
+                    break;
+                }
             }
         }
-        let (index, total, _) = best?;
-        ((total as u64) * 1_000_000 >= self.cfg.threshold_micro * n as u64).then_some(index)
+        best.map(|(index, _, _)| index)
     }
 
     fn search<T: Tokens>(&self, tokens: &T) -> Option<u32> {
@@ -427,21 +559,39 @@ impl DrainMiner {
                 }
                 None => {
                     let tokens = (0..length).map(|_| Box::from(WILDCARD)).collect();
-                    self.overflow.insert(length, Cluster { tokens, stats: cluster.stats });
+                    self.overflow.insert(length, Cluster::new(tokens, cluster.stats));
                 }
             }
             return;
         }
         let leaf = self.insert_path(&BoxedTokens(&cluster.tokens));
-        self.nodes[leaf as usize].clusters.push(self.clusters.len() as u32);
-        self.length_clusters.entry(cluster.tokens.len()).or_default().push(self.clusters.len() as u32);
+        let id = self.clusters.len() as u32;
+        let node = &mut self.nodes[leaf as usize];
+        node.clusters.push(id);
+        match node.index.as_mut() {
+            Some(index) => index.add(id, &cluster.tokens),
+            None if node.clusters.len() >= INDEX_MIN_CLUSTERS => {
+                let mut index = LeafIndex::new(cluster.tokens.len());
+                for &member in &node.clusters {
+                    if member != id {
+                        index.add(member, &self.clusters[member as usize].tokens);
+                    }
+                }
+                index.add(id, &cluster.tokens);
+                node.index = Some(Box::new(index));
+            }
+            None => {}
+        }
+        self.length_clusters.entry(cluster.tokens.len()).or_default().push(id);
         self.clusters.push(cluster);
     }
 
     fn generalize<T: Tokens>(&mut self, index: usize, tokens: &T) {
-        for (position, template_token) in self.clusters[index].tokens.iter_mut().enumerate() {
+        let cluster = &mut self.clusters[index];
+        for (position, template_token) in cluster.tokens.iter_mut().enumerate() {
             if &**template_token != WILDCARD && &**template_token != tokens.at(position) {
                 *template_token = Box::from(WILDCARD);
+                cluster.wild += 1;
             }
         }
     }

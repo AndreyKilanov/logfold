@@ -9,7 +9,6 @@ from __future__ import annotations
 import dataclasses
 import logging
 import os
-import re
 from collections.abc import Callable, Sequence
 from typing import Any
 
@@ -29,7 +28,7 @@ from logfold.engines.select import select_engine
 from logfold.errors import ConfigError, SourceError
 from logfold.ext import registry
 from logfold.ext.formats import Format, FormatSpec
-from logfold.ext.masks import validate_masks
+from logfold.ext.masks import Masker, validate_masks
 from logfold.formats import ResolvedFormat, resolve_format
 from logfold.model import (
     SCHEMA_VERSION,
@@ -153,27 +152,13 @@ def _summary(paths: tuple[str, ...], info: RunInfo) -> RunSummary:
     )
 
 
-def _compile_masks(masks: Sequence[MaskRule]) -> list[tuple[re.Pattern[str], str]]:
-    return [(re.compile(rule.pattern, re.ASCII if rule.ascii else 0), rule.token) for rule in masks]
-
-
-def _literal(token: str) -> Callable[[re.Match[str]], str]:
-    def replace(_match: re.Match[str]) -> str:
-        return token
-
-    return replace
-
-
-def _example(text: str | None, mode: ExamplesMode, compiled: list[tuple[re.Pattern[str], str]]) -> str | None:
+def _example(text: str | None, mode: ExamplesMode, masker: Masker) -> str | None:
     if text is None or mode == "none":
         return None
-    if mode == "masked":
-        for pattern, token in compiled:
-            text = pattern.sub(_literal(token), text)
-    return text
+    return masker.mask(text) if mode == "masked" else text
 
 
-def _template(stats: TemplateStats, run: int, tz_aware: bool, mode: ExamplesMode, compiled: list) -> Template:  # type: ignore[type-arg]
+def _template(stats: TemplateStats, run: int, tz_aware: bool, mode: ExamplesMode, masker: Masker) -> Template:
     data = stats.runs[run]
     level, levels = summarize_levels(data.levels)
     return Template(
@@ -182,7 +167,7 @@ def _template(stats: TemplateStats, run: int, tz_aware: bool, mode: ExamplesMode
         count=data.count,
         first_seen=micros_to_datetime(data.first, tz_aware),
         last_seen=micros_to_datetime(data.last, tz_aware),
-        example=_example(data.example, mode, compiled),
+        example=_example(data.example, mode, masker),
         level=level,
         levels=levels,
     )
@@ -282,11 +267,9 @@ def analyze(
     exec_config = _execution(execution, engine, strategy, threads, chunk_bytes)
     mined, used = _mine((run,), spec, mining_config, exec_config, progress)
     summary = _summary(run, mined.runs[0])
-    compiled = _compile_masks(mining_config.masks)
+    masker = Masker(mining_config.masks)
     templates = tuple(
-        _template(stats, 0, summary.tz_aware, examples, compiled)
-        for stats in mined.templates
-        if stats.runs[0].count > 0
+        _template(stats, 0, summary.tz_aware, examples, masker) for stats in mined.templates if stats.runs[0].count > 0
     )
     return AnalysisResult(
         templates=templates,
@@ -387,10 +370,10 @@ def diff(
     classification = classify(
         mined.templates, before_summary, after_summary, config, registry.get_matcher(config.matcher)
     )
-    compiled = _compile_masks(mining_config.masks)
+    masker = Masker(mining_config.masks)
 
     def scrub(entries: tuple) -> tuple:  # type: ignore[type-arg]
-        return tuple(dataclasses.replace(e, example=_example(e.example, examples, compiled)) for e in entries)
+        return tuple(dataclasses.replace(e, example=_example(e.example, examples, masker)) for e in entries)
 
     return DiffResult(
         new_templates=scrub(classification.new),

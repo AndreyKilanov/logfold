@@ -466,6 +466,7 @@ version = "0.1.0-dev.0"
 dependencies = [
  "ahash",
  "regex",
+ "regex-automata",
  "sha2",
  "thiserror",
 ]

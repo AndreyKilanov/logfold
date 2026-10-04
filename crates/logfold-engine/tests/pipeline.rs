@@ -120,15 +120,6 @@ fn recount_makes_identical_runs_identical() {
     let path = dir.path().join("tricky.log");
     std::fs::write(&path, "a\n<*>\na\n<*>\na\n").unwrap();
     let mining = MiningParams { depth: 3, sim_th: 0.3, max_children: 1, max_templates: 2, ..MiningParams::default() };
-    let online = mine(
-        &MineRequest {
-            mining: mining.clone(),
-            ..request(vec![vec![path.clone()], vec![path.clone()]], Strategy::Sequential)
-        },
-        &NoObserver,
-    )
-    .unwrap();
-    assert!(online.templates.iter().any(|t| t.runs[0].count != t.runs[1].count), "online training should drift");
     let recounted =
         mine(&recount_request(vec![vec![path.clone()], vec![path]], Strategy::Sequential, mining), &NoObserver)
             .unwrap();

@@ -130,3 +130,23 @@ def test_engines_have_default_masks_in_sync() -> None:
 def test_execution_config_object_is_honoured(corpus_dir: Path) -> None:
     result = logfold.analyze(str(corpus_dir / "app.log"), format="app", execution=ExecutionConfig(engine="python"))
     assert result.metrics.engine == "python"
+
+
+@pytest.mark.parametrize("sim_th", [0.1, 0.4, 0.7, 1.0])
+def test_leaves_with_many_clusters_use_the_index_without_changing_results(tmp_path: Path, sim_th: float) -> None:
+    import random
+
+    rng = random.Random(77)
+    vocabulary = [f"{rng.choice('abcdef')}{rng.getrandbits(18):x}" for _ in range(400)]
+    shared = ["start", "stop", "retry", "ok"]
+    lines = []
+    for _ in range(4000):
+        n = rng.randrange(3, 9)
+        tokens = [rng.choice(shared) if rng.random() < 0.35 else rng.choice(vocabulary) for _ in range(n)]
+        lines.append(" ".join(tokens))
+    path = tmp_path / "wide.log"
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    native_result, python_result = both(str(path), format="plain", sim_th=sim_th)
+    assert snapshot(native_result) == snapshot(python_result)
+    if sim_th >= 0.4:
+        assert len(native_result.templates) > 50

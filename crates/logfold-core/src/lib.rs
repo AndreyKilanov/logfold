@@ -6,6 +6,7 @@
 
 #![forbid(unsafe_code)]
 
+mod default_masks;
 mod error;
 mod freeze;
 mod level;

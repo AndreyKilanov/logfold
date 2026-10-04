@@ -69,8 +69,8 @@ convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["D", "PLR", "PLC0415", "T20", "PT011"]
-"bench/**" = ["D", "PLR", "T20"]
-"eval/**" = ["D", "PLR", "T20"]
+"bench/**" = ["D", "PLR", "PLC0415", "T20", "PLW0108", "E501"]
+"eval/**" = ["D", "PLR", "PLC0415", "T20", "PLW0108"]
 "python/logfold/cli/**" = ["T20"]
 
 [tool.mypy]

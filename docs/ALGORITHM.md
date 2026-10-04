@@ -54,8 +54,11 @@ order: TRACE < DEBUG < INFO < WARN < ERROR < FATAL.
 
 ## 2. Masking
 
-The message is rewritten by an ordered list of rules; each rule replaces every non-overlapping match (leftmost,
-scanning left to right) of its regex with its token. Rule `i+1` sees the output of rule `i`. Default rules, in order
+The message is rewritten in **one left-to-right pass** by an ordered list of rules. At each position the leftmost match
+of any rule wins; among rules matching at the same position the earliest rule wins. The matched text is replaced with
+the rule's token and scanning continues after the match (matches never overlap, replaced text is never rescanned). This
+is the semantics of the alternation `(rule 1)|(rule 2)|...` with a token per alternative. A rule may not match the
+empty string. Inline flags must be scoped (`(?i:...)`) and back-references are unsupported. Default rules, in order
 (all ASCII mode: `\d`, `\w`, `\b` are ASCII):
 
 | name | pattern | token |
@@ -86,9 +89,10 @@ Parameters: `depth` (default 4, minimum 3), `sim_th` (default 0.4), `max_childre
 The final node is the leaf.
 
 **Candidate similarity** of a template `T` against the message tokens `M` (same length `n`):
-`exact` = number of positions where `T[i] != WILDCARD` and `T[i] == M[i]`; `params` = positions where
-`T[i] == WILDCARD`; `score = exact + params`. Best candidate = maximal `score`, then maximal `params`, then the
-earliest created cluster. Match if `score * 1_000_000 >= th * n` (for `n = 0` always match).
+`exact` = number of positions where `T[i] != WILDCARD` and `T[i] == M[i]`; `params` = number of positions where
+`T[i] == WILDCARD`. Wildcards never count as matches (this is the similarity of the original Drain training pass,
+`include_params = false` in Drain3). Best candidate = maximal `exact`, then maximal `params`, then the earliest created
+cluster. Match if `exact * 1_000_000 >= th * n` (for `n = 0` always match).
 
 **Match.** Template becomes `T'[i] = T[i] if T[i] == M[i] else WILDCARD`. Counts and statistics are added to the
 cluster for the record's run.
