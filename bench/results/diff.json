@@ -1,0 +1,395 @@
+{
+  "scenario": "diff",
+  "runs": [
+    {
+      "scenario": "diff",
+      "dataset": "nginx",
+      "tool": "logfold diff 1 thread",
+      "input_bytes": 209715294,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "diff",
+        "nginx_100mb.log",
+        "nginx_100mb_b.log",
+        "-f",
+        "plain",
+        "--json",
+        "-q",
+        "--engine",
+        "native",
+        "--strategy",
+        "sequential"
+      ],
+      "wall_median_s": 3.375677200005157,
+      "wall_min_s": 3.3601251999934902,
+      "wall_max_s": 3.3822997999959625,
+      "cpu_median_s": 3.296875,
+      "peak_mb_max": 42.151936,
+      "runs": [
+        {
+          "wall_s": 3.3822997999959625,
+          "cpu_s": 3.265625,
+          "peak_mb": 42.037248,
+          "returncode": 0
+        },
+        {
+          "wall_s": 3.3601251999934902,
+          "cpu_s": 3.3125,
+          "peak_mb": 41.992192,
+          "returncode": 0
+        },
+        {
+          "wall_s": 3.375677200005157,
+          "cpu_s": 3.296875,
+          "peak_mb": 42.151936,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 2"
+    },
+    {
+      "scenario": "diff",
+      "dataset": "nginx",
+      "tool": "logfold diff 16 threads",
+      "input_bytes": 209715294,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "diff",
+        "nginx_100mb.log",
+        "nginx_100mb_b.log",
+        "-f",
+        "plain",
+        "--json",
+        "-q",
+        "--engine",
+        "native",
+        "--strategy",
+        "chunked",
+        "--threads",
+        "16",
+        "--chunk-mb",
+        "8"
+      ],
+      "wall_median_s": 0.79827149999619,
+      "wall_min_s": 0.782025499996962,
+      "wall_max_s": 0.8270772999967448,
+      "cpu_median_s": 5.984375,
+      "peak_mb_max": 106.528768,
+      "runs": [
+        {
+          "wall_s": 0.79827149999619,
+          "cpu_s": 5.921875,
+          "peak_mb": 106.323968,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.8270772999967448,
+          "cpu_s": 6.234375,
+          "peak_mb": 106.528768,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.782025499996962,
+          "cpu_s": 5.984375,
+          "peak_mb": 106.356736,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 2"
+    },
+    {
+      "scenario": "diff",
+      "dataset": "nginx",
+      "tool": "logfold diff 16 threads, --no-recount",
+      "input_bytes": 209715294,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "diff",
+        "nginx_100mb.log",
+        "nginx_100mb_b.log",
+        "-f",
+        "plain",
+        "--json",
+        "-q",
+        "--engine",
+        "native",
+        "--strategy",
+        "chunked",
+        "--threads",
+        "16",
+        "--chunk-mb",
+        "8",
+        "--no-recount"
+      ],
+      "wall_median_s": 0.5706224000023212,
+      "wall_min_s": 0.5557120000012219,
+      "wall_max_s": 0.6023112000111723,
+      "cpu_median_s": 3.1875,
+      "peak_mb_max": 106.385408,
+      "runs": [
+        {
+          "wall_s": 0.6023112000111723,
+          "cpu_s": 3.390625,
+          "peak_mb": 106.328064,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.5706224000023212,
+          "cpu_s": 3.1875,
+          "peak_mb": 106.385408,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.5557120000012219,
+          "cpu_s": 3.0625,
+          "peak_mb": 106.266624,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 2"
+    },
+    {
+      "scenario": "diff",
+      "dataset": "nginx",
+      "tool": "logdelta diff (Rust)",
+      "input_bytes": 209715294,
+      "command": [
+        "logdelta.EXE",
+        "diff",
+        "nginx_100mb.log",
+        "--target",
+        "nginx_100mb_b.log",
+        "--threshold",
+        "0.4",
+        "--json"
+      ],
+      "wall_median_s": 14.840112299993052,
+      "wall_min_s": 14.676816899998812,
+      "wall_max_s": 14.932207999998354,
+      "cpu_median_s": 14.734375,
+      "peak_mb_max": 8.798208,
+      "runs": [
+        {
+          "wall_s": 14.676816899998812,
+          "cpu_s": 14.640625,
+          "peak_mb": 8.798208,
+          "returncode": 0
+        },
+        {
+          "wall_s": 14.840112299993052,
+          "cpu_s": 14.734375,
+          "peak_mb": 8.634368,
+          "returncode": 0
+        },
+        {
+          "wall_s": 14.932207999998354,
+          "cpu_s": 14.859375,
+          "peak_mb": 8.667136,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 2"
+    },
+    {
+      "scenario": "diff",
+      "dataset": "app",
+      "tool": "logfold diff 1 thread",
+      "input_bytes": 209715278,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "diff",
+        "app_100mb.log",
+        "app_100mb_b.log",
+        "-f",
+        "plain",
+        "--json",
+        "-q",
+        "--engine",
+        "native",
+        "--strategy",
+        "sequential"
+      ],
+      "wall_median_s": 2.899705300005735,
+      "wall_min_s": 2.8951153999951202,
+      "wall_max_s": 2.9673888999968767,
+      "cpu_median_s": 2.84375,
+      "peak_mb_max": 42.110976,
+      "runs": [
+        {
+          "wall_s": 2.9673888999968767,
+          "cpu_s": 2.90625,
+          "peak_mb": 42.000384,
+          "returncode": 0
+        },
+        {
+          "wall_s": 2.8951153999951202,
+          "cpu_s": 2.84375,
+          "peak_mb": 42.110976,
+          "returncode": 0
+        },
+        {
+          "wall_s": 2.899705300005735,
+          "cpu_s": 2.84375,
+          "peak_mb": 41.951232,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 2"
+    },
+    {
+      "scenario": "diff",
+      "dataset": "app",
+      "tool": "logfold diff 16 threads",
+      "input_bytes": 209715278,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "diff",
+        "app_100mb.log",
+        "app_100mb_b.log",
+        "-f",
+        "plain",
+        "--json",
+        "-q",
+        "--engine",
+        "native",
+        "--strategy",
+        "chunked",
+        "--threads",
+        "16",
+        "--chunk-mb",
+        "8"
+      ],
+      "wall_median_s": 0.7124419000028865,
+      "wall_min_s": 0.695269100004225,
+      "wall_max_s": 0.7242526000045473,
+      "cpu_median_s": 5.09375,
+      "peak_mb_max": 106.807296,
+      "runs": [
+        {
+          "wall_s": 0.7124419000028865,
+          "cpu_s": 5.09375,
+          "peak_mb": 106.500096,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.7242526000045473,
+          "cpu_s": 5.234375,
+          "peak_mb": 106.51648,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.695269100004225,
+          "cpu_s": 4.96875,
+          "peak_mb": 106.807296,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 2"
+    },
+    {
+      "scenario": "diff",
+      "dataset": "app",
+      "tool": "logfold diff 16 threads, --no-recount",
+      "input_bytes": 209715278,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "diff",
+        "app_100mb.log",
+        "app_100mb_b.log",
+        "-f",
+        "plain",
+        "--json",
+        "-q",
+        "--engine",
+        "native",
+        "--strategy",
+        "chunked",
+        "--threads",
+        "16",
+        "--chunk-mb",
+        "8",
+        "--no-recount"
+      ],
+      "wall_median_s": 0.5007684000011068,
+      "wall_min_s": 0.49805349999223836,
+      "wall_max_s": 0.5199974999995902,
+      "cpu_median_s": 2.671875,
+      "peak_mb_max": 106.553344,
+      "runs": [
+        {
+          "wall_s": 0.5199974999995902,
+          "cpu_s": 2.625,
+          "peak_mb": 106.553344,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.5007684000011068,
+          "cpu_s": 2.671875,
+          "peak_mb": 106.471424,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.49805349999223836,
+          "cpu_s": 2.703125,
+          "peak_mb": 106.27072,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 2"
+    },
+    {
+      "scenario": "diff",
+      "dataset": "app",
+      "tool": "logdelta diff (Rust)",
+      "input_bytes": 209715278,
+      "command": [
+        "logdelta.EXE",
+        "diff",
+        "app_100mb.log",
+        "--target",
+        "app_100mb_b.log",
+        "--threshold",
+        "0.4",
+        "--json"
+      ],
+      "wall_median_s": 11.600850700007868,
+      "wall_min_s": 11.571488300003693,
+      "wall_max_s": 11.860080099999323,
+      "cpu_median_s": 11.5,
+      "peak_mb_max": 8.798208,
+      "runs": [
+        {
+          "wall_s": 11.571488300003693,
+          "cpu_s": 11.5,
+          "peak_mb": 8.68352,
+          "returncode": 0
+        },
+        {
+          "wall_s": 11.600850700007868,
+          "cpu_s": 11.5,
+          "peak_mb": 8.78592,
+          "returncode": 0
+        },
+        {
+          "wall_s": 11.860080099999323,
+          "cpu_s": 11.796875,
+          "peak_mb": 8.798208,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 2"
+    }
+  ]
+}

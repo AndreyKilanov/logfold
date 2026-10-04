@@ -1,6 +1,6 @@
 # Benchmark results
 
-Protocol: [`PROTOCOL.md`](PROTOCOL.md). Raw data: `bench/results/results.json`.
+Protocol: [`PROTOCOL.md`](PROTOCOL.md). Raw data: [`results/`](results).
 
 Machine: Windows-11-10.0.26200-SP0, 8 physical / 16 logical cores, 34.2 GB RAM, Python 3.13.0.
 
@@ -113,7 +113,7 @@ kept apart (counts stay exact, and a warning says so).
 
 - One machine (Windows 11, i7-10700K, 8 cores / 16 threads), warm page cache, generated data (nginx, app, Loghub-2k
   derived loghub, highcard); Loghub-2.0 could not be downloaded.
-- Rows come from several runs on the same machine (marked per row by `measured_in` in `results/results.json`);
+- Rows come from several runs on the same machine (marked per row by `measured_in` in the files in `results/`);
   repeated measurements agreed within about 5%.
 - Absolute numbers will differ on Linux and with a cold cache.
 

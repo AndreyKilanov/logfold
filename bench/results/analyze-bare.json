@@ -1,0 +1,838 @@
+{
+  "scenario": "analyze-bare",
+  "runs": [
+    {
+      "scenario": "analyze-bare",
+      "dataset": "nginx",
+      "tool": "Drain3 (Python)",
+      "input_bytes": 104857625,
+      "command": [
+        "python.exe",
+        "drain3_run.py",
+        "nginx_100mb.log",
+        "--masks",
+        "none"
+      ],
+      "wall_median_s": 5.260430800000904,
+      "wall_min_s": 5.159484300005715,
+      "wall_max_s": 5.278774799997336,
+      "cpu_median_s": 0.0,
+      "peak_mb_max": 5.30432,
+      "runs": [
+        {
+          "wall_s": 5.278774799997336,
+          "cpu_s": 0.0,
+          "peak_mb": 5.300224,
+          "returncode": 0
+        },
+        {
+          "wall_s": 5.159484300005715,
+          "cpu_s": 0.015625,
+          "peak_mb": 5.30432,
+          "returncode": 0
+        },
+        {
+          "wall_s": 5.260430800000904,
+          "cpu_s": 0.0,
+          "peak_mb": 5.300224,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 1"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "app",
+      "tool": "Drain3 (Python)",
+      "input_bytes": 104857640,
+      "command": [
+        "python.exe",
+        "drain3_run.py",
+        "app_100mb.log",
+        "--masks",
+        "none"
+      ],
+      "wall_median_s": 9.027285700009088,
+      "wall_min_s": 8.966786699995282,
+      "wall_max_s": 9.159392200002912,
+      "cpu_median_s": 0.0,
+      "peak_mb_max": 5.30432,
+      "runs": [
+        {
+          "wall_s": 9.159392200002912,
+          "cpu_s": 0.0,
+          "peak_mb": 5.300224,
+          "returncode": 0
+        },
+        {
+          "wall_s": 9.027285700009088,
+          "cpu_s": 0.0,
+          "peak_mb": 5.30432,
+          "returncode": 0
+        },
+        {
+          "wall_s": 8.966786699995282,
+          "cpu_s": 0.015625,
+          "peak_mb": 5.300224,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 1"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "nginx",
+      "tool": "logfold 1 thread",
+      "input_bytes": 104857625,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "nginx_100mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--strategy",
+        "sequential"
+      ],
+      "wall_median_s": 0.6185334000037983,
+      "wall_min_s": 0.6084808000014164,
+      "wall_max_s": 0.6188545000040904,
+      "cpu_median_s": 0.578125,
+      "peak_mb_max": 41.172992,
+      "runs": [
+        {
+          "wall_s": 0.6185334000037983,
+          "cpu_s": 0.578125,
+          "peak_mb": 41.107456,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.6188545000040904,
+          "cpu_s": 0.578125,
+          "peak_mb": 41.10336,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.6084808000014164,
+          "cpu_s": 0.5625,
+          "peak_mb": 41.172992,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 2"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "nginx",
+      "tool": "logfold 16 threads",
+      "input_bytes": 104857625,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "nginx_100mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--strategy",
+        "chunked",
+        "--threads",
+        "16",
+        "--chunk-mb",
+        "8"
+      ],
+      "wall_median_s": 0.36837939999531955,
+      "wall_min_s": 0.3660952000063844,
+      "wall_max_s": 0.3689669000013964,
+      "cpu_median_s": 0.75,
+      "peak_mb_max": 92.798976,
+      "runs": [
+        {
+          "wall_s": 0.36837939999531955,
+          "cpu_s": 0.75,
+          "peak_mb": 92.643328,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.3689669000013964,
+          "cpu_s": 0.75,
+          "peak_mb": 92.798976,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.3660952000063844,
+          "cpu_s": 0.828125,
+          "peak_mb": 92.672,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 2"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "nginx",
+      "tool": "logdrain (Rust)",
+      "input_bytes": 104857625,
+      "command": [
+        "logdrain.EXE",
+        "nginx_100mb.log",
+        "--format",
+        "csv",
+        "--min-size",
+        "999999999",
+        "--sim-th",
+        "0.4",
+        "--depth",
+        "4"
+      ],
+      "wall_median_s": 5.265325799991842,
+      "wall_min_s": 5.229254400008358,
+      "wall_max_s": 5.445701700009522,
+      "cpu_median_s": 5.25,
+      "peak_mb_max": 1289.17504,
+      "runs": [
+        {
+          "wall_s": 5.445701700009522,
+          "cpu_s": 5.390625,
+          "peak_mb": 1289.019392,
+          "returncode": 0
+        },
+        {
+          "wall_s": 5.229254400008358,
+          "cpu_s": 5.15625,
+          "peak_mb": 1289.019392,
+          "returncode": 0
+        },
+        {
+          "wall_s": 5.265325799991842,
+          "cpu_s": 5.25,
+          "peak_mb": 1289.17504,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 2"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "app",
+      "tool": "logfold 1 thread",
+      "input_bytes": 104857640,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "app_100mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--strategy",
+        "sequential"
+      ],
+      "wall_median_s": 0.705727200009278,
+      "wall_min_s": 0.6961233000038192,
+      "wall_max_s": 0.7128077999950619,
+      "cpu_median_s": 0.640625,
+      "peak_mb_max": 41.263104,
+      "runs": [
+        {
+          "wall_s": 0.7128077999950619,
+          "cpu_s": 0.640625,
+          "peak_mb": 41.263104,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.705727200009278,
+          "cpu_s": 0.640625,
+          "peak_mb": 41.14432,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.6961233000038192,
+          "cpu_s": 0.625,
+          "peak_mb": 41.111552,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 2"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "app",
+      "tool": "logfold 16 threads",
+      "input_bytes": 104857640,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "app_100mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--strategy",
+        "chunked",
+        "--threads",
+        "16",
+        "--chunk-mb",
+        "8"
+      ],
+      "wall_median_s": 0.3736246000044048,
+      "wall_min_s": 0.3716237999906298,
+      "wall_max_s": 0.37666329999046866,
+      "cpu_median_s": 0.90625,
+      "peak_mb_max": 92.934144,
+      "runs": [
+        {
+          "wall_s": 0.37666329999046866,
+          "cpu_s": 0.96875,
+          "peak_mb": 92.934144,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.3716237999906298,
+          "cpu_s": 0.84375,
+          "peak_mb": 92.704768,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.3736246000044048,
+          "cpu_s": 0.90625,
+          "peak_mb": 92.909568,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 2"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "app",
+      "tool": "logdrain (Rust)",
+      "input_bytes": 104857640,
+      "command": [
+        "logdrain.EXE",
+        "app_100mb.log",
+        "--format",
+        "csv",
+        "--min-size",
+        "999999999",
+        "--sim-th",
+        "0.4",
+        "--depth",
+        "4"
+      ],
+      "wall_median_s": 5.017990899999859,
+      "wall_min_s": 4.724644500005525,
+      "wall_max_s": 5.039165900001535,
+      "cpu_median_s": 4.984375,
+      "peak_mb_max": 1064.157184,
+      "runs": [
+        {
+          "wall_s": 5.039165900001535,
+          "cpu_s": 5.015625,
+          "peak_mb": 1064.103936,
+          "returncode": 0
+        },
+        {
+          "wall_s": 5.017990899999859,
+          "cpu_s": 4.984375,
+          "peak_mb": 1064.062976,
+          "returncode": 0
+        },
+        {
+          "wall_s": 4.724644500005525,
+          "cpu_s": 4.6875,
+          "peak_mb": 1064.157184,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 2"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "loghub",
+      "tool": "logfold 1 thread",
+      "input_bytes": 104857731,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "loghub_100mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--strategy",
+        "sequential"
+      ],
+      "wall_median_s": 1.3903921500022989,
+      "wall_min_s": 1.3857389000040712,
+      "wall_max_s": 1.3950454000005266,
+      "cpu_median_s": 1.34375,
+      "peak_mb_max": 66.060288,
+      "runs": [
+        {
+          "wall_s": 1.3950454000005266,
+          "cpu_s": 1.34375,
+          "peak_mb": 66.060288,
+          "returncode": 0
+        },
+        {
+          "wall_s": 1.3857389000040712,
+          "cpu_s": 1.34375,
+          "peak_mb": 65.908736,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 3"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "loghub",
+      "tool": "logfold 16 threads",
+      "input_bytes": 104857731,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "loghub_100mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--strategy",
+        "chunked",
+        "--threads",
+        "16",
+        "--chunk-mb",
+        "8"
+      ],
+      "wall_median_s": 0.8200032499953522,
+      "wall_min_s": 0.7930572999903234,
+      "wall_max_s": 0.8469492000003811,
+      "cpu_median_s": 1.8984375,
+      "peak_mb_max": 127.746048,
+      "runs": [
+        {
+          "wall_s": 0.7930572999903234,
+          "cpu_s": 1.890625,
+          "peak_mb": 127.746048,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.8469492000003811,
+          "cpu_s": 1.90625,
+          "peak_mb": 125.566976,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 3"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "loghub",
+      "tool": "Drain3 (Python)",
+      "input_bytes": 104857731,
+      "command": [
+        "python.exe",
+        "drain3_run.py",
+        "loghub_100mb.log",
+        "--masks",
+        "none"
+      ],
+      "wall_median_s": 21.95322865000344,
+      "wall_min_s": 21.846900300006382,
+      "wall_max_s": 22.059557000000495,
+      "cpu_median_s": 21.75,
+      "peak_mb_max": 40.787968,
+      "runs": [
+        {
+          "wall_s": 21.846900300006382,
+          "cpu_s": 21.71875,
+          "peak_mb": 40.787968,
+          "returncode": 0
+        },
+        {
+          "wall_s": 22.059557000000495,
+          "cpu_s": 21.78125,
+          "peak_mb": 40.726528,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 3"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "loghub",
+      "tool": "logdrain (Rust)",
+      "input_bytes": 104857731,
+      "command": [
+        "logdrain.EXE",
+        "loghub_100mb.log",
+        "--format",
+        "csv",
+        "--min-size",
+        "999999999",
+        "--sim-th",
+        "0.4",
+        "--depth",
+        "4"
+      ],
+      "wall_median_s": 2.23797994999768,
+      "wall_min_s": 2.2284249999938766,
+      "wall_max_s": 2.247534900001483,
+      "cpu_median_s": 2.1953125,
+      "peak_mb_max": 364.384256,
+      "runs": [
+        {
+          "wall_s": 2.2284249999938766,
+          "cpu_s": 2.171875,
+          "peak_mb": 364.351488,
+          "returncode": 0
+        },
+        {
+          "wall_s": 2.247534900001483,
+          "cpu_s": 2.21875,
+          "peak_mb": 364.384256,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 3"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "highcard@10MB",
+      "tool": "logfold 1 thread",
+      "input_bytes": 10485828,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "highcard_10mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--strategy",
+        "sequential"
+      ],
+      "wall_median_s": 2.3321572999993805,
+      "wall_min_s": 2.3295745000068564,
+      "wall_max_s": 2.3347400999919046,
+      "cpu_median_s": 2.25,
+      "peak_mb_max": 257.110016,
+      "runs": [
+        {
+          "wall_s": 2.3295745000068564,
+          "cpu_s": 2.234375,
+          "peak_mb": 256.786432,
+          "returncode": 0
+        },
+        {
+          "wall_s": 2.3347400999919046,
+          "cpu_s": 2.265625,
+          "peak_mb": 257.110016,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 3"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "highcard@10MB",
+      "tool": "logfold 16 threads",
+      "input_bytes": 10485828,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "highcard_10mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--strategy",
+        "chunked",
+        "--threads",
+        "16",
+        "--chunk-mb",
+        "8"
+      ],
+      "wall_median_s": 2.8408834999936516,
+      "wall_min_s": 2.83213579999574,
+      "wall_max_s": 2.8496311999915633,
+      "cpu_median_s": 2.8515625,
+      "peak_mb_max": 300.081152,
+      "runs": [
+        {
+          "wall_s": 2.8496311999915633,
+          "cpu_s": 2.859375,
+          "peak_mb": 300.081152,
+          "returncode": 0
+        },
+        {
+          "wall_s": 2.83213579999574,
+          "cpu_s": 2.84375,
+          "peak_mb": 298.872832,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 3"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "highcard@10MB",
+      "tool": "logfold high-cardinality mode",
+      "input_bytes": 10485828,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "highcard_10mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--high-cardinality"
+      ],
+      "wall_median_s": 0.5267128499981482,
+      "wall_min_s": 0.523614899997483,
+      "wall_max_s": 0.5298107999988133,
+      "cpu_median_s": 0.46875,
+      "peak_mb_max": 53.989376,
+      "runs": [
+        {
+          "wall_s": 0.5298107999988133,
+          "cpu_s": 0.46875,
+          "peak_mb": 53.809152,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.523614899997483,
+          "cpu_s": 0.46875,
+          "peak_mb": 53.989376,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 3"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "highcard@10MB",
+      "tool": "logdrain (Rust)",
+      "input_bytes": 10485828,
+      "command": [
+        "logdrain.EXE",
+        "highcard_10mb.log",
+        "--format",
+        "csv",
+        "--min-size",
+        "999999999",
+        "--sim-th",
+        "0.4",
+        "--depth",
+        "4"
+      ],
+      "wall_median_s": 0.5591291500022635,
+      "wall_min_s": 0.5434795000037411,
+      "wall_max_s": 0.5747788000007858,
+      "cpu_median_s": 0.515625,
+      "peak_mb_max": 178.733056,
+      "runs": [
+        {
+          "wall_s": 0.5747788000007858,
+          "cpu_s": 0.515625,
+          "peak_mb": 178.733056,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.5434795000037411,
+          "cpu_s": 0.515625,
+          "peak_mb": 178.597888,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 3"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "highcard",
+      "tool": "logfold 1 thread",
+      "input_bytes": 104857681,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "highcard_100mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--strategy",
+        "sequential"
+      ],
+      "wall_median_s": 4.441507650000858,
+      "wall_min_s": 4.402290600002743,
+      "wall_max_s": 4.480724699998973,
+      "cpu_median_s": 4.3671875,
+      "peak_mb_max": 282.402816,
+      "runs": [
+        {
+          "wall_s": 4.480724699998973,
+          "cpu_s": 4.390625,
+          "peak_mb": 282.3168,
+          "returncode": 0
+        },
+        {
+          "wall_s": 4.402290600002743,
+          "cpu_s": 4.34375,
+          "peak_mb": 282.402816,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 3"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "highcard",
+      "tool": "logfold 16 threads",
+      "input_bytes": 104857681,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "highcard_100mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--strategy",
+        "chunked",
+        "--threads",
+        "16",
+        "--chunk-mb",
+        "8"
+      ],
+      "wall_median_s": 8.72284660000878,
+      "wall_min_s": 8.656117600010475,
+      "wall_max_s": 8.789575600007083,
+      "cpu_median_s": 15.125,
+      "peak_mb_max": 1884.192768,
+      "runs": [
+        {
+          "wall_s": 8.656117600010475,
+          "cpu_s": 15.34375,
+          "peak_mb": 1884.192768,
+          "returncode": 0
+        },
+        {
+          "wall_s": 8.789575600007083,
+          "cpu_s": 14.90625,
+          "peak_mb": 1883.856896,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 3"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "highcard",
+      "tool": "logfold high-cardinality mode",
+      "input_bytes": 104857681,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "highcard_100mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--high-cardinality"
+      ],
+      "wall_median_s": 1.4430050000009942,
+      "wall_min_s": 1.4408347999997204,
+      "wall_max_s": 1.445175200002268,
+      "cpu_median_s": 1.3671875,
+      "peak_mb_max": 53.981184,
+      "runs": [
+        {
+          "wall_s": 1.4408347999997204,
+          "cpu_s": 1.390625,
+          "peak_mb": 53.981184,
+          "returncode": 0
+        },
+        {
+          "wall_s": 1.445175200002268,
+          "cpu_s": 1.34375,
+          "peak_mb": 53.649408,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 3"
+    }
+  ]
+}

@@ -1,8 +1,8 @@
-"""Render ``bench/results/results.json`` as Markdown tables (``bench/RESULTS.md``).
+"""Render the files in ``bench/results`` as Markdown tables (``bench/RESULTS.md``).
 
 Usage::
 
-    python bench/report.py [results.json]
+    python bench/report.py [results directory]
 """
 
 from __future__ import annotations
@@ -15,11 +15,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def default_results() -> list[Path]:
-    path = ROOT / "bench" / "results" / "results.json"
-    if not path.exists():
-        raise SystemExit("no results found; run bench/run.py first")
-    return [path]
+def load_results(folder: Path) -> tuple[dict[str, object], list[dict[str, object]]]:
+    """Read ``environment.json`` and every scenario file of ``folder``."""
+    if not (folder / "environment.json").exists():
+        raise SystemExit(f"no results in {folder}; run bench/run.py first")
+    environment = json.loads((folder / "environment.json").read_text(encoding="utf-8"))
+    runs: list[dict[str, object]] = []
+    for scenario in ("analyze-bare", "analyze-masked", "diff"):
+        path = folder / f"{scenario}.json"
+        if path.exists():
+            runs += json.loads(path.read_text(encoding="utf-8"))["runs"]
+    return environment, runs
 
 
 def fmt_time(run: dict[str, object]) -> str:
@@ -76,23 +82,20 @@ def table(
 
 
 def main() -> None:
-    paths = [Path(arg) for arg in sys.argv[1:]] or default_results()
-    parts = [json.loads(path.read_text(encoding="utf-8")) for path in paths]
-    env = parts[0]["environment"]
-    all_runs = [run for part in parts for run in part["runs"]]
+    folder = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "bench" / "results"
+    env, all_runs = load_results(folder)
     runs = [run for run in all_runs if not run.get("memory_only")]
     peaks: dict[tuple[str, str], float] = {}
     for run in all_runs:
         key = ("", str(run["tool"]).replace(" diff", "").split(",")[0])
         if not run.get("failed"):
-            peaks[key] = max(peaks.get(key, 0.0), float(run["peak_mb_max"]))
+            peaks[key] = max(peaks.get(key, 0.0), float(run["peak_mb_max"]))  # type: ignore[arg-type]
     order = ["nginx", "app", "loghub", "highcard", "highcard@10MB"]
     datasets = [name for name in order if any(r["dataset"] == name for r in runs)]
-    raw = ", ".join(f"`{path.relative_to(ROOT).as_posix()}`" for path in paths)
     out = [
         "# Benchmark results",
         "",
-        f"Protocol: [`PROTOCOL.md`](PROTOCOL.md). Raw data: {raw}.",
+        "Protocol: [`PROTOCOL.md`](PROTOCOL.md). Raw data: [`results/`](results).",
         "",
         f"Machine: {env['os']}, {env['cores_physical']} physical / {env['cores_logical']} logical cores, "
         f"{env['ram_gb']} GB RAM, Python {env['python']}.",

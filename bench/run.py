@@ -1,7 +1,7 @@
 """Benchmark runner: logfold against Drain3, logdrain and logdelta.
 
 Every command runs as a separate process; the runner records wall time, CPU time (user + system) and peak working set
-with ``psutil``. Results go to ``bench/results/results.json``; ``bench/report.py`` renders the Markdown tables.
+with ``psutil``. Results go to ``bench/results/`` (``environment.json`` and one file per scenario); ``bench/report.py`` renders the Markdown tables.
 The protocol is described in ``bench/PROTOCOL.md``.
 
 Usage::
@@ -197,6 +197,16 @@ def environment() -> dict[str, object]:
     }
 
 
+def save(out: Path, results: dict[str, object]) -> None:
+    """Write ``environment.json`` and one ``<scenario>.json`` per scenario into ``out``."""
+    (out / "environment.json").write_text(json.dumps(results["environment"], indent=2, default=str), encoding="utf-8")
+    scenarios = sorted({str(run["scenario"]) for run in results["runs"]})  # type: ignore[attr-defined]
+    for scenario in scenarios:
+        rows = [run for run in results["runs"] if run["scenario"] == scenario]  # type: ignore[attr-defined]
+        payload = {"scenario": scenario, "runs": rows}
+        (out / f"{scenario}.json").write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+
+
 def summarize(samples: list[Sample]) -> dict[str, object]:
     ok = [s for s in samples if s.returncode == 0]
     if not ok:
@@ -221,10 +231,10 @@ def main() -> None:
     parser.add_argument("--repeat", type=int, default=3)
     parser.add_argument("--timeout", type=float, default=1800)
     parser.add_argument("--skip", nargs="*", default=[], help="tool name fragments to leave out, for example drain3")
-    parser.add_argument("--out", type=Path, default=None)
+    parser.add_argument("--out", type=Path, default=None, help="directory for the result files")
     args = parser.parse_args()
-    out = args.out or ROOT / "bench" / "results" / "results.json"
-    out.parent.mkdir(parents=True, exist_ok=True)
+    out = args.out or ROOT / "bench" / "results"
+    out.mkdir(parents=True, exist_ok=True)
     results: dict[str, object] = {
         "environment": environment(),
         "args": vars(args) | {"data": str(args.data)},
@@ -265,8 +275,8 @@ def main() -> None:
                         **summarize(samples),
                     }
                 )
-                out.write_text(json.dumps(results, indent=2, default=str), encoding="utf-8")
-    print(f"wrote {out}")
+                save(out, results)
+    print(f"wrote results to {out}")
 
 
 if __name__ == "__main__":

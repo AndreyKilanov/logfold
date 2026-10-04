@@ -1,0 +1,14 @@
+{
+  "os": "Windows-11-10.0.26200-SP0",
+  "cpu": "Intel64 Family 6 Model 165 Stepping 5, GenuineIntel",
+  "cores_logical": 16,
+  "cores_physical": 8,
+  "ram_gb": 34.2,
+  "python": "3.13.0",
+  "tools": {
+    "logfold": "logfold 0.1.0.dev0",
+    "logdrain": "logdrain 0.3.2",
+    "logdelta": "logdelta 0.3.4",
+    "drain3": "drain3 0.9.11"
+  }
+}
