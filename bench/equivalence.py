@@ -66,7 +66,7 @@ def logdelta_count(path: Path) -> int:
     except json.JSONDecodeError:
         return -1
     if isinstance(data, dict):
-        for key in ("templates", "distinct_templates", "items"):
+        for key in ("clusters", "templates", "items"):
             value = data.get(key)
             if isinstance(value, list):
                 return len(value)
