@@ -1,0 +1,4 @@
+{"@t":"2026-10-04T10:00:01.123Z","@m":"User 41 logged in","@l":"Warning","UserId":41}
+{"@t":"2026-10-04T10:00:02.000Z","@m":"Cache warmed 5 keys"}
+{"@t":"2026-10-04T10:00:03.000Z","@m":"Payment 7 failed","@l":"Error"}
+{"@t":"2026-10-04T10:00:04.000Z","@m":"Cache warmed 9 keys"}

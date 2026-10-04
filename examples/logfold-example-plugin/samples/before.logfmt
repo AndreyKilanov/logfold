@@ -1,0 +1,5 @@
+ts=2026-10-04T10:00:01Z level=info msg="user 41 logged in" ip=10.0.0.7
+ts=2026-10-04T10:00:02Z level=info msg="user 42 logged in" ip=10.0.0.8
+ts=2026-10-04T10:00:03Z level=warn msg="slow query" took=412ms
+ts=2026-10-04T10:00:04Z level=error msg="retry failed after 3 attempts" id=7
+ts=2026-10-04T10:00:05Z level=error msg="retry failed after 3 attempts" id=8
