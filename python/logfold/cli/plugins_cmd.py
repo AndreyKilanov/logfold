@@ -6,7 +6,7 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 import typer
 from rich.console import Console
@@ -16,8 +16,10 @@ from rich.table import Table
 from logfold.cli import exit_codes
 from logfold.errors import LogfoldError
 from logfold.ext import registry
-from logfold.plugins import catalog as plugin_catalog
 from logfold.plugins import templates
+
+if TYPE_CHECKING:
+    from logfold.plugins.catalog import Catalog
 
 plugins_app = typer.Typer(
     name="plugins",
@@ -50,7 +52,9 @@ def _fail(error: Exception) -> typer.Exit:
     return typer.Exit(exit_codes.ERROR)
 
 
-def _load(online: bool, catalog: str | None) -> plugin_catalog.Catalog:
+def _load(online: bool, catalog: str | None) -> Catalog:
+    from logfold.plugins import catalog as plugin_catalog  # noqa: PLC0415 - slow imports
+
     try:
         return plugin_catalog.load(catalog, online)
     except LogfoldError as error:
@@ -126,6 +130,8 @@ def check(online: Online = False, catalog: CatalogSource = None, as_json: AsJson
     By default the catalog bundled with this version of logfold is used and nothing is downloaded. --online fetches the
     latest one over HTTPS; set LOGFOLD_OFFLINE=1 to forbid that.
     """
+    from logfold.plugins import catalog as plugin_catalog  # noqa: PLC0415 - slow imports
+
     loaded = _load(online, catalog)
     new = plugin_catalog.new_plugins(loaded)
     if as_json:
@@ -171,6 +177,8 @@ def install(
     A plugin is Python code that runs with your privileges: only plugins of the catalog can be installed, and the
     package and version are shown before anything happens.
     """
+    from logfold.plugins import catalog as plugin_catalog  # noqa: PLC0415 - slow imports
+
     loaded = _load(online, catalog)
     entry = loaded.find(name)
     if entry is None:
