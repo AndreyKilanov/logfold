@@ -465,6 +465,7 @@ name = "logfold-core"
 version = "0.2.0"
 dependencies = [
  "ahash",
+ "memchr",
  "regex",
  "regex-automata",
  "sha2",

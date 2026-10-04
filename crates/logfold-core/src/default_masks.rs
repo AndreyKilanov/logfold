@@ -11,22 +11,49 @@ const TOKEN_HEX: &[u8] = b"<HEX>";
 const TOKEN_PATH: &[u8] = b"<PATH>";
 const TOKEN_NUM: &[u8] = b"<NUM>";
 
-/// Bytes that can start some rule: digits, hex letters, `/`, `+` and `-`.
-const fn candidate_table() -> [bool; 256] {
-    let mut table = [false; 256];
+const CLASS_NONE: u8 = 0;
+const CLASS_HEX_LETTER: u8 = 1;
+const CLASS_DIGIT: u8 = 2;
+const CLASS_SLASH_OR_SIGN: u8 = 3;
+
+/// What a byte can start: nothing, a uuid only (hex letters), a rule that needs a digit, or path / signed number.
+const fn class_table() -> [u8; 256] {
+    let mut table = [CLASS_NONE; 256];
     let mut byte = 0usize;
     while byte < 256 {
         let b = byte as u8;
-        table[byte] = b.is_ascii_digit() || matches!(b, b'a'..=b'f' | b'A'..=b'F' | b'/' | b'+' | b'-');
+        table[byte] = if b.is_ascii_digit() {
+            CLASS_DIGIT
+        } else if matches!(b, b'a'..=b'f' | b'A'..=b'F') {
+            CLASS_HEX_LETTER
+        } else if matches!(b, b'/' | b'+' | b'-') {
+            CLASS_SLASH_OR_SIGN
+        } else {
+            CLASS_NONE
+        };
         byte += 1;
     }
     table
 }
 
-static CANDIDATE: [bool; 256] = candidate_table();
+static CLASS: [u8; 256] = class_table();
 
+const fn word_table() -> [bool; 256] {
+    let mut table = [false; 256];
+    let mut byte = 0usize;
+    while byte < 256 {
+        let b = byte as u8;
+        table[byte] = b.is_ascii_alphanumeric() || b == b'_';
+        byte += 1;
+    }
+    table
+}
+
+static WORD: [bool; 256] = word_table();
+
+#[inline]
 fn is_word(byte: u8) -> bool {
-    byte.is_ascii_alphanumeric() || byte == b'_'
+    WORD[byte as usize]
 }
 
 fn word_before(buf: &[u8], at: usize) -> bool {
@@ -137,13 +164,6 @@ fn ip_tail(buf: &[u8], end: usize) -> Option<usize> {
     (!word_at(buf, end)).then_some(end)
 }
 
-fn ip(buf: &[u8], at: usize) -> Option<usize> {
-    if word_before(buf, at) {
-        return None;
-    }
-    ip_from(buf, 0, at)
-}
-
 fn hex(buf: &[u8], at: usize) -> Option<usize> {
     if word_before(buf, at) || buf[at] != b'0' || !matches!(buf.get(at + 1), Some(b'x' | b'X')) {
         return None;
@@ -189,7 +209,11 @@ fn number(buf: &[u8], at: usize) -> Option<usize> {
         }
         at
     };
-    let integer_end = digits(buf, start_digits);
+    number_after(buf, start_digits, digits(buf, start_digits))
+}
+
+/// The number rule once the integer part `[start_digits, integer_end)` is known.
+fn number_after(buf: &[u8], start_digits: usize, integer_end: usize) -> Option<usize> {
     if integer_end == start_digits {
         return None;
     }
@@ -202,6 +226,13 @@ fn number(buf: &[u8], at: usize) -> Option<usize> {
     (!word_at(buf, integer_end)).then_some(integer_end)
 }
 
+/// Finds the rule that matches at `at`, trying the rules in their order (uuid, ts, ip, hex, path, num).
+///
+/// Every rule is only tried when a cheap necessary condition holds, so that the many digits and hex letters of ordinary
+/// text cost a few byte comparisons: a uuid has a `-` eight bytes after its start, a timestamp four bytes after it, an
+/// IPv4 address starts with one to three digits followed by a `.`, a hex number with `0x`, and ip, hex and num need a
+/// word boundary before them. None of the conditions changes which text matches.
+#[inline]
 fn matched(buf: &[u8], at: usize) -> Option<(usize, &'static [u8])> {
     let byte = buf[at];
     if byte == b'/' {
@@ -210,31 +241,74 @@ fn matched(buf: &[u8], at: usize) -> Option<(usize, &'static [u8])> {
     if byte == b'+' || byte == b'-' {
         return number(buf, at).map(|end| (end, TOKEN_NUM));
     }
-    if let Some(end) = uuid(buf, at) {
-        return Some((end, TOKEN_UUID));
+    if buf.get(at + 8) == Some(&b'-') {
+        if let Some(end) = uuid(buf, at) {
+            return Some((end, TOKEN_UUID));
+        }
     }
-    if byte.is_ascii_digit() {
+    if !byte.is_ascii_digit() {
+        return None;
+    }
+    if buf.get(at + 4) == Some(&b'-') {
         if let Some(end) = timestamp(buf, at) {
             return Some((end, TOKEN_TS));
         }
-        if let Some(end) = ip(buf, at) {
+    }
+    if word_before(buf, at) {
+        return None;
+    }
+    let run_end = digits(buf, at);
+    if run_end - at <= 3 && buf.get(run_end) == Some(&b'.') {
+        if let Some(end) = ip_from(buf, 0, at) {
             return Some((end, TOKEN_IP));
         }
+    }
+    if byte == b'0' && matches!(buf.get(at + 1), Some(b'x' | b'X')) {
         if let Some(end) = hex(buf, at) {
             return Some((end, TOKEN_HEX));
         }
-        return number(buf, at).map(|end| (end, TOKEN_NUM));
     }
-    None
+    number_after(buf, at, run_end).map(|end| (end, TOKEN_NUM))
+}
+
+/// Index of the first `-` at or after `from`.
+fn dash_from(input: &[u8], from: usize) -> Option<usize> {
+    memchr::memchr(b'-', input.get(from..)?).map(|offset| offset + from)
+}
+
+/// The first position at or after `from` where a uuid or a timestamp could start: the one with a `-` eight or four
+/// bytes later. `usize::MAX` when there is none.
+fn next_dash_start(input: &[u8], from: usize) -> usize {
+    let Some(first) = dash_from(input, from + 4) else { return usize::MAX };
+    if first >= from + 8 {
+        return first - 8;
+    }
+    let uuid = dash_from(input, from + 8).map_or(usize::MAX, |dash| dash - 8);
+    (first - 4).min(uuid)
 }
 
 /// Applies the default rules to `input`. Returns `false` (leaving `out` untouched) when nothing matches.
+///
+/// Only positions that can start a match are examined (`matched` decides at them): a hex letter can only start a uuid
+/// and a digit inside a word only a uuid or a timestamp, and both need a `-` at a fixed distance, so those positions are
+/// found from the dashes; every other digit, `/`, `+` and `-` is examined.
 pub(crate) fn mask_default(input: &[u8], out: &mut Vec<u8>) -> bool {
     let mut cursor = 0;
     let mut position = 0;
     let mut wrote = false;
+    let mut dash_start = next_dash_start(input, 0);
     while position < input.len() {
-        if !CANDIDATE[input[position] as usize] {
+        let examine = match CLASS[input[position] as usize] {
+            CLASS_NONE => false,
+            CLASS_SLASH_OR_SIGN => true,
+            class => {
+                if dash_start < position {
+                    dash_start = next_dash_start(input, position);
+                }
+                position == dash_start || (class == CLASS_DIGIT && !word_before(input, position))
+            }
+        };
+        if !examine {
             position += 1;
             continue;
         }

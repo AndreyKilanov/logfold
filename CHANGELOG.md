@@ -12,6 +12,12 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   7 s instead of 29 s with masks. The index lists of the tokens that most templates share are no longer walked. The output
   is identical (same templates, counts, timestamps, levels and examples), so `ALGO_VERSION` and the algorithm
   specification are unchanged.
+- Faster value masking with the default rules: the scanner examines only the positions that can start a match (hex letters
+  and digits inside words can only start a uuid or a timestamp, which have a dash at a fixed distance). 400 MB of HDFS
+  logs are masked in 0.7 s instead of 1.45 s, and 1.57 GB of HDFS needs 7.8 s instead of 10.6 s with one thread. The
+  masked text, and therefore the output, is identical.
+- The command line starts about 20 ms faster (285 ms instead of 305 ms for `logfold --version`): the plugin catalog, and
+  with it `urllib`, `http` and `ssl`, is imported only by the `logfold plugins` commands.
 
 ## [0.2.0] - 2026-10-04
 

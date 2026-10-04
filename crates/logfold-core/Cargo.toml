@@ -13,6 +13,7 @@ workspace = true
 
 [dependencies]
 ahash = "0.8"
+memchr = "2"
 regex = "1"
 regex-automata = "0.4"
 sha2 = "0.10"

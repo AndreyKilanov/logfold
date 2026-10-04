@@ -23,31 +23,32 @@
         "--strategy",
         "sequential"
       ],
-      "wall_median_s": 5.143013199995039,
-      "wall_min_s": 5.120283399999607,
-      "wall_max_s": 5.143111599987606,
-      "cpu_median_s": 5.046875,
-      "peak_mb_max": 45.6704,
+      "wall_median_s": 3.290818399982527,
+      "wall_min_s": 3.2804619999951683,
+      "wall_max_s": 3.304500600002939,
+      "cpu_median_s": 3.234375,
+      "peak_mb_max": 42.7008,
       "runs": [
         {
-          "wall_s": 5.120283399999607,
-          "cpu_s": 4.96875,
-          "peak_mb": 45.6704,
+          "wall_s": 3.304500600002939,
+          "cpu_s": 3.265625,
+          "peak_mb": 42.610688,
           "returncode": 0
         },
         {
-          "wall_s": 5.143111599987606,
-          "cpu_s": 5.046875,
-          "peak_mb": 45.38368,
+          "wall_s": 3.2804619999951683,
+          "cpu_s": 3.21875,
+          "peak_mb": 42.512384,
           "returncode": 0
         },
         {
-          "wall_s": 5.143013199995039,
-          "cpu_s": 5.09375,
-          "peak_mb": 45.494272,
+          "wall_s": 3.290818399982527,
+          "cpu_s": 3.234375,
+          "peak_mb": 42.7008,
           "returncode": 0
         }
-      ]
+      ],
+      "measured_in": "run 5 (main after 0.2.0, a2aebc4)"
     },
     {
       "scenario": "analyze-bare",
@@ -75,31 +76,32 @@
         "--chunk-mb",
         "8"
       ],
-      "wall_median_s": 0.6844653000007384,
-      "wall_min_s": 0.6804690999852028,
-      "wall_max_s": 0.689265199995134,
-      "cpu_median_s": 4.1875,
-      "peak_mb_max": 111.529984,
+      "wall_median_s": 0.6860091999988072,
+      "wall_min_s": 0.6661459000024479,
+      "wall_max_s": 0.716575800004648,
+      "cpu_median_s": 4.15625,
+      "peak_mb_max": 108.27776,
       "runs": [
         {
-          "wall_s": 0.689265199995134,
+          "wall_s": 0.6661459000024479,
+          "cpu_s": 4.171875,
+          "peak_mb": 108.089344,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.716575800004648,
           "cpu_s": 4.140625,
-          "peak_mb": 111.529984,
+          "peak_mb": 108.101632,
           "returncode": 0
         },
         {
-          "wall_s": 0.6804690999852028,
-          "cpu_s": 4.1875,
-          "peak_mb": 111.480832,
-          "returncode": 0
-        },
-        {
-          "wall_s": 0.6844653000007384,
-          "cpu_s": 4.1875,
-          "peak_mb": 111.419392,
+          "wall_s": 0.6860091999988072,
+          "cpu_s": 4.15625,
+          "peak_mb": 108.27776,
           "returncode": 0
         }
-      ]
+      ],
+      "measured_in": "run 5 (main after 0.2.0, a2aebc4)"
     },
     {
       "scenario": "analyze-bare",
@@ -123,31 +125,32 @@
         "--strategy",
         "sequential"
       ],
-      "wall_median_s": 4.849885900010122,
-      "wall_min_s": 4.826502999989316,
-      "wall_max_s": 4.8503879999916535,
-      "cpu_median_s": 4.78125,
-      "peak_mb_max": 44.453888,
+      "wall_median_s": 5.1588036000030115,
+      "wall_min_s": 5.104266300011659,
+      "wall_max_s": 5.40301070001442,
+      "cpu_median_s": 5.09375,
+      "peak_mb_max": 41.53344,
       "runs": [
         {
-          "wall_s": 4.849885900010122,
-          "cpu_s": 4.78125,
-          "peak_mb": 44.453888,
+          "wall_s": 5.40301070001442,
+          "cpu_s": 5.234375,
+          "peak_mb": 41.53344,
           "returncode": 0
         },
         {
-          "wall_s": 4.826502999989316,
-          "cpu_s": 4.75,
-          "peak_mb": 44.404736,
+          "wall_s": 5.1588036000030115,
+          "cpu_s": 5.09375,
+          "peak_mb": 41.39008,
           "returncode": 0
         },
         {
-          "wall_s": 4.8503879999916535,
-          "cpu_s": 4.78125,
-          "peak_mb": 44.38016,
+          "wall_s": 5.104266300011659,
+          "cpu_s": 5.0,
+          "peak_mb": 41.406464,
           "returncode": 0
         }
-      ]
+      ],
+      "measured_in": "run 5 (main after 0.2.0, a2aebc4)"
     },
     {
       "scenario": "analyze-bare",
@@ -175,31 +178,32 @@
         "--chunk-mb",
         "8"
       ],
-      "wall_median_s": 0.9304227000102401,
-      "wall_min_s": 0.9283578000031412,
-      "wall_max_s": 0.9478538999974262,
-      "cpu_median_s": 7.859375,
-      "peak_mb_max": 109.60896,
+      "wall_median_s": 0.9409343999868724,
+      "wall_min_s": 0.928192500025034,
+      "wall_max_s": 0.9991932999982964,
+      "cpu_median_s": 7.796875,
+      "peak_mb_max": 106.758144,
       "runs": [
         {
-          "wall_s": 0.9283578000031412,
-          "cpu_s": 7.90625,
-          "peak_mb": 109.60896,
+          "wall_s": 0.9991932999982964,
+          "cpu_s": 7.78125,
+          "peak_mb": 106.758144,
           "returncode": 0
         },
         {
-          "wall_s": 0.9304227000102401,
+          "wall_s": 0.928192500025034,
           "cpu_s": 7.84375,
-          "peak_mb": 109.60896,
+          "peak_mb": 106.549248,
           "returncode": 0
         },
         {
-          "wall_s": 0.9478538999974262,
-          "cpu_s": 7.859375,
-          "peak_mb": 109.473792,
+          "wall_s": 0.9409343999868724,
+          "cpu_s": 7.796875,
+          "peak_mb": 106.627072,
           "returncode": 0
         }
-      ]
+      ],
+      "measured_in": "run 5 (main after 0.2.0, a2aebc4)"
     },
     {
       "scenario": "analyze-bare",
@@ -223,31 +227,32 @@
         "--strategy",
         "sequential"
       ],
-      "wall_median_s": 18.691819500003476,
-      "wall_min_s": 17.40898149998975,
-      "wall_max_s": 18.728437999991,
-      "cpu_median_s": 18.484375,
-      "peak_mb_max": 45.903872,
+      "wall_median_s": 9.60140169999795,
+      "wall_min_s": 9.58457459998317,
+      "wall_max_s": 9.962242500012508,
+      "cpu_median_s": 9.484375,
+      "peak_mb_max": 42.950656,
       "runs": [
         {
-          "wall_s": 17.40898149998975,
-          "cpu_s": 17.234375,
-          "peak_mb": 45.576192,
+          "wall_s": 9.962242500012508,
+          "cpu_s": 9.859375,
+          "peak_mb": 42.467328,
           "returncode": 0
         },
         {
-          "wall_s": 18.691819500003476,
-          "cpu_s": 18.5,
-          "peak_mb": 45.903872,
+          "wall_s": 9.58457459998317,
+          "cpu_s": 9.46875,
+          "peak_mb": 42.778624,
           "returncode": 0
         },
         {
-          "wall_s": 18.728437999991,
-          "cpu_s": 18.484375,
-          "peak_mb": 45.6704,
+          "wall_s": 9.60140169999795,
+          "cpu_s": 9.484375,
+          "peak_mb": 42.950656,
           "returncode": 0
         }
-      ]
+      ],
+      "measured_in": "run 5 (main after 0.2.0, a2aebc4)"
     },
     {
       "scenario": "analyze-bare",
@@ -275,31 +280,32 @@
         "--chunk-mb",
         "8"
       ],
-      "wall_median_s": 1.2750180000148248,
-      "wall_min_s": 1.2392015999939758,
-      "wall_max_s": 1.289438899984816,
-      "cpu_median_s": 11.78125,
-      "peak_mb_max": 114.76992,
+      "wall_median_s": 1.4154068999923766,
+      "wall_min_s": 1.3202900000032969,
+      "wall_max_s": 1.4619470000034198,
+      "cpu_median_s": 11.390625,
+      "peak_mb_max": 112.336896,
       "runs": [
         {
-          "wall_s": 1.289438899984816,
-          "cpu_s": 11.875,
-          "peak_mb": 114.76992,
+          "wall_s": 1.3202900000032969,
+          "cpu_s": 11.34375,
+          "peak_mb": 111.808512,
           "returncode": 0
         },
         {
-          "wall_s": 1.2392015999939758,
-          "cpu_s": 11.78125,
-          "peak_mb": 114.761728,
+          "wall_s": 1.4619470000034198,
+          "cpu_s": 11.796875,
+          "peak_mb": 112.058368,
           "returncode": 0
         },
         {
-          "wall_s": 1.2750180000148248,
-          "cpu_s": 11.703125,
-          "peak_mb": 114.610176,
+          "wall_s": 1.4154068999923766,
+          "cpu_s": 11.390625,
+          "peak_mb": 112.336896,
           "returncode": 0
         }
-      ]
+      ],
+      "measured_in": "run 5 (main after 0.2.0, a2aebc4)"
     },
     {
       "scenario": "analyze-bare",
@@ -323,31 +329,32 @@
         "--strategy",
         "sequential"
       ],
-      "wall_median_s": 69.65304460001062,
-      "wall_min_s": 67.71763160001137,
-      "wall_max_s": 72.94203510001535,
-      "cpu_median_s": 69.171875,
-      "peak_mb_max": 53.583872,
+      "wall_median_s": 6.657538800005568,
+      "wall_min_s": 6.551523299975088,
+      "wall_max_s": 6.80303000001004,
+      "cpu_median_s": 6.484375,
+      "peak_mb_max": 50.946048,
       "runs": [
         {
-          "wall_s": 69.65304460001062,
-          "cpu_s": 69.171875,
-          "peak_mb": 53.489664,
+          "wall_s": 6.80303000001004,
+          "cpu_s": 6.71875,
+          "peak_mb": 50.765824,
           "returncode": 0
         },
         {
-          "wall_s": 72.94203510001535,
-          "cpu_s": 72.265625,
-          "peak_mb": 53.583872,
+          "wall_s": 6.657538800005568,
+          "cpu_s": 6.484375,
+          "peak_mb": 50.946048,
           "returncode": 0
         },
         {
-          "wall_s": 67.71763160001137,
-          "cpu_s": 67.1875,
-          "peak_mb": 53.583872,
+          "wall_s": 6.551523299975088,
+          "cpu_s": 6.484375,
+          "peak_mb": 50.614272,
           "returncode": 0
         }
-      ]
+      ],
+      "measured_in": "run 5 (main after 0.2.0, a2aebc4)"
     },
     {
       "scenario": "analyze-bare",
@@ -375,31 +382,32 @@
         "--chunk-mb",
         "8"
       ],
-      "wall_median_s": 1.8589122999983374,
-      "wall_min_s": 1.847654599987436,
-      "wall_max_s": 1.9289396000094712,
-      "cpu_median_s": 10.765625,
-      "peak_mb_max": 133.783552,
+      "wall_median_s": 1.0804492000024766,
+      "wall_min_s": 1.0685272999980953,
+      "wall_max_s": 1.0944547999824863,
+      "cpu_median_s": 8.453125,
+      "peak_mb_max": 129.2288,
       "runs": [
         {
-          "wall_s": 1.8589122999983374,
-          "cpu_s": 10.765625,
-          "peak_mb": 133.783552,
+          "wall_s": 1.0804492000024766,
+          "cpu_s": 8.015625,
+          "peak_mb": 128.729088,
           "returncode": 0
         },
         {
-          "wall_s": 1.847654599987436,
-          "cpu_s": 10.109375,
-          "peak_mb": 133.599232,
+          "wall_s": 1.0944547999824863,
+          "cpu_s": 8.453125,
+          "peak_mb": 128.864256,
           "returncode": 0
         },
         {
-          "wall_s": 1.9289396000094712,
-          "cpu_s": 10.875,
-          "peak_mb": 129.294336,
+          "wall_s": 1.0685272999980953,
+          "cpu_s": 8.515625,
+          "peak_mb": 129.2288,
           "returncode": 0
         }
-      ]
+      ],
+      "measured_in": "run 5 (main after 0.2.0, a2aebc4)"
     }
   ]
 }

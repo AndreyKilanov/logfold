@@ -82,108 +82,6 @@
     {
       "scenario": "analyze-bare",
       "dataset": "nginx",
-      "tool": "logfold 1 thread",
-      "input_bytes": 104857625,
-      "command": [
-        "python.exe",
-        "-m",
-        "logfold",
-        "analyze",
-        "nginx_100mb.log",
-        "-f",
-        "plain",
-        "--top",
-        "1",
-        "-q",
-        "--engine",
-        "native",
-        "--no-masks",
-        "--strategy",
-        "sequential"
-      ],
-      "wall_median_s": 0.6185334000037983,
-      "wall_min_s": 0.6084808000014164,
-      "wall_max_s": 0.6188545000040904,
-      "cpu_median_s": 0.578125,
-      "peak_mb_max": 41.172992,
-      "runs": [
-        {
-          "wall_s": 0.6185334000037983,
-          "cpu_s": 0.578125,
-          "peak_mb": 41.107456,
-          "returncode": 0
-        },
-        {
-          "wall_s": 0.6188545000040904,
-          "cpu_s": 0.578125,
-          "peak_mb": 41.10336,
-          "returncode": 0
-        },
-        {
-          "wall_s": 0.6084808000014164,
-          "cpu_s": 0.5625,
-          "peak_mb": 41.172992,
-          "returncode": 0
-        }
-      ],
-      "measured_in": "run 2"
-    },
-    {
-      "scenario": "analyze-bare",
-      "dataset": "nginx",
-      "tool": "logfold 16 threads",
-      "input_bytes": 104857625,
-      "command": [
-        "python.exe",
-        "-m",
-        "logfold",
-        "analyze",
-        "nginx_100mb.log",
-        "-f",
-        "plain",
-        "--top",
-        "1",
-        "-q",
-        "--engine",
-        "native",
-        "--no-masks",
-        "--strategy",
-        "chunked",
-        "--threads",
-        "16",
-        "--chunk-mb",
-        "8"
-      ],
-      "wall_median_s": 0.36837939999531955,
-      "wall_min_s": 0.3660952000063844,
-      "wall_max_s": 0.3689669000013964,
-      "cpu_median_s": 0.75,
-      "peak_mb_max": 92.798976,
-      "runs": [
-        {
-          "wall_s": 0.36837939999531955,
-          "cpu_s": 0.75,
-          "peak_mb": 92.643328,
-          "returncode": 0
-        },
-        {
-          "wall_s": 0.3689669000013964,
-          "cpu_s": 0.75,
-          "peak_mb": 92.798976,
-          "returncode": 0
-        },
-        {
-          "wall_s": 0.3660952000063844,
-          "cpu_s": 0.828125,
-          "peak_mb": 92.672,
-          "returncode": 0
-        }
-      ],
-      "measured_in": "run 2"
-    },
-    {
-      "scenario": "analyze-bare",
-      "dataset": "nginx",
       "tool": "logdrain (Rust)",
       "input_bytes": 104857625,
       "command": [
@@ -220,108 +118,6 @@
           "wall_s": 5.265325799991842,
           "cpu_s": 5.25,
           "peak_mb": 1289.17504,
-          "returncode": 0
-        }
-      ],
-      "measured_in": "run 2"
-    },
-    {
-      "scenario": "analyze-bare",
-      "dataset": "app",
-      "tool": "logfold 1 thread",
-      "input_bytes": 104857640,
-      "command": [
-        "python.exe",
-        "-m",
-        "logfold",
-        "analyze",
-        "app_100mb.log",
-        "-f",
-        "plain",
-        "--top",
-        "1",
-        "-q",
-        "--engine",
-        "native",
-        "--no-masks",
-        "--strategy",
-        "sequential"
-      ],
-      "wall_median_s": 0.705727200009278,
-      "wall_min_s": 0.6961233000038192,
-      "wall_max_s": 0.7128077999950619,
-      "cpu_median_s": 0.640625,
-      "peak_mb_max": 41.263104,
-      "runs": [
-        {
-          "wall_s": 0.7128077999950619,
-          "cpu_s": 0.640625,
-          "peak_mb": 41.263104,
-          "returncode": 0
-        },
-        {
-          "wall_s": 0.705727200009278,
-          "cpu_s": 0.640625,
-          "peak_mb": 41.14432,
-          "returncode": 0
-        },
-        {
-          "wall_s": 0.6961233000038192,
-          "cpu_s": 0.625,
-          "peak_mb": 41.111552,
-          "returncode": 0
-        }
-      ],
-      "measured_in": "run 2"
-    },
-    {
-      "scenario": "analyze-bare",
-      "dataset": "app",
-      "tool": "logfold 16 threads",
-      "input_bytes": 104857640,
-      "command": [
-        "python.exe",
-        "-m",
-        "logfold",
-        "analyze",
-        "app_100mb.log",
-        "-f",
-        "plain",
-        "--top",
-        "1",
-        "-q",
-        "--engine",
-        "native",
-        "--no-masks",
-        "--strategy",
-        "chunked",
-        "--threads",
-        "16",
-        "--chunk-mb",
-        "8"
-      ],
-      "wall_median_s": 0.3736246000044048,
-      "wall_min_s": 0.3716237999906298,
-      "wall_max_s": 0.37666329999046866,
-      "cpu_median_s": 0.90625,
-      "peak_mb_max": 92.934144,
-      "runs": [
-        {
-          "wall_s": 0.37666329999046866,
-          "cpu_s": 0.96875,
-          "peak_mb": 92.934144,
-          "returncode": 0
-        },
-        {
-          "wall_s": 0.3716237999906298,
-          "cpu_s": 0.84375,
-          "peak_mb": 92.704768,
-          "returncode": 0
-        },
-        {
-          "wall_s": 0.3736246000044048,
-          "cpu_s": 0.90625,
-          "peak_mb": 92.909568,
           "returncode": 0
         }
       ],
@@ -370,96 +166,6 @@
         }
       ],
       "measured_in": "run 2"
-    },
-    {
-      "scenario": "analyze-bare",
-      "dataset": "loghub",
-      "tool": "logfold 1 thread",
-      "input_bytes": 104857731,
-      "command": [
-        "python.exe",
-        "-m",
-        "logfold",
-        "analyze",
-        "loghub_100mb.log",
-        "-f",
-        "plain",
-        "--top",
-        "1",
-        "-q",
-        "--engine",
-        "native",
-        "--no-masks",
-        "--strategy",
-        "sequential"
-      ],
-      "wall_median_s": 1.3903921500022989,
-      "wall_min_s": 1.3857389000040712,
-      "wall_max_s": 1.3950454000005266,
-      "cpu_median_s": 1.34375,
-      "peak_mb_max": 66.060288,
-      "runs": [
-        {
-          "wall_s": 1.3950454000005266,
-          "cpu_s": 1.34375,
-          "peak_mb": 66.060288,
-          "returncode": 0
-        },
-        {
-          "wall_s": 1.3857389000040712,
-          "cpu_s": 1.34375,
-          "peak_mb": 65.908736,
-          "returncode": 0
-        }
-      ],
-      "measured_in": "run 3"
-    },
-    {
-      "scenario": "analyze-bare",
-      "dataset": "loghub",
-      "tool": "logfold 16 threads",
-      "input_bytes": 104857731,
-      "command": [
-        "python.exe",
-        "-m",
-        "logfold",
-        "analyze",
-        "loghub_100mb.log",
-        "-f",
-        "plain",
-        "--top",
-        "1",
-        "-q",
-        "--engine",
-        "native",
-        "--no-masks",
-        "--strategy",
-        "chunked",
-        "--threads",
-        "16",
-        "--chunk-mb",
-        "8"
-      ],
-      "wall_median_s": 0.8200032499953522,
-      "wall_min_s": 0.7930572999903234,
-      "wall_max_s": 0.8469492000003811,
-      "cpu_median_s": 1.8984375,
-      "peak_mb_max": 127.746048,
-      "runs": [
-        {
-          "wall_s": 0.7930572999903234,
-          "cpu_s": 1.890625,
-          "peak_mb": 127.746048,
-          "returncode": 0
-        },
-        {
-          "wall_s": 0.8469492000003811,
-          "cpu_s": 1.90625,
-          "peak_mb": 125.566976,
-          "returncode": 0
-        }
-      ],
-      "measured_in": "run 3"
     },
     {
       "scenario": "analyze-bare",
@@ -535,138 +241,6 @@
     {
       "scenario": "analyze-bare",
       "dataset": "highcard@10MB",
-      "tool": "logfold 1 thread",
-      "input_bytes": 10485828,
-      "command": [
-        "python.exe",
-        "-m",
-        "logfold",
-        "analyze",
-        "highcard_10mb.log",
-        "-f",
-        "plain",
-        "--top",
-        "1",
-        "-q",
-        "--engine",
-        "native",
-        "--no-masks",
-        "--strategy",
-        "sequential"
-      ],
-      "wall_median_s": 2.3321572999993805,
-      "wall_min_s": 2.3295745000068564,
-      "wall_max_s": 2.3347400999919046,
-      "cpu_median_s": 2.25,
-      "peak_mb_max": 257.110016,
-      "runs": [
-        {
-          "wall_s": 2.3295745000068564,
-          "cpu_s": 2.234375,
-          "peak_mb": 256.786432,
-          "returncode": 0
-        },
-        {
-          "wall_s": 2.3347400999919046,
-          "cpu_s": 2.265625,
-          "peak_mb": 257.110016,
-          "returncode": 0
-        }
-      ],
-      "measured_in": "run 3"
-    },
-    {
-      "scenario": "analyze-bare",
-      "dataset": "highcard@10MB",
-      "tool": "logfold 16 threads",
-      "input_bytes": 10485828,
-      "command": [
-        "python.exe",
-        "-m",
-        "logfold",
-        "analyze",
-        "highcard_10mb.log",
-        "-f",
-        "plain",
-        "--top",
-        "1",
-        "-q",
-        "--engine",
-        "native",
-        "--no-masks",
-        "--strategy",
-        "chunked",
-        "--threads",
-        "16",
-        "--chunk-mb",
-        "8"
-      ],
-      "wall_median_s": 2.8408834999936516,
-      "wall_min_s": 2.83213579999574,
-      "wall_max_s": 2.8496311999915633,
-      "cpu_median_s": 2.8515625,
-      "peak_mb_max": 300.081152,
-      "runs": [
-        {
-          "wall_s": 2.8496311999915633,
-          "cpu_s": 2.859375,
-          "peak_mb": 300.081152,
-          "returncode": 0
-        },
-        {
-          "wall_s": 2.83213579999574,
-          "cpu_s": 2.84375,
-          "peak_mb": 298.872832,
-          "returncode": 0
-        }
-      ],
-      "measured_in": "run 3"
-    },
-    {
-      "scenario": "analyze-bare",
-      "dataset": "highcard@10MB",
-      "tool": "logfold high-cardinality mode",
-      "input_bytes": 10485828,
-      "command": [
-        "python.exe",
-        "-m",
-        "logfold",
-        "analyze",
-        "highcard_10mb.log",
-        "-f",
-        "plain",
-        "--top",
-        "1",
-        "-q",
-        "--engine",
-        "native",
-        "--no-masks",
-        "--high-cardinality"
-      ],
-      "wall_median_s": 0.5267128499981482,
-      "wall_min_s": 0.523614899997483,
-      "wall_max_s": 0.5298107999988133,
-      "cpu_median_s": 0.46875,
-      "peak_mb_max": 53.989376,
-      "runs": [
-        {
-          "wall_s": 0.5298107999988133,
-          "cpu_s": 0.46875,
-          "peak_mb": 53.809152,
-          "returncode": 0
-        },
-        {
-          "wall_s": 0.523614899997483,
-          "cpu_s": 0.46875,
-          "peak_mb": 53.989376,
-          "returncode": 0
-        }
-      ],
-      "measured_in": "run 3"
-    },
-    {
-      "scenario": "analyze-bare",
-      "dataset": "highcard@10MB",
       "tool": "logdrain (Rust)",
       "input_bytes": 10485828,
       "command": [
@@ -697,138 +271,6 @@
           "wall_s": 0.5434795000037411,
           "cpu_s": 0.515625,
           "peak_mb": 178.597888,
-          "returncode": 0
-        }
-      ],
-      "measured_in": "run 3"
-    },
-    {
-      "scenario": "analyze-bare",
-      "dataset": "highcard",
-      "tool": "logfold 1 thread",
-      "input_bytes": 104857681,
-      "command": [
-        "python.exe",
-        "-m",
-        "logfold",
-        "analyze",
-        "highcard_100mb.log",
-        "-f",
-        "plain",
-        "--top",
-        "1",
-        "-q",
-        "--engine",
-        "native",
-        "--no-masks",
-        "--strategy",
-        "sequential"
-      ],
-      "wall_median_s": 4.441507650000858,
-      "wall_min_s": 4.402290600002743,
-      "wall_max_s": 4.480724699998973,
-      "cpu_median_s": 4.3671875,
-      "peak_mb_max": 282.402816,
-      "runs": [
-        {
-          "wall_s": 4.480724699998973,
-          "cpu_s": 4.390625,
-          "peak_mb": 282.3168,
-          "returncode": 0
-        },
-        {
-          "wall_s": 4.402290600002743,
-          "cpu_s": 4.34375,
-          "peak_mb": 282.402816,
-          "returncode": 0
-        }
-      ],
-      "measured_in": "run 3"
-    },
-    {
-      "scenario": "analyze-bare",
-      "dataset": "highcard",
-      "tool": "logfold 16 threads",
-      "input_bytes": 104857681,
-      "command": [
-        "python.exe",
-        "-m",
-        "logfold",
-        "analyze",
-        "highcard_100mb.log",
-        "-f",
-        "plain",
-        "--top",
-        "1",
-        "-q",
-        "--engine",
-        "native",
-        "--no-masks",
-        "--strategy",
-        "chunked",
-        "--threads",
-        "16",
-        "--chunk-mb",
-        "8"
-      ],
-      "wall_median_s": 8.72284660000878,
-      "wall_min_s": 8.656117600010475,
-      "wall_max_s": 8.789575600007083,
-      "cpu_median_s": 15.125,
-      "peak_mb_max": 1884.192768,
-      "runs": [
-        {
-          "wall_s": 8.656117600010475,
-          "cpu_s": 15.34375,
-          "peak_mb": 1884.192768,
-          "returncode": 0
-        },
-        {
-          "wall_s": 8.789575600007083,
-          "cpu_s": 14.90625,
-          "peak_mb": 1883.856896,
-          "returncode": 0
-        }
-      ],
-      "measured_in": "run 3"
-    },
-    {
-      "scenario": "analyze-bare",
-      "dataset": "highcard",
-      "tool": "logfold high-cardinality mode",
-      "input_bytes": 104857681,
-      "command": [
-        "python.exe",
-        "-m",
-        "logfold",
-        "analyze",
-        "highcard_100mb.log",
-        "-f",
-        "plain",
-        "--top",
-        "1",
-        "-q",
-        "--engine",
-        "native",
-        "--no-masks",
-        "--high-cardinality"
-      ],
-      "wall_median_s": 1.4430050000009942,
-      "wall_min_s": 1.4408347999997204,
-      "wall_max_s": 1.445175200002268,
-      "cpu_median_s": 1.3671875,
-      "peak_mb_max": 53.981184,
-      "runs": [
-        {
-          "wall_s": 1.4408347999997204,
-          "cpu_s": 1.390625,
-          "peak_mb": 53.981184,
-          "returncode": 0
-        },
-        {
-          "wall_s": 1.445175200002268,
-          "cpu_s": 1.34375,
-          "peak_mb": 53.649408,
           "returncode": 0
         }
       ],
@@ -871,6 +313,612 @@
         }
       ],
       "measured_in": "run 4"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "nginx",
+      "tool": "logfold 1 thread",
+      "input_bytes": 104857625,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "nginx_100mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--strategy",
+        "sequential"
+      ],
+      "wall_median_s": 0.6852209999924526,
+      "wall_min_s": 0.684783199976664,
+      "wall_max_s": 0.7023762000026181,
+      "cpu_median_s": 0.65625,
+      "peak_mb_max": 41.578496,
+      "runs": [
+        {
+          "wall_s": 0.684783199976664,
+          "cpu_s": 0.65625,
+          "peak_mb": 41.578496,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.7023762000026181,
+          "cpu_s": 0.6875,
+          "peak_mb": 41.521152,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.6852209999924526,
+          "cpu_s": 0.59375,
+          "peak_mb": 41.414656,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 5 (main after 0.2.0, a2aebc4)"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "nginx",
+      "tool": "logfold 16 threads",
+      "input_bytes": 104857625,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "nginx_100mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--strategy",
+        "chunked",
+        "--threads",
+        "16",
+        "--chunk-mb",
+        "8"
+      ],
+      "wall_median_s": 0.38406209999811836,
+      "wall_min_s": 0.373406700004125,
+      "wall_max_s": 0.41525310001452453,
+      "cpu_median_s": 0.796875,
+      "peak_mb_max": 92.884992,
+      "runs": [
+        {
+          "wall_s": 0.41525310001452453,
+          "cpu_s": 0.859375,
+          "peak_mb": 92.831744,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.38406209999811836,
+          "cpu_s": 0.796875,
+          "peak_mb": 92.880896,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.373406700004125,
+          "cpu_s": 0.71875,
+          "peak_mb": 92.884992,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 5 (main after 0.2.0, a2aebc4)"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "app",
+      "tool": "logfold 1 thread",
+      "input_bytes": 104857640,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "app_100mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--strategy",
+        "sequential"
+      ],
+      "wall_median_s": 0.7276816999947187,
+      "wall_min_s": 0.71375209998223,
+      "wall_max_s": 0.7375700999982655,
+      "cpu_median_s": 0.671875,
+      "peak_mb_max": 41.545728,
+      "runs": [
+        {
+          "wall_s": 0.71375209998223,
+          "cpu_s": 0.625,
+          "peak_mb": 41.545728,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.7276816999947187,
+          "cpu_s": 0.671875,
+          "peak_mb": 41.099264,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.7375700999982655,
+          "cpu_s": 0.671875,
+          "peak_mb": 41.365504,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 5 (main after 0.2.0, a2aebc4)"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "app",
+      "tool": "logfold 16 threads",
+      "input_bytes": 104857640,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "app_100mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--strategy",
+        "chunked",
+        "--threads",
+        "16",
+        "--chunk-mb",
+        "8"
+      ],
+      "wall_median_s": 0.4106958999764174,
+      "wall_min_s": 0.4053206999960821,
+      "wall_max_s": 0.41465550000430085,
+      "cpu_median_s": 0.984375,
+      "peak_mb_max": 93.167616,
+      "runs": [
+        {
+          "wall_s": 0.4106958999764174,
+          "cpu_s": 0.984375,
+          "peak_mb": 93.167616,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.4053206999960821,
+          "cpu_s": 0.90625,
+          "peak_mb": 92.884992,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.41465550000430085,
+          "cpu_s": 1.078125,
+          "peak_mb": 92.790784,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 5 (main after 0.2.0, a2aebc4)"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "loghub",
+      "tool": "logfold 1 thread",
+      "input_bytes": 104857731,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "loghub_100mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--strategy",
+        "sequential"
+      ],
+      "wall_median_s": 1.1665020000073127,
+      "wall_min_s": 1.1503044000128284,
+      "wall_max_s": 1.1760768000094686,
+      "cpu_median_s": 1.125,
+      "peak_mb_max": 66.183168,
+      "runs": [
+        {
+          "wall_s": 1.1665020000073127,
+          "cpu_s": 1.078125,
+          "peak_mb": 66.17088,
+          "returncode": 0
+        },
+        {
+          "wall_s": 1.1503044000128284,
+          "cpu_s": 1.125,
+          "peak_mb": 66.183168,
+          "returncode": 0
+        },
+        {
+          "wall_s": 1.1760768000094686,
+          "cpu_s": 1.140625,
+          "peak_mb": 65.998848,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 5 (main after 0.2.0, a2aebc4)"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "loghub",
+      "tool": "logfold 16 threads",
+      "input_bytes": 104857731,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "loghub_100mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--strategy",
+        "chunked",
+        "--threads",
+        "16",
+        "--chunk-mb",
+        "8"
+      ],
+      "wall_median_s": 0.5605435000034049,
+      "wall_min_s": 0.5489425999985542,
+      "wall_max_s": 0.6022323000070173,
+      "cpu_median_s": 1.734375,
+      "peak_mb_max": 129.675264,
+      "runs": [
+        {
+          "wall_s": 0.6022323000070173,
+          "cpu_s": 1.734375,
+          "peak_mb": 129.675264,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.5605435000034049,
+          "cpu_s": 1.75,
+          "peak_mb": 125.534208,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.5489425999985542,
+          "cpu_s": 1.6875,
+          "peak_mb": 129.118208,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 5 (main after 0.2.0, a2aebc4)"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "highcard",
+      "tool": "logfold 1 thread",
+      "input_bytes": 104857681,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "highcard_100mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--strategy",
+        "sequential"
+      ],
+      "wall_median_s": 4.286218499997631,
+      "wall_min_s": 4.235604900022736,
+      "wall_max_s": 4.320944900013274,
+      "cpu_median_s": 4.140625,
+      "peak_mb_max": 282.435584,
+      "runs": [
+        {
+          "wall_s": 4.320944900013274,
+          "cpu_s": 4.21875,
+          "peak_mb": 282.431488,
+          "returncode": 0
+        },
+        {
+          "wall_s": 4.286218499997631,
+          "cpu_s": 4.140625,
+          "peak_mb": 282.435584,
+          "returncode": 0
+        },
+        {
+          "wall_s": 4.235604900022736,
+          "cpu_s": 4.078125,
+          "peak_mb": 282.259456,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 5 (main after 0.2.0, a2aebc4)"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "highcard",
+      "tool": "logfold 16 threads",
+      "input_bytes": 104857681,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "highcard_100mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--strategy",
+        "chunked",
+        "--threads",
+        "16",
+        "--chunk-mb",
+        "8"
+      ],
+      "wall_median_s": 8.06170839999686,
+      "wall_min_s": 7.839455099980114,
+      "wall_max_s": 8.224381100008031,
+      "cpu_median_s": 14.359375,
+      "peak_mb_max": 1888.149504,
+      "runs": [
+        {
+          "wall_s": 8.224381100008031,
+          "cpu_s": 14.4375,
+          "peak_mb": 1886.691328,
+          "returncode": 0
+        },
+        {
+          "wall_s": 7.839455099980114,
+          "cpu_s": 13.609375,
+          "peak_mb": 1888.149504,
+          "returncode": 0
+        },
+        {
+          "wall_s": 8.06170839999686,
+          "cpu_s": 14.359375,
+          "peak_mb": 1884.184576,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 5 (main after 0.2.0, a2aebc4)"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "highcard",
+      "tool": "logfold high-cardinality mode",
+      "input_bytes": 104857681,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "highcard_100mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--high-cardinality"
+      ],
+      "wall_median_s": 1.509294300019974,
+      "wall_min_s": 1.4696032000065316,
+      "wall_max_s": 1.5650305000017397,
+      "cpu_median_s": 1.46875,
+      "peak_mb_max": 54.345728,
+      "runs": [
+        {
+          "wall_s": 1.4696032000065316,
+          "cpu_s": 1.421875,
+          "peak_mb": 54.140928,
+          "returncode": 0
+        },
+        {
+          "wall_s": 1.5650305000017397,
+          "cpu_s": 1.46875,
+          "peak_mb": 54.345728,
+          "returncode": 0
+        },
+        {
+          "wall_s": 1.509294300019974,
+          "cpu_s": 1.46875,
+          "peak_mb": 54.23104,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 5 (main after 0.2.0, a2aebc4)"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "highcard@10MB",
+      "tool": "logfold 1 thread",
+      "input_bytes": 10485828,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "highcard_10mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--strategy",
+        "sequential"
+      ],
+      "wall_median_s": 2.3906882999872323,
+      "wall_min_s": 2.3899349000130314,
+      "wall_max_s": 2.4258784000121523,
+      "cpu_median_s": 2.328125,
+      "peak_mb_max": 257.499136,
+      "runs": [
+        {
+          "wall_s": 2.3906882999872323,
+          "cpu_s": 2.34375,
+          "peak_mb": 257.16736,
+          "returncode": 0
+        },
+        {
+          "wall_s": 2.3899349000130314,
+          "cpu_s": 2.3125,
+          "peak_mb": 257.499136,
+          "returncode": 0
+        },
+        {
+          "wall_s": 2.4258784000121523,
+          "cpu_s": 2.328125,
+          "peak_mb": 257.1264,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 5 (main after 0.2.0, a2aebc4)"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "highcard@10MB",
+      "tool": "logfold 16 threads",
+      "input_bytes": 10485828,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "highcard_10mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--strategy",
+        "chunked",
+        "--threads",
+        "16",
+        "--chunk-mb",
+        "8"
+      ],
+      "wall_median_s": 2.859550199995283,
+      "wall_min_s": 2.825555899995379,
+      "wall_max_s": 2.9100652000051923,
+      "cpu_median_s": 2.90625,
+      "peak_mb_max": 300.335104,
+      "runs": [
+        {
+          "wall_s": 2.9100652000051923,
+          "cpu_s": 2.9375,
+          "peak_mb": 300.335104,
+          "returncode": 0
+        },
+        {
+          "wall_s": 2.825555899995379,
+          "cpu_s": 2.859375,
+          "peak_mb": 298.733568,
+          "returncode": 0
+        },
+        {
+          "wall_s": 2.859550199995283,
+          "cpu_s": 2.90625,
+          "peak_mb": 298.573824,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 5 (main after 0.2.0, a2aebc4)"
+    },
+    {
+      "scenario": "analyze-bare",
+      "dataset": "highcard@10MB",
+      "tool": "logfold high-cardinality mode",
+      "input_bytes": 10485828,
+      "command": [
+        "python.exe",
+        "-m",
+        "logfold",
+        "analyze",
+        "highcard_10mb.log",
+        "-f",
+        "plain",
+        "--top",
+        "1",
+        "-q",
+        "--engine",
+        "native",
+        "--no-masks",
+        "--high-cardinality"
+      ],
+      "wall_median_s": 0.5086474000127055,
+      "wall_min_s": 0.5058271999878343,
+      "wall_max_s": 0.5100787999981549,
+      "cpu_median_s": 0.4375,
+      "peak_mb_max": 54.29248,
+      "runs": [
+        {
+          "wall_s": 0.5086474000127055,
+          "cpu_s": 0.4375,
+          "peak_mb": 54.198272,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.5058271999878343,
+          "cpu_s": 0.421875,
+          "peak_mb": 54.29248,
+          "returncode": 0
+        },
+        {
+          "wall_s": 0.5100787999981549,
+          "cpu_s": 0.453125,
+          "peak_mb": 54.21056,
+          "returncode": 0
+        }
+      ],
+      "measured_in": "run 5 (main after 0.2.0, a2aebc4)"
     }
   ]
 }
