@@ -1,6 +1,6 @@
 # Benchmark results
 
-Protocol: [`PROTOCOL.md`](PROTOCOL.md). Raw data: `bench/results/results.json`, `bench/results/results.json`, `bench/results/results.json`.
+Protocol: [`PROTOCOL.md`](PROTOCOL.md). Raw data: `bench/results/final/part_combined.json`.
 
 Machine: Windows-11-10.0.26200-SP0, 8 physical / 16 logical cores, 34.2 GB RAM, Python 3.13.0.
 
@@ -12,29 +12,31 @@ Wall time of the median of the repeats in seconds, with throughput in MB/s in br
 
 | tool | nginx s (MB/s) | app s (MB/s) | loghub s (MB/s) | highcard s (MB/s) | highcard@10MB s (MB/s) | peak MB (max over all runs) |
 |---|---:|---:|---:|---:|---:|---:|
-| logfold 1 thread | 0.62 (170) | 0.71 (149) | 1.49 (70) | **4.35 (24)** | 2.30 (5) | 258 |
-| logfold 16 threads | **0.37 (285)** | **0.37 (281)** | **0.92 (114)** | 8.43 (12) | 2.70 (4) | 304 |
-| logdrain (Rust) | 5.27 (20) | 5.02 (21) | 2.73 (38) | - | **0.50 (21)** | 1,289 |
-| Drain3 (Python) | 5.26 (20) | 9.03 (12) | 23.56 (4) | - | - | 31 |
+| Drain3 (Python) | 5.26 (20) | 9.03 (12) | 21.95 (5) | - | - | 41 |
+| logfold 1 thread | 0.62 (170) | 0.71 (149) | 1.39 (75) | 4.44 (24) | 2.33 (4) | 283 |
+| logfold 16 threads | **0.37 (285)** | **0.37 (281)** | **0.82 (128)** | 8.72 (12) | 2.84 (4) | 1,885 |
+| logdrain (Rust) | 5.27 (20) | 5.02 (21) | 2.24 (47) | - | 0.56 (19) | 1,289 |
+| logfold high-cardinality mode | - | - | - | **1.44 (73)** | **0.53 (20)** | 54 |
 
 ## Analyze, with masking
 
-| tool | nginx s (MB/s) | app s (MB/s) | loghub s (MB/s) | highcard@10MB s (MB/s) | peak MB (max over all runs) |
-|---|---:|---:|---:|---:|---:|
-| logfold 1 thread | 1.13 (93) | 0.96 (109) | 1.90 (55) | 2.47 (4) | 258 |
-| logfold 16 threads | **0.46 (227)** | **0.42 (247)** | **1.00 (105)** | 2.82 (4) | 304 |
-| logdrain (Rust) | 1.49 (70) | 5.57 (19) | 3.42 (31) | **0.55 (19)** | 1,289 |
-| logdelta (Rust) | 7.34 (14) | 4.93 (21) | 7.34 (14) | 4.25 (2) | 166 |
-| Drain3 (Python) | 26.82 (4) | 24.62 (4) | 35.93 (3) | - | 31 |
+| tool | nginx s (MB/s) | app s (MB/s) | loghub s (MB/s) | highcard s (MB/s) | highcard@10MB s (MB/s) | peak MB (max over all runs) |
+|---|---:|---:|---:|---:|---:|---:|
+| Drain3 (Python) | 26.82 (4) | 24.62 (4) | 35.37 (3) | - | - | 41 |
+| logfold 1 thread | 1.13 (93) | 0.96 (109) | 1.83 (57) | 5.93 (18) | 2.54 (4) | 283 |
+| logfold 16 threads | **0.46 (227)** | **0.42 (247)** | **0.85 (124)** | 8.46 (12) | 2.92 (4) | 1,885 |
+| logdrain (Rust) | 1.49 (70) | 5.57 (19) | 2.91 (36) | - | **0.58 (18)** | 1,289 |
+| logdelta (Rust) | 7.34 (14) | 4.93 (21) | 6.99 (15) | - | 4.83 (2) | 154 |
+| logfold high-cardinality mode | - | - | - | **3.03 (35)** | 0.68 (15) | 54 |
 
 ## Diff of two 100 MB runs (throughput counts both files)
 
 | tool | nginx s (MB/s) | app s (MB/s) | peak MB (max over all runs) |
 |---|---:|---:|---:|
-| logfold diff 1 thread | 3.38 (62) | 2.90 (72) | 258 |
-| logfold diff 16 threads | 0.80 (263) | 0.71 (294) | 304 |
-| logfold diff 16 threads, --no-recount | **0.57 (368)** | **0.50 (419)** | 304 |
-| logdelta diff (Rust) | 14.84 (14) | 11.60 (18) | 166 |
+| logfold diff 1 thread | 3.38 (62) | 2.90 (72) | 283 |
+| logfold diff 16 threads | 0.80 (263) | 0.71 (294) | 1,885 |
+| logfold diff 16 threads, --no-recount | **0.57 (368)** | **0.50 (419)** | 1,885 |
+| logdelta diff (Rust) | 14.84 (14) | 11.60 (18) | 154 |
 
 
 ## Reading the numbers

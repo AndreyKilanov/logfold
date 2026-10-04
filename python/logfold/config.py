@@ -13,6 +13,7 @@ from typing import Literal
 from logfold.errors import ConfigError
 
 DEFAULT_CHUNK_BYTES = 64 << 20
+HIGH_CARDINALITY_MAX_TEMPLATES = 5_000
 EngineName = Literal["auto", "native", "python"]
 StrategyName = Literal["auto", "sequential", "chunked"]
 ExamplesMode = Literal["raw", "masked", "none"]

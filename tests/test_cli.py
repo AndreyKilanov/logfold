@@ -155,3 +155,18 @@ def test_subprocess_exit_code_for_gate(tmp_path: Path) -> None:
         timeout=60,
     )
     assert completed.returncode == exit_codes.NEW_TEMPLATES
+
+
+def test_high_cardinality_flag(tmp_path: Path) -> None:
+    import random
+
+    rng = random.Random(1)
+    path = tmp_path / "unique.log"
+    path.write_text(
+        "\n".join(" ".join(f"w{rng.getrandbits(40):x}" for _ in range(8)) for _ in range(9000)) + "\n", encoding="utf-8"
+    )
+    result = runner.invoke(app, ["analyze", str(path), "-f", "plain", "--high-cardinality", "--json", "-q"])
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.stdout)
+    assert payload["template_count"] <= 5010
+    assert payload["run"]["overflowed"] is True

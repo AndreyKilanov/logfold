@@ -15,6 +15,7 @@ from typing import Any
 from logfold._version import get_version
 from logfold.comparison import classify
 from logfold.config import (
+    HIGH_CARDINALITY_MAX_TEMPLATES,
     DiffConfig,
     ExamplesMode,
     ExecutionConfig,
@@ -63,8 +64,11 @@ def _mining(
     max_children: int | None,
     max_templates: int | None,
     masks: Sequence[MaskRule] | None,
+    high_cardinality: bool = False,
 ) -> MiningConfig:
     config = base or MiningConfig()
+    if high_cardinality and max_templates is None:
+        max_templates = min(config.max_templates, HIGH_CARDINALITY_MAX_TEMPLATES)
     changes: dict[str, Any] = {}
     for key, value in (
         ("depth", depth),
@@ -87,8 +91,11 @@ def _execution(
     strategy: str | None,
     threads: int | None,
     chunk_bytes: int | None,
+    high_cardinality: bool = False,
 ) -> ExecutionConfig:
     config = base or ExecutionConfig()
+    if high_cardinality and strategy is None and config.strategy == "auto":
+        strategy = "sequential"
     changes: dict[str, Any] = {}
     for key, value in (("engine", engine), ("strategy", strategy), ("threads", threads), ("chunk_bytes", chunk_bytes)):
         if value is not None:
@@ -174,7 +181,12 @@ def _template(stats: TemplateStats, run: int, tz_aware: bool, mode: ExamplesMode
 
 
 def _warnings(
-    summaries: Sequence[RunSummary], engine: Engine, execution: ExecutionConfig, resolved: ResolvedFormat
+    summaries: Sequence[RunSummary],
+    engine: Engine,
+    execution: ExecutionConfig,
+    resolved: ResolvedFormat,
+    mining: MiningConfig,
+    high_cardinality: bool,
 ) -> list[str]:
     warnings: list[str] = []
     if engine.name == "python" and not native.is_available():
@@ -186,8 +198,14 @@ def _warnings(
                 "check the format or enable multiline"
             )
         if summary.overflowed:
+            hint = (
+                "high-cardinality mode: records beyond the first templates were pooled into catch-all templates"
+                if high_cardinality
+                else "consider high_cardinality=True (faster, bounded memory) or a larger max_templates"
+            )
             warnings.append(
-                f"{summary.name}: max_templates was reached; extra records were pooled into catch-all templates"
+                f"{summary.name}: max_templates ({mining.max_templates:,}) was reached; extra records were pooled "
+                f"into catch-all templates ({hint})"
             )
         if summary.records == 0:
             warnings.append(f"{summary.name}: no records were parsed")
@@ -222,6 +240,7 @@ def analyze(
     max_children: int | None = None,
     max_templates: int | None = None,
     masks: Sequence[MaskRule] | None = None,
+    high_cardinality: bool = False,
     mining: MiningConfig | None = None,
     execution: ExecutionConfig | None = None,
     engine: str | None = None,
@@ -242,6 +261,9 @@ def analyze(
         max_children: Maximum children per tree node (default 100).
         max_templates: Maximum number of templates before pooling (default 100000).
         masks: Masking rules replacing the defaults.
+        high_cardinality: Mode for data with a huge number of distinct message shapes (unstructured text, random ids):
+            caps templates at 5000 unless ``max_templates`` is given, pools the rest into catch-all templates and
+            runs sequentially. Much faster and bounded in memory; rare templates are not kept apart.
         mining: Full mining configuration; the keyword arguments above override its fields.
         execution: Full execution configuration; the keyword arguments below override its fields.
         engine: ``auto``, ``native`` or ``python``.
@@ -263,8 +285,8 @@ def analyze(
     run = _paths(path, "analyze()")
     resolved = resolve_format(format, run, multiline)
     spec = resolved.spec
-    mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks)
-    exec_config = _execution(execution, engine, strategy, threads, chunk_bytes)
+    mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks, high_cardinality)
+    exec_config = _execution(execution, engine, strategy, threads, chunk_bytes, high_cardinality)
     mined, used = _mine((run,), spec, mining_config, exec_config, progress)
     summary = _summary(run, mined.runs[0])
     masker = Masker(mining_config.masks)
@@ -276,7 +298,7 @@ def analyze(
         run=summary,
         metrics=mined.metrics,
         meta=_meta(spec, mining_config, used),
-        warnings=tuple(_warnings([summary], used, exec_config, resolved)),
+        warnings=tuple(_warnings([summary], used, exec_config, resolved, mining_config, high_cardinality)),
     )
 
 
@@ -297,6 +319,7 @@ def diff(
     max_children: int | None = None,
     max_templates: int | None = None,
     masks: Sequence[MaskRule] | None = None,
+    high_cardinality: bool = False,
     mining: MiningConfig | None = None,
     execution: ExecutionConfig | None = None,
     engine: str | None = None,
@@ -328,6 +351,7 @@ def diff(
         max_children: Maximum children per tree node.
         max_templates: Maximum number of templates before pooling.
         masks: Masking rules replacing the defaults.
+        high_cardinality: Fast mode for data with a huge number of distinct message shapes; see :func:`analyze`.
         mining: Full mining configuration.
         execution: Full execution configuration.
         engine: ``auto``, ``native`` or ``python``.
@@ -350,8 +374,8 @@ def diff(
     second = _paths(after, "diff() after")
     resolved = resolve_format(format, first, multiline)
     spec = resolved.spec
-    mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks)
-    exec_config = _execution(execution, engine, strategy, threads, chunk_bytes)
+    mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks, high_cardinality)
+    exec_config = _execution(execution, engine, strategy, threads, chunk_bytes, high_cardinality)
     base = diff_config or DiffConfig()
     changes: dict[str, Any] = {}
     for key, value in (
@@ -385,5 +409,7 @@ def diff(
         config=config,
         metrics=mined.metrics,
         meta=_meta(spec, mining_config, used),
-        warnings=tuple(_warnings([before_summary, after_summary], used, exec_config, resolved)),
+        warnings=tuple(
+            _warnings([before_summary, after_summary], used, exec_config, resolved, mining_config, high_cardinality)
+        ),
     )

@@ -170,3 +170,52 @@ def test_chunked_is_deterministic_across_threads_and_close_to_sequential(corpus_
     sequential = logfold.analyze(path, format="app", strategy="sequential")
     assert sum(c for _t, c in baseline) == sequential.run.records == 40_000
     assert {t for t, _c in baseline} == {t.text for t in sequential.templates}
+
+
+def _unique_lines(tmp_path: Path, count: int = 3000) -> Path:
+    import random
+
+    rng = random.Random(5)
+    words = [f"{rng.choice('abcdef')}{rng.getrandbits(30):x}" for _ in range(5000)]
+    path = tmp_path / "unique.log"
+    path.write_text(
+        "\n".join(" ".join(rng.choice(words) for _ in range(rng.randrange(5, 12))) for _ in range(count)) + "\n",
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_high_cardinality_mode_bounds_templates_and_stays_exact(tmp_path: Path) -> None:
+    path = _unique_lines(tmp_path)
+    normal = logfold.analyze(str(path), format="plain", strategy="sequential")
+    fast = logfold.analyze(str(path), format="plain", high_cardinality=True, max_templates=300)
+    assert len(normal.templates) > 1000
+    assert len(fast.templates) <= 300 + 10
+    assert fast.run.overflowed
+    assert sum(t.count for t in fast.templates) == fast.run.records == 3000
+    assert any("high-cardinality mode" in warning for warning in fast.warnings)
+    assert fast.metrics.strategy == "sequential"
+
+
+def test_high_cardinality_defaults_and_overrides(tmp_path: Path) -> None:
+    from logfold.config import HIGH_CARDINALITY_MAX_TEMPLATES
+
+    path = _unique_lines(tmp_path, 8000)
+    default = logfold.analyze(str(path), format="plain", high_cardinality=True)
+    assert len(default.templates) <= HIGH_CARDINALITY_MAX_TEMPLATES + 10
+    explicit = logfold.analyze(str(path), format="plain", high_cardinality=True, max_templates=20_000)
+    assert len(explicit.templates) > HIGH_CARDINALITY_MAX_TEMPLATES
+    plain = logfold.analyze(str(path), format="plain", max_templates=200)
+    assert any("high_cardinality=True" in warning for warning in plain.warnings)
+
+
+@requires_native
+def test_high_cardinality_engines_agree(tmp_path: Path) -> None:
+    path = _unique_lines(tmp_path)
+    native_result = logfold.analyze(
+        str(path), format="plain", high_cardinality=True, max_templates=400, engine="native"
+    )
+    python_result = logfold.analyze(
+        str(path), format="plain", high_cardinality=True, max_templates=400, engine="python"
+    )
+    assert [(t.id, t.count) for t in native_result.templates] == [(t.id, t.count) for t in python_result.templates]

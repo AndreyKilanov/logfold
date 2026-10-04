@@ -82,12 +82,22 @@ Multi-line records (stack traces): `--multiline` joins lines that do not start a
 | `--max-children` | 100 | children per tree node |
 | `--max-templates` | 100000 | cap on templates; further records are pooled into catch-all templates |
 | `--no-masks` | off | do not mask values |
+| `--high-cardinality` | off | mode for data with a huge number of distinct messages (see below) |
 | `--strategy` | auto | `sequential` (one tree), `chunked` (parallel), `auto` (chunked above 64 MiB) |
 | `--threads`, `--chunk-mb` | all cores, 64 | parallel execution |
 | `--examples` | raw | `masked` or `none` before sharing a report |
 
 The parallel strategy cuts the file into fixed-size chunks, builds one tree per chunk and merges the trees in order. For
 a fixed chunk size the result does not depend on the number of threads.
+
+### High-cardinality data
+
+Free-form text, random ids or hashes in every line can produce one template per line. Mining that is slow and
+memory-hungry for any Drain-based tool. `--high-cardinality` (`high_cardinality=True` in Python) caps the templates at
+5000 (unless you pass `--max-templates`), pools every further record into catch-all templates (`<*> <*> ...`, one per
+token count; counts stay exact) and runs sequentially, because merging huge trees costs more than parallelism saves.
+On a 10 MB file with about 84 000 distinct lines this turns 2.0 s into 0.14 s. A warning tells you when the cap was hit,
+also without the mode.
 
 ## Extending logfold
 

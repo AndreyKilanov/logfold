@@ -33,11 +33,16 @@ def fetch_loghub(name: str, cache: Path) -> list[str]:
 
 
 def perturb(line: str, rng: random.Random) -> str:
-    """Replace every digit run by random digits of the same length (keeps the structure, changes the values)."""
+    """Randomise the long numbers of a line (ids, ports, addresses) and keep short ones.
+
+    Digit runs of one or two characters (days, months, hours, minutes, seconds, small counters) stay as they are, so dates
+    and times remain real: in real logs they change slowly, and randomising them per line would create an artificial
+    explosion of distinct tokens. Runs of three or more digits get random digits of the same length.
+    """
 
     def swap(match: re.Match[str]) -> str:
         text = match.group(0)
-        if len(text) == 1:
+        if len(text) <= 2:
             return text
         return "".join(rng.choice("0123456789") for _ in text)
 

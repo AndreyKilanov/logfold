@@ -55,6 +55,13 @@ Engine = Annotated[str | None, typer.Option("--engine", help="auto, native or py
 ChunkMb = Annotated[int | None, typer.Option("--chunk-mb", min=1, help="Chunk size in MiB for parallel runs.")]
 Strategy = Annotated[str | None, typer.Option("--strategy", help="auto, sequential (one tree) or chunked (parallel).")]
 NoMasks = Annotated[bool, typer.Option("--no-masks", help="Do not mask numbers, IPs, UUIDs and other values.")]
+HighCardinality = Annotated[
+    bool,
+    typer.Option(
+        "--high-cardinality",
+        help="Fast mode for data with a huge number of distinct messages: at most 5000 templates, runs sequentially.",
+    ),
+]
 Examples = Annotated[str, typer.Option("--examples", help="raw, masked or none: how example messages are kept.")]
 AsJson = Annotated[bool, typer.Option("--json", help="Print JSON to stdout instead of tables.")]
 Quiet = Annotated[bool, typer.Option("--quiet", "-q", help="No progress and no status messages on stderr.")]
@@ -142,6 +149,7 @@ def _options(
     chunk_mb: int | None,
     strategy: str | None,
     no_masks: bool,
+    high_cardinality: bool,
 ) -> dict[str, Any]:
     return {
         "sim_th": sim_th,
@@ -153,6 +161,7 @@ def _options(
         "chunk_bytes": chunk_mb << 20 if chunk_mb else None,
         "strategy": strategy,
         "masks": [] if no_masks else None,
+        "high_cardinality": high_cardinality,
     }
 
 
@@ -173,6 +182,7 @@ def analyze(
     chunk_mb: ChunkMb = None,
     strategy: Strategy = None,
     no_masks: NoMasks = False,
+    high_cardinality: HighCardinality = False,
     examples: Examples = "raw",
     as_json: AsJson = False,
     quiet: Quiet = False,
@@ -187,7 +197,18 @@ def analyze(
                 multiline=multiline,
                 examples=examples,  # type: ignore[arg-type]
                 progress=progress,
-                **_options(sim_th, depth, max_children, max_templates, threads, engine, chunk_mb, strategy, no_masks),
+                **_options(
+                    sim_th,
+                    depth,
+                    max_children,
+                    max_templates,
+                    threads,
+                    engine,
+                    chunk_mb,
+                    strategy,
+                    no_masks,
+                    high_cardinality,
+                ),
             )
         if min_count > 1:
             result = dataclasses.replace(result, templates=tuple(t for t in result.templates if t.count >= min_count))
@@ -232,6 +253,7 @@ def diff(
     chunk_mb: ChunkMb = None,
     strategy: Strategy = None,
     no_masks: NoMasks = False,
+    high_cardinality: HighCardinality = False,
     examples: Examples = "raw",
     as_json: AsJson = False,
     quiet: Quiet = False,
@@ -252,7 +274,18 @@ def diff(
                 recount=recount,
                 examples=examples,  # type: ignore[arg-type]
                 progress=progress,
-                **_options(sim_th, depth, max_children, max_templates, threads, engine, chunk_mb, strategy, no_masks),
+                **_options(
+                    sim_th,
+                    depth,
+                    max_children,
+                    max_templates,
+                    threads,
+                    engine,
+                    chunk_mb,
+                    strategy,
+                    no_masks,
+                    high_cardinality,
+                ),
             )
         _emit(result, top, as_json)
         if out is not None:

@@ -107,6 +107,10 @@ def analyze_commands(path: Path, masked: bool) -> dict[str, list[str]]:
             "default" if masked else "none",
         ],
     }
+    if "highcard" in path.name:
+        commands["logfold high-cardinality mode"] = logfold(
+            "analyze", str(path), *common, *mask_flag, "--high-cardinality"
+        )
     logdrain = shutil.which("logdrain")
     if logdrain:
         flags = ["--format", "csv", "--min-size", "999999999", "--sim-th", "0.4", "--depth", "4"]

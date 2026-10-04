@@ -15,4 +15,5 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   indented-continuation (multiline) detection; `regex:<pattern>` formats.
 - Entry-point plugins for formats, reporters and diff matchers.
 - JSON (versioned schemas in `docs/schema`), self-contained HTML and plain-text reports.
+- `--high-cardinality` / `high_cardinality=True`: bounded, fast mode for data with a huge number of distinct messages.
 - Benchmark and quality harnesses (`bench/`, `eval/`).
