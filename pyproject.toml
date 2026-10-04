@@ -28,6 +28,12 @@ classifiers = [
   "Topic :: System :: Logging",
   "Typing :: Typed",
 ]
+
+[project.urls]
+Homepage = "https://github.com/AndreyKilanov/logfold"
+Repository = "https://github.com/AndreyKilanov/logfold"
+Issues = "https://github.com/AndreyKilanov/logfold/issues"
+Changelog = "https://github.com/AndreyKilanov/logfold/blob/main/CHANGELOG.md"
 dependencies = []
 
 [project.optional-dependencies]
