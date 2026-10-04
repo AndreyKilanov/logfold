@@ -1,0 +1,137 @@
+{
+  "per_dataset": {
+    "Android": {
+      "drain3": 0.7145,
+      "drain3:templates": 151,
+      "logfold-sequential": 0.7145,
+      "logfold-sequential:templates": 151,
+      "logfold-chunked": 0.7145,
+      "logfold-chunked:templates": 151
+    },
+    "Apache": {
+      "drain3": 1.0,
+      "drain3:templates": 6,
+      "logfold-sequential": 1.0,
+      "logfold-sequential:templates": 6,
+      "logfold-chunked": 1.0,
+      "logfold-chunked:templates": 6
+    },
+    "BGL": {
+      "drain3": 0.9685,
+      "drain3:templates": 105,
+      "logfold-sequential": 0.9685,
+      "logfold-sequential:templates": 105,
+      "logfold-chunked": 0.9685,
+      "logfold-chunked:templates": 105
+    },
+    "Hadoop": {
+      "drain3": 0.963,
+      "drain3:templates": 99,
+      "logfold-sequential": 0.963,
+      "logfold-sequential:templates": 99,
+      "logfold-chunked": 0.963,
+      "logfold-chunked:templates": 99
+    },
+    "HDFS": {
+      "drain3": 0.9975,
+      "drain3:templates": 17,
+      "logfold-sequential": 0.9975,
+      "logfold-sequential:templates": 17,
+      "logfold-chunked": 0.9975,
+      "logfold-chunked:templates": 17
+    },
+    "HealthApp": {
+      "drain3": 0.9005,
+      "drain3:templates": 72,
+      "logfold-sequential": 0.9005,
+      "logfold-sequential:templates": 72,
+      "logfold-chunked": 0.9005,
+      "logfold-chunked:templates": 72
+    },
+    "HPC": {
+      "drain3": 0.887,
+      "drain3:templates": 45,
+      "logfold-sequential": 0.887,
+      "logfold-sequential:templates": 45,
+      "logfold-chunked": 0.887,
+      "logfold-chunked:templates": 45
+    },
+    "Linux": {
+      "drain3": 0.684,
+      "drain3:templates": 111,
+      "logfold-sequential": 0.684,
+      "logfold-sequential:templates": 111,
+      "logfold-chunked": 0.684,
+      "logfold-chunked:templates": 111
+    },
+    "Mac": {
+      "drain3": 0.682,
+      "drain3:templates": 296,
+      "logfold-sequential": 0.682,
+      "logfold-sequential:templates": 296,
+      "logfold-chunked": 0.6535,
+      "logfold-chunked:templates": 296
+    },
+    "OpenSSH": {
+      "drain3": 0.718,
+      "drain3:templates": 23,
+      "logfold-sequential": 0.718,
+      "logfold-sequential:templates": 23,
+      "logfold-chunked": 0.718,
+      "logfold-chunked:templates": 23
+    },
+    "OpenStack": {
+      "drain3": 0.2985,
+      "drain3:templates": 31,
+      "logfold-sequential": 0.2985,
+      "logfold-sequential:templates": 31,
+      "logfold-chunked": 0.2985,
+      "logfold-chunked:templates": 31
+    },
+    "Proxifier": {
+      "drain3": 0.0255,
+      "drain3:templates": 38,
+      "logfold-sequential": 0.0255,
+      "logfold-sequential:templates": 38,
+      "logfold-chunked": 0.0255,
+      "logfold-chunked:templates": 38
+    },
+    "Spark": {
+      "drain3": 0.9225,
+      "drain3:templates": 33,
+      "logfold-sequential": 0.9225,
+      "logfold-sequential:templates": 33,
+      "logfold-chunked": 0.9225,
+      "logfold-chunked:templates": 33
+    },
+    "Thunderbird": {
+      "drain3": 0.9575,
+      "drain3:templates": 179,
+      "logfold-sequential": 0.9575,
+      "logfold-sequential:templates": 179,
+      "logfold-chunked": 0.9575,
+      "logfold-chunked:templates": 179
+    },
+    "Windows": {
+      "drain3": 0.5665,
+      "drain3:templates": 49,
+      "logfold-sequential": 0.5665,
+      "logfold-sequential:templates": 49,
+      "logfold-chunked": 0.571,
+      "logfold-chunked:templates": 49
+    },
+    "Zookeeper": {
+      "drain3": 0.9665,
+      "drain3:templates": 46,
+      "logfold-sequential": 0.9665,
+      "logfold-sequential:templates": 46,
+      "logfold-chunked": 0.9665,
+      "logfold-chunked:templates": 46
+    }
+  },
+  "average": {
+    "drain3": 0.76575,
+    "logfold-sequential": 0.76575,
+    "logfold-chunked": 0.76425
+  }
+}
