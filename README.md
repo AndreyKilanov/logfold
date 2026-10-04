@@ -1,5 +1,11 @@
 # logfold
 
+[![CI](https://github.com/AndreyKilanov/logfold/actions/workflows/ci.yml/badge.svg)](https://github.com/AndreyKilanov/logfold/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/logfold)](https://pypi.org/project/logfold/)
+[![Python versions](https://img.shields.io/pypi/pyversions/logfold)](https://pypi.org/project/logfold/)
+[![License: MIT](https://img.shields.io/github/license/AndreyKilanov/logfold)](https://github.com/AndreyKilanov/logfold/blob/main/LICENSE)
+[![Rust core](https://img.shields.io/badge/core-Rust-orange)](https://github.com/AndreyKilanov/logfold/blob/main/docs/ALGORITHM.md)
+
 **Fold large logs into templates, and see what changed between two runs.** A Python library and command-line tool
 with a Rust core, for offline analysis of big log files: no platform to run, no data to upload.
 
@@ -18,7 +24,7 @@ New templates (2)
 - **Diff.** Compare two runs (before and after a deploy, passing and failing CI job). New, disappeared and changed
   templates, normalized by run size. Identical inputs produce an empty diff.
 - **Fast.** Rust core, streaming I/O with memory independent of the file size, deterministic multi-threaded mining.
-  See [benchmarks](bench/RESULTS.md).
+  See [benchmarks](https://github.com/AndreyKilanov/logfold/blob/main/bench/RESULTS.md).
 - **A Python library first.** `analyze()` and `diff()` return plain, immutable dataclasses; reports are JSON (versioned
   schema), self-contained HTML or text.
 - **Extensible.** Formats, reporters and diff matchers are plugins discovered through entry points.
@@ -48,12 +54,23 @@ comparison.to_html("diff.html")
 ```
 
 ```
-logfold analyze app.log --top 30 --out report.html
+logfold analyze app.log --top 30 --out report.html          # fold one run into templates
 logfold diff before.log after.log --fail-on-new-alerts      # exit code 2 in CI when something new is wrong
-logfold formats
+logfold formats                                             # list the log formats
+logfold info                                                # versions and engine availability, for bug reports
+logfold --version
 ```
 
-More in the [guide](docs/guide.md): formats, parameters, plugins, engines.
+## Documentation
+
+- [Guide](https://github.com/AndreyKilanov/logfold/blob/main/docs/guide.md): formats, parameters, plugins, engines.
+- [Command-line reference](https://github.com/AndreyKilanov/logfold/blob/main/docs/cli.md): every command, option and
+  exit code.
+- [Python API reference](https://github.com/AndreyKilanov/logfold/blob/main/docs/api.md): `analyze`, `diff`, results,
+  configuration, errors, reporters and extension points.
+- [Algorithm](https://github.com/AndreyKilanov/logfold/blob/main/docs/ALGORITHM.md), [JSON
+  schemas](https://github.com/AndreyKilanov/logfold/tree/main/docs/schema) and the
+  [changelog](https://github.com/AndreyKilanov/logfold/blob/main/CHANGELOG.md).
 
 ## How it relates to other tools
 
@@ -66,20 +83,20 @@ More in the [guide](docs/guide.md): formats, parameters, plugins, engines.
 | Multi-threaded mining of one big file | yes, deterministic | no | not documented for the CLI (library `add` is thread-safe) | not documented |
 | Reports | JSON, HTML, text | - | text, JSON, CSV | terminal, JSON, Markdown |
 
-Timings are in [`bench/RESULTS.md`](bench/RESULTS.md), measured with the [protocol](bench/PROTOCOL.md) that was fixed
+Timings are in [`bench/RESULTS.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/RESULTS.md), measured with the [protocol](https://github.com/AndreyKilanov/logfold/blob/main/bench/PROTOCOL.md) that was fixed
 before the runs. Template quality: `python eval/quality.py` (grouping accuracy on the 16 Loghub-2k datasets).
 
 ## Design
 
 Layered: a pure domain core (masking, tokenizer, Drain-compatible tree, merge) with no I/O, adapters for files and
 formats, an execution layer, a thin PyO3 shim, and a Python package on top. The algorithm is specified in
-[`docs/ALGORITHM.md`](docs/ALGORITHM.md); a pure-Python reference engine implements the same specification, and the Rust
+[`docs/ALGORITHM.md`](https://github.com/AndreyKilanov/logfold/blob/main/docs/ALGORITHM.md); a pure-Python reference engine implements the same specification, and the Rust
 engine is tested against it for exact equality.
 
 ## Development
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) (branches, commits, issues, definition of done).
+See [CONTRIBUTING.md](https://github.com/AndreyKilanov/logfold/blob/main/CONTRIBUTING.md) (branches, commits, issues, definition of done).
 
 ## License
 
-MIT, see [LICENSE](LICENSE). Copyright (c) 2026 Andrey Kilanov.
+MIT, see [LICENSE](https://github.com/AndreyKilanov/logfold/blob/main/LICENSE). Copyright (c) 2026 Andrey Kilanov.
