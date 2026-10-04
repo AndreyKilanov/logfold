@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from logfold import comparison as _comparison  # noqa: F401 - registers the built-in diff matchers
 from logfold import formats as _formats  # noqa: F401 - registers the built-in formats
+from logfold import plugins as _plugins  # noqa: F401 - registers the default plugins
 from logfold import reporters as _reporters  # noqa: F401 - registers the built-in reporters
 from logfold._version import get_version
 from logfold.api import analyze, diff

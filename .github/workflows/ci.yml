@@ -80,6 +80,6 @@ jobs:
           python -m pip install pytest hypothesis jsonschema typer rich
           echo "PYTHONPATH=$PWD/python" >> "$GITHUB_ENV"
       - name: Run the engine-independent tests
-        run: python -m pytest -q tests/test_api.py tests/test_formats.py tests/test_diff.py tests/test_reporters.py tests/test_plugins.py
+        run: python -m pytest -q tests/test_api.py tests/test_formats.py tests/test_diff.py tests/test_reporters.py tests/test_plugins.py tests/test_default_plugins.py tests/test_plugin_catalog.py tests/test_cli_plugins.py
         env:
           LOGFOLD_ENGINE: python

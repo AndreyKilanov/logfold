@@ -1,46 +1,15 @@
-"""Diff matchers: decide which templates of two runs are the same template.
+"""Diff matchers that ship with logfold as default plugins.
 
 The miner mines both runs into one shared tree, so templates present in both runs are matched by logfold itself. A
 matcher only sees the rest, the template texts present in a single run, and may pair them: a reworded message is then
-compared as one template (``changed``) instead of being reported as one ``new`` and one ``disappeared`` template.
+compared as one template instead of being reported as one ``new`` and one ``disappeared`` template.
 """
 
 from __future__ import annotations
 
 from collections.abc import Sequence
 
-__all__ = ["FirstWordMatcher", "JaccardMatcher"]
-
-
-class FirstWordMatcher:
-    """Pair templates that start with the same word.
-
-    Attributes:
-        name: Name used by ``--matcher`` and :class:`logfold.DiffConfig`.
-    """
-
-    name = "example-first-word"
-
-    def match(self, before_only: Sequence[str], after_only: Sequence[str]) -> list[tuple[int, int]]:
-        """Pair templates by their first word.
-
-        Args:
-            before_only: Template texts present only in the first run.
-            after_only: Template texts present only in the second run.
-
-        Returns:
-            Pairs ``(i, j)`` meaning ``before_only[i]`` and ``after_only[j]`` are the same template; every index occurs
-            at most once.
-        """
-        pairs: list[tuple[int, int]] = []
-        used: set[int] = set()
-        for j, text in enumerate(after_only):
-            for i, other in enumerate(before_only):
-                if i not in used and other.split()[:1] == text.split()[:1]:
-                    pairs.append((i, j))
-                    used.add(i)
-                    break
-        return pairs
+__all__ = ["JaccardMatcher"]
 
 
 class JaccardMatcher:
@@ -54,7 +23,7 @@ class JaccardMatcher:
         threshold: Minimum similarity, from 0 to 1, for two templates to be paired.
     """
 
-    name = "example-jaccard"
+    name = "jaccard"
     threshold = 0.6
 
     def match(self, before_only: Sequence[str], after_only: Sequence[str]) -> list[tuple[int, int]]:

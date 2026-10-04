@@ -1,0 +1,22 @@
+"""Plugins that ship with logfold, registered when this package is imported.
+
+Formats: ``logfmt``, ``serilog-clef``. Reporters: ``markdown``, ``csv``. Diff matchers: ``jaccard``.
+
+They use the same extension points as third-party plugins (:mod:`logfold.ext`); a plugin package that registers the same
+name replaces the default. :mod:`logfold.plugins.catalog` lists and installs further plugins.
+"""
+
+from __future__ import annotations
+
+from logfold.ext.registry import register_format, register_matcher, register_reporter
+from logfold.plugins.formats import LOGFMT, SERILOG_CLEF
+from logfold.plugins.matchers import JaccardMatcher
+from logfold.plugins.reporters import CsvReporter, MarkdownReporter
+
+register_format(LOGFMT.name, LOGFMT)
+register_format(SERILOG_CLEF.name, SERILOG_CLEF)
+register_reporter(MarkdownReporter())
+register_reporter(CsvReporter())
+register_matcher(JaccardMatcher())
+
+__all__ = ["LOGFMT", "SERILOG_CLEF", "CsvReporter", "JaccardMatcher", "MarkdownReporter"]

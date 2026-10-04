@@ -5,7 +5,7 @@ logfold [--version] <command> [options]
 ```
 
 Commands: [`analyze`](#logfold-analyze), [`diff`](#logfold-diff), [`formats`](#logfold-formats),
-[`info`](#logfold-info). Install the command with `pip install "logfold[cli]"`.
+[`info`](#logfold-info), [`plugins`](#logfold-plugins). Install the command with `pip install "logfold[cli]"`.
 
 `logfold --version` prints the version. `logfold <command> --help` prints the options of a command.
 
@@ -89,6 +89,33 @@ Lists the available log formats (built-in and plugins) with their kind and detai
 Prints the logfold and Python versions, whether the native engine is available (with its core, contract and algorithm
 versions), and the registered formats and reporters. Include its output in bug reports.
 
+## `logfold plugins`
+
+List, check and install plugins (formats, reporters, diff matchers). See the [plugins guide](plugins.md).
+
+```
+logfold plugins list [--json]
+logfold plugins check [--online] [--catalog SOURCE] [--json]
+logfold plugins install NAME [--online] [--catalog SOURCE] [--yes]
+```
+
+| Command | What it does |
+|---|---|
+| `list` | every format, reporter and diff matcher with its source: `built-in` or the package that provides it |
+| `check` | the plugins of the catalog whose package is not installed yet, with an install hint |
+| `install NAME` | shows the package, version constraint and catalog, asks for confirmation and runs `python -m pip install` for a plugin of the catalog |
+
+| Option | Default | Meaning |
+|---|---|---|
+| `--online` | off | fetch the latest catalog over HTTPS instead of using the one bundled with logfold |
+| `--catalog` | | a catalog file or an HTTPS URL; overrides `--online` |
+| `--json` | off | print JSON instead of a table (`list`, `check`) |
+| `--yes`, `-y` | off | do not ask for confirmation (`install`) |
+
+Without `--online` and `--catalog` nothing is downloaded. `LOGFOLD_OFFLINE=1` makes every network access of these
+commands an error. `install` accepts only names from the catalog; a declined confirmation, an unknown name, an invalid
+catalog or a failed pip run exit with code 1.
+
 ## Exit codes
 
 | Code | Meaning |
@@ -107,3 +134,4 @@ Errors are printed as one line on standard error; `--debug` adds the traceback.
 - Progress is shown on standard error only on a terminal and never with `--quiet`.
 - `LOGFOLD_ENGINE=auto|native|python` selects the engine when `--engine` is not given. `python` forces the slow
   reference engine.
+- `LOGFOLD_OFFLINE=1` forbids the network access of `logfold plugins check|install --online` and `--catalog URL`.

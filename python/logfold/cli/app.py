@@ -19,6 +19,7 @@ from rich.table import Table
 
 import logfold
 from logfold.cli import exit_codes
+from logfold.cli.plugins_cmd import plugins_app
 from logfold.cli.render import print_analysis, print_diff
 from logfold.engines import native
 from logfold.errors import LogfoldError
@@ -33,6 +34,7 @@ app = typer.Typer(
     add_completion=False,
     pretty_exceptions_enable=False,
 )
+app.add_typer(plugins_app, name="plugins")
 
 _SUFFIX_REPORTER = {".html": "html", ".htm": "html", ".json": "json", ".txt": "text", ".md": "text"}
 

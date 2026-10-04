@@ -149,6 +149,8 @@ All errors raised on purpose derive from `LogfoldError`.
 | `json` | versioned JSON, schemas in [`docs/schema`](schema) | `indent` (2), `limit` (templates per list, default all) |
 | `html` | self-contained page, all content escaped, strict Content-Security-Policy | `limit` (rows per table, default 2000) |
 | `text` | plain text | `top` (rows per table) |
+| `markdown` | Markdown tables (default plugin) | `top` (rows per table, default 20) |
+| `csv` | one template per row, formula-safe (default plugin) | `top` (rows, all by default) |
 
 `reporter_names()` in `logfold.ext` lists the registered ones, plugins included.
 
@@ -161,6 +163,7 @@ All errors raised on purpose derive from `LogfoldError`.
 | `DiffMatcher` | protocol of a diff matcher |
 | `MaskRule`, `DEFAULT_MASKS` | masking rules |
 | `register_format`, `register_reporter`, `register_matcher` | register at runtime |
+| `plugin_sources()` | every registered format, reporter and matcher as `(kind, name, source)`, where `source` is `built-in` or the providing package |
 | `get_format`, `get_reporter`, `get_matcher`, `format_names`, `reporter_names` | look up registered extensions |
 
 Plugins are discovered through the entry-point groups `logfold.formats`, `logfold.reporters` and `logfold.matchers`;
