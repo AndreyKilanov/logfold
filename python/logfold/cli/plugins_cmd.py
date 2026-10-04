@@ -46,7 +46,7 @@ def _stderr() -> Console:
 
 
 def _fail(error: Exception) -> typer.Exit:
-    _stderr().print(f"[red]error:[/red] {escape(str(error))}", highlight=False)
+    _stderr().print(f"[red]error:[/red] {escape(str(error))}", highlight=False, soft_wrap=True)
     return typer.Exit(exit_codes.ERROR)
 
 
@@ -79,9 +79,10 @@ def show_folders() -> None:
     console = _stdout()
     default = registry.default_plugin_dir()
     state = "exists" if default.is_dir() else "does not exist yet"
-    console.print(f"plugin folder:       {escape(str(default))} ({state})")
+    console.print(f"plugin folder:       {escape(str(default))} ({state})", soft_wrap=True)
     extra = [part for part in os.environ.get(registry.ENV_PLUGIN_PATH, "").split(os.pathsep) if part]
-    console.print(f"{registry.ENV_PLUGIN_PATH}: {escape(os.pathsep.join(extra)) if extra else 'not set'}")
+    shown = escape(os.pathsep.join(extra)) if extra else "not set"
+    console.print(f"{registry.ENV_PLUGIN_PATH}: {shown}", soft_wrap=True)
     if registry.plugin_directories():
         console.print(
             "Add a plugin with: [bold]logfold plugins new KIND NAME[/bold]  (KIND: format, reporter, matcher)"
@@ -112,9 +113,9 @@ def new_plugin(
     except OSError as error:
         raise _fail(error) from None
     console = _stdout()
-    console.print(f"Wrote {escape(str(target))}")
+    console.print(f"Wrote {escape(str(target))}", soft_wrap=True)
     if folder is not None and folder not in registry.plugin_directories():
-        console.print(f"Use it with: [bold]logfold --plugins-dir {escape(str(folder))} ...[/bold]")
+        console.print(f"Use it with: [bold]logfold --plugins-dir {escape(str(folder))} ...[/bold]", soft_wrap=True)
     console.print("Edit it, then check that logfold sees it: [bold]logfold plugins list[/bold]")
 
 
