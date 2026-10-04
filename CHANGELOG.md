@@ -5,6 +5,14 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ## [Unreleased]
 
+### Changed
+
+- Faster mining when many templates share one leaf of the template tree, for example raw Thunderbird lines read with the
+  `plain` format (the first token is a constant dash): 886 MB with one thread takes 6 s instead of 67 s without masks and
+  7 s instead of 29 s with masks. The index lists of the tokens that most templates share are no longer walked. The output
+  is identical (same templates, counts, timestamps, levels and examples), so `ALGO_VERSION` and the algorithm
+  specification are unchanged.
+
 ## [0.2.0] - 2026-10-04
 
 ### Added

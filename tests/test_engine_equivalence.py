@@ -150,3 +150,35 @@ def test_leaves_with_many_clusters_use_the_index_without_changing_results(tmp_pa
     assert snapshot(native_result) == snapshot(python_result)
     if sim_th >= 0.4:
         assert len(native_result.templates) > 50
+
+
+def crowded_log(path: Path, lines: int, seed: int) -> None:
+    """Lines with a constant first token and 40 families: big leaves, long shared index lists (see the Rust test)."""
+    import random
+
+    rng = random.Random(seed)
+    with path.open("w", encoding="utf-8") as handle:
+        for _ in range(lines):
+            length = rng.randint(6, 19)
+            family = rng.randrange(40)
+            words = ["-"]
+            for position in range(1, length):
+                kind = position % 5
+                if kind == 0:
+                    words.append(f"s{position}x{rng.randrange(2)}")
+                elif kind == 1:
+                    words.append(f"m{position}x{rng.randrange(30)}")
+                elif (family + position) % 2 == 0:
+                    words.append(f"f{family}p{position}")
+                else:
+                    words.append(f"r{position}x{rng.randrange(5000)}")
+            handle.write(" ".join(words) + "\n")
+
+
+@pytest.mark.parametrize("sim_th", [0.2, 0.4, 0.7, 0.95])
+def test_crowded_leaves_agree(tmp_path: Path, sim_th: float) -> None:
+    path = tmp_path / "crowded.log"
+    crowded_log(path, 12000, seed=5)
+    native_result, python_result = both(str(path), format="plain", mining=MiningConfig(sim_th=sim_th), masks=())
+    assert len(native_result.templates) > 60
+    assert snapshot(native_result) == snapshot(python_result)
