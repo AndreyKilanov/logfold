@@ -5,6 +5,8 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-04
+
 ### Changed
 
 - Faster mining when many templates share one leaf of the template tree, for example raw Thunderbird lines read with the
