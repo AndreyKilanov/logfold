@@ -2,7 +2,8 @@
 
 How logfold behaves on four multi-gigabyte real logs, measured with the benchmark protocol ([`PROTOCOL.md`](PROTOCOL.md)).
 Only logfold is measured here; the competitors are not (Drain3 needs minutes per gigabyte). Raw data:
-[`results/loghub2/`](results/loghub2).
+[`results/loghub2/`](results/loghub2) (current build) and
+[`results/loghub2-release-0.2.0/`](results/loghub2-release-0.2.0) (the released 0.2.0, for comparison).
 
 ## Source (pinned)
 
@@ -45,8 +46,10 @@ All four are read with `-f plain` (no built-in format matches them), whole file,
 - Each command runs as a separate process, three repeats, the median is reported (wall time, CPU time, peak working set of
   the process tree). Tree depth 4, similarity threshold 0.4 (defaults), chunk size 8 MiB, native engine, standard output
   discarded.
-- logfold 0.2.0, Python 3.13.0, Windows-11-10.0.26200-SP0, 8 physical / 16
-  logical cores, 34.2 GB RAM (the machine of the other results). Warm page cache.
+- logfold 0.2.0 plus the performance changes of `main` made after it (commit `a2aebc4`), Python 3.13.0,
+  Windows-11-10.0.26200-SP0, 8 physical / 16 logical cores, 34.2 GB RAM (the machine of the other results). Warm page
+  cache. Measured in a clean virtual environment with no plugin packages installed. The released 0.2.0 was measured
+  the same way; its results are kept in `results/loghub2-release-0.2.0/` and compared below.
 
 ## Results
 
@@ -54,19 +57,40 @@ All four are read with `-f plain` (no built-in format matches them), whole file,
 
 | file | 1 thread | 16 threads | speed-up | range (min-max), 16 threads | CPU, 16 threads | peak memory, 1 / 16 threads |
 |---|---:|---:|---:|---:|---:|---:|
-| bgl | 5.14 s (140 MB/s) | **0.68 s (1,051 MB/s)** | 7.5x | 0.68-0.69 s | 4.2 s | 46 / 112 MB |
-| hdfs | 4.85 s (323 MB/s) | **0.93 s (1,683 MB/s)** | 5.2x | 0.93-0.95 s | 7.9 s | 44 / 110 MB |
-| spark | 18.69 s (87 MB/s) | **1.28 s (1,278 MB/s)** | 14.7x | 1.24-1.29 s | 11.8 s | 46 / 115 MB |
-| thunderbird | 69.65 s (13 MB/s) | **1.86 s (477 MB/s)** | 37.5x | 1.85-1.93 s | 10.8 s | 54 / 134 MB |
+| bgl | 3.29 s (219 MB/s) | **0.69 s (1,049 MB/s)** | 4.8x | 0.67-0.72 s | 4.2 s | 43 / 108 MB |
+| hdfs | 5.16 s (303 MB/s) | **0.94 s (1,664 MB/s)** | 5.5x | 0.93-1.00 s | 7.8 s | 42 / 107 MB |
+| spark | 9.60 s (170 MB/s) | **1.42 s (1,151 MB/s)** | 6.8x | 1.32-1.46 s | 11.4 s | 43 / 112 MB |
+| thunderbird | 6.66 s (133 MB/s) | **1.08 s (820 MB/s)** | 6.2x | 1.07-1.09 s | 8.5 s | 51 / 129 MB |
 
 ### With masking (logfold default rules)
 
 | file | 1 thread | 16 threads | speed-up | range (min-max), 16 threads | CPU, 16 threads | peak memory, 1 / 16 threads |
 |---|---:|---:|---:|---:|---:|---:|
-| bgl | 5.36 s (134 MB/s) | **1.05 s (685 MB/s)** | 5.1x | 1.04-1.08 s | 9.6 s | 45 / 110 MB |
-| hdfs | 10.60 s (148 MB/s) | **1.66 s (944 MB/s)** | 6.4x | 1.66-1.67 s | 19.5 s | 45 / 110 MB |
-| spark | 17.22 s (95 MB/s) | **2.01 s (811 MB/s)** | 8.6x | 2.00-2.04 s | 24.0 s | 45 / 111 MB |
-| thunderbird | 32.08 s (28 MB/s) | **1.33 s (665 MB/s)** | 24.1x | 1.33-1.34 s | 13.8 s | 47 / 118 MB |
+| bgl | 4.93 s (146 MB/s) | **0.92 s (784 MB/s)** | 5.4x | 0.88-0.94 s | 7.9 s | 42 / 108 MB |
+| hdfs | 7.84 s (200 MB/s) | **1.21 s (1,291 MB/s)** | 6.5x | 1.21-1.23 s | 12.6 s | 42 / 107 MB |
+| spark | 13.23 s (123 MB/s) | **1.63 s (999 MB/s)** | 8.1x | 1.61-1.67 s | 18.2 s | 42 / 108 MB |
+| thunderbird | 6.43 s (138 MB/s) | **1.03 s (859 MB/s)** | 6.2x | 1.03-1.06 s | 9.9 s | 45 / 115 MB |
+
+### Compared with the released 0.2.0
+
+The output is identical in every case (the SHA-256 of all template fields and counters is the same), so these are
+speed-ups of the same work. They come from two changes: the index search in large leaves (`perf(core)`, issue #29) and the
+default mask scanner (`perf(core)`, issue #31).
+
+| file | mode | 1 thread: 0.2.0 -> now | 16 threads: 0.2.0 -> now |
+|---|---|---:|---:|
+| bgl | no masks | 5.14 s -> 3.29 s (1.56x) | 0.68 s -> 0.69 s (1.00x) |
+| bgl | masks | 5.36 s -> 4.93 s (1.09x) | 1.05 s -> 0.92 s (1.14x) |
+| hdfs | no masks | 4.85 s -> 5.16 s (0.94x) | 0.93 s -> 0.94 s (0.99x) |
+| hdfs | masks | 10.60 s -> 7.84 s (1.35x) | 1.66 s -> 1.21 s (1.37x) |
+| spark | no masks | 18.69 s -> 9.60 s (1.95x) | 1.28 s -> 1.42 s (0.90x) |
+| spark | masks | 17.22 s -> 13.23 s (1.30x) | 2.01 s -> 1.63 s (1.23x) |
+| thunderbird | no masks | 69.65 s -> 6.66 s (10.46x) | 1.86 s -> 1.08 s (1.72x) |
+| thunderbird | masks | 32.08 s -> 6.43 s (4.99x) | 1.33 s -> 1.03 s (1.29x) |
+
+The two entries below 1.00x (hdfs without masks on one thread, spark without masks on 16 threads) are inside the
+run-to-run variation of this machine: three repeats of the same command ranged 4.87-5.14 s for hdfs on one thread in a
+separate check, and the same case took 4.78 s right after the index change. No reproducible regression was found.
 
 ## Template counts: the work is not identical
 
@@ -90,15 +114,22 @@ result); the parallel mode builds one tree per 8 MiB chunk and merges them.
 
 ## Reading the numbers
 
-- Parallel speed-ups are 5x to 37x; the 16-thread mode processes 480-1,700 MB/s without masks and 650-950 MB/s with masks.
-- Memory does not follow the input: 44-54 MB with one thread and 110-134 MB with 16 threads for files of 0.7-1.6 GB.
-- `thunderbird` is the slow case for one thread: 70 s without masks (13 MB/s) against 32 s with them. The cause is
-  explained and measured in [Why one thread is slow on Thunderbird](#why-one-thread-is-slow-on-thunderbird) below.
-- Masks cost time on `bgl` and `hdfs` but save it on `thunderbird`, because they remove most of the distinct templates.
+- The 16-thread mode processes 820-1,660 MB/s without masks and 780-1,290 MB/s with masks; it is 4.8x to 8.1x faster than
+  one thread (Thunderbird, the extreme case with 37x on 0.2.0, is now 6.2x).
+- Memory does not follow the input: 42-51 MB with one thread and 107-129 MB with 16 threads for files of 0.7-1.6 GB.
+- Since 0.2.0 the slow case `thunderbird` (70 s without masks, 32 s with them on one thread) takes about 6.5 s either way;
+  the cause and the fix are in [Why one thread was slow on Thunderbird](#why-one-thread-was-slow-on-thunderbird).
+- Masks still cost time on `bgl`, `hdfs` and `spark` (the scanner examines every digit at a word boundary), but they no
+  longer make `hdfs` twice as slow: one thread needs 7.8 s with masks against 5.2 s without (10.6 s against 4.9 s on 0.2.0).
 
-## Why one thread is slow on Thunderbird
+## Why one thread was slow on Thunderbird
 
-One thread needs 5 s for BGL (719 MB) and 70 s for Thunderbird (886 MB) although both are read as `plain` and look alike.
+> **Status: fixed after 0.2.0.** This section describes release 0.2.0, measured with temporary counters in the miner.
+> The index lists of the tokens that most templates of a leaf share are no longer walked (issue #29), which brought
+> Thunderbird on one thread from 69.7 s to 6.7 s without masks and from 32.1 s to 6.4 s with masks, with identical output.
+> The hint about formats that cut the header still helps, but is no longer needed to avoid the slowdown.
+
+One thread needed 5 s for BGL (719 MB) and 70 s for Thunderbird (886 MB) although both are read as `plain` and look alike.
 The time per line is not constant: it grows with the number of templates the line has to be compared with. Measured with
 temporary counters in the miner (not part of the library), sequential mode:
 
@@ -159,11 +190,11 @@ slow for the reason above, not the parallel one. The price is the larger number 
 
 - Give logfold a format that cuts the header: a `regex:` format with a `msg` group (or a format plugin) so that the message
   starts at the informative part.
-- Use masking: it halves the time here and removes most fragmentation.
+- Use masking: on 0.2.0 it halved the time here and removed most fragmentation.
 - Use the parallel mode (the default above 64 MiB), which avoids the large leaves.
-- For the library: walking index lists of tokens that all templates of a leaf share adds the same amount to every
-  candidate and could be skipped without changing the result. This is an optimization candidate, not done here (it must
-  keep the output identical to the reference engine, `docs/ALGORITHM.md`).
+- In the library (done, issue #29): the lists of the tokens that most templates of a leaf share are no longer walked;
+  a template that reaches the threshold is still found through the remaining lists and its exact score is completed by
+  comparing the skipped positions, so the output is identical to the reference engine (`docs/ALGORITHM.md`).
 
 ## Limitations
 

@@ -6,6 +6,9 @@
   "ram_gb": 34.2,
   "python": "3.13.0",
   "tools": {
-    "logfold": "logfold 0.2.0 plus the unreleased performance changes of main, a2aebc4"
+    "logfold": "logfold 0.2.0",
+    "logdrain": "not installed",
+    "logdelta": "not installed",
+    "drain3": "drain3 0.9.11"
   }
 }
