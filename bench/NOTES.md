@@ -43,16 +43,20 @@ disable masks).
 not the same (logdelta groups findings into blocks, uses a G-test and several baselines; logfold reports shares and ratios),
 so this is a speed comparison of two different reports.
 
-**Memory.** logfold peaks at 93–107 MB with 16 threads and 42 MB with one; Drain3 31 MB; logdelta 9–165 MB; logdrain
-over 1 GB. Memory does not depend on the file size for logfold (templates only).
+**Memory.** Peak working set of the process tree. logfold: 42 MB with one thread and 93–107 MB with 16 on the regular
+datasets, about 300 MB on `highcard` (10⁵ templates). Drain3 31 MB, logdelta 9–166 MB, logdrain over 1.2 GB. For logfold
+memory does not depend on the file size (templates only). The "peak" column is the maximum over all runs of a tool.
 
 ## Limitations
 
 - One machine (Windows 11, i7-10700K, 8 cores / 16 threads), warm page cache, synthetic and Loghub-2k-derived data;
   Loghub-2.0 could not be downloaded.
-- `highcard` (about 10⁵ distinct templates, adversarial): logfold 1 thread 4.4 s per 100 MB, 16 threads 8.4 s —
-  **chunked is slower than sequential here**, because merging chunk trees of 10⁵ templates costs more than it saves. On the
-  10 MB variant Drain3 needed 461 s (one run), logfold 2.3 s. The competitors were not measured on `highcard` at 100 MB
-  (the run was stopped), and logdrain and logdelta not at 10 MB either.
-- Peak memory for the "no masking" table was not measured separately; the column shows the maximum over all runs of the tool.
+- `highcard` (about 10⁵ distinct templates, adversarial) is the weak case. At 100 MB logfold needs 4.4 s with one
+  thread and 8.4 s with 16 (**chunked is slower than sequential**: merging chunk trees of 10⁵ templates costs more than
+  it saves). At 10 MB, the one size measured for all tools: logdrain **0.50 s**, logfold 2.3 s (1 thread) and 2.7 s
+  (16 threads), logdelta 4.3 s, Drain3 461 s (one run). logdrain is about 5× faster than logfold here, but it does not
+  generalize digit-containing tokens (see above), so it is doing a different, cheaper job. At 100 MB only logfold was
+  measured.
+- The Drain3 rows and the 100 MB `highcard` rows come from the first run (`results`); every other row was
+  measured again in the second run (`results`), without Drain3, and agrees with the first within about 5%.
 - Absolute numbers will differ on Linux and with a cold cache.

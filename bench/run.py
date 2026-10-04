@@ -218,6 +218,7 @@ def main() -> None:
     parser.add_argument("--scenario", nargs="*", default=["analyze-bare", "analyze-masked", "diff"])
     parser.add_argument("--repeat", type=int, default=3)
     parser.add_argument("--timeout", type=float, default=1800)
+    parser.add_argument("--skip", nargs="*", default=[], help="tool name fragments to leave out, for example drain3")
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args()
     out = args.out or ROOT / "bench" / "results" / date.today().isoformat() / "results.json"
@@ -240,6 +241,8 @@ def main() -> None:
                 commands = analyze_commands(path, masked=scenario == "analyze-masked")
                 size = path.stat().st_size
             for tool, command in commands.items():
+                if any(fragment.lower() in tool.lower() for fragment in args.skip):
+                    continue
                 samples = []
                 for attempt in range(args.repeat):
                     sample = measure(command, args.timeout)

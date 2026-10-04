@@ -1,6 +1,6 @@
 # Benchmark results
 
-Protocol: [`PROTOCOL.md`](PROTOCOL.md). Raw data: `bench/results/results.json`, `bench/results/results.json`, `bench/results/results.json`, `bench/results/results.json`, `bench/results/results.json`.
+Protocol: [`PROTOCOL.md`](PROTOCOL.md). Raw data: `bench/results/results.json`, `bench/results/results.json`, `bench/results/results.json`.
 
 Machine: Windows-11-10.0.26200-SP0, 8 physical / 16 logical cores, 34.2 GB RAM, Python 3.13.0.
 
@@ -12,29 +12,29 @@ Wall time of the median of the repeats in seconds, with throughput in MB/s in br
 
 | tool | nginx s (MB/s) | app s (MB/s) | loghub s (MB/s) | highcard s (MB/s) | highcard@10MB s (MB/s) | peak MB (max over all runs) |
 |---|---:|---:|---:|---:|---:|---:|
-| logfold 1 thread | 0.61 (171) | 0.70 (151) | 1.45 (72) | **4.35 (24)** | **2.31 (5)** | 42 |
-| logfold 16 threads | **0.35 (300)** | **0.37 (284)** | **0.90 (116)** | 8.43 (12) | 2.70 (4) | 107 |
+| logfold 1 thread | 0.62 (170) | 0.71 (149) | 1.49 (70) | **4.35 (24)** | 2.30 (5) | 258 |
+| logfold 16 threads | **0.37 (285)** | **0.37 (281)** | **0.92 (114)** | 8.43 (12) | 2.70 (4) | 304 |
+| logdrain (Rust) | 5.27 (20) | 5.02 (21) | 2.73 (38) | - | **0.50 (21)** | 1,289 |
 | Drain3 (Python) | 5.26 (20) | 9.03 (12) | 23.56 (4) | - | - | 31 |
-| logdrain (Rust) | 4.93 (21) | 4.65 (23) | 2.72 (39) | - | - | 1,291 |
 
 ## Analyze, with masking
 
-| tool | nginx s (MB/s) | app s (MB/s) | loghub s (MB/s) | peak MB (max over all runs) |
-|---|---:|---:|---:|---:|
-| logfold 1 thread | 1.10 (95) | 0.98 (107) | 1.94 (54) | 42 |
-| logfold 16 threads | **0.43 (244)** | **0.41 (256)** | **1.00 (105)** | 107 |
-| Drain3 (Python) | 26.82 (4) | 24.62 (4) | 35.93 (3) | 31 |
-| logdrain (Rust) | 1.50 (70) | 5.53 (19) | 3.36 (31) | 1,291 |
-| logdelta (Rust) | 6.87 (15) | 5.25 (20) | 7.02 (15) | 165 |
+| tool | nginx s (MB/s) | app s (MB/s) | loghub s (MB/s) | highcard@10MB s (MB/s) | peak MB (max over all runs) |
+|---|---:|---:|---:|---:|---:|
+| logfold 1 thread | 1.13 (93) | 0.96 (109) | 1.90 (55) | 2.47 (4) | 258 |
+| logfold 16 threads | **0.46 (227)** | **0.42 (247)** | **1.00 (105)** | 2.82 (4) | 304 |
+| logdrain (Rust) | 1.49 (70) | 5.57 (19) | 3.42 (31) | **0.55 (19)** | 1,289 |
+| logdelta (Rust) | 7.34 (14) | 4.93 (21) | 7.34 (14) | 4.25 (2) | 166 |
+| Drain3 (Python) | 26.82 (4) | 24.62 (4) | 35.93 (3) | - | 31 |
 
 ## Diff of two 100 MB runs (throughput counts both files)
 
 | tool | nginx s (MB/s) | app s (MB/s) | peak MB (max over all runs) |
 |---|---:|---:|---:|
-| logfold diff 1 thread | 3.32 (63) | 2.88 (73) | 42 |
-| logfold diff 16 threads | 0.80 (263) | 0.71 (296) | 107 |
-| logfold diff 16 threads, --no-recount | **0.55 (381)** | **0.52 (405)** | 107 |
-| logdelta diff (Rust) | 14.74 (14) | 11.67 (18) | 165 |
+| logfold diff 1 thread | 3.38 (62) | 2.90 (72) | 258 |
+| logfold diff 16 threads | 0.80 (263) | 0.71 (294) | 304 |
+| logfold diff 16 threads, --no-recount | **0.57 (368)** | **0.50 (419)** | 304 |
+| logdelta diff (Rust) | 14.84 (14) | 11.60 (18) | 166 |
 
 
 ## Reading the numbers
@@ -82,17 +82,21 @@ disable masks).
 not the same (logdelta groups findings into blocks, uses a G-test and several baselines; logfold reports shares and ratios),
 so this is a speed comparison of two different reports.
 
-**Memory.** logfold peaks at 93–107 MB with 16 threads and 42 MB with one; Drain3 31 MB; logdelta 9–165 MB; logdrain
-over 1 GB. Memory does not depend on the file size for logfold (templates only).
+**Memory.** Peak working set of the process tree. logfold: 42 MB with one thread and 93–107 MB with 16 on the regular
+datasets, about 300 MB on `highcard` (10⁵ templates). Drain3 31 MB, logdelta 9–166 MB, logdrain over 1.2 GB. For logfold
+memory does not depend on the file size (templates only). The "peak" column is the maximum over all runs of a tool.
 
 ## Limitations
 
 - One machine (Windows 11, i7-10700K, 8 cores / 16 threads), warm page cache, synthetic and Loghub-2k-derived data;
   Loghub-2.0 could not be downloaded.
-- `highcard` (about 10⁵ distinct templates, adversarial): logfold 1 thread 4.4 s per 100 MB, 16 threads 8.4 s —
-  **chunked is slower than sequential here**, because merging chunk trees of 10⁵ templates costs more than it saves. On the
-  10 MB variant Drain3 needed 461 s (one run), logfold 2.3 s. The competitors were not measured on `highcard` at 100 MB
-  (the run was stopped), and logdrain and logdelta not at 10 MB either.
-- Peak memory for the "no masking" table was not measured separately; the column shows the maximum over all runs of the tool.
+- `highcard` (about 10⁵ distinct templates, adversarial) is the weak case. At 100 MB logfold needs 4.4 s with one
+  thread and 8.4 s with 16 (**chunked is slower than sequential**: merging chunk trees of 10⁵ templates costs more than
+  it saves). At 10 MB, the one size measured for all tools: logdrain **0.50 s**, logfold 2.3 s (1 thread) and 2.7 s
+  (16 threads), logdelta 4.3 s, Drain3 461 s (one run). logdrain is about 5× faster than logfold here, but it does not
+  generalize digit-containing tokens (see above), so it is doing a different, cheaper job. At 100 MB only logfold was
+  measured.
+- The Drain3 rows and the 100 MB `highcard` rows come from the first run (`results`); every other row was
+  measured again in the second run (`results`), without Drain3, and agrees with the first within about 5%.
 - Absolute numbers will differ on Linux and with a cold cache.
 
