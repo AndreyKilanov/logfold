@@ -144,3 +144,11 @@ def test_html_numeric_headers_are_right_aligned_like_their_cells(tmp_path: Path)
         assert f'<th class="n">{numeric}</th>' in analysis_page
     assert "<th>level</th>" in diff_page
     assert "<th>template</th>" in analysis_page
+
+
+def test_diff_outputs_show_the_elapsed_seconds(tmp_path: Path) -> None:
+    before, after, _truth = synthetic_pair(tmp_path, 4)
+    result = logfold.diff(str(before), str(after), format="app")
+    seconds = f"{result.metrics.wall_total_s:.2f}"
+    assert f"{result.metrics.engine} engine, {seconds}s" in result.render("text")
+    assert f'<div class="card"><b>{seconds}</b><span>seconds</span></div>' in result.to_html()

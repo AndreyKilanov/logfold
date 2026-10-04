@@ -202,6 +202,8 @@ def _diff_body(result: DiffResult, limit: int) -> str:
             _card("unchanged", _count(result.unchanged)),
             _card("records before", _count(result.before.records)),
             _card("records after", _count(result.after.records)),
+            _card("engine", result.metrics.engine),
+            _card("seconds", f"{result.metrics.wall_total_s:.2f}"),
         ]
     )
     sections = "".join(
