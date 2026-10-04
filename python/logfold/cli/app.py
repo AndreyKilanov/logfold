@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import dataclasses
+import errno
+import os
 import sys
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
@@ -342,8 +344,26 @@ def info() -> None:
     console.print(f"reporters: {', '.join(registry.reporter_names())}")
 
 
+CLOSED_PIPE_ERRNOS = frozenset({errno.EPIPE, errno.EINVAL})
+"""Errors of a write to a pipe whose reader has gone; Windows reports ``EINVAL`` instead of ``EPIPE``."""
+
+
+def _is_closed_pipe(error: OSError) -> bool:
+    return error.errno in CLOSED_PIPE_ERRNOS and not sys.stdout.isatty()
+
+
+def _silence_stdout() -> None:
+    """Point standard output at the null device so the final flush at interpreter exit cannot fail again."""
+    devnull = os.open(os.devnull, os.O_WRONLY)
+    os.dup2(devnull, sys.stdout.fileno())
+    os.close(devnull)
+
+
 def run() -> None:
-    """Run the app with UTF-8 safe output streams."""
+    """Run the app with UTF-8 safe output streams.
+
+    A reader that closes the pipe early (``logfold info | head``) ends the command quietly with the error exit code.
+    """
     for stream in (sys.stdout, sys.stderr):
         reconfigure = getattr(stream, "reconfigure", None)
         if reconfigure is not None:
@@ -353,3 +373,8 @@ def run() -> None:
     except KeyboardInterrupt:
         _stderr_console().print("interrupted", highlight=False)
         raise SystemExit(exit_codes.INTERRUPTED) from None
+    except OSError as error:
+        if not _is_closed_pipe(error):
+            raise
+        _silence_stdout()
+        raise SystemExit(exit_codes.ERROR) from None
