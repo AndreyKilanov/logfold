@@ -55,7 +55,8 @@ def _diff_lines(result: DiffResult, top: int) -> list[str]:
         f"{result.before.name} -> {result.after.name}: "
         f"{result.before.records:,} -> {result.after.records:,} records, "
         f"{len(result.new_templates):,} new ({len(result.new_alerts):,} WARN+), "
-        f"{len(result.disappeared):,} disappeared, {len(result.changed):,} changed, {result.unchanged:,} unchanged",
+        f"{len(result.disappeared):,} disappeared, {len(result.changed):,} changed, {result.unchanged:,} unchanged, "
+        f"{result.metrics.engine} engine, {result.metrics.wall_total_s:.2f}s",
     ]
     lines.extend(f"warning: {text}" for text in result.warnings)
     lines.extend(_entries("New templates", result.new_templates, top))

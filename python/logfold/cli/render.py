@@ -97,7 +97,8 @@ def print_diff(console: Console, result: DiffResult, top: int) -> None:
         f"{result.before.records:,} -> {result.after.records:,} records, "
         f"[green]{len(result.new_templates):,} new[/green] ([red]{len(result.new_alerts):,} WARN+[/red]), "
         f"[yellow]{len(result.disappeared):,} disappeared[/yellow], "
-        f"[magenta]{len(result.changed):,} changed[/magenta], {result.unchanged:,} unchanged",
+        f"[magenta]{len(result.changed):,} changed[/magenta], {result.unchanged:,} unchanged, "
+        f"{result.metrics.engine} engine, {result.metrics.wall_total_s:.2f}s",
         highlight=False,
     )
     for warning in result.warnings:

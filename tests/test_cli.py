@@ -1,18 +1,21 @@
 from __future__ import annotations
 
 import errno
+import io
 import json
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+from rich.console import Console
 from typer.testing import CliRunner
 
 import logfold
 import logfold.cli.app as cli_app
 from logfold.cli import exit_codes
 from logfold.cli.app import app
+from logfold.cli.render import print_diff
 from test_diff import synthetic_pair
 
 runner = CliRunner()
@@ -194,3 +197,11 @@ def test_unrelated_os_errors_are_not_swallowed(monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(cli_app, "app", fail)
     with pytest.raises(OSError, match="denied"):
         cli_app.run()
+
+
+def test_diff_console_summary_shows_engine_and_seconds(tmp_path: Path) -> None:
+    before, after, _truth = synthetic_pair(tmp_path, 8)
+    result = logfold.diff(str(before), str(after), format="app")
+    buffer = io.StringIO()
+    print_diff(Console(file=buffer, width=2000), result, 5)
+    assert f"{result.metrics.engine} engine, {result.metrics.wall_total_s:.2f}s" in buffer.getvalue()

@@ -11,7 +11,7 @@ with a Rust core, for offline analysis of big log files: no platform to run, no 
 
 ```
 $ logfold diff before.log after.log --out diff.html --fail-on-new
-before.log -> after.log: 1,265,631 -> 1,246,573 records, 2 new (2 WARN+), 1 disappeared, 3 changed, 9 unchanged
+before.log -> after.log: 1,265,631 -> 1,246,573 records, 2 new (2 WARN+), 1 disappeared, 3 changed, 9 unchanged, native engine, 3.41s
 
 New templates (2)
     before      after    change  level  template
