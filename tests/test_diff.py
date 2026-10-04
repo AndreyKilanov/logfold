@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 import logfold
+from conftest import requires_native
 from logfold import DiffConfig
 from logfold.comparison import ExactMatcher, TokenSubsetMatcher, classify
 from logfold.engines.base import RunStatsData, TemplateStats
@@ -119,7 +120,7 @@ def synthetic_pair(tmp_path: Path, seed: int) -> tuple[Path, Path, dict[str, set
     return before, after, truth
 
 
-@pytest.mark.parametrize("engine", ["native", "python"])
+@pytest.mark.parametrize("engine", [pytest.param("native", marks=requires_native), "python"])
 def test_diff_finds_injected_changes(tmp_path: Path, engine: str) -> None:
     before, after, truth = synthetic_pair(tmp_path, 3)
     result = logfold.diff(str(before), str(after), format="app", engine=engine)

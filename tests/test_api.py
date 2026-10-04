@@ -7,6 +7,7 @@ import pytest
 import logfold
 from conftest import requires_native
 from logfold import ConfigError, FormatError, MaskRule, MiningConfig, SourceError
+from logfold.engines import native
 from logfold.errors import EngineError
 
 
@@ -117,6 +118,9 @@ def test_unknown_engine_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: P
         logfold.analyze(str(path), format="plain")
 
 
+UNAVAILABLE_WARNING = "the native extension is unavailable; the slow pure-Python engine was used"
+
+
 def test_python_engine_via_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     path = tmp_path / "a.log"
     path.write_text("hello world\n", encoding="utf-8")
@@ -124,12 +128,11 @@ def test_python_engine_via_environment(monkeypatch: pytest.MonkeyPatch, tmp_path
     result = logfold.analyze(str(path), format="plain")
     assert result.metrics.engine == "python"
     assert result.meta.degraded is True
-    assert result.warnings == ()
+    expected = () if native.is_available() else (UNAVAILABLE_WARNING,)
+    assert result.warnings == expected
 
 
 def test_native_unavailable_raises_for_explicit_choice(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    from logfold.engines import native
-
     monkeypatch.setattr(native, "_core", None)
     path = tmp_path / "a.log"
     path.write_text("x\n", encoding="utf-8")
