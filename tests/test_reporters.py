@@ -132,3 +132,15 @@ def test_unknown_reporter_is_a_config_error(corpus_dir: Path) -> None:
     result = logfold.analyze(str(corpus_dir / "app.log"), format="app")
     with pytest.raises(ConfigError, match="unknown reporter"):
         result.render("pdf")
+
+
+def test_html_numeric_headers_are_right_aligned_like_their_cells(tmp_path: Path) -> None:
+    before, after, _truth = synthetic_pair(tmp_path, 4)
+    diff_page = logfold.diff(str(before), str(after), format="app").to_html()
+    analysis_page = logfold.analyze(str(before), format="app").to_html()
+    for numeric in ("before", "after", "share", "change"):
+        assert f'<th class="n">{numeric}</th>' in diff_page
+    for numeric in ("#", "count", "share"):
+        assert f'<th class="n">{numeric}</th>' in analysis_page
+    assert "<th>level</th>" in diff_page
+    assert "<th>template</th>" in analysis_page
