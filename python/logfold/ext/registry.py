@@ -94,8 +94,9 @@ def load_plugins(force: bool = False) -> None:
         GROUP_REPORTERS: ("reporter", _load_reporter),
         GROUP_MATCHERS: ("matcher", _load_matcher),
     }
+    discovered = metadata.entry_points()
     for group, (kind, load) in targets.items():
-        for entry in metadata.entry_points(group=group):
+        for entry in discovered.select(group=group):
             try:
                 name = load(entry.name, entry.load())
             except Exception:

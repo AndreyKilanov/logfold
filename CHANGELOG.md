@@ -16,6 +16,9 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Changed
 
+- Plugin discovery reads the installed package metadata once instead of three times, so every command that
+  resolves a format or a reporter starts about 9 ms faster (307 ms instead of 316 ms for `logfold analyze` on a small
+  file, median of 25 runs). The output is unchanged.
 - `analyze --min-count N --out result.json` now writes every template to the JSON file (the option still hides rare
   templates from tables and from other report formats), so the file can be compared later with `diff`.
 

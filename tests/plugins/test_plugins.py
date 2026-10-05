@@ -129,3 +129,20 @@ def test_broken_plugin_does_not_break_the_library(tmp_path: Path, monkeypatch: p
     registry.load_plugins(force=True)
     assert "broken" not in registry.format_names()
     assert "plain" in registry.format_names()
+
+
+def test_entry_points_are_scanned_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[dict[str, object]] = []
+    real = registry.metadata.entry_points
+
+    def counting(**selection: object) -> object:
+        calls.append(selection)
+        return real(**selection)
+
+    monkeypatch.setattr(registry.metadata, "entry_points", counting)
+    monkeypatch.setattr(registry, "_formats", dict(registry._formats))
+    monkeypatch.setattr(registry, "_reporters", dict(registry._reporters))
+    monkeypatch.setattr(registry, "_matchers", dict(registry._matchers))
+    registry.load_plugins(force=True)
+    assert calls == [{}]
+    assert "plain" in registry.format_names()
