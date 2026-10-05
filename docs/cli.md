@@ -52,7 +52,7 @@ Mining and execution options, shared with `diff`:
 | `--no-masks` | off | do not mask numbers, IPs, UUIDs and other values |
 | `--high-cardinality` | off | fast bounded mode for data with a huge number of distinct messages (5000 templates, sequential) |
 | `--engine` | `auto` | `auto`, `native` or `python` (slow reference engine) |
-| `--strategy` | `auto` | `auto`, `sequential` (one tree) or `chunked` (parallel); `auto` chunks above 64 MiB |
+| `--strategy` | `auto` | `auto`, `sequential` (one tree) or `chunked` (parallel); `auto` chunks above 64 MiB, but mines sequentially when the first chunk shows that almost every record is a new template |
 | `--threads` | all cores | worker threads of the chunked strategy |
 | `--chunk-mb` | 64 | chunk size in MiB of the chunked strategy |
 

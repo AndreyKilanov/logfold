@@ -6,6 +6,7 @@
 
 #![forbid(unsafe_code)]
 
+mod adaptive;
 mod chunked;
 mod error;
 mod pipeline;
@@ -39,18 +40,35 @@ pub fn mine(request: &MineRequest, observer: &dyn Observer) -> Result<MineOutput
     let n_runs = request.runs.len();
 
     let mine_started = Instant::now();
-    let (chunk_bytes, threads_requested) = match request.strategy {
-        Strategy::Sequential => (None, None),
-        Strategy::Chunked { chunk_bytes, threads } => (Some(chunk_bytes), Some(threads)),
+    let (chunk_bytes, threads_requested, adaptive) = match request.strategy {
+        Strategy::Sequential => (None, None, false),
+        Strategy::Chunked { chunk_bytes, threads } => (Some(chunk_bytes), Some(threads), false),
+        Strategy::Adaptive { chunk_bytes, threads } => (Some(chunk_bytes), Some(threads), true),
     };
     let planned = plan::plan(request, chunk_bytes)?;
-    let chunks = planned.units.len();
-    let (miner, counters, threads, merge_seconds) = match threads_requested {
+    let mut chunks = planned.units.len();
+    let parallel_training = threads_requested.filter(|_| !adaptive || chunks > 1);
+    let trained = match parallel_training {
+        None => None,
+        Some(requested) => match chunked::train(&context, &miner_config, &planned, requested, adaptive, observer)? {
+            chunked::Trained::Merged(miner, counters, threads, merge_seconds) => {
+                Some((*miner, counters, threads, merge_seconds, "chunked"))
+            }
+            chunked::Trained::TooDiverse { consumed } => {
+                let whole = plan::plan(request, None)?;
+                chunks = whole.units.len();
+                let again = adaptive::Skip::new(observer, consumed);
+                let (miner, counters) = sequential::train(&context, &miner_config, &whole, &again)?;
+                Some((miner, counters, 1, 0.0, "sequential"))
+            }
+        },
+    };
+    let (miner, counters, threads, merge_seconds, strategy_name) = match trained {
+        Some(done) => done,
         None => {
             let (miner, counters) = sequential::train(&context, &miner_config, &planned, observer)?;
-            (miner, counters, 1, 0.0)
+            (miner, counters, 1, 0.0, "sequential")
         }
-        Some(requested) => chunked::train(&context, &miner_config, &planned, requested, observer)?,
     };
     let mine_seconds = mine_started.elapsed().as_secs_f64();
 
@@ -87,7 +105,7 @@ pub fn mine(request: &MineRequest, observer: &dyn Observer) -> Result<MineOutput
         })
         .collect();
     let metrics = Metrics {
-        strategy: if threads_requested.is_some() { "chunked" } else { "sequential" },
+        strategy: strategy_name,
         threads,
         chunks,
         wall_total_s: started.elapsed().as_secs_f64(),

@@ -6,6 +6,7 @@ use std::time::{Duration, Instant};
 use logfold_core::{DrainMiner, MinerConfig, Recount};
 use logfold_io::Counters;
 
+use crate::adaptive::{probe_unit, Tally};
 use crate::error::EngineError;
 use crate::pipeline::{recount_unit, train_unit, Context};
 use crate::plan::Plan;
@@ -15,14 +16,18 @@ use crate::request::Observer;
 ///
 /// A worker may start item `i` only while `i < folded + window`, which bounds the number of unfolded results held
 /// in memory. The fold order is fixed, so the outcome does not depend on scheduling or thread count. Returns the
-/// number of threads used and the time spent folding on the calling thread.
+/// number of threads used, the time spent folding on the calling thread and whether `is_stopped` ended the run.
+///
+/// `is_stopped` is asked whenever a result arrives; once it returns `true` the run ends without folding any more
+/// results, and the workers drop the units they have started.
 fn ordered_reduce<R: Send>(
     total: usize,
     threads: usize,
     observer: &dyn Observer,
     work: &(dyn Fn(usize) -> Result<R, EngineError> + Sync),
+    is_stopped: impl Fn() -> bool,
     mut fold: impl FnMut(usize, R),
-) -> Result<(usize, f64), EngineError> {
+) -> Result<(usize, f64, bool), EngineError> {
     let threads = threads.max(1).min(total.max(1));
     let window = threads * 2;
     let next = AtomicUsize::new(0);
@@ -31,6 +36,7 @@ fn ordered_reduce<R: Send>(
     let (sender, receiver) = mpsc::channel::<(usize, Result<R, EngineError>)>();
     let mut fold_seconds = 0.0;
     let mut failure: Option<EngineError> = None;
+    let mut stopped = false;
 
     std::thread::scope(|scope| {
         for _ in 0..threads {
@@ -60,6 +66,10 @@ fn ordered_reduce<R: Send>(
             let (index, result) = match receiver.recv_timeout(Duration::from_millis(100)) {
                 Ok(message) => message,
                 Err(mpsc::RecvTimeoutError::Timeout) => {
+                    if is_stopped() {
+                        stopped = true;
+                        break;
+                    }
                     if observer.cancelled() {
                         failure = Some(EngineError::Cancelled);
                         abort.store(true, Ordering::Relaxed);
@@ -69,6 +79,10 @@ fn ordered_reduce<R: Send>(
                 }
                 Err(mpsc::RecvTimeoutError::Disconnected) => break,
             };
+            if is_stopped() {
+                stopped = true;
+                break;
+            }
             match result {
                 Ok(value) => {
                     pending.insert(index, value);
@@ -92,31 +106,59 @@ fn ordered_reduce<R: Send>(
 
     match failure {
         Some(error) => Err(error),
-        None => Ok((threads, fold_seconds)),
+        None => Ok((threads, fold_seconds, stopped)),
     }
 }
 
+/// What [`train`] produced.
+pub(crate) enum Trained {
+    /// The merged tree, the counters per run, the threads used and the time spent merging.
+    Merged(Box<DrainMiner>, Vec<Counters>, usize, f64),
+    /// The first chunk was too diverse for this strategy; `consumed` input bytes were already reported.
+    TooDiverse { consumed: u64 },
+}
+
 /// Trains one tree per unit in parallel and merges the trees in unit order.
+///
+/// With `adaptive` the first unit decides: when its tree holds too many templates after its first records (see
+/// [`probe_unit`]) the run stops before anything is merged and [`Trained::TooDiverse`] is returned.
 pub(crate) fn train(
     context: &Context,
     config: &MinerConfig,
     plan: &Plan,
     threads: usize,
+    adaptive: bool,
     observer: &dyn Observer,
-) -> Result<(DrainMiner, Vec<Counters>, usize, f64), EngineError> {
+) -> Result<Trained, EngineError> {
     let n_runs = plan.run_bytes.len();
     let mut accumulator = crate::empty_miner(config, n_runs);
     let mut counters = vec![Counters::default(); n_runs];
+    let tally = Tally::new(observer);
+    let workers: &dyn Observer = if adaptive { &tally } else { observer };
     let work = |index: usize| -> Result<(DrainMiner, Counters), EngineError> {
         let mut miner = crate::empty_miner(config, n_runs);
-        let unit_counters = train_unit(context, &plan.units[index], &mut miner, observer)?;
+        let unit_counters = if adaptive && index == 0 {
+            probe_unit(context, &plan.units[index], &mut miner, &tally)?
+        } else {
+            train_unit(context, &plan.units[index], &mut miner, workers)?
+        };
         Ok((miner, unit_counters))
     };
-    let (used, merge_seconds) = ordered_reduce(plan.units.len(), threads, observer, &work, |index, (miner, unit)| {
-        counters[plan.units[index].run].add(&unit);
-        accumulator.merge(miner);
-    })?;
-    Ok((accumulator, counters, used, merge_seconds))
+    let (used, merge_seconds, stopped) = ordered_reduce(
+        plan.units.len(),
+        threads,
+        observer,
+        &work,
+        || tally.is_stopped(),
+        |index, (miner, unit)| {
+            counters[plan.units[index].run].add(&unit);
+            accumulator.merge(miner);
+        },
+    )?;
+    if stopped {
+        return Ok(Trained::TooDiverse { consumed: tally.consumed() });
+    }
+    Ok(Trained::Merged(Box::new(accumulator), counters, used, merge_seconds))
 }
 
 /// Assigns the records of every unit to the clusters of `miner` in parallel and merges the statistics in unit order.
@@ -134,6 +176,15 @@ pub(crate) fn recount(
         recount_unit(context, &plan.units[index], miner, &mut partial, observer)?;
         Ok(partial)
     };
-    ordered_reduce(plan.units.len(), threads, observer, &work, |_index, partial| accumulator.merge(partial))?;
+    ordered_reduce(
+        plan.units.len(),
+        threads,
+        observer,
+        &work,
+        || false,
+        |_index, partial| {
+            accumulator.merge(partial);
+        },
+    )?;
     Ok(accumulator)
 }

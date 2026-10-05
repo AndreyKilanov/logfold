@@ -4,7 +4,7 @@ use crate::format::{CompiledFormat, ParsedRecord};
 use crate::lines::LineReader;
 
 /// Number of consumed bytes between two progress callbacks.
-pub const TICK_BYTES: u64 = 16 << 20;
+pub const TICK_BYTES: u64 = 1 << 20;
 
 /// Which part of a stream a scan owns (see `docs/ALGORITHM.md` §8).
 #[derive(Clone, Copy, Debug)]

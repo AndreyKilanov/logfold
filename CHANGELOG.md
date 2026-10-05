@@ -27,6 +27,13 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Changed
 
+- `--strategy auto` (the default) no longer loses to the sequential strategy on logs of mostly unique messages. It starts as
+  chunked above 64 MiB, and when the first chunk holds more than 0.3 templates per record after its first 10,000 records
+  (real logs: at most 0.03) it cancels the chunks and mines the whole input with one tree, so the result is the sequential
+  one. A 100 MB log of unique messages (8 MiB chunks) takes 4.2 s and 553 MB instead of 7.2 s and 1.9 GB; on HDFS, BGL, Spark
+  and Thunderbird the strategy and the output are unchanged. An explicit `chunked` or `sequential` is never changed;
+  `metrics.strategy` shows what was used. Progress callbacks now come every 1 MiB instead of every 16 MiB, so a cancel is
+  noticed sooner. Measurements are in `bench/docs/ADAPTIVE.md`; the rule is in `docs/ALGORITHM.md` §8.
 - **The default diff matcher is now `jaccard` instead of `exact`** (`DiffConfig.matcher`, `diff(matcher=...)`,
   `logfold diff --matcher`). It pairs a template that exists in one run only with its closest counterpart (a reworded
   message, or one that differs in a host name), so `diff` reports fewer false new/disappeared templates: on 2-3 million

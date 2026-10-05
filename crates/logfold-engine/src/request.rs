@@ -45,6 +45,14 @@ pub enum Strategy {
         /// Worker thread count.
         threads: usize,
     },
+    /// The chunked strategy, unless the first chunk shows that almost every record opens a new template; then one
+    /// tree for the whole input, as with [`Strategy::Sequential`].
+    Adaptive {
+        /// Chunk size in bytes.
+        chunk_bytes: u64,
+        /// Worker thread count.
+        threads: usize,
+    },
 }
 
 /// Everything needed to mine one or more runs.
@@ -87,7 +95,7 @@ pub struct RunSummary {
 /// Timings and execution facts.
 #[derive(Clone, Debug)]
 pub struct Metrics {
-    /// `sequential` or `chunked`.
+    /// `sequential` or `chunked`: the strategy that mined the input (an adaptive request reports what it chose).
     pub strategy: &'static str,
     /// Worker threads used.
     pub threads: usize,

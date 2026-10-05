@@ -142,6 +142,14 @@ mode skips lines until a record start. A chunk keeps consuming lines after `e` (
 single chunk. Chunk size is fixed by configuration and independent of the thread count; chunk results are merged in
 chunk order (files of run 0 first, then run 1). The result is deterministic for a fixed chunk size.
 
+**Choosing the strategy (`auto`).** Merging chunk trees is a serial step; when almost every record opens a new template it
+costs more than the parallel training saves. With `auto`, an input larger than one chunk starts as chunked, and the first
+chunk counts its templates: after its first 10 000 records it holds more than 0.3 templates per record, the chunked run is
+abandoned and the whole input is mined sequentially (§4), so the result is the sequential one. The decision uses only the
+first chunk, never the thread count or the timing, so it is deterministic for a fixed chunk size. A first chunk with fewer
+than 10 000 records stays chunked. An explicit `chunked` or `sequential` is never changed. The thresholds are execution
+parameters, not part of the mining rules: `ALGO_VERSION` stays.
+
 ## 9. Recount (diff)
 
 Training assigns each record to the tree *as it was at that moment*, so the same line can land in different clusters

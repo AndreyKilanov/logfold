@@ -24,7 +24,7 @@ from logfold.ext.masks import Masker
 from logfold.model import RunMetrics
 
 _ASCII_WS = b" \t\n\x0c\r"
-_TICK_BYTES = 16 << 20
+_TICK_BYTES = 1 << 20
 
 ParsedRecord = tuple[str, "int | None", bool, "int | None"]
 
