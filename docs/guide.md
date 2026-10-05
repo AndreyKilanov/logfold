@@ -89,7 +89,7 @@ what counts as the same template: `--matcher NAME` on the command line, `matcher
 | | `jaccard` (default) | `token_subset` | `exact` |
 |---|---|---|---|
 | what it pairs | templates that share enough words (Jaccard similarity of the word sets, at least 0.6) | templates of equal length where one generalizes the other (`<*>` against a word) | nothing: a template is the same only if its text is the same |
-| speed | the same as the others on real logs; +0.09 s on a worst-case `diff` of 18 thousand one-sided templates | +0.06 s on the same | the fastest, by those fractions of a second |
+| speed | the same as the others on real logs; +0.07 s on a worst-case `diff` of 18 thousand one-sided templates | +0.03 s on the same | the fastest, by those fractions of a second |
 | accuracy | the best: 16-71 percent fewer false alarms on saved results; finds 89 percent of the reworded messages in the tests | 2-62 percent fewer false alarms on saved results; finds no reworded message | no pairing, every reword is a new and a disappeared template |
 | risk | may join two similar templates that are different messages (1 pair of 206 in the tests) | only safe merges (one template generalizes the other) | none |
 

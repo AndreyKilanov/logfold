@@ -34,7 +34,7 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   by 45 percent on Thunderbird in a live `diff` (on HDFS and Spark a live `diff` is unchanged). It found 184 of 206
   reworded templates in the test and joined none of 130 rewritten (different) messages with their originals. The
   time is the same on real logs (6.9-11.3 s per `diff` of 4.6-6 million lines on one thread for all three matchers) and
-  +0.09 s on a worst-case `diff` of 18 thousand one-sided templates. `--matcher exact` restores the old output. A paired
+  +0.07 s on a worst-case `diff` of 18 thousand one-sided templates. `--matcher exact` restores the old output. A paired
   template is reported as `changed`, not as new, so `--fail-on-new` and `--fail-on-new-alerts` no longer fail on a
   reworded message; use `--matcher exact` for a gate that must fail on every new text. The evaluation and the script are
   in `bench/docs/DIFF_MATCHERS.md`; the guide has a section on choosing a matcher.

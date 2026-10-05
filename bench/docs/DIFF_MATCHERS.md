@@ -100,18 +100,19 @@ two saved results, where only the matcher differs, takes 0.2 ms (HDFS), 1 ms (BG
 `jaccard` 30 ms (Thunderbird, 200-300 one-sided templates per side).
 
 The cost grows with the number of templates that occur on one side only. The worst case is a log in which almost every template is
-one-sided; Rust matchers, one thread, `bench/RESULTS.md` (`diff_scale.py`, whole `diff` of two saved results):
+one-sided. Whole `diff` of two saved results, one thread, native engine (`python bench/tools/diff_scale.py --stage NAME --sizes 5000 10000 20000 40000 80000`, best of three):
 
 | templates per run | exact | token_subset | jaccard |
 |---:|---:|---:|---:|
-| 18,209 | 0.54 s | 0.60 s | 0.63 s |
-| 36,320 | 1.22 s | 1.35 s | 1.49 s |
+| 18,209 | 0.19 s | 0.22 s | 0.26 s |
+| 36,320 | 0.38 s | 0.45 s | 0.61 s |
+| 72,615 | 0.88 s | 1.09 s | 1.64 s |
 
 ## Which one to choose
 
 | | exact | token_subset | jaccard (default) |
 |---|---|---|---|
-| speed | same on real logs; fastest in the worst case (+0 s) | +0.06 s at 18 thousand one-sided templates | +0.09 s at 18 thousand one-sided templates |
+| speed | same on real logs; fastest in the worst case (+0 s) | +0.03 s at 18 thousand one-sided templates | +0.07 s at 18 thousand one-sided templates |
 | fewer false alarms, live `diff` | - | none (equals `exact`) | only where host names stay in templates (Thunderbird: -45 percent) |
 | fewer false alarms, saved results | - | 2-62 percent | 16-71 percent |
 | finds a reworded message | no | no (only literal against wildcard) | 89 percent of the reachable ones |
