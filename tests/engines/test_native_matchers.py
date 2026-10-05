@@ -141,3 +141,5 @@ def test_unusual_jaccard_thresholds_keep_the_python_matcher() -> None:
         matcher = JaccardMatcher()
         matcher.threshold = threshold
         assert accelerated(matcher) is matcher
+        expected = [] if threshold != threshold or threshold > 1 else [(0, 0)]
+        assert matcher.match(["a b"], ["a b"]) == expected

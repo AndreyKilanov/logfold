@@ -50,7 +50,7 @@ def accelerated(matcher: DiffMatcher, enabled: bool = True) -> DiffMatcher:
 
     Returns:
         A matcher with the same name and the same results. A ``jaccard`` threshold that is not a positive number keeps
-        the Python implementation, which scores every pair or rejects the value.
+        the Python implementation: zero or less scores every pair, ``nan`` and infinity are reached by no pair.
     """
     if not enabled or not native.supports_matching():
         return matcher
