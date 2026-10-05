@@ -23,17 +23,17 @@ Raw results go to ``bench/results/diff-matchers.json``; the discussion is in ``b
 
 Usage::
 
-    python bench/tools/diff_matchers.py --window 300000
+    python bench/tools/diff_matchers.py --window 3000000
 """
 
 from __future__ import annotations
 
 import argparse
-import itertools
 import json
 import platform
 import re
 import tempfile
+import time
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -118,17 +118,44 @@ def write(path: Path, lines: list[str]) -> Path:
     return path
 
 
-def run_diff(before: Path, after: Path, matcher: str, source: str) -> logfold.DiffResult:
-    """Run ``diff`` of two plain-text files with the given matcher.
+class Pair:
+    """Two plain-text files compared in both ways, with the analyses of the ``saved`` way made once."""
 
-    ``source`` is ``live`` (both files mined with one shared tree and recounted) or ``saved`` (each file analyzed on
-    its own and the two results compared, as ``diff before.json after.json`` does).
-    """
-    if source == "saved":
-        first = logfold.analyze(before, format="plain", examples="none")
-        second = logfold.analyze(after, format="plain", examples="none")
-        return logfold.diff(first, second, matcher=matcher)
-    return logfold.diff(before, after, format="plain", matcher=matcher, examples="none")
+    def __init__(self, before: Path, after: Path) -> None:
+        self.before = before
+        self.after = after
+        self._saved: tuple[logfold.AnalysisResult, logfold.AnalysisResult] | None = None
+
+    def diff(self, matcher: str, source: str, strategy: str = "auto") -> tuple[logfold.DiffResult, float]:
+        """Run ``diff`` with ``matcher`` and return the result and its wall time in seconds.
+
+        ``source`` is ``live`` (both files mined with one shared tree and recounted, the time includes mining) or
+        ``saved`` (each file analyzed on its own, as ``diff before.json after.json`` does; only the comparison of the
+        two saved results is timed). ``strategy`` is the execution strategy of the live way.
+        """
+        if source == "saved":
+            if self._saved is None:
+                self._saved = tuple(  # type: ignore[assignment]
+                    logfold.analyze(path, format="plain", examples="none") for path in (self.before, self.after)
+                )
+            assert self._saved is not None
+            start = time.perf_counter()
+            result = logfold.diff(*self._saved, matcher=matcher)
+        else:
+            start = time.perf_counter()
+            result = logfold.diff(
+                self.before, self.after, format="plain", matcher=matcher, examples="none", strategy=strategy
+            )
+        return result, time.perf_counter() - start
+
+
+def timing(pair: Pair, source: str, repeat: int, strategy: str = "auto") -> dict[str, Any]:
+    """Wall time of ``diff`` per matcher: the median and the extremes of ``repeat`` runs."""
+    out: dict[str, Any] = {}
+    for matcher in MATCHERS:
+        seconds = sorted(pair.diff(matcher, source, strategy)[1] for _ in range(repeat))
+        out[matcher] = {"median_s": seconds[len(seconds) // 2], "min_s": seconds[0], "max_s": seconds[-1]}
+    return out
 
 
 def counts(result: logfold.DiffResult) -> dict[str, int]:
@@ -152,12 +179,14 @@ def evaluate_pairs(before_only: list[str], after_only: list[str], matcher: str, 
     """Score the pairs of one matcher against the known rewording of ``word``.
 
     A pair is a *twin* pair when it joins a template that contains ``word`` with its reworded twin, *misplaced* when it
-    joins such a template with something else, and *other* when it does not involve the reworded templates at all (the
+    joins such a template with another one (*foreign* when that other template is not a reworded one either: a real
+    false merge; the rest are mix-ups between reworded siblings), and *other* when it does not involve the reworded templates at all (the
     noise that the stationary pair also has).
     """
     pairs = registry.get_matcher(matcher).match(before_only, after_only)
     expected = {i for i, text in enumerate(before_only) if word in text.split(" ")}
-    twin = misplaced = 0
+    marker = expand([word], word, mode)[0]
+    twin = misplaced = foreign = 0
     for i, j in pairs:
         if i not in expected:
             continue
@@ -165,6 +194,7 @@ def evaluate_pairs(before_only: list[str], after_only: list[str], matcher: str, 
             twin += 1
         else:
             misplaced += 1
+            foreign += marker not in after_only[j].split(" ")
     after_tokens = [text.split(" ") for text in after_only]
     reachable = sum(
         any(compatible(expand(before_only[i].split(" "), word, mode), other) for other in after_tokens)
@@ -176,6 +206,7 @@ def evaluate_pairs(before_only: list[str], after_only: list[str], matcher: str, 
         "pairs": len(pairs),
         "twin": twin,
         "misplaced": misplaced,
+        "foreign": foreign,
         "other": len(pairs) - twin - misplaced,
         "twin_share": twin / reachable if reachable else None,
     }
@@ -200,28 +231,33 @@ def pair_stats(before_only: list[str], after_only: list[str], matcher: str, limi
     return {"pairs": len(pairs), "kinds": dict(kinds), "sample": sample}
 
 
-def stationary_and_adjacent(name: str, lines: list[str], window: int, block: int, tmp: Path) -> dict[str, Any]:
-    """Run the pairs that have no ground truth."""
+def stationary_and_adjacent(
+    name: str, lines: list[str], window: int, block: int, repeat: int, tmp: Path
+) -> dict[str, Any]:
+    """Run the pairs that have no ground truth; the adjacent pair is also timed."""
     first, second = split_blocks(lines[: 2 * window], block)
-    paths = {
-        "stationary": (write(tmp / f"{name}-s-a.log", first), write(tmp / f"{name}-s-b.log", second)),
-        "adjacent": (
-            write(tmp / f"{name}-n-a.log", lines[:window]),
-            write(tmp / f"{name}-n-b.log", lines[window : 2 * window]),
+    pairs = {
+        "stationary": Pair(write(tmp / f"{name}-s-a.log", first), write(tmp / f"{name}-s-b.log", second)),
+        "adjacent": Pair(
+            write(tmp / f"{name}-n-a.log", lines[:window]), write(tmp / f"{name}-n-b.log", lines[window : 2 * window])
         ),
     }
     out: dict[str, Any] = {}
-    for scenario, (before, after) in paths.items():
+    for scenario, pair in pairs.items():
         for source in SOURCES:
-            per_matcher = {m: counts(run_diff(before, after, m, source)) for m in MATCHERS}
-            exact = run_diff(before, after, "exact", source)
+            results = {m: pair.diff(m, source)[0] for m in MATCHERS}
+            exact = results["exact"]
             before_only = [e.text for e in exact.disappeared]
             after_only = [e.text for e in exact.new_templates]
             out[f"{scenario}/{source}"] = {
                 "records": [exact.before.records, exact.after.records],
-                "matchers": per_matcher,
+                "matchers": {m: counts(r) for m, r in results.items()},
                 "pairs": {m: pair_stats(before_only, after_only, m, 20) for m in MATCHERS[1:]},
             }
+            if scenario == "adjacent":
+                out[f"{scenario}/{source}"]["timing"] = timing(pair, source, repeat)
+                if source == "live":
+                    out[f"{scenario}/{source}"]["timing_one_thread"] = timing(pair, source, repeat, "sequential")
     return out
 
 
@@ -231,46 +267,53 @@ def reworded(name: str, lines: list[str], window: int, block: int, words: int, t
     before = write(tmp / f"{name}-r-a.log", first)
     results: list[dict[str, Any]] = []
     for word in pick_words(first, words):
-        for mode, source in itertools.product(MODES, SOURCES):
-            after = write(tmp / f"{name}-r-b.log", reword(second, word, mode))
-            exact = run_diff(before, after, "exact", source)
-            before_only = [e.text for e in exact.disappeared]
-            after_only = [e.text for e in exact.new_templates]
-            results.append(
-                {
-                    "word": word,
-                    "mode": mode,
-                    "source": source,
-                    "matchers": {m: evaluate_pairs(before_only, after_only, m, word, mode) for m in MATCHERS[1:]},
-                    "one_sided": [len(before_only), len(after_only)],
-                }
-            )
+        for mode in MODES:
+            pair = Pair(before, write(tmp / f"{name}-r-b.log", reword(second, word, mode)))
+            for source in SOURCES:
+                exact = pair.diff("exact", source)[0]
+                before_only = [e.text for e in exact.disappeared]
+                after_only = [e.text for e in exact.new_templates]
+                results.append(
+                    {
+                        "word": word,
+                        "mode": mode,
+                        "source": source,
+                        "matchers": {m: evaluate_pairs(before_only, after_only, m, word, mode) for m in MATCHERS[1:]},
+                        "one_sided": [len(before_only), len(after_only)],
+                    }
+                )
     return results
 
 
 def main() -> None:
     """Run all scenarios on all logs and store the results."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--window", type=int, default=300_000, help="lines in one side of a pair")
+    parser.add_argument(
+        "--window", type=int, default=3_000_000, help="lines in one side of a pair (fewer if the log is shorter)"
+    )
     parser.add_argument("--block", type=int, default=1000, help="block size of the stationary split")
     parser.add_argument("--words", type=int, default=3, help="reworded words per log")
+    parser.add_argument("--repeat", type=int, default=3, help="repeats of the timed runs")
     parser.add_argument("--logs", nargs="+", default=list(LOGS), choices=LOGS)
     parser.add_argument("--out", type=Path, default=OUT)
     args = parser.parse_args()
     report: dict[str, Any] = {
         "logfold": logfold.__version__,
         "python": platform.python_version(),
-        "window": args.window,
+        "max_window": args.window,
         "block": args.block,
+        "repeat": args.repeat,
         "logs": {},
     }
     with tempfile.TemporaryDirectory() as directory:
         tmp = Path(directory)
         for name in args.logs:
             lines = read_lines(DATA / f"{name}.txt", 2 * args.window)
-            print(f"{name}: {len(lines)} lines")
-            entry = stationary_and_adjacent(name, lines, args.window, args.block, tmp)
-            entry["reworded"] = reworded(name, lines, args.window, args.block, args.words, tmp)
+            window = min(args.window, len(lines) // 2)
+            print(f"{name}: {len(lines)} lines read, {window} per side", flush=True)
+            entry = {"window": window}
+            entry.update(stationary_and_adjacent(name, lines, window, args.block, args.repeat, tmp))
+            entry["reworded"] = reworded(name, lines, window, args.block, args.words, tmp)
             report["logs"][name] = entry
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
