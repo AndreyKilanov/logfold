@@ -184,7 +184,9 @@ above.
 **`jaccard`** with a threshold `t`. The score of two templates is `|A ∩ B| / |A ∪ B|` over their sets of words (0 when
 both sets are empty). Pairs with a score of at least `t` are ordered by score, highest first, then by index in the first
 run, then by index in the second run, and taken greedily when neither template is used yet. The result is sorted by
-index in the first run. Implementations may skip pairs that cannot reach `t`; prefix filtering is exact: with the words
+index in the first run. Implementations may skip pairs that cannot reach `t`: pairs whose sizes give `min / max` below
+`t` (the score never exceeds it) and pairs that cannot share `ceil(t * (|A| + |B|) / (1 + t))` words (the bound is lowered
+by an epsilon on the safe side). Prefix filtering is exact: with the words
 ordered from the least to the most frequent in both runs (ties by code point order), two sets with score at least `t`
 share a word among the first `n - ceil(t * n) + 1` words of each (`n` is the size of the set; the ceiling uses an epsilon
 of 1e-9 on the safe side). A threshold of zero or less scores every pair.
