@@ -142,12 +142,11 @@ Measured on one machine (8 cores, Windows 11); the protocol was fixed before the
 | HDFS, 1.57 GB, a real log | 0.94 s | not measured |
 | `diff` of two 100 MB logs | 0.7 s | no `diff` |
 
-On the real logs of 0.7 to 1.6 GB peak memory is about 45 MB with one thread and about 110 MB with 16 threads.
+On the real logs of 0.7 to 1.6 GB peak memory is 42 to 51 MB with one thread and 107 to 129 MB with 16 threads.
 
 ## Limitations
 
-> [!WARNING]
-> Keep these in mind before running logfold on large logs and comparing results.
+> **Warning.** Keep these in mind before running logfold on large logs and comparing results.
 >
 > - Speed was measured on Windows 11 only; on Linux and macOS correctness is tested, but speed is not.
 > - The parallel mode builds a tree per chunk and merges them, so on logs without masks it can return more templates
