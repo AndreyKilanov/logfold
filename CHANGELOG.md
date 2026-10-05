@@ -7,6 +7,10 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Added
 
+- `--report NAME` on `logfold analyze` and `logfold diff` chooses the reporter by name, so plugin reporters work from
+  the command line: with `--out` it writes the file, without `--out` its text is printed instead of the tables. The
+  `--out` suffix `.csv` selects the `csv` reporter. An unknown or unsuitable reporter and a bad `--out` suffix now fail
+  before the logs are read.
 - Compare saved results without the logs: `logfold.load_analysis(path)` loads a JSON report of `analyze`, and
   `logfold.diff()` accepts two `AnalysisResult` objects. `logfold diff before.json after.json` detects saved reports
   by their header. The results are mined separately and are not re-counted, so templates are joined by id and the
@@ -19,6 +23,8 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 - Plugin discovery reads the installed package metadata once instead of three times, so every command that
   resolves a format or a reporter starts about 9 ms faster (307 ms instead of 316 ms for `logfold analyze` on a small
   file, median of 25 runs). The output is unchanged.
+- `--out report.md` now writes Markdown tables (the `markdown` reporter) instead of the plain text report; use
+  `--out report.txt` or `--report text` for the old output.
 - `analyze --min-count N --out result.json` now writes every template to the JSON file (the option still hides rare
   templates from tables and from other report formats), so the file can be compared later with `diff`.
 

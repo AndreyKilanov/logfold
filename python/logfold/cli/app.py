@@ -21,6 +21,7 @@ from rich.table import Table
 
 import logfold
 from logfold.cli import exit_codes
+from logfold.cli.output import render_text, resolve_outputs
 from logfold.cli.plugins_cmd import plugins_app
 from logfold.cli.render import print_analysis, print_diff
 from logfold.engines import native
@@ -38,8 +39,6 @@ app = typer.Typer(
 )
 app.add_typer(plugins_app, name="plugins")
 
-_SUFFIX_REPORTER = {".html": "html", ".htm": "html", ".json": "json", ".txt": "text", ".md": "text"}
-
 Format = Annotated[str, typer.Option("--format", "-f", help="auto, a name from 'logfold formats', or regex:<pattern>.")]
 Multiline = Annotated[
     bool | None,
@@ -47,7 +46,19 @@ Multiline = Annotated[
 ]
 Out = Annotated[
     Path | None,
-    typer.Option("--out", "-o", help="Write a report; the suffix selects the format: .html, .json or .txt."),
+    typer.Option(
+        "--out",
+        "-o",
+        help="Write a report; the suffix selects the format: .html, .json, .txt, .md or .csv (see --report).",
+    ),
+]
+Report = Annotated[
+    str | None,
+    typer.Option(
+        "--report",
+        help="Reporter by name ('logfold plugins list'): it writes the --out file instead of the suffix's reporter, "
+        "and without --out it is printed instead of the tables.",
+    ),
 ]
 Top = Annotated[int, typer.Option("--top", "-n", min=1, help="Rows to print per table.")]
 SimTh = Annotated[float | None, typer.Option("--sim-th", min=0.0, max=1.0, help="Similarity threshold (default 0.4).")]
@@ -153,19 +164,15 @@ def _fail(error: Exception, debug: bool) -> typer.Exit:
     return typer.Exit(exit_codes.ERROR)
 
 
-def _write_report(result: AnalysisResult | DiffResult, out: Path, quiet: bool) -> None:
-    reporter = _SUFFIX_REPORTER.get(out.suffix.lower())
-    if reporter is None:
-        known = ", ".join(sorted(_SUFFIX_REPORTER))
-        raise logfold.ConfigError(f"cannot choose a report format from the suffix {out.suffix!r}; use one of: {known}")
+def _write_report(result: AnalysisResult | DiffResult, out: Path, reporter: str, quiet: bool) -> None:
     out.write_text(result.render(reporter), encoding="utf-8")
     if not quiet:
         _stderr_console().print(f"wrote {out}", highlight=False)
 
 
-def _emit(result: AnalysisResult | DiffResult, top: int, as_json: bool) -> None:
-    if as_json:
-        sys.stdout.write(result.render("json"))
+def _emit(result: AnalysisResult | DiffResult, top: int, reporter: str | None) -> None:
+    if reporter is not None:
+        sys.stdout.write(render_text(result, reporter, top))
         return
     if sys.stdout.isatty():
         console = _stdout_console()
@@ -218,6 +225,7 @@ def analyze(
         ),
     ] = 1,
     out: Out = None,
+    report: Report = None,
     sim_th: SimTh = None,
     depth: Depth = None,
     max_children: MaxChildren = None,
@@ -235,6 +243,7 @@ def analyze(
 ) -> None:
     """Fold FILES into message templates and count them."""
     try:
+        outputs = resolve_outputs("analysis", out, report, as_json)
         with _progress(quiet) as progress:
             result = logfold.analyze(
                 [str(f) for f in files],
@@ -258,9 +267,9 @@ def analyze(
         shown = result
         if min_count > 1:
             shown = dataclasses.replace(result, templates=tuple(t for t in result.templates if t.count >= min_count))
-        _emit(shown, top, as_json)
-        if out is not None:
-            _write_report(result if out.suffix.lower() == ".json" else shown, out, quiet)
+        _emit(shown, top, outputs.stdout)
+        if out is not None and outputs.file is not None:
+            _write_report(result if outputs.file == "json" else shown, out, outputs.file, quiet)
     except LogfoldError as error:
         raise _fail(error, debug) from None
 
@@ -292,6 +301,7 @@ def diff(
         bool, typer.Option("--fail-on-new-alerts", help="Exit with code 2 when new WARN/ERROR/FATAL templates exist.")
     ] = False,
     out: Out = None,
+    report: Report = None,
     sim_th: SimTh = None,
     depth: Depth = None,
     max_children: MaxChildren = None,
@@ -312,6 +322,7 @@ def diff(
     Each argument is a log file or a saved report of 'logfold analyze --out result.json'; both must be of one kind.
     """
     try:
+        outputs = resolve_outputs("diff", out, report, as_json)
         for path in (before, after):
             if not path.is_file():
                 raise logfold.SourceError(f"cannot read {str(path)!r}: no such file")
@@ -372,9 +383,9 @@ def diff(
                         high_cardinality,
                     ),
                 )
-        _emit(result, top, as_json)
-        if out is not None:
-            _write_report(result, out, quiet)
+        _emit(result, top, outputs.stdout)
+        if out is not None and outputs.file is not None:
+            _write_report(result, out, outputs.file, quiet)
     except LogfoldError as error:
         raise _fail(error, debug) from None
     if fail_on_new and result.new_templates:
