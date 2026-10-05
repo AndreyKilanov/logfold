@@ -92,7 +92,8 @@ DIFF_SCALE_COLUMNS = (
 DIFF_SCALE_STAGES = {
     "before": "Before: the matchers compared every pair of templates",
     "indexed": "Candidates found with an index, in Python",
-    "native": "The matchers in Rust (current)",
+    "native": "The matchers in Rust",
+    "columns": "Columnar result and the comparison in Rust (current)",
 }
 PROJECT_TO = (54_000, 100_000)
 
@@ -155,8 +156,8 @@ def diff_scale_section(data: dict[str, object]) -> list[str]:
         if stage in stages:  # type: ignore[operator]
             out += [f"### {title}", "", *diff_scale_table(stages[stage]["rows"]), ""]  # type: ignore[index]
     out += [
-        "Linear but slow per template and now the bulk of a `diff`: the join and the entries of the comparison (about 30 "
-        "microseconds per template) and the conversion of the engine result in `analyze` (about 17).",
+        "What is left is Python object construction: a `DiffEntry` costs about 5 microseconds (these logs share few "
+        "templates, so almost every template is reported) and a `Template` in `analyze` about 4.",
         "",
     ]
     return out

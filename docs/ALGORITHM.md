@@ -192,3 +192,31 @@ share a word among the first `n - ceil(t * n) + 1` words of each (`n` is the siz
 of 1e-9 on the safe side). A threshold of zero or less scores every pair.
 
 A matcher that is not built in (a plugin, or a subclass of a built-in one) always runs its own Python code.
+
+## 11. Comparison (diff)
+
+After recount (§9), or for two saved results, the templates of two runs are classified as *new*, *disappeared*,
+*changed* or *unchanged*. The native comparison (`logfold-core`, `compare`) and the pure-Python one
+(`logfold.comparison.classify`) must return **identical** entries, in the same order, with identical floats (the same
+IEEE double operations in the same order). It does not change mined templates or counts, so it does not affect
+`ALGO_VERSION`.
+
+Inputs: for each run its templates with a text and a record count (a template with a count of zero is not part of the
+run) and the number of records of the run; the thresholds `threshold_ratio` (at least 1), `min_count` and
+`min_new_count`; a matcher (§10).
+
+1. Templates are joined by text (equivalently by id, which is `sha256(text)[:16]`).
+2. The templates of each run that have no counterpart, in the order of the input, go to the matcher. Every pair it
+   returns is one template that is present in both runs; its text and statistics come from the second run.
+3. `share = count / records`, and 0 when the run has no records. `ratio = after_share / before_share` when both counts
+   are positive and `before_share` is positive, otherwise there is no ratio.
+4. `factor = max(r, 1 / r)` where `r` is the ratio, or 1 when there is no ratio or it is 0.
+5. A template present in both runs is *changed* when `max(before_count, after_count) >= min_count` and
+   `factor >= threshold_ratio`, otherwise *unchanged* (only counted).
+6. A template of the second run without counterpart is *new* when its count is at least `min_new_count`; a template of
+   the first run without counterpart is *disappeared* by the same rule.
+7. Order: new and disappeared by count, highest first, then by text; changed by `factor`, highest first, then by the
+   larger of the two counts, highest first, then by the text of the second run. Texts are compared by code points.
+8. An entry carries the id, text, example and timestamps of the second run (of the first run for a disappeared
+   template), both counts and shares, the ratio, and the level counts of both runs added up: `levels` lists the levels
+   with a positive sum in order of severity and `level` is the most severe of them.

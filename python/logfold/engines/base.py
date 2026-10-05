@@ -7,13 +7,13 @@ strategy (see ``docs/ALGORITHM.md``).
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
 from logfold.config import MiningConfig
 from logfold.ext.formats import FormatSpec
-from logfold.model import RunMetrics
+from logfold.model import LEVEL_NAMES, RunMetrics, summarize_levels
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,6 +80,106 @@ class TemplateStats:
 
 
 @dataclass(frozen=True, slots=True)
+class RunColumns:
+    """Statistics of one run for every template, as parallel columns.
+
+    Attributes:
+        counts: Records per template.
+        first: Earliest timestamp in microseconds, or ``None``.
+        last: Latest timestamp in microseconds, or ``None``.
+        levels: Record counts per level name, only for the levels that occurred, in order of severity.
+        level: Most severe level that occurred, or ``None``.
+        examples: Raw message of the first record, or ``None`` when the run has none.
+    """
+
+    counts: Sequence[int]
+    first: Sequence[int | None]
+    last: Sequence[int | None]
+    levels: Sequence[Mapping[str, int]]
+    level: Sequence[str | None]
+    examples: Sequence[str | None]
+
+
+@dataclass(frozen=True, slots=True)
+class TemplateTable:
+    """The templates of a result as columns, which are cheap to build and to scan.
+
+    The table also behaves as a sequence of :class:`TemplateStats` rows, built on access, for code that wants one
+    template at a time.
+
+    Attributes:
+        ids: ``sha256(text)[:16]`` of every template.
+        texts: Template texts.
+        runs: Statistics per run, in run order.
+    """
+
+    ids: Sequence[str]
+    texts: Sequence[str]
+    runs: tuple[RunColumns, ...]
+
+    def __len__(self) -> int:
+        """Return the number of templates."""
+        return len(self.ids)
+
+    def __getitem__(self, index: int) -> TemplateStats:
+        """Return the row of one template.
+
+        Args:
+            index: Position of the template.
+
+        Returns:
+            The template with the statistics of every run.
+
+        Raises:
+            TypeError: If ``index`` is not an integer (slices are not supported).
+        """
+        if not isinstance(index, int):
+            raise TypeError(f"template indices must be integers, not {type(index).__name__}")
+        runs = tuple(
+            RunStatsData(
+                count=run.counts[index],
+                first=run.first[index],
+                last=run.last[index],
+                levels=tuple(run.levels[index].get(name, 0) for name in LEVEL_NAMES),
+                example=run.examples[index],
+            )
+            for run in self.runs
+        )
+        return TemplateStats(id=self.ids[index], text=self.texts[index], runs=runs)
+
+    def __iter__(self) -> Iterator[TemplateStats]:
+        """Iterate over the rows."""
+        return (self[index] for index in range(len(self)))
+
+    @classmethod
+    def from_stats(cls, templates: Sequence[TemplateStats], runs: int) -> TemplateTable:
+        """Build the table from rows.
+
+        Args:
+            templates: Templates with statistics for ``runs`` runs.
+            runs: Number of runs.
+
+        Returns:
+            The same templates as columns.
+        """
+        columns = []
+        for run in range(runs):
+            stats = [template.runs[run] for template in templates]
+            summarized = [summarize_levels(item.levels) for item in stats]
+            columns.append(
+                RunColumns(
+                    counts=[item.count for item in stats],
+                    first=[item.first for item in stats],
+                    last=[item.last for item in stats],
+                    levels=[levels for _, levels in summarized],
+                    level=[level for level, _ in summarized],
+                    examples=[item.example for item in stats],
+                )
+            )
+        return cls(ids=[t.id for t in templates], texts=[t.text for t in templates], runs=tuple(columns))
+
+
+@dataclass(frozen=True, slots=True)
 class RunInfo:
     """Counters of one run.
 
@@ -108,12 +208,12 @@ class MiningResult:
 
     Attributes:
         runs: Per-run counters.
-        templates: Unique templates sorted by total count descending, then text ascending.
+        templates: Unique templates sorted by total count descending, then text ascending, as columns.
         metrics: Execution facts.
     """
 
     runs: tuple[RunInfo, ...]
-    templates: tuple[TemplateStats, ...]
+    templates: TemplateTable
     metrics: RunMetrics
 
 

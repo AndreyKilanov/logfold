@@ -18,9 +18,10 @@ from logfold.api._common import (
     _summary,
     _warnings,
 )
-from logfold.api.matching import accelerated
+from logfold.api.comparing import classify_native, table_side
+from logfold.api.matching import accelerated, native_spec
 from logfold.api.saved import MINING_ONLY_DEFAULTS, diff_saved
-from logfold.comparison import classify
+from logfold.comparison import Classification, classify
 from logfold.config import (
     DiffConfig,
     ExamplesMode,
@@ -28,6 +29,7 @@ from logfold.config import (
     MaskRule,
     MiningConfig,
 )
+from logfold.engines import native
 from logfold.errors import ConfigError
 from logfold.ext import registry
 from logfold.ext.formats import Format, FormatSpec
@@ -152,23 +154,40 @@ def diff(
     mined, used = _mine((first, second), spec, mining_config, exec_config, progress, config.recount)
     before_summary = _summary(first, mined.runs[0])
     after_summary = _summary(second, mined.runs[1])
-    classification = classify(
-        mined.templates,
-        before_summary,
-        after_summary,
-        config,
-        accelerated(registry.get_matcher(config.matcher), used.name == "native"),
-    )
     masker = Masker(mining_config.masks)
+    resolved_matcher = registry.get_matcher(config.matcher)
+    native_matcher = native_spec(resolved_matcher) if used.name == "native" and native.supports_comparison() else None
+    classification = None
+    if native_matcher is not None:
+        classification = classify_native(
+            table_side(mined.templates, 0, before_summary),
+            table_side(mined.templates, 1, after_summary),
+            config,
+            native_matcher,
+            lambda text: _example(text, examples, masker),
+        )
+    reported = classification
+    if reported is None:
+        reported = classify(
+            list(mined.templates),
+            before_summary,
+            after_summary,
+            config,
+            accelerated(resolved_matcher, used.name == "native"),
+        )
 
-    def scrub(entries: tuple) -> tuple:  # type: ignore[type-arg]
-        return tuple(dataclasses.replace(e, example=_example(e.example, examples, masker)) for e in entries)
+        def scrub(entries: tuple) -> tuple:  # type: ignore[type-arg]
+            return tuple(dataclasses.replace(e, example=_example(e.example, examples, masker)) for e in entries)
+
+        reported = Classification(
+            scrub(reported.new), scrub(reported.disappeared), scrub(reported.changed), reported.unchanged
+        )
 
     return DiffResult(
-        new_templates=scrub(classification.new),
-        disappeared=scrub(classification.disappeared),
-        changed=scrub(classification.changed),
-        unchanged=classification.unchanged,
+        new_templates=reported.new,
+        disappeared=reported.disappeared,
+        changed=reported.changed,
+        unchanged=reported.unchanged,
         before=before_summary,
         after=after_summary,
         config=config,

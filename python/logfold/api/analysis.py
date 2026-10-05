@@ -13,7 +13,7 @@ from logfold.api._common import (
     _mining,
     _paths,
     _summary,
-    _template,
+    _templates,
     _warnings,
 )
 from logfold.config import (
@@ -90,9 +90,7 @@ def analyze(
     mined, used = _mine((run,), spec, mining_config, exec_config, progress)
     summary = _summary(run, mined.runs[0])
     masker = Masker(mining_config.masks)
-    templates = tuple(
-        _template(stats, 0, summary.tz_aware, examples, masker) for stats in mined.templates if stats.runs[0].count > 0
-    )
+    templates = _templates(mined.templates, 0, summary.tz_aware, examples, masker)
     return AnalysisResult(
         templates=templates,
         run=summary,

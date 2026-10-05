@@ -32,6 +32,15 @@ class Classification:
     unchanged: int
 
 
+def _shares(
+    before_count: int, after_count: int, before_total: int, after_total: int
+) -> tuple[float, float, float | None]:
+    before_share = before_count / before_total if before_total else 0.0
+    after_share = after_count / after_total if after_total else 0.0
+    ratio = after_share / before_share if before_count and after_count and before_share > 0 else None
+    return before_share, after_share, ratio
+
+
 def _entry(
     template_after: TemplateStats | None,
     template_before: TemplateStats | None,
@@ -46,9 +55,7 @@ def _entry(
     after: RunStatsData | None = template_after.runs[1] if template_after is not None else None
     before_count = before.count if before else 0
     after_count = after.count if after else 0
-    before_share = before_count / before_total if before_total else 0.0
-    after_share = after_count / after_total if after_total else 0.0
-    ratio = after_share / before_share if before_count and after_count and before_share > 0 else None
+    before_share, after_share, ratio = _shares(before_count, after_count, before_total, after_total)
     summed = [0] * len(primary.runs[0].levels)
     for stats in (before, after):
         if stats is not None:
@@ -73,9 +80,13 @@ def _entry(
     )
 
 
-def _change_factor(entry: DiffEntry) -> float:
-    ratio = entry.ratio or 1.0
+def _factor(ratio: float | None) -> float:
+    ratio = ratio or 1.0
     return max(ratio, 1.0 / ratio)
+
+
+def _change_factor(entry: DiffEntry) -> float:
+    return _factor(entry.ratio)
 
 
 def classify(
@@ -130,10 +141,11 @@ def classify(
     changed: list[DiffEntry] = []
     unchanged = 0
     for after_t, before_t in both:
-        entry = build(after_t, before_t)
-        significant = max(entry.before_count, entry.after_count) >= config.min_count
-        if significant and _change_factor(entry) >= config.threshold_ratio:
-            changed.append(entry)
+        before_count = before_t.runs[0].count if before_t is not None else 0
+        after_count = after_t.runs[1].count if after_t is not None else 0
+        _, _, ratio = _shares(before_count, after_count, before.records, after.records)
+        if max(before_count, after_count) >= config.min_count and _factor(ratio) >= config.threshold_ratio:
+            changed.append(build(after_t, before_t))
         else:
             unchanged += 1
 

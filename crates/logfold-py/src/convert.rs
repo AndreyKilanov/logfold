@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use logfold_core::{FrozenTemplate, Level, MaskRule, RunStats};
+use logfold_core::{FrozenTemplate, Level, MaskRule};
 use logfold_engine::{MineOutput, MineRequest, MiningParams, Strategy, DEFAULT_CHUNK_BYTES};
 use logfold_io::{FormatConfig, FormatSpec};
 use pyo3::exceptions::PyKeyError;
@@ -106,38 +106,68 @@ pub(crate) fn parse_request(dict: &Bound<'_, PyDict>) -> PyResult<MineRequest> {
     })
 }
 
-fn run_stats<'py>(py: Python<'py>, stats: &RunStats) -> PyResult<Bound<'py, PyDict>> {
-    let item = PyDict::new(py);
-    item.set_item("count", stats.count)?;
-    if stats.has_time() {
-        item.set_item("first", stats.first)?;
-        item.set_item("last", stats.last)?;
-    } else {
-        item.set_item("first", py.None())?;
-        item.set_item("last", py.None())?;
-    }
+/// Per-run statistics of every template as parallel lists.
+///
+/// Building the Python objects here, once per column, is much cheaper than one dictionary per template and run; the
+/// Python side zips the columns when it needs a row.
+fn run_columns<'py>(py: Python<'py>, templates: &[FrozenTemplate], run: usize) -> PyResult<Bound<'py, PyDict>> {
+    let counts = PyList::empty(py);
+    let first = PyList::empty(py);
+    let last = PyList::empty(py);
     let levels = PyList::empty(py);
-    for value in stats.levels {
-        levels.append(value)?;
+    let level = PyList::empty(py);
+    let examples = PyList::empty(py);
+    for frozen in templates {
+        let stats = &frozen.runs[run];
+        counts.append(stats.count)?;
+        if stats.has_time() {
+            first.append(stats.first)?;
+            last.append(stats.last)?;
+        } else {
+            first.append(py.None())?;
+            last.append(py.None())?;
+        }
+        let present = PyDict::new(py);
+        let mut most_severe: Option<&str> = None;
+        for (rank, value) in stats.levels.iter().enumerate() {
+            if *value > 0 {
+                present.set_item(Level::NAMES[rank], *value)?;
+                most_severe = Some(Level::NAMES[rank]);
+            }
+        }
+        levels.append(present)?;
+        level.append(most_severe)?;
+        match &stats.example {
+            Some(bytes) => examples.append(String::from_utf8_lossy(bytes).as_ref())?,
+            None => examples.append(py.None())?,
+        }
     }
+    let item = PyDict::new(py);
+    item.set_item("counts", counts)?;
+    item.set_item("first", first)?;
+    item.set_item("last", last)?;
     item.set_item("levels", levels)?;
-    match &stats.example {
-        Some(bytes) => item.set_item("example", String::from_utf8_lossy(bytes).as_ref())?,
-        None => item.set_item("example", py.None())?,
-    }
+    item.set_item("level", level)?;
+    item.set_item("examples", examples)?;
     Ok(item)
 }
 
-fn template<'py>(py: Python<'py>, template: &FrozenTemplate) -> PyResult<Bound<'py, PyDict>> {
-    let item = PyDict::new(py);
-    item.set_item("id", &template.id)?;
-    item.set_item("text", &template.text)?;
-    let runs = PyList::empty(py);
-    for stats in &template.runs {
-        runs.append(run_stats(py, stats)?)?;
+fn template_columns<'py>(py: Python<'py>, output: &MineOutput) -> PyResult<Bound<'py, PyDict>> {
+    let columns = PyDict::new(py);
+    let ids = PyList::empty(py);
+    let texts = PyList::empty(py);
+    for frozen in &output.templates {
+        ids.append(&frozen.id)?;
+        texts.append(&frozen.text)?;
     }
-    item.set_item("runs", runs)?;
-    Ok(item)
+    columns.set_item("ids", ids)?;
+    columns.set_item("texts", texts)?;
+    let runs = PyList::empty(py);
+    for run in 0..output.runs.len() {
+        runs.append(run_columns(py, &output.templates, run)?)?;
+    }
+    columns.set_item("runs", runs)?;
+    Ok(columns)
 }
 
 /// Converts the engine output into plain Python containers.
@@ -156,11 +186,7 @@ pub(crate) fn build_output<'py>(py: Python<'py>, output: &MineOutput) -> PyResul
         runs.append(item)?;
     }
     result.set_item("runs", runs)?;
-    let templates = PyList::empty(py);
-    for frozen in &output.templates {
-        templates.append(template(py, frozen)?)?;
-    }
-    result.set_item("templates", templates)?;
+    result.set_item("templates", template_columns(py, output)?)?;
     let metrics = PyDict::new(py);
     metrics.set_item("engine", "native")?;
     metrics.set_item("strategy", output.metrics.strategy)?;

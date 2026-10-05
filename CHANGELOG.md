@@ -38,6 +38,14 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   gives the same pairs. The pure-Python matchers stay the reference and
   the fallback (the pure-Python engine, a plugin or a subclass of a built-in matcher, unusual `jaccard` thresholds); the
   pairs are identical, and the rules are written in `docs/ALGORITHM.md` §10.
+- `analyze` and `diff` are faster on large results: the native engine hands over the templates as columns instead of one
+  dictionary per template, `Template` objects are built in one pass, and `diff` classifies the templates in the native
+  extension (join by text, matcher, thresholds, order) and builds entries only for what it reports. At 18 thousand
+  templates per run `diff` of two results takes 0.19 s instead of 0.54 s, the part of `analyze` outside the engine 0.07 s
+  instead of 0.19 s; 72 thousand templates take 0.84 s instead of 2.6 s. The entries are identical to the pure-Python
+  classification (differential tests), which stays the reference and the fallback (plugin matchers, the pure-Python
+  engine); the rules are in `docs/ALGORITHM.md` §11. The Python and Rust data contract is now version 2, so the
+  extension and the Python code must come from the same release.
 - Plugin discovery reads the installed package metadata once instead of three times, so every command that
   resolves a format or a reporter starts about 9 ms faster (307 ms instead of 316 ms for `logfold analyze` on a small
   file, median of 25 runs). The output is unchanged.

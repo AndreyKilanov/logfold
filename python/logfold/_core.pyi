@@ -13,4 +13,17 @@ def default_masks() -> list[dict[str, Any]]: ...
 def match_templates(
     kind: str, before: list[str], after: list[str], threshold: float | None = None
 ) -> list[tuple[int, int]]: ...
+def compare_runs(
+    before_texts: list[str],
+    before_counts: list[int],
+    before_total: int,
+    after_texts: list[str],
+    after_counts: list[int],
+    after_total: int,
+    ratio: float,
+    min_count: int,
+    min_new_count: int,
+    matcher: str,
+    threshold: float | None = None,
+) -> tuple[list[int], list[int], list[tuple[int, int, float, float, float | None]], int]: ...
 def mine(request: dict[str, Any], progress: Callable[[int], None] | None = None) -> dict[str, Any]: ...

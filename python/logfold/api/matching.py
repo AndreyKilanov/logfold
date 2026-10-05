@@ -10,7 +10,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
-from logfold.comparison import TokenSubsetMatcher
+from logfold.comparison import ExactMatcher, TokenSubsetMatcher
 from logfold.engines import native
 from logfold.ext.matchers import DiffMatcher
 from logfold.plugins.matchers import JaccardMatcher
@@ -41,6 +41,25 @@ class _NativeMatcher:
             return self._base.match(before_only, after_only)
 
 
+def native_spec(matcher: DiffMatcher) -> tuple[str, float | None] | None:
+    """Describe a built-in matcher the extension implements.
+
+    Args:
+        matcher: A registered matcher.
+
+    Returns:
+        ``(name, threshold)``, or ``None`` for a plugin, a subclass of a built-in matcher, or a ``jaccard`` threshold
+        that is not a positive number (the Python implementation scores every pair or finds no pair for those).
+    """
+    if type(matcher) is ExactMatcher:
+        return ("exact", None)
+    if type(matcher) is TokenSubsetMatcher:
+        return ("token_subset", None)
+    if type(matcher) is JaccardMatcher and math.isfinite(matcher.threshold) and matcher.threshold > 0:
+        return ("jaccard", float(matcher.threshold))
+    return None
+
+
 def accelerated(matcher: DiffMatcher, enabled: bool = True) -> DiffMatcher:
     """Return the native version of a built-in matcher, or ``matcher`` itself.
 
@@ -54,8 +73,7 @@ def accelerated(matcher: DiffMatcher, enabled: bool = True) -> DiffMatcher:
     """
     if not enabled or not native.supports_matching():
         return matcher
-    if type(matcher) is TokenSubsetMatcher:
-        return _NativeMatcher(matcher, "token_subset", None)
-    if type(matcher) is JaccardMatcher and math.isfinite(matcher.threshold) and matcher.threshold > 0:
-        return _NativeMatcher(matcher, "jaccard", float(matcher.threshold))
-    return matcher
+    spec = native_spec(matcher)
+    if spec is None or spec[0] == "exact":
+        return matcher
+    return _NativeMatcher(matcher, spec[0], spec[1])

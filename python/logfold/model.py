@@ -32,6 +32,20 @@ def micros_to_datetime(micros: int | None, tz_aware: bool) -> datetime | None:
     return moment if tz_aware else moment.replace(tzinfo=None)
 
 
+def micros_to_datetimes(values: Sequence[int | None], tz_aware: bool) -> list[datetime | None]:
+    """Convert a column of microsecond timestamps; the column form of :func:`micros_to_datetime`.
+
+    Args:
+        values: Microseconds since the Unix epoch, or ``None``.
+        tz_aware: Return aware UTC datetimes when true, otherwise naive ones holding the same wall-clock time.
+
+    Returns:
+        The datetimes, ``None`` where the value is ``None``.
+    """
+    epoch = _EPOCH if tz_aware else _EPOCH.replace(tzinfo=None)
+    return [None if value is None else epoch + timedelta(microseconds=value) for value in values]
+
+
 def datetime_to_micros(moment: datetime | None) -> int | None:
     """Convert a ``datetime`` to microseconds since the Unix epoch; the inverse of :func:`micros_to_datetime`.
 

@@ -9,7 +9,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Any
 
-from logfold.engines.base import MineRequest, MiningResult, ProgressCallback, RunInfo, RunStatsData, TemplateStats
+from logfold.engines.base import MineRequest, MiningResult, ProgressCallback, RunColumns, RunInfo, TemplateTable
 from logfold.errors import ConfigError, EngineError, FormatError, SourceError
 from logfold.ext.formats import FormatSpec, JsonFormat, PlainFormat, RegexFormat
 from logfold.model import RunMetrics
@@ -19,7 +19,7 @@ try:
 except ImportError:
     _core = None  # type: ignore[assignment]
 
-EXPECTED_CORE_API_VERSION = 1
+EXPECTED_CORE_API_VERSION = 2
 
 
 def is_available() -> bool:
@@ -54,6 +54,47 @@ def match_templates(
         raise EngineError("the native extension is unavailable")
     try:
         return list(_core.match_templates(kind, list(before), list(after), threshold))
+    except _core.CoreConfigError as error:
+        raise ConfigError(str(error)) from error
+
+
+def supports_comparison() -> bool:
+    """Return True when the extension can classify the templates of two runs."""
+    return is_available() and hasattr(_core, "compare_runs")
+
+
+def compare_runs(
+    before: tuple[Sequence[str], Sequence[int], int],
+    after: tuple[Sequence[str], Sequence[int], int],
+    thresholds: tuple[float, int, int],
+    matcher: str,
+    matcher_threshold: float | None = None,
+) -> tuple[list[int], list[int], list[tuple[int, int, float, float, float | None]], int]:
+    """Split the templates of two runs into new, disappeared, changed and unchanged, in the extension.
+
+    Args:
+        before: Texts, counts and total records of the first run.
+        after: Texts, counts and total records of the second run.
+        thresholds: ``threshold_ratio``, ``min_count`` and ``min_new_count``.
+        matcher: ``exact``, ``token_subset`` or ``jaccard``.
+        matcher_threshold: Minimum similarity of the ``jaccard`` matcher.
+
+    Returns:
+        Indices of new and disappeared templates, ``(before, after, before share, after share, ratio)`` of the
+        changed ones, and the number of unchanged ones; see ``docs/ALGORITHM.md`` section 11.
+
+    Raises:
+        ConfigError: If the extension rejects the request.
+        UnicodeError: If a text cannot be passed to the extension (for example a lone surrogate).
+        OverflowError: If a count does not fit an unsigned 64-bit integer.
+    """
+    if _core is None:
+        raise EngineError("the native extension is unavailable")
+    try:
+        return _core.compare_runs(
+            list(before[0]), list(before[1]), before[2], list(after[0]), list(after[1]), after[2], *thresholds,
+            matcher, matcher_threshold,
+        )  # fmt: skip
     except _core.CoreConfigError as error:
         raise ConfigError(str(error)) from error
 
@@ -135,24 +176,11 @@ def request_to_dict(request: MineRequest) -> dict[str, Any]:
 
 def _to_result(answer: dict[str, Any]) -> MiningResult:
     runs = tuple(RunInfo(**run) for run in answer["runs"])
-    templates = tuple(
-        TemplateStats(
-            id=item["id"],
-            text=item["text"],
-            runs=tuple(
-                RunStatsData(
-                    count=stats["count"],
-                    first=stats["first"],
-                    last=stats["last"],
-                    levels=tuple(stats["levels"]),
-                    example=stats["example"],
-                )
-                for stats in item["runs"]
-            ),
-        )
-        for item in answer["templates"]
+    columns = answer["templates"]
+    table = TemplateTable(
+        ids=columns["ids"], texts=columns["texts"], runs=tuple(RunColumns(**run) for run in columns["runs"])
     )
-    return MiningResult(runs=runs, templates=templates, metrics=RunMetrics(**answer["metrics"]))
+    return MiningResult(runs=runs, templates=table, metrics=RunMetrics(**answer["metrics"]))
 
 
 class NativeEngine:

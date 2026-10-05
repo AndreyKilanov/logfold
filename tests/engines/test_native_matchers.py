@@ -105,13 +105,13 @@ def test_diff_is_identical_with_and_without_the_native_matchers(
 def test_python_engine_keeps_the_python_matchers(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     before, after, _truth = synthetic_pair(tmp_path, 6)
     calls: list[str] = []
-    real = native.match_templates
+    real = native.compare_runs
 
-    def spy(kind: str, *args: object) -> list[tuple[int, int]]:
-        calls.append(kind)
-        return real(kind, *args)  # type: ignore[arg-type]
+    def spy(*args: object) -> object:
+        calls.append(str(args[3]))
+        return real(*args)  # type: ignore[arg-type]
 
-    monkeypatch.setattr(native, "match_templates", spy)
+    monkeypatch.setattr(native, "compare_runs", spy)
     logfold.diff(str(before), str(after), format="app", matcher="token_subset", engine="python")
     assert calls == []
     logfold.diff(str(before), str(after), format="app", matcher="token_subset", engine="native")
