@@ -154,7 +154,6 @@ diff(load_analysis("before.json"), load_analysis("after.json"))
 >   может быть медленнее последовательного; тогда помогает `--high-cardinality`.
 > - Сохранённые результаты сравниваются без пересчёта по общему дереву шаблонов, поэтому одно и то же событие может
 >   попасть и в новые, и в пропавшие; для этого есть сопоставления `token_subset` и `jaccard`.
-> - Документация написана на английском.
 
 ## Чем отличается от других
 
@@ -170,6 +169,8 @@ diff(load_analysis("before.json"), load_analysis("after.json"))
 Качество шаблонов: `python eval/quality.py` (точность группировки на 16 наборах Loghub-2k).
 
 ## Документация
+
+Документация написана на английском.
 
 - [Руководство](https://github.com/AndreyKilanov/logfold/blob/main/docs/guide.md): форматы, параметры, плагины, движки.
 - [Справочник командной строки](https://github.com/AndreyKilanov/logfold/blob/main/docs/cli.md): команды, опции, коды
