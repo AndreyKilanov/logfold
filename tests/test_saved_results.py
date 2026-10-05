@@ -250,7 +250,7 @@ def test_reports_with_bom_or_utf16_are_recognized(tmp_path: Path) -> None:
 
 def test_oversized_report_is_refused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _before, _after, first, _second = saved_pair(tmp_path)
-    monkeypatch.setattr("logfold.saved.MAX_REPORT_BYTES", 100)
+    monkeypatch.setattr("logfold.api.saved.MAX_REPORT_BYTES", 100)
     with pytest.raises(logfold.SourceError, match="refused"):
         logfold.load_analysis(first)
 
