@@ -78,7 +78,7 @@ fn parse_strategy(dict: &Bound<'_, PyDict>) -> PyResult<Strategy> {
     let name: String = required(dict, "strategy")?.extract()?;
     match name.as_str() {
         "sequential" => Ok(Strategy::Sequential),
-        "chunked" => {
+        "chunked" | "adaptive" => {
             let chunk_bytes = match optional(dict, "chunk_bytes")? {
                 Some(value) => value.extract::<u64>()?,
                 None => DEFAULT_CHUNK_BYTES,
@@ -87,7 +87,11 @@ fn parse_strategy(dict: &Bound<'_, PyDict>) -> PyResult<Strategy> {
                 Some(value) => value.extract::<usize>()?,
                 None => std::thread::available_parallelism().map_or(1, |n| n.get()),
             };
-            Ok(Strategy::Chunked { chunk_bytes, threads })
+            Ok(if name == "adaptive" {
+                Strategy::Adaptive { chunk_bytes, threads }
+            } else {
+                Strategy::Chunked { chunk_bytes, threads }
+            })
         }
         other => Err(CoreConfigError::new_err(format!("unknown strategy '{other}'"))),
     }

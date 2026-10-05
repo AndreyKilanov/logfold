@@ -112,7 +112,7 @@ def _resolve_strategy(engine: Engine, execution: ExecutionConfig, runs: tuple[tu
         return "sequential"
     if execution.strategy != "auto":
         return execution.strategy
-    return "chunked" if _total_size(runs) > execution.chunk_bytes else "sequential"
+    return "adaptive" if _total_size(runs) > execution.chunk_bytes else "sequential"
 
 
 def _mine(

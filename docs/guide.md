@@ -129,12 +129,14 @@ Multi-line records (stack traces): `--multiline` joins lines that do not start a
 | `--max-templates` | 100000 | cap on templates; further records are pooled into catch-all templates |
 | `--no-masks` | off | do not mask values |
 | `--high-cardinality` | off | mode for data with a huge number of distinct messages (see below) |
-| `--strategy` | auto | `sequential` (one tree), `chunked` (parallel), `auto` (chunked above 64 MiB) |
+| `--strategy` | auto | `sequential` (one tree), `chunked` (parallel), `auto` (chunked above 64 MiB, sequential when almost every record is a new template) |
 | `--threads`, `--chunk-mb` | all cores, 64 | parallel execution |
 | `--examples` | raw | `masked` or `none` before sharing a report |
 
 The parallel strategy cuts the file into fixed-size chunks, builds one tree per chunk and merges the trees in order. For
-a fixed chunk size the result does not depend on the number of threads.
+a fixed chunk size the result does not depend on the number of threads. With `auto`, the first chunk is watched: when
+after its first 10 000 records it holds more than 0.3 templates per record (logs of unique messages), merging the chunk trees
+would cost more than it saves, and the whole input is mined with one tree instead. `metrics.strategy` shows what was used.
 
 ### High-cardinality data
 

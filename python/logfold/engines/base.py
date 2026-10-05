@@ -24,7 +24,8 @@ class MineRequest:
         runs: Runs, each an ordered tuple of input paths (``-`` is standard input).
         format: Declarative log format.
         mining: Miner and masking parameters.
-        strategy: ``sequential`` or ``chunked`` (already resolved, never ``auto``).
+        strategy: ``sequential``, ``chunked`` or ``adaptive`` (chunked unless the first chunk is too diverse; already
+            resolved, never ``auto``).
         threads: Worker threads for ``chunked``; ``None`` means all cores.
         chunk_bytes: Chunk size for ``chunked``.
         recount: Re-assign every record to the finished tree after training; gives consistent assignments
