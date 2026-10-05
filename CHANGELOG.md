@@ -7,6 +7,11 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Added
 
+- `--report NAME` on `logfold analyze` and `logfold diff` chooses the reporter by name, so plugin reporters work from
+  the command line: with `--out` it writes the file, without `--out` its text is printed instead of the tables. The
+  `--out` suffix `.csv` selects the `csv` reporter. An unknown or unsuitable reporter and a bad `--out` suffix now fail
+  before the logs are read. A reporter that raises or returns something other than text ends with
+  `error: reporter 'NAME' failed: ...` and exit code 1.
 - Compare saved results without the logs: `logfold.load_analysis(path)` loads a JSON report of `analyze`, and
   `logfold.diff()` accepts two `AnalysisResult` objects. `logfold diff before.json after.json` detects saved reports
   by their header. The results are mined separately and are not re-counted, so templates are joined by id and the
@@ -14,11 +19,19 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   Results of different algorithm versions are rejected. Examples are kept as saved, so `--examples masked` is refused for
   saved results. Reports must be UTF-8 (a BOM is accepted), at most 256 MiB, with template ids matching their text.
 
+### Fixed
+
+- Terminal output no longer acts on control characters from log content: in the tables and in `--report` printed to a
+  terminal an escape sequence (retitle the window, hide text, write to the clipboard) is shown as a visible `\xNN`
+  instead. Files and pipes keep the raw text.
+
 ### Changed
 
 - Plugin discovery reads the installed package metadata once instead of three times, so every command that
   resolves a format or a reporter starts about 9 ms faster (307 ms instead of 316 ms for `logfold analyze` on a small
   file, median of 25 runs). The output is unchanged.
+- `--out report.md` now writes Markdown tables (the `markdown` reporter) instead of the plain text report; use
+  `--out report.txt` or `--report text` for the old output.
 - `analyze --min-count N --out result.json` now writes every template to the JSON file (the option still hides rare
   templates from tables and from other report formats), so the file can be compared later with `diff`.
 

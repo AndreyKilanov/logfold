@@ -22,6 +22,8 @@ are detected by content, not by extension.
 
 ```
 logfold analyze app.log --top 30 --out report.html
+logfold analyze app.log --report csv > templates.csv
+logfold analyze app.log --report markdown --out summary.txt
 logfold analyze app.log.1.gz app.log --min-count 5
 journalctl -o json | logfold analyze - --format journald --json > result.json
 ```
@@ -32,7 +34,8 @@ journalctl -o json | logfold analyze - --format journald --json > result.json
 | `--multiline` / `--no-multiline` | format default | join continuation lines (stack traces) to the previous record |
 | `--top`, `-n` | 20 | rows printed per table |
 | `--min-count` | 1 | hide templates with fewer records |
-| `--out`, `-o` | | write a report; the suffix selects the format: `.html`/`.htm`, `.json`, or `.txt`/`.md` (plain text) |
+| `--out`, `-o` | | write a report; the suffix selects the format: `.html`/`.htm`, `.json`, `.txt` (plain text), `.md` (Markdown) or `.csv` |
+| `--report` | | reporter by name (`logfold plugins list`, for example a plugin reporter): with `--out` it replaces the suffix's choice, without `--out` its text is printed instead of the tables; not with `--json` |
 | `--json` | off | print JSON to standard output instead of tables |
 | `--examples` | `raw` | `raw`, `masked` or `none`: how example messages are kept (use `masked` or `none` before sharing) |
 | `--quiet`, `-q` | off | no progress and no status messages on standard error |

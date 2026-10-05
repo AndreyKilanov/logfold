@@ -9,6 +9,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
+from logfold.cli.output import printable
 from logfold.model import AnalysisResult, DiffEntry, DiffResult
 
 _VARIABLE = re.compile(r"(<[A-Z]+>|<\*>)")
@@ -16,7 +17,7 @@ _LEVEL_STYLE = {"WARN": "yellow", "ERROR": "red", "FATAL": "bold red"}
 
 
 def _template_text(text: str, limit: int = 160) -> Text:
-    flat = " ".join(text.split())
+    flat = " ".join(printable(text).split())
     flat = flat if len(flat) <= limit else flat[: limit - 1] + "…"
     result = Text()
     for index, part in enumerate(_VARIABLE.split(flat)):

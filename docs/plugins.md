@@ -36,9 +36,10 @@ print(result.render("markdown", top=10))
 open("templates.csv", "w", encoding="utf-8").write(result.render("csv"))
 ```
 
-Reporters are used from Python. `result.render(...)` raises `ConfigError` for an unknown reporter, or for a result kind
-the reporter does not support. The command line `--out` chooses among the built-in report formats by file suffix
-(`.html`, `.json`, `.txt`); it does not select plugin reporters.
+Reporters are used from Python with `result.render(...)`, which raises `ConfigError` for an unknown reporter, or for a
+result kind the reporter does not support, and from the command line with `--report NAME` on `analyze` and `diff`:
+with `--out` the named reporter writes the file, without it its text is printed instead of the tables. `--out` alone
+chooses by file suffix (`.html`, `.json`, `.txt`, `.md`, `.csv`). A typo in the name fails before any log is read.
 
 With the built-in `exact` matcher a reworded message (`retry failed after 3 attempts` -> `retry gave up after 3
 attempts`) is one *new* and one *disappeared* template. A matcher pairs them, and `diff` compares the pair as one
