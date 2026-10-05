@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use logfold_core::default_mask_rules;
-use logfold_engine::{mine, MineOutput, MineRequest, MiningParams, NoObserver, Observer, Strategy};
+use logfold_engine::{mine, EngineError, MineOutput, MineRequest, MiningParams, NoObserver, Observer, Strategy};
 use logfold_io::{FormatConfig, FormatSpec};
 
 const MIB: u64 = 1024 * 1024;
@@ -137,4 +137,40 @@ fn an_input_of_one_chunk_is_mined_sequentially() {
     let output =
         mine(&request(&path, Strategy::Adaptive { chunk_bytes: 64 * MIB, threads: 4 }, false), &NoObserver).unwrap();
     assert_eq!(output.metrics.strategy, "sequential");
+}
+
+/// Cancels the run once it has reported `limit` bytes.
+struct CancelAfter {
+    limit: u64,
+    seen: AtomicU64,
+}
+
+impl Observer for CancelAfter {
+    fn on_bytes(&self, consumed: u64) {
+        self.seen.fetch_add(consumed, Ordering::Relaxed);
+    }
+
+    fn cancelled(&self) -> bool {
+        self.seen.load(Ordering::Relaxed) >= self.limit
+    }
+}
+
+#[test]
+fn a_cancel_during_the_probe_is_reported_as_a_cancel() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = write_unique(&dir, 60_000);
+    let observer = CancelAfter { limit: 1, seen: AtomicU64::new(0) };
+    let result = mine(&request(&path, Strategy::Adaptive { chunk_bytes: MIB, threads: 4 }, false), &observer);
+    assert!(matches!(result, Err(EngineError::Cancelled)), "{result:?}");
+}
+
+#[test]
+fn a_cancel_after_the_fallback_is_reported_as_a_cancel() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = write_unique(&dir, 200_000);
+    let observer = CancelAfter { limit: 8 * MIB, seen: AtomicU64::new(0) };
+    let result = mine(&request(&path, Strategy::Adaptive { chunk_bytes: MIB, threads: 2 }, false), &observer);
+    assert!(matches!(result, Err(EngineError::Cancelled)), "{result:?}");
+    let reported = observer.seen.load(Ordering::Relaxed);
+    assert!(reported >= 8 * MIB, "the cancel came during the first phase: {reported} bytes");
 }
