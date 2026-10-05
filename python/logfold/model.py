@@ -32,6 +32,21 @@ def micros_to_datetime(micros: int | None, tz_aware: bool) -> datetime | None:
     return moment if tz_aware else moment.replace(tzinfo=None)
 
 
+def datetime_to_micros(moment: datetime | None) -> int | None:
+    """Convert a ``datetime`` to microseconds since the Unix epoch; the inverse of :func:`micros_to_datetime`.
+
+    Args:
+        moment: An aware datetime, or a naive one that is interpreted as UTC; ``None`` is allowed.
+
+    Returns:
+        Microseconds, or ``None`` when ``moment`` is ``None``.
+    """
+    if moment is None:
+        return None
+    aware = moment if moment.tzinfo is not None else moment.replace(tzinfo=timezone.utc)
+    return (aware - _EPOCH) // timedelta(microseconds=1)
+
+
 def summarize_levels(counts: Sequence[int]) -> tuple[str | None, dict[str, int]]:
     """Summarize per-rank level counts.
 

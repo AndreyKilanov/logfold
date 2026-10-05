@@ -5,6 +5,20 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ## [Unreleased]
 
+### Added
+
+- Compare saved results without the logs: `logfold.load_analysis(path)` loads a JSON report of `analyze`, and
+  `logfold.diff()` accepts two `AnalysisResult` objects. `logfold diff before.json after.json` detects saved reports
+  by their header. The results are mined separately and are not re-counted, so templates are joined by id and the
+  matcher pairs the rest; a warning says so, and another one is added when the masks, parameters or formats differ.
+  Results of different algorithm versions are rejected. Examples are kept as saved, so `--examples masked` is refused for
+  saved results. Reports must be UTF-8 (a BOM is accepted), at most 256 MiB, with template ids matching their text.
+
+### Changed
+
+- `analyze --min-count N --out result.json` now writes every template to the JSON file (the option still hides rare
+  templates from tables and from other report formats), so the file can be compared later with `diff`.
+
 ## [0.2.1] - 2026-10-04
 
 ### Changed
