@@ -55,6 +55,7 @@ Mining and execution options, shared with `diff`:
 | `--strategy` | `auto` | `auto`, `sequential` (one tree) or `chunked` (parallel); `auto` chunks above 64 MiB, but mines sequentially when the first chunk shows that almost every record is a new template |
 | `--threads` | all cores | worker threads of the chunked strategy |
 | `--chunk-mb` | 64 | chunk size in MiB of the chunked strategy |
+| `--warm-start` | off | chunked strategy: train the first chunk alone and start every other chunk from a copy of its tree; fewer stray templates, a serial prefix of one chunk (see the guide) |
 
 ## `logfold diff`
 

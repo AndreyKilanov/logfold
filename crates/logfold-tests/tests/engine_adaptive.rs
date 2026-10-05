@@ -54,6 +54,7 @@ fn request(path: &Path, strategy: Strategy, recount: bool) -> MineRequest {
         masks: default_mask_rules(),
         mining: MiningParams::default(),
         strategy,
+        warm_start: false,
         recount,
     }
 }

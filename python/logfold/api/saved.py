@@ -86,6 +86,7 @@ MINING_ONLY_DEFAULTS: dict[str, Any] = {
     "strategy": None,
     "threads": None,
     "chunk_bytes": None,
+    "warm_start": None,
     "progress": None,
 }
 

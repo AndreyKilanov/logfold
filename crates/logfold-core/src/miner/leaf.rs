@@ -14,6 +14,7 @@ pub(super) const INDEX_MIN_CLUSTERS: usize = 16;
 /// Entries are never removed. An entry becomes stale when its position is generalized; readers verify the
 /// cluster's current token, so a stale entry is simply ignored. Wildcards never count as matches, so they are not
 /// indexed.
+#[derive(Clone)]
 pub(super) struct LeafIndex {
     pub(super) exact: Vec<HashMap<Box<[u8]>, Vec<u32>, RandomState>>,
 }
@@ -32,7 +33,7 @@ impl LeafIndex {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub(super) struct Node {
     pub(super) children: HashMap<Box<[u8]>, u32, RandomState>,
     pub(super) clusters: Vec<u32>,

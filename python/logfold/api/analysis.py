@@ -47,6 +47,7 @@ def analyze(
     strategy: str | None = None,
     threads: int | None = None,
     chunk_bytes: int | None = None,
+    warm_start: bool | None = None,
     examples: ExamplesMode = "raw",
     progress: Progress | None = None,
 ) -> AnalysisResult:
@@ -70,6 +71,8 @@ def analyze(
         strategy: ``auto``, ``sequential`` or ``chunked``.
         threads: Worker threads for the chunked strategy.
         chunk_bytes: Chunk size of the chunked strategy.
+        warm_start: Chunked strategy only: start every chunk but the first from a copy of the tree of the first
+            (fewer stray templates, a serial prefix of one chunk; default off).
         examples: ``raw`` keeps example messages, ``masked`` applies the masking rules to them, ``none`` drops them.
         progress: Optional callback receiving consumed input byte counts.
 
@@ -86,7 +89,7 @@ def analyze(
     resolved = resolve_format(format, run, multiline)
     spec = resolved.spec
     mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks, high_cardinality)
-    exec_config = _execution(execution, engine, strategy, threads, chunk_bytes, high_cardinality)
+    exec_config = _execution(execution, engine, strategy, threads, chunk_bytes, high_cardinality, warm_start)
     mined, used = _mine((run,), spec, mining_config, exec_config, progress)
     summary = _summary(run, mined.runs[0])
     masker = Masker(mining_config.masks)

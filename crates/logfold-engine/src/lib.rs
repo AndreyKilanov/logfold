@@ -50,18 +50,21 @@ pub fn mine(request: &MineRequest, observer: &dyn Observer) -> Result<MineOutput
     let parallel_training = threads_requested.filter(|_| !adaptive || chunks > 1);
     let trained = match parallel_training {
         None => None,
-        Some(requested) => match chunked::train(&context, &miner_config, &planned, requested, adaptive, observer)? {
-            chunked::Trained::Merged(miner, counters, threads, merge_seconds) => {
-                Some((*miner, counters, threads, merge_seconds, "chunked"))
+        Some(requested) => {
+            match chunked::train(&context, &miner_config, &planned, requested, adaptive, request.warm_start, observer)?
+            {
+                chunked::Trained::Merged(miner, counters, threads, merge_seconds) => {
+                    Some((*miner, counters, threads, merge_seconds, "chunked"))
+                }
+                chunked::Trained::TooDiverse { consumed } => {
+                    let whole = plan::plan(request, None)?;
+                    chunks = whole.units.len();
+                    let again = adaptive::Skip::new(observer, consumed);
+                    let (miner, counters) = sequential::train(&context, &miner_config, &whole, &again)?;
+                    Some((miner, counters, 1, 0.0, "sequential"))
+                }
             }
-            chunked::Trained::TooDiverse { consumed } => {
-                let whole = plan::plan(request, None)?;
-                chunks = whole.units.len();
-                let again = adaptive::Skip::new(observer, consumed);
-                let (miner, counters) = sequential::train(&context, &miner_config, &whole, &again)?;
-                Some((miner, counters, 1, 0.0, "sequential"))
-            }
-        },
+        }
     };
     let (miner, counters, threads, merge_seconds, strategy_name) = match trained {
         Some(done) => done,

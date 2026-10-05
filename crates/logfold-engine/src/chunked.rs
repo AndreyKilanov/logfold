@@ -122,12 +122,17 @@ pub(crate) enum Trained {
 ///
 /// With `adaptive` the first unit decides: when its tree holds too many templates after its first records (see
 /// [`probe_unit`]) the run stops before anything is merged and [`Trained::TooDiverse`] is returned.
+///
+/// With `warm` the first unit is trained alone and every other unit starts from a copy of its tree (see
+/// `docs/ALGORITHM.md` §6): the units do not begin with an empty tree, so they produce fewer stray templates, at the
+/// price of a serial prefix of one chunk.
 pub(crate) fn train(
     context: &Context,
     config: &MinerConfig,
     plan: &Plan,
     threads: usize,
     adaptive: bool,
+    warm: bool,
     observer: &dyn Observer,
 ) -> Result<Trained, EngineError> {
     let n_runs = plan.run_bytes.len();
@@ -135,24 +140,53 @@ pub(crate) fn train(
     let mut counters = vec![Counters::default(); n_runs];
     let tally = Tally::new(observer);
     let workers: &dyn Observer = if adaptive { &tally } else { observer };
+    let warm = warm && plan.units.len() > 1;
+    let mut template: Option<DrainMiner> = None;
+    let mut seed_len = 0;
+    if warm {
+        let mut seed = crate::empty_miner(config, n_runs);
+        let scanned = if adaptive {
+            probe_unit(context, &plan.units[0], &mut seed, &tally)
+        } else {
+            train_unit(context, &plan.units[0], &mut seed, observer)
+        };
+        match scanned {
+            Ok(unit) => counters[plan.units[0].run].add(&unit),
+            Err(EngineError::Cancelled) if tally.is_stopped() => {
+                return Ok(Trained::TooDiverse { consumed: tally.consumed() });
+            }
+            Err(error) => return Err(error),
+        }
+        seed_len = seed.cluster_count();
+        template = Some(seed.warm_copy());
+        accumulator = seed;
+    }
+    let first = usize::from(warm);
     let work = |index: usize| -> Result<(DrainMiner, Counters), EngineError> {
-        let mut miner = crate::empty_miner(config, n_runs);
-        let unit_counters = if adaptive && index == 0 {
+        let mut miner = match &template {
+            Some(seed) => seed.clone(),
+            None => crate::empty_miner(config, n_runs),
+        };
+        let unit_counters = if adaptive && index == 0 && !warm {
             probe_unit(context, &plan.units[index], &mut miner, &tally)?
         } else {
-            train_unit(context, &plan.units[index], &mut miner, workers)?
+            train_unit(context, &plan.units[index + first], &mut miner, workers)?
         };
         Ok((miner, unit_counters))
     };
     let (used, merge_seconds, stopped) = ordered_reduce(
-        plan.units.len(),
+        plan.units.len() - first,
         threads,
         observer,
         &work,
         || tally.is_stopped(),
         |index, (miner, unit)| {
-            counters[plan.units[index].run].add(&unit);
-            accumulator.merge(miner);
+            counters[plan.units[index + first].run].add(&unit);
+            if warm {
+                accumulator.merge_warm(miner, seed_len);
+            } else {
+                accumulator.merge(miner);
+            }
         },
     )?;
     if stopped {

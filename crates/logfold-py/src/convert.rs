@@ -74,6 +74,13 @@ fn parse_mining(dict: &Bound<'_, PyDict>) -> PyResult<MiningParams> {
     })
 }
 
+fn parse_warm_start(dict: &Bound<'_, PyDict>) -> PyResult<bool> {
+    Ok(match optional(dict, "warm_start")? {
+        Some(value) => value.extract::<bool>()?,
+        None => false,
+    })
+}
+
 fn parse_strategy(dict: &Bound<'_, PyDict>) -> PyResult<Strategy> {
     let name: String = required(dict, "strategy")?.extract()?;
     match name.as_str() {
@@ -106,6 +113,7 @@ pub(crate) fn parse_request(dict: &Bound<'_, PyDict>) -> PyResult<MineRequest> {
         masks: parse_masks(&required(dict, "masks")?)?,
         mining: parse_mining(&sub_dict(dict, "mining")?)?,
         strategy: parse_strategy(&sub_dict(dict, "execution")?)?,
+        warm_start: parse_warm_start(&sub_dict(dict, "execution")?)?,
         recount: required(dict, "recount")?.extract()?,
     })
 }

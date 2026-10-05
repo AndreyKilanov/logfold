@@ -19,7 +19,7 @@ try:
 except ImportError:
     _core = None  # type: ignore[assignment]
 
-EXPECTED_CORE_API_VERSION = 3
+EXPECTED_CORE_API_VERSION = 4
 
 
 def is_available() -> bool:
@@ -152,7 +152,11 @@ def request_to_dict(request: MineRequest) -> dict[str, Any]:
         A dictionary matching ``crates/logfold-py/src/convert.rs``.
     """
     mining = request.mining
-    execution: dict[str, Any] = {"strategy": request.strategy, "chunk_bytes": request.chunk_bytes}
+    execution: dict[str, Any] = {
+        "strategy": request.strategy,
+        "chunk_bytes": request.chunk_bytes,
+        "warm_start": request.warm_start,
+    }
     if request.threads is not None:
         execution["threads"] = request.threads
     return {

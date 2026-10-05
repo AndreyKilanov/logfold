@@ -12,7 +12,7 @@ from logfold import analyze, diff
 ```python
 analyze(path, *, format="auto", multiline=None, depth=None, sim_th=None, max_children=None, max_templates=None,
         masks=None, high_cardinality=False, mining=None, execution=None, engine=None, strategy=None, threads=None,
-        chunk_bytes=None, examples="raw", progress=None) -> AnalysisResult
+        chunk_bytes=None, warm_start=None, examples="raw", progress=None) -> AnalysisResult
 ```
 
 Folds one run into templates.
@@ -25,7 +25,7 @@ Folds one run into templates.
 | `depth`, `sim_th`, `max_children`, `max_templates`, `masks` | mining parameters, see [`MiningConfig`](#mining-and-execution-configuration) |
 | `high_cardinality` | fast bounded mode for data with a huge number of distinct messages |
 | `mining`, `execution` | full configuration objects; the keyword arguments override their fields |
-| `engine`, `strategy`, `threads`, `chunk_bytes` | execution parameters, see [`ExecutionConfig`](#mining-and-execution-configuration) |
+| `engine`, `strategy`, `threads`, `chunk_bytes`, `warm_start` | execution parameters, see [`ExecutionConfig`](#mining-and-execution-configuration) |
 | `examples` | `"raw"` keeps example messages, `"masked"` applies the masking rules to them, `"none"` drops them |
 | `progress` | optional callback receiving the consumed input byte count |
 
@@ -60,7 +60,7 @@ shared tree, so the same event can show up as both new and disappeared; the defa
 The result carries a warning about this, and about different `config_hash` or `format` values. Results of different
 `algo_version` raise `ConfigError`. Options that control reading or mining (`format`, `multiline`, `recount`, `depth`,
 `sim_th`, `max_children`, `max_templates`, `masks`, `high_cardinality`, `mining`, `execution`, `engine`, `strategy`,
-`threads`, `chunk_bytes`, `progress`) raise `ConfigError` in this mode. `examples="none"` drops the saved examples;
+`threads`, `chunk_bytes`, `warm_start`, `progress`) raise `ConfigError` in this mode. `examples="none"` drops the saved examples;
 `examples="masked"` raises `ConfigError`, because the masking rules are not saved: the examples stay as they were
 written, so analyze with `examples="masked"` or `"none"` before saving if they may contain sensitive values. The
 result reports `config.recount == False`.
@@ -153,7 +153,7 @@ result = analyze("app.log", mining=mining, execution=ExecutionConfig(threads=4))
 | Class | Fields (defaults) |
 |---|---|
 | `MiningConfig` | `depth=4` (at least 3), `sim_th=0.4` (`[0, 1]`), `max_children=100`, `max_templates=100000`, `delimiters=" \t\n\r"` (ASCII), `masks` (the default rules) |
-| `ExecutionConfig` | `engine="auto"` (`auto`, `native`, `python`), `strategy="auto"` (`auto`, `sequential`, `chunked`), `threads=None` (all cores), `chunk_bytes=64 MiB` |
+| `ExecutionConfig` | `engine="auto"` (`auto`, `native`, `python`), `strategy="auto"` (`auto`, `sequential`, `chunked`), `threads=None` (all cores), `chunk_bytes=64 MiB`, `warm_start=False` |
 | `DiffConfig` | `threshold_ratio=2.0`, `min_count=10`, `min_new_count=1`, `recount=True`, `matcher="jaccard"` |
 | `MaskRule` | `name`, `pattern` (must not match the empty string), `token`, `ascii=False` |
 

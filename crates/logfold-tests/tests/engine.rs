@@ -42,6 +42,7 @@ fn request(runs: Vec<Vec<PathBuf>>, strategy: Strategy) -> MineRequest {
         masks: default_mask_rules(),
         mining: MiningParams::default(),
         strategy,
+        warm_start: false,
         recount: false,
     }
 }

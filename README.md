@@ -151,7 +151,8 @@ On the real logs of 0.7 to 1.6 GB peak memory is 42 to 51 MB with one thread and
 >
 > - Speed was measured on Windows 11 only; on Linux and macOS correctness is tested, but speed is not.
 > - The parallel mode builds a tree per chunk and merges them, so on logs without masks it can return more templates
->   than the sequential mode (HDFS without masks: 341 against 43). On logs with a very large number of distinct
+>   than the sequential mode (HDFS without masks: 341 against 43; `--warm-start` brings it to 45 at the cost of a
+>   serial first chunk). On logs with a very large number of distinct
 >   messages the default `auto` strategy notices that after the first chunk and mines sequentially; `--high-cardinality`
 >   makes it faster still.
 > - Saved results are compared without a recount against a shared template tree, so the same event can end up both in

@@ -127,6 +127,17 @@ above. If matched: `T' = generalize(T, C)` (position-wise, as in *Match*) and `s
 is inserted as in §4 (overflow rule included, carrying all of `c`'s statistics). Overflow clusters of `other` merge into `self`'s overflow cluster of the same length.
 Run counters (lines, records, unparsed, bytes) add up.
 
+**Warm start (optional, off by default).** A chunk tree begins empty, so the first records of a chunk are generalized
+before the common templates exist, and the stray templates that result differ from chunk to chunk and cannot be merged back.
+With the warm start the first unit is trained alone; its tree is the *seed* `S` (its statistics are kept in the result). Every
+other unit starts from a copy of `S` with empty statistics and is trained as in §4. The merge starts from `S` itself.
+For a unit tree `U`, in order: each of the first `|S|` clusters of `U` is the seed cluster of the same index; its tokens
+are generalized into the merged cluster position by position (a position that differs, or is a wildcard on either side,
+becomes a wildcard) and its statistics are absorbed. The other clusters of `U` are merged as above, in creation order.
+Overflow clusters merge as above. Without more than one unit the warm start changes nothing. The result is deterministic
+for a fixed chunk size and independent of the thread count. The warm start never applies to the sequential strategy, and
+the default result of the chunked strategy (cold start) is not changed by its existence, so `ALGO_VERSION` stays.
+
 ## 7. Freeze
 
 Clusters are visited in creation order (overflow clusters last, ordered by length). Clusters with the same template
