@@ -2,10 +2,11 @@
 //!
 //! This crate contains no file I/O, threads, serialization formats or Python bindings. It implements the algorithm
 //! described in `docs/ALGORITHM.md`: masking, tokenization, the Drain-compatible template tree, ordered merge and
-//! freezing of the result.
+//! freezing of the result, and the pairing of templates that exist in one run only.
 
 #![forbid(unsafe_code)]
 
+mod compare;
 mod default_masks;
 mod error;
 mod freeze;
@@ -15,6 +16,7 @@ mod miner;
 mod stats;
 mod tokenizer;
 
+pub use compare::{jaccard_pairs, token_subset_pairs};
 pub use error::CoreError;
 pub use freeze::FrozenTemplate;
 pub use level::{Level, LEVEL_COUNT};

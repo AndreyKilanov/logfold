@@ -1,13 +1,13 @@
 """Benchmark runner: logfold against Drain3, logdrain and logdelta.
 
 Every command runs as a separate process; the runner records wall time, CPU time (user + system) and peak working set
-with ``psutil``. Results go to ``bench/results/`` (``environment.json`` and one file per scenario); ``bench/report.py`` renders the Markdown tables.
+with ``psutil``. Results go to ``bench/results/`` (``environment.json`` and one file per scenario); ``bench/tools/report.py`` renders the Markdown tables.
 The protocol is described in ``bench/PROTOCOL.md``.
 
 Usage::
 
-    python bench/run.py --repeat 3
-    python bench/run.py --scenario diff --datasets nginx app
+    python bench/tools/run.py --repeat 3
+    python bench/tools/run.py --scenario diff --datasets nginx app
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ from pathlib import Path
 
 import psutil
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 PYTHON = sys.executable
 CORES = os.cpu_count() or 1
 
@@ -101,7 +101,7 @@ def analyze_commands(path: Path, masked: bool, chunk_mb: int = 8) -> dict[str, l
         ),
         "Drain3 (Python)": [
             PYTHON,
-            str(ROOT / "bench" / "competitors" / "drain3_run.py"),
+            str(ROOT / "bench" / "tools" / "competitors" / "drain3_run.py"),
             str(path),
             "--masks",
             "default" if masked else "none",

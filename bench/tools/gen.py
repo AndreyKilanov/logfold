@@ -6,7 +6,7 @@ and an adversarial high-cardinality set. The generator is seeded; the same argum
 
 Usage::
 
-    python bench/gen.py --out bench/data --size-mb 100
+    python bench/tools/gen.py --out bench/data --size-mb 100
 """
 
 from __future__ import annotations

@@ -1,32 +1,118 @@
 {
-  "logfold": "0.2.1",
-  "rows": [
-    {
-      "lines": 5000,
-      "templates": 4571,
-      "analyze_s": 0.0765730999992229,
-      "analyze_engine_s": 0.0330042,
-      "diff_exact_s": 0.12452179999672808,
-      "diff_token_subset_s": 0.15050220000557601,
-      "diff_jaccard_s": 0.25196779999532737
+  "stages": {
+    "before": {
+      "logfold": "0.2.1",
+      "rows": [
+        {
+          "lines": 5000,
+          "templates": 4571,
+          "analyze_s": 0.0799430999904871,
+          "analyze_engine_s": 0.0348282,
+          "diff_exact_s": 0.12827340001240373,
+          "diff_token_subset_s": 4.672117899986915,
+          "diff_jaccard_s": 18.931594199995743
+        },
+        {
+          "lines": 10000,
+          "templates": 9122,
+          "analyze_s": 0.15392430001520552,
+          "analyze_engine_s": 0.0605455,
+          "diff_exact_s": 0.25755409998237155,
+          "diff_token_subset_s": 18.391718600003514,
+          "diff_jaccard_s": 77.25603690001299
+        },
+        {
+          "lines": 20000,
+          "templates": 18209,
+          "analyze_s": 0.3232984999776818,
+          "analyze_engine_s": 0.138082,
+          "diff_exact_s": 0.578624799993122,
+          "diff_token_subset_s": 81.20049899999867,
+          "diff_jaccard_s": null
+        }
+      ]
     },
-    {
-      "lines": 10000,
-      "templates": 9122,
-      "analyze_s": 0.15309600002365187,
-      "analyze_engine_s": 0.0668825,
-      "diff_exact_s": 0.25414989999262616,
-      "diff_token_subset_s": 0.31728299998212606,
-      "diff_jaccard_s": 0.6936715000192635
+    "indexed": {
+      "logfold": "0.2.1",
+      "rows": [
+        {
+          "lines": 5000,
+          "templates": 4571,
+          "analyze_s": 0.0765730999992229,
+          "analyze_engine_s": 0.0330042,
+          "diff_exact_s": 0.12452179999672808,
+          "diff_token_subset_s": 0.15050220000557601,
+          "diff_jaccard_s": 0.25196779999532737
+        },
+        {
+          "lines": 10000,
+          "templates": 9122,
+          "analyze_s": 0.15309600002365187,
+          "analyze_engine_s": 0.0668825,
+          "diff_exact_s": 0.25414989999262616,
+          "diff_token_subset_s": 0.31728299998212606,
+          "diff_jaccard_s": 0.6936715000192635
+        },
+        {
+          "lines": 20000,
+          "templates": 18209,
+          "analyze_s": 0.32394219998968765,
+          "analyze_engine_s": 0.1396958,
+          "diff_exact_s": 0.5653263000131119,
+          "diff_token_subset_s": 0.7449392999988049,
+          "diff_jaccard_s": 2.1992690000042785
+        }
+      ]
     },
-    {
-      "lines": 20000,
-      "templates": 18209,
-      "analyze_s": 0.32394219998968765,
-      "analyze_engine_s": 0.1396958,
-      "diff_exact_s": 0.5653263000131119,
-      "diff_token_subset_s": 0.7449392999988049,
-      "diff_jaccard_s": 2.1992690000042785
+    "native": {
+      "logfold": "0.2.1",
+      "rows": [
+        {
+          "lines": 5000,
+          "templates": 4571,
+          "analyze_s": 0.07907809998141602,
+          "analyze_engine_s": 0.0335502,
+          "diff_exact_s": 0.12376970000332221,
+          "diff_token_subset_s": 0.1342566999956034,
+          "diff_jaccard_s": 0.13756559998728335
+        },
+        {
+          "lines": 10000,
+          "templates": 9122,
+          "analyze_s": 0.15652349998708814,
+          "analyze_engine_s": 0.0688717,
+          "diff_exact_s": 0.2582680000050459,
+          "diff_token_subset_s": 0.2752279000123963,
+          "diff_jaccard_s": 0.2864673000003677
+        },
+        {
+          "lines": 20000,
+          "templates": 18209,
+          "analyze_s": 0.32775140000740066,
+          "analyze_engine_s": 0.1368867,
+          "diff_exact_s": 0.5399004000064451,
+          "diff_token_subset_s": 0.5991047999996226,
+          "diff_jaccard_s": 0.6344771000149194
+        },
+        {
+          "lines": 40000,
+          "templates": 36320,
+          "analyze_s": 0.6969704999937676,
+          "analyze_engine_s": 0.3019759,
+          "diff_exact_s": 1.2195253999962006,
+          "diff_token_subset_s": 1.3478220000106376,
+          "diff_jaccard_s": 1.4857576999929734
+        },
+        {
+          "lines": 80000,
+          "templates": 72615,
+          "analyze_s": 1.6328569000179414,
+          "analyze_engine_s": 0.7022321,
+          "diff_exact_s": 2.5336288000107743,
+          "diff_token_subset_s": 2.896538300003158,
+          "diff_jaccard_s": 3.33667200000491
+        }
+      ]
     }
-  ]
+  }
 }

@@ -48,6 +48,31 @@ fn mine<'py>(
     }
 }
 
+/// Pairs templates that exist in one run only; `kind` is `token_subset` or `jaccard` (which needs `threshold`).
+///
+/// Returns `(before index, after index)` pairs, exactly as the pure-Python matchers do.
+#[pyfunction]
+#[pyo3(signature = (kind, before, after, threshold=None))]
+fn match_templates(
+    py: Python<'_>,
+    kind: &str,
+    before: Vec<String>,
+    after: Vec<String>,
+    threshold: Option<f64>,
+) -> PyResult<Vec<(usize, usize)>> {
+    let before: Vec<&str> = before.iter().map(String::as_str).collect();
+    let after: Vec<&str> = after.iter().map(String::as_str).collect();
+    match kind {
+        "token_subset" => Ok(py.detach(|| logfold_core::token_subset_pairs(&before, &after))),
+        "jaccard" => {
+            let threshold =
+                threshold.ok_or_else(|| CoreConfigError::new_err("the jaccard matcher needs a threshold"))?;
+            Ok(py.detach(|| logfold_core::jaccard_pairs(&before, &after, threshold)))
+        }
+        other => Err(CoreConfigError::new_err(format!("unknown matcher {other:?}"))),
+    }
+}
+
 /// Returns the version of the Python <-> Rust data contract.
 #[pyfunction]
 fn api_version() -> u32 {
@@ -79,6 +104,7 @@ fn default_masks(py: Python<'_>) -> PyResult<Bound<'_, PyList>> {
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(mine, m)?)?;
+    m.add_function(wrap_pyfunction!(match_templates, m)?)?;
     m.add_function(wrap_pyfunction!(api_version, m)?)?;
     m.add_function(wrap_pyfunction!(algo_version, m)?)?;
     m.add_function(wrap_pyfunction!(default_masks, m)?)?;

@@ -59,8 +59,10 @@ class JaccardMatcher:
 
         Pairs are found with prefix filtering: the words of every template are ordered from the rarest to the most
         common, and two sets with similarity ``t`` always share a word among the first ``n - ceil(t * n) + 1`` words
-        of each, so only templates that share such a rare word are compared. The result is the same as comparing all
-        pairs. A threshold above 1, or one that is not a number, is reached by no pair; zero or less pairs everything.
+        of each, so only templates that share such a rare word, and whose sizes allow the score (it never exceeds the
+        size of the smaller set divided by the size of the larger), are compared. The result is the same as comparing
+        all pairs. A threshold above 1, or one that is not a number, is reached by no pair; zero or less pairs
+        everything.
         """
         threshold = self.threshold
         if math.isnan(threshold) or threshold > 1:
@@ -91,6 +93,9 @@ class JaccardMatcher:
                     if i in seen:
                         continue
                     seen.add(i)
+                    smaller, larger = sorted((len(before[i]), len(right)))
+                    if smaller / larger < threshold:
+                        continue
                     union = len(before[i] | right)
                     score = len(before[i] & right) / union if union else 0.0
                     if score >= threshold:

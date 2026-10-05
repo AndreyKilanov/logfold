@@ -38,6 +38,47 @@ Wall time of the median of the repeats in seconds, with throughput in MB/s in br
 | logfold diff 16 threads | 0.71 (294) | 0.70 (298) | 1,888 |
 | logfold diff 16 threads, --no-recount | **0.51 (411)** | **0.50 (424)** | 1,888 |
 
+## `diff` and result building: growth with the number of templates
+
+Measured by `tools/diff_scale.py`: three to five small sizes (4.6 to 73 thousand templates per run), best of three repeats for the fast measurements, one thread, native engine. `diff` compares two saved results; `analyze` is the whole call, the engine part is the time inside the engine. The growth exponent `k` of `t ~ n^k` is fitted between the first and the last size, the last two rows extrapolate with it.
+
+### Before: the matchers compared every pair of templates
+
+| lines | templates | analyze | engine part | diff exact | diff token_subset | diff jaccard |
+|---:|---:|---:|---:|---:|---:|---:|
+| 5,000 | 4,571 | 0.08 | 0.03 | 0.13 | 4.67 | 18.93 |
+| 10,000 | 9,122 | 0.15 | 0.06 | 0.26 | 18.39 | 77.26 |
+| 20,000 | 18,209 | 0.32 | 0.14 | 0.58 | 81.20 | skipped |
+|  | growth exponent | 1.01 | 1.00 | 1.09 | 2.07 | 2.04 |
+| | projected at 54,000 templates | 0.97 | 0.41 | 1.89 | 767.07 | 2,882.63 |
+| | projected at 100,000 templates | 1.81 | 0.75 | 3.70 | 2,739.40 | 10,102.83 |
+
+### Candidates found with an index, in Python
+
+| lines | templates | analyze | engine part | diff exact | diff token_subset | diff jaccard |
+|---:|---:|---:|---:|---:|---:|---:|
+| 5,000 | 4,571 | 0.08 | 0.03 | 0.12 | 0.15 | 0.25 |
+| 10,000 | 9,122 | 0.15 | 0.07 | 0.25 | 0.32 | 0.69 |
+| 20,000 | 18,209 | 0.32 | 0.14 | 0.57 | 0.74 | 2.20 |
+|  | growth exponent | 1.04 | 1.04 | 1.09 | 1.16 | 1.57 |
+| | projected at 54,000 templates | 1.01 | 0.43 | 1.86 | 2.62 | 12.09 |
+| | projected at 100,000 templates | 1.92 | 0.83 | 3.65 | 5.35 | 31.75 |
+
+### The matchers in Rust (current)
+
+| lines | templates | analyze | engine part | diff exact | diff token_subset | diff jaccard |
+|---:|---:|---:|---:|---:|---:|---:|
+| 5,000 | 4,571 | 0.08 | 0.03 | 0.12 | 0.13 | 0.14 |
+| 10,000 | 9,122 | 0.16 | 0.07 | 0.26 | 0.28 | 0.29 |
+| 20,000 | 18,209 | 0.33 | 0.14 | 0.54 | 0.60 | 0.63 |
+| 40,000 | 36,320 | 0.70 | 0.30 | 1.22 | 1.35 | 1.49 |
+| 80,000 | 72,615 | 1.63 | 0.70 | 2.53 | 2.90 | 3.34 |
+|  | growth exponent | 1.09 | 1.10 | 1.09 | 1.11 | 1.15 |
+| | projected at 54,000 templates | 1.18 | 0.51 | 1.83 | 2.08 | 2.37 |
+| | projected at 100,000 templates | 2.32 | 1.00 | 3.59 | 4.13 | 4.83 |
+
+Linear but slow per template and now the bulk of a `diff`: the join and the entries of the comparison (about 30 microseconds per template) and the conversion of the engine result in `analyze` (about 17).
+
 
 ## Reading the numbers
 
@@ -125,7 +166,7 @@ kept apart (counts stay exact, and a warning says so).
 
 - One machine (Windows 11, i7-10700K, 8 cores / 16 threads), warm page cache, generated data (nginx, app, Loghub-2k
   derived loghub, highcard). The large real Loghub-2.0 files are measured separately for logfold only, see
-  [`LOGHUB2.md`](LOGHUB2.md).
+  [`LOGHUB2.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/docs/LOGHUB2.md).
 - Rows come from several runs on the same machine (marked per row by `measured_in` in the files in `results/`);
   repeated measurements agreed within about 5%. The logfold rows are from run 5 (logfold 0.2.0 plus the performance
   changes of `main` made after it, measured in a clean environment with no plugin packages installed); the Drain3,

@@ -1,12 +1,16 @@
 """How the time of `analyze` result building and of `diff` grows with the number of templates.
 
-Large inputs are slow to measure, so the script runs three or four small sizes (a few thousand templates each), fits the
-growth exponent ``t ~ n^k`` between the smallest and the largest and extrapolates to bigger results. A matcher whose
+Large inputs are slow to measure, so the script runs a few small sizes (thousands of templates each); ``report.py`` fits
+the growth exponent ``t ~ n^k`` between the smallest and the largest and extrapolates to bigger results. A matcher whose
 projected time exceeds the budget is skipped at the larger sizes.
+
+Each run is stored as a *stage* (a name for the state of the code, for example ``before`` or ``native``) in
+``bench/results/diff-scale.json``; ``python bench/tools/report.py`` turns the stages into a section of
+``bench/RESULTS.md``.
 
 Usage::
 
-    python bench/diff_scale.py --sizes 5000 10000 20000 --out bench/results/diff-scale.json
+    python bench/tools/diff_scale.py --stage native --sizes 5000 10000 20000 40000 80000
 """
 
 from __future__ import annotations
@@ -19,10 +23,12 @@ import tempfile
 import time
 from pathlib import Path
 
+from report import diff_scale_table
+
 import logfold
 
+ROOT = Path(__file__).resolve().parents[2]
 MATCHERS = ("exact", "token_subset", "jaccard")
-PROJECT_TO = (54_000, 100_000)
 
 
 def write_log(path: Path, lines: int, seed: int) -> None:
@@ -81,58 +87,15 @@ def measure(lines: int, repeat: int, budget: float, previous: dict[str, float]) 
         return row
 
 
-def exponent(rows: list[dict[str, float | int | None]], key: str) -> float | None:
-    """Fit ``t ~ n^k`` between the first and the last size that has a time for ``key``."""
-    timed = [(float(r["templates"] or 0), float(r[key] or 0)) for r in rows if r.get(key)]
-    if len(timed) < 2 or timed[0][1] <= 0:
-        return None
-    (n1, t1), (n2, t2) = timed[0], timed[-1]
-    return math.log(t2 / t1) / math.log(n2 / n1)
-
-
-def project(rows: list[dict[str, float | int | None]], key: str, templates: int) -> float | None:
-    """Extrapolate the time of ``key`` to ``templates`` templates with the fitted exponent."""
-    k = exponent(rows, key)
-    timed = [r for r in rows if r.get(key)]
-    if k is None or not timed:
-        return None
-    last = timed[-1]
-    return float(last[key] or 0) * (templates / float(last["templates"] or 1)) ** k
-
-
-def markdown(rows: list[dict[str, float | int | None]]) -> str:
-    """Render the measurements, exponents and projections as Markdown tables."""
-    keys = ["analyze_s", "analyze_engine_s", *(f"diff_{m}_s" for m in MATCHERS)]
-
-    def cell(value: float | int | None) -> str:
-        return "skipped" if value is None else f"{value:,.2f}"
-
-    lines = ["| lines | templates | " + " | ".join(keys) + " |", "|---:|---:|" + "---:|" * len(keys)]
-    for row in rows:
-        lines.append(
-            f"| {row['lines']:,} | {row['templates']:,} | " + " | ".join(cell(row.get(k)) for k in keys) + " |"
-        )
-    lines += [
-        "",
-        "| measure | growth exponent | " + " | ".join(f"projected at {n:,} templates (s)" for n in PROJECT_TO) + " |",
-    ]
-    lines.append("|---|---:|" + "---:|" * len(PROJECT_TO))
-    for key in keys:
-        k = exponent(rows, key)
-        if k is None:
-            continue
-        projected = [project(rows, key, n) for n in PROJECT_TO]
-        lines.append(f"| {key} | {k:.2f} | " + " | ".join(cell(p) for p in projected) + " |")
-    return "\n".join(lines)
-
-
 def main() -> None:
-    """Run the measurements and print or save them."""
+    """Run the measurements, print them and store them as a stage."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--stage", required=True, help="name of the state of the code, for example before or native")
     parser.add_argument("--sizes", type=int, nargs="+", default=[5000, 10000, 20000], help="lines per run")
     parser.add_argument("--repeat", type=int, default=3, help="repeats of the fast measurements")
     parser.add_argument("--budget", type=float, default=120.0, help="skip a matcher when 4x its last time exceeds this")
-    parser.add_argument("--out", type=Path, help="write the rows as JSON")
+    parser.add_argument("--out", type=Path, default=ROOT / "bench" / "results" / "diff-scale.json")
+    parser.add_argument("--no-save", action="store_true", help="print only")
     args = parser.parse_args()
     rows: list[dict[str, float | int | None]] = []
     previous: dict[str, float] = {}
@@ -140,12 +103,12 @@ def main() -> None:
         rows.append(measure(lines, args.repeat, args.budget, previous))
         print(f"done {lines:,} lines", flush=True)
     print()
-    print(markdown(rows))
-    if args.out:
-        args.out.parent.mkdir(parents=True, exist_ok=True)
-        args.out.write_text(
-            json.dumps({"logfold": logfold.__version__, "rows": rows}, indent=2) + "\n", encoding="utf-8"
-        )
+    print("\n".join(diff_scale_table(rows)))
+    if not args.no_save:
+        data = json.loads(args.out.read_text(encoding="utf-8")) if args.out.exists() else {"stages": {}}
+        data["stages"][args.stage] = {"logfold": logfold.__version__, "rows": rows}
+        args.out.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+        print(f"stored stage {args.stage!r} in {args.out}")
 
 
 if __name__ == "__main__":

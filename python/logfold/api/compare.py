@@ -18,6 +18,7 @@ from logfold.api._common import (
     _summary,
     _warnings,
 )
+from logfold.api.matching import accelerated
 from logfold.api.saved import MINING_ONLY_DEFAULTS, diff_saved
 from logfold.comparison import classify
 from logfold.config import (
@@ -152,7 +153,11 @@ def diff(
     before_summary = _summary(first, mined.runs[0])
     after_summary = _summary(second, mined.runs[1])
     classification = classify(
-        mined.templates, before_summary, after_summary, config, registry.get_matcher(config.matcher)
+        mined.templates,
+        before_summary,
+        after_summary,
+        config,
+        accelerated(registry.get_matcher(config.matcher), used.name == "native"),
     )
     masker = Masker(mining_config.masks)
 

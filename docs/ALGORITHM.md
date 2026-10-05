@@ -159,3 +159,36 @@ discarded and all inputs are read a second time, in the same order, against the 
 Run counters (`lines`, `records`, `unparsed`) come from the training pass. In the chunked strategy the merged tree is
 shared read-only by all workers, per-chunk statistics are merged in chunk order (the earlier `example` wins), so the
 result stays independent of the thread count. Identical inputs therefore produce identical counts in both runs.
+
+
+## 10. Diff matchers
+
+After recount (§9) or, for saved results, after joining templates by id, templates that exist in one run only can be
+paired by a *matcher* so that a reworded message is compared as one template. The built-in matchers are part of the
+contract: the native implementation (`logfold-core`, `compare`) and the pure-Python one (`logfold.comparison.matchers`,
+`logfold.plugins.matchers`) must return **identical** pairs, in the same order. Matching does not change mined
+templates or counts, so it does not affect `ALGO_VERSION`. It is the one place that uses floating point (`jaccard`).
+
+A template text is split into tokens: `token_subset` splits on the single space character (an empty text has no tokens),
+`jaccard` on whitespace as Python's `str.split()` sees it (Unicode `White_Space` plus U+001C to U+001F) and keeps the
+set of distinct words.
+
+**`token_subset`.** Templates `x` and `y` with the same token count are compatible when, at every position, `x` has `<*>`
+or the same token as `y`, or when `y` has `<*>` or the same token as `x` at every position (one generalizes the other).
+Templates of the second run are taken in order. Each takes, among the unused templates of the first run that are
+compatible with it, the one with the smallest difference between the numbers of `<*>` tokens and then the smallest
+index; if there is none it stays unpaired. The result lists `(index in the first run, index in the second run)` in the
+order of the second run. Implementations may find candidates with an index, but must verify each candidate with the rule
+above.
+
+**`jaccard`** with a threshold `t`. The score of two templates is `|A ∩ B| / |A ∪ B|` over their sets of words (0 when
+both sets are empty). Pairs with a score of at least `t` are ordered by score, highest first, then by index in the first
+run, then by index in the second run, and taken greedily when neither template is used yet. The result is sorted by
+index in the first run. Implementations may skip pairs that cannot reach `t`: pairs whose sizes give `min / max` below
+`t` (the score never exceeds it) and pairs that cannot share `ceil(t * (|A| + |B|) / (1 + t))` words (the bound is lowered
+by an epsilon on the safe side). Prefix filtering is exact: with the words
+ordered from the least to the most frequent in both runs (ties by code point order), two sets with score at least `t`
+share a word among the first `n - ceil(t * n) + 1` words of each (`n` is the size of the set; the ceiling uses an epsilon
+of 1e-9 on the safe side). A threshold of zero or less scores every pair.
+
+A matcher that is not built in (a plugin, or a subclass of a built-in one) always runs its own Python code.
