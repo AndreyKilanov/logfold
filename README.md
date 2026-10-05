@@ -155,6 +155,24 @@ On the real logs of 0.7 to 1.6 GB peak memory is 42 to 51 MB with one thread and
 > - Saved results are compared without a recount against a shared template tree, so the same event can end up both in
 >   new and in gone; the `token_subset` and `jaccard` matchers exist for this.
 
+## Measurements and bug reports
+
+logfold was measured on one machine (Windows 11, 8 cores). If you can run it on other hardware (Linux, macOS, ARM, a
+slower disk, more cores) or on your own logs, we would be glad to get the numbers. We also want to hear about wrong
+results, crashes, templates that are grouped badly, and runs that are slow or use too much memory.
+
+- **Measurements.** Run the benchmark as described in [`bench/README.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/README.md) (the protocol is
+  in [`bench/PROTOCOL.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/PROTOCOL.md)) or time your own command, and open a
+  [performance issue](https://github.com/AndreyKilanov/logfold/issues/new?template=performance.yml). Include the wall time, throughput and peak memory, the
+  command, the size and format of the input, the CPU and number of cores, RAM, disk type, OS, the logfold version and
+  the number of threads.
+- **Bugs.** Open a [bug report](https://github.com/AndreyKilanov/logfold/issues/new?template=bug_report.yml) with what you expected and what happened, a
+  command or Python snippet that reproduces it, the output of `logfold --version` and `logfold info`, and a few lines of
+  the input with secrets removed.
+
+All issue forms are listed on the [new issue page](https://github.com/AndreyKilanov/logfold/issues/new/choose); how issues are written is described in
+[CONTRIBUTING.md](https://github.com/AndreyKilanov/logfold/blob/main/CONTRIBUTING.md#issues).
+
 ## How it compares to other tools
 
 | | logfold | [Drain3](https://github.com/logpai/Drain3) | [logdrain](https://github.com/vnvo/logdrain) | [logdelta](https://github.com/antonsoo/logdelta) |

@@ -155,6 +155,25 @@ diff(load_analysis("before.json"), load_analysis("after.json"))
 > - Сохранённые результаты сравниваются без пересчёта по общему дереву шаблонов, поэтому одно и то же событие может
 >   попасть и в новые, и в пропавшие; для этого есть сопоставления `token_subset` и `jaccard`.
 
+## Замеры и сообщения об ошибках
+
+logfold измерялся на одной машине (Windows 11, 8 ядер). Если вы можете запустить его на другом железе (Linux, macOS,
+ARM, более медленный диск, больше ядер) или на своих логах, будем рады получить цифры. Также нам нужны сообщения о
+неверных результатах, падениях, плохой группировке шаблонов и о запусках, которые идут медленно или расходуют слишком
+много памяти.
+
+- **Замеры.** Запустите бенчмарк по описанию в [`bench/README.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/README.md) (протокол лежит в
+  [`bench/PROTOCOL.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/PROTOCOL.md)) или засеките время своей команды и создайте
+  [issue о производительности](https://github.com/AndreyKilanov/logfold/issues/new?template=performance.yml). Укажите время выполнения, скорость и пиковую
+  память, команду, размер и формат входа, процессор и число ядер, объём памяти, тип диска, ОС, версию logfold и число
+  потоков.
+- **Ошибки.** Создайте [issue об ошибке](https://github.com/AndreyKilanov/logfold/issues/new?template=bug_report.yml): что ожидали и что получилось, команда или
+  фрагмент на Python, который воспроизводит проблему, вывод `logfold --version` и `logfold info`, несколько строк входа
+  без секретов.
+
+Все формы собраны на [странице создания issue](https://github.com/AndreyKilanov/logfold/issues/new/choose); как оформлять issues, описано в
+[CONTRIBUTING.md](https://github.com/AndreyKilanov/logfold/blob/main/CONTRIBUTING.md#issues). Issues принимаются на английском.
+
 ## Чем отличается от других
 
 | | logfold | [Drain3](https://github.com/logpai/Drain3) | [logdrain](https://github.com/vnvo/logdrain) | [logdelta](https://github.com/antonsoo/logdelta) |
