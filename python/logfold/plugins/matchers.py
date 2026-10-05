@@ -60,9 +60,11 @@ class JaccardMatcher:
         Pairs are found with prefix filtering: the words of every template are ordered from the rarest to the most
         common, and two sets with similarity ``t`` always share a word among the first ``n - ceil(t * n) + 1`` words
         of each, so only templates that share such a rare word are compared. The result is the same as comparing all
-        pairs.
+        pairs. A threshold above 1, or one that is not a number, is reached by no pair; zero or less pairs everything.
         """
         threshold = self.threshold
+        if math.isnan(threshold) or threshold > 1:
+            return []
         if threshold <= 0:
             return [
                 (len(left & right) / union if (union := len(left | right)) else 0.0, i, j)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import random
 import time
 from collections import defaultdict
@@ -136,7 +137,7 @@ def jaccard_with(threshold: float) -> JaccardMatcher:
 WORDS = st.sampled_from(["a", "b", "c", "d", "e", "<*>", "<NUM>", "é", "user", "failed", "x" * 30])
 SENTENCES = st.lists(WORDS, max_size=8).map(" ".join)
 SENTENCE_LISTS = st.lists(SENTENCES, max_size=30)
-THRESHOLDS = st.sampled_from([0.0, 0.1, 0.3, 0.5, 0.6, 2 / 3, 0.75, 0.9, 1.0, 1.5])
+THRESHOLDS = st.sampled_from([0.0, -1.0, 0.1, 0.3, 0.5, 0.6, 2 / 3, 0.75, 0.9, 1.0, 1.5, math.inf, math.nan])
 
 
 @settings(max_examples=400, deadline=None, suppress_health_check=[HealthCheck.too_slow])
