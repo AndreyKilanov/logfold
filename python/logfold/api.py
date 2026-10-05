@@ -7,8 +7,10 @@ engine's plain-data answer into the public result model.
 from __future__ import annotations
 
 import dataclasses
+import json
 import logging
 import os
+import time
 from collections.abc import Callable, Sequence
 from typing import Any
 
@@ -24,7 +26,7 @@ from logfold.config import (
     config_fingerprint,
 )
 from logfold.engines import native
-from logfold.engines.base import Engine, MineRequest, MiningResult, RunInfo, TemplateStats
+from logfold.engines.base import Engine, MineRequest, MiningResult, RunInfo, RunStatsData, TemplateStats
 from logfold.engines.select import select_engine
 from logfold.errors import ConfigError, SourceError
 from logfold.ext import registry
@@ -32,15 +34,19 @@ from logfold.ext.formats import Format, FormatSpec
 from logfold.ext.masks import Masker, validate_masks
 from logfold.formats import ResolvedFormat, resolve_format
 from logfold.model import (
+    LEVEL_NAMES,
     SCHEMA_VERSION,
     AnalysisResult,
     DiffResult,
     ResultMeta,
+    RunMetrics,
     RunSummary,
     Template,
+    datetime_to_micros,
     micros_to_datetime,
     summarize_levels,
 )
+from logfold.reporters.payload import analysis_from_payload
 
 logger = logging.getLogger("logfold")
 
@@ -302,9 +308,160 @@ def analyze(
     )
 
 
+def load_analysis(path: PathLike) -> AnalysisResult:
+    """Load an analysis result saved as a JSON report (``AnalysisResult.to_json()`` or ``--out result.json``).
+
+    Args:
+        path: The JSON report. It must hold every template, so it must not have been written with a ``limit``.
+
+    Returns:
+        The analysis result, ready for :func:`diff`.
+
+    Raises:
+        SourceError: If the file cannot be read or is not a complete analysis report of a supported version.
+    """
+    try:
+        with open(path, encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except (OSError, ValueError) as error:
+        raise SourceError(f"cannot read an analysis report from {os.fspath(path)!r}: {error}") from error
+    if not isinstance(payload, dict):
+        raise SourceError(f"{os.fspath(path)!r} is not an analysis report")
+    return analysis_from_payload(payload)
+
+
+_MINING_ONLY_DEFAULTS: dict[str, Any] = {
+    "format": "auto",
+    "multiline": None,
+    "recount": None,
+    "depth": None,
+    "sim_th": None,
+    "max_children": None,
+    "max_templates": None,
+    "masks": None,
+    "high_cardinality": False,
+    "mining": None,
+    "execution": None,
+    "engine": None,
+    "strategy": None,
+    "threads": None,
+    "chunk_bytes": None,
+    "progress": None,
+}
+
+
+def _diff_config(
+    base: DiffConfig | None,
+    threshold_ratio: float | None,
+    min_count: int | None,
+    min_new_count: int | None,
+    recount: bool | None,
+    matcher: str | None,
+) -> DiffConfig:
+    config = base or DiffConfig()
+    changes: dict[str, Any] = {}
+    for key, value in (
+        ("threshold_ratio", threshold_ratio),
+        ("min_count", min_count),
+        ("min_new_count", min_new_count),
+        ("recount", recount),
+        ("matcher", matcher),
+    ):
+        if value is not None:
+            changes[key] = value
+    return dataclasses.replace(config, **changes) if changes else config
+
+
+def _saved_stats(template: Template | None) -> RunStatsData:
+    if template is None:
+        return RunStatsData(0, None, None, (0,) * len(LEVEL_NAMES), None)
+    return RunStatsData(
+        count=template.count,
+        first=datetime_to_micros(template.first_seen),
+        last=datetime_to_micros(template.last_seen),
+        levels=tuple(template.levels.get(name, 0) for name in LEVEL_NAMES),
+        example=template.example,
+    )
+
+
+def _join_saved(before: AnalysisResult, after: AnalysisResult) -> list[TemplateStats]:
+    first = {template.id: template for template in before.templates}
+    second = {template.id: template for template in after.templates}
+    joined: list[TemplateStats] = []
+    for key in {**first, **second}:
+        present = second.get(key) or first[key]
+        runs = (_saved_stats(first.get(key)), _saved_stats(second.get(key)))
+        joined.append(TemplateStats(id=present.id, text=present.text, runs=runs))
+    return joined
+
+
+def _saved_warnings(before: AnalysisResult, after: AnalysisResult) -> list[str]:
+    warnings = [
+        "saved results were mined separately and are not re-counted against a shared template tree; the same "
+        "event may be reported as new and disappeared (try matcher='token_subset')"
+    ]
+    if before.meta.config_hash != after.meta.config_hash:
+        warnings.append(
+            f"the results were mined with different masks or parameters ({before.meta.config_hash} and "
+            f"{after.meta.config_hash}); their templates may not be comparable"
+        )
+    if before.meta.format != after.meta.format:
+        warnings.append(f"the results use different formats ({before.meta.format!r} and {after.meta.format!r})")
+    for summary in (before.run, after.run):
+        if summary.overflowed:
+            warnings.append(
+                f"{summary.name}: max_templates was reached; extra records were pooled into catch-all templates"
+            )
+        if summary.records == 0:
+            warnings.append(f"{summary.name}: no records were parsed")
+    return warnings
+
+
+def _diff_saved(
+    before: AnalysisResult, after: AnalysisResult, config: DiffConfig, examples: ExamplesMode
+) -> DiffResult:
+    started = time.perf_counter()
+    if before.meta.algo_version != after.meta.algo_version:
+        raise ConfigError(
+            f"the results come from different algorithm versions ({before.meta.algo_version} and "
+            f"{after.meta.algo_version}) and cannot be compared; analyze both logs again"
+        )
+    classification = classify(
+        _join_saved(before, after), before.run, after.run, config, registry.get_matcher(config.matcher)
+    )
+    new, gone, moved = classification.new, classification.disappeared, classification.changed
+    if examples == "none":
+        new = tuple(dataclasses.replace(e, example=None) for e in new)
+        gone = tuple(dataclasses.replace(e, example=None) for e in gone)
+        moved = tuple(dataclasses.replace(e, example=None) for e in moved)
+    metrics = RunMetrics(
+        engine=after.metrics.engine,
+        strategy="sequential",
+        threads=1,
+        chunks=0,
+        wall_total_s=time.perf_counter() - started,
+        wall_mine_s=0.0,
+        wall_merge_s=0.0,
+        wall_recount_s=0.0,
+        wall_freeze_s=0.0,
+    )
+    return DiffResult(
+        new_templates=new,
+        disappeared=gone,
+        changed=moved,
+        unchanged=classification.unchanged,
+        before=before.run,
+        after=after.run,
+        config=config,
+        metrics=metrics,
+        meta=dataclasses.replace(after.meta, degraded=before.meta.degraded or after.meta.degraded),
+        warnings=tuple(_saved_warnings(before, after)),
+    )
+
+
 def diff(
-    before: PathLike | Sequence[PathLike],
-    after: PathLike | Sequence[PathLike],
+    before: PathLike | Sequence[PathLike] | AnalysisResult,
+    after: PathLike | Sequence[PathLike] | AnalysisResult,
     *,
     format: str | FormatSpec | Format = "auto",
     multiline: bool | None = None,
@@ -334,9 +491,14 @@ def diff(
     Both runs are mined with one shared template tree, so a template that occurs in both is the same template.
     Shares are normalized by the number of records in each run.
 
+    Two :class:`AnalysisResult` objects (from :func:`analyze` or :func:`load_analysis`) can be compared instead of
+    logs. Nothing is re-read then: templates are joined by id, one-sided ones are paired by the matcher, and the
+    counts are the saved ones, so the options that control mining or reading (``format``, ``masks``, ``engine`` and
+    so on) raise :class:`ConfigError`.
+
     Args:
-        before: Input(s) of the first run, for example the log before a deploy.
-        after: Input(s) of the second run.
+        before: Input(s) of the first run, for example the log before a deploy, or its saved analysis result.
+        after: Input(s) of the second run, or its saved analysis result.
         format: Format of both runs; ``auto`` detects it from the first input of ``before``.
         multiline: Join continuation lines to the previous record.
         threshold_ratio: Minimum factor by which a share must change to be reported as changed (default 2.0).
@@ -370,24 +532,21 @@ def diff(
         SourceError: If an input cannot be read.
         EngineError: If the requested engine is unavailable.
     """
+    config = _diff_config(diff_config, threshold_ratio, min_count, min_new_count, recount, matcher)
+    if isinstance(before, AnalysisResult) or isinstance(after, AnalysisResult):
+        if not (isinstance(before, AnalysisResult) and isinstance(after, AnalysisResult)):
+            raise ConfigError("diff() compares two analysis results or two sets of inputs, not one of each")
+        given = locals()
+        ignored = [name for name, default in _MINING_ONLY_DEFAULTS.items() if given[name] != default]
+        if ignored:
+            raise ConfigError(f"{', '.join(ignored)} cannot be used when comparing saved analysis results")
+        return _diff_saved(before, after, config, examples)
     first = _paths(before, "diff() before")
     second = _paths(after, "diff() after")
     resolved = resolve_format(format, first, multiline)
     spec = resolved.spec
     mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks, high_cardinality)
     exec_config = _execution(execution, engine, strategy, threads, chunk_bytes, high_cardinality)
-    base = diff_config or DiffConfig()
-    changes: dict[str, Any] = {}
-    for key, value in (
-        ("threshold_ratio", threshold_ratio),
-        ("min_count", min_count),
-        ("min_new_count", min_new_count),
-        ("recount", recount),
-        ("matcher", matcher),
-    ):
-        if value is not None:
-            changes[key] = value
-    config = dataclasses.replace(base, **changes) if changes else base
     mined, used = _mine((first, second), spec, mining_config, exec_config, progress, config.recount)
     before_summary = _summary(first, mined.runs[0])
     after_summary = _summary(second, mined.runs[1])

@@ -59,6 +59,26 @@ mined into one shared template tree, and then **every record of both runs is ass
 `recount` pass), so identical lines always land in the same template. `--no-recount` skips the second pass and is
 faster but can show spurious differences.
 
+### Compare saved results
+
+Analyze each log once, keep the JSON, and compare the reports later without the logs:
+
+```python
+from logfold import analyze, diff, load_analysis
+
+analyze("before.log").to_json("before.json")
+analyze("after.log").to_json("after.json")
+d = diff(load_analysis("before.json"), load_analysis("after.json"), matcher="token_subset")
+```
+
+```
+logfold diff before.json after.json --matcher token_subset
+```
+
+The reports were mined separately, with no shared tree and no `recount` pass, so the same event can appear as new in
+one and disappeared in the other; a matcher pairs such templates, and a warning says so. Analyze both logs with the same
+masks and parameters (the `config_hash` of the reports must match, or a warning is added).
+
 ## Formats
 
 `logfold formats` lists them. `--format auto` (the default) samples the file and picks one; it fails with the best

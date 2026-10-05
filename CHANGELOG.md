@@ -5,6 +5,14 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ## [Unreleased]
 
+### Added
+
+- Compare saved results without the logs: `logfold.load_analysis(path)` loads a JSON report of `analyze`, and
+  `logfold.diff()` accepts two `AnalysisResult` objects. `logfold diff before.json after.json` detects saved reports
+  by their header. The results are mined separately and are not re-counted, so templates are joined by id and the
+  matcher pairs the rest; a warning says so, and another one is added when the masks, parameters or formats differ.
+  Results of different algorithm versions are rejected.
+
 ## [0.2.1] - 2026-10-04
 
 ### Changed

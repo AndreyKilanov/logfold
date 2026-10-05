@@ -5,6 +5,7 @@ from __future__ import annotations
 import dataclasses
 import errno
 import os
+import re
 import sys
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
@@ -70,6 +71,30 @@ Examples = Annotated[str, typer.Option("--examples", help="raw, masked or none: 
 AsJson = Annotated[bool, typer.Option("--json", help="Print JSON to stdout instead of tables.")]
 Quiet = Annotated[bool, typer.Option("--quiet", "-q", help="No progress and no status messages on stderr.")]
 Debug = Annotated[bool, typer.Option("--debug", help="Show tracebacks.")]
+
+
+_SAVED_RESULT_MARKER = re.compile(rb'\{\s*"schema_version"\s*:\s*\d+\s*,\s*"kind"\s*:\s*"analysis"')
+_SAVED_RESULT_SNIFF_BYTES = 4096
+
+
+def _is_saved_result(path: Path) -> bool:
+    """Tell whether a file is a JSON analysis report (``analyze --out result.json``) rather than a log."""
+    try:
+        with path.open("rb") as handle:
+            head = handle.read(_SAVED_RESULT_SNIFF_BYTES)
+    except OSError:
+        return False
+    return _SAVED_RESULT_MARKER.match(head.lstrip()) is not None
+
+
+def _reject_mining_flags(flags: dict[str, bool]) -> None:
+    given = [name for name, used in flags.items() if used]
+    if given:
+        raise logfold.ConfigError(f"{', '.join(given)} cannot be used when comparing saved analysis results")
+
+
+def _diff_saved(before: Path, after: Path, **options: Any) -> DiffResult:
+    return logfold.diff(logfold.load_analysis(before), logfold.load_analysis(after), **options)
 
 
 def _version(value: bool) -> None:
@@ -231,8 +256,10 @@ def analyze(
 
 @app.command()
 def diff(
-    before: Annotated[Path, typer.Argument(help="Log file of the first run, for example before a deploy.")],
-    after: Annotated[Path, typer.Argument(help="Log file of the second run.")],
+    before: Annotated[
+        Path, typer.Argument(help="Log file of the first run, for example before a deploy, or a saved report.")
+    ],
+    after: Annotated[Path, typer.Argument(help="Log file of the second run, or a saved report.")],
     format: Format = "auto",
     multiline: Multiline = None,
     top: Top = 20,
@@ -269,34 +296,68 @@ def diff(
     quiet: Quiet = False,
     debug: Debug = False,
 ) -> None:
-    """Compare two runs: new, disappeared and changed templates."""
+    """Compare two runs: new, disappeared and changed templates.
+
+    Each argument is a log file or a saved report of 'logfold analyze --out result.json'; both must be of one kind.
+    """
     try:
-        with _progress(quiet) as progress:
-            result = logfold.diff(
-                str(before),
-                str(after),
-                format=format,
-                multiline=multiline,
+        saved = (_is_saved_result(before), _is_saved_result(after))
+        if saved[0] != saved[1]:
+            raise logfold.ConfigError("diff compares two log files or two saved analysis reports, not one of each")
+        if all(saved):
+            _reject_mining_flags(
+                {
+                    "--format": format != "auto",
+                    "--multiline/--no-multiline": multiline is not None,
+                    "--no-recount": not recount,
+                    "--sim-th": sim_th is not None,
+                    "--depth": depth is not None,
+                    "--max-children": max_children is not None,
+                    "--max-templates": max_templates is not None,
+                    "--threads": threads is not None,
+                    "--engine": engine is not None,
+                    "--chunk-mb": chunk_mb is not None,
+                    "--strategy": strategy is not None,
+                    "--no-masks": no_masks,
+                    "--high-cardinality": high_cardinality,
+                }
+            )
+            result = _diff_saved(
+                before,
+                after,
                 threshold_ratio=threshold_ratio,
                 min_count=min_count,
                 min_new_count=min_new_count,
                 matcher=matcher,
-                recount=recount,
-                examples=examples,  # type: ignore[arg-type]
-                progress=progress,
-                **_options(
-                    sim_th,
-                    depth,
-                    max_children,
-                    max_templates,
-                    threads,
-                    engine,
-                    chunk_mb,
-                    strategy,
-                    no_masks,
-                    high_cardinality,
-                ),
+                examples=examples,
             )
+        else:
+            with _progress(quiet) as progress:
+                result = logfold.diff(
+                    str(before),
+                    str(after),
+                    format=format,
+                    multiline=multiline,
+                    threshold_ratio=threshold_ratio,
+                    min_count=min_count,
+                    min_new_count=min_new_count,
+                    matcher=matcher,
+                    recount=recount,
+                    examples=examples,  # type: ignore[arg-type]
+                    progress=progress,
+                    **_options(
+                        sim_th,
+                        depth,
+                        max_children,
+                        max_templates,
+                        threads,
+                        engine,
+                        chunk_mb,
+                        strategy,
+                        no_masks,
+                        high_cardinality,
+                    ),
+                )
         _emit(result, top, as_json)
         if out is not None:
             _write_report(result, out, quiet)

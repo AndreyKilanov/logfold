@@ -61,7 +61,8 @@ Compare two runs: new, disappeared and changed templates. Shares are normalized 
 logfold diff BEFORE AFTER [options]
 ```
 
-`BEFORE` and `AFTER` are single log files (for example before and after a deploy, or a passing and a failing CI job).
+`BEFORE` and `AFTER` are single log files (for example before and after a deploy, or a passing and a failing CI job)
+or two saved reports of `logfold analyze --out result.json`; both must be of one kind.
 `diff` accepts the same input, report, mining and execution options as `analyze` (`--min-count` has a different meaning,
 see below), plus:
 
@@ -78,6 +79,18 @@ see below), plus:
 ```
 logfold diff before.log after.log --out diff.html --fail-on-new-alerts
 ```
+
+With saved reports the logs are not read again, so `diff` is instant and the logs may be gone:
+
+```
+logfold analyze before.log --out before.json
+logfold analyze after.log --out after.json
+logfold diff before.json after.json --matcher token_subset
+```
+
+The two analyses are mined separately and are not re-counted against a shared tree, so use `--matcher token_subset` to
+pair templates that describe one event. The format, mining and execution options and `--no-recount` are an error in this
+mode, and `--examples none` drops the saved examples.
 
 ## `logfold formats`
 

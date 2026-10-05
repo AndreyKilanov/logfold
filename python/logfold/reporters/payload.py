@@ -6,7 +6,17 @@ from dataclasses import asdict
 from datetime import datetime
 from typing import Any
 
-from logfold.model import SCHEMA_VERSION, AnalysisResult, DiffEntry, DiffResult, RunSummary, Template
+from logfold.errors import SourceError
+from logfold.model import (
+    SCHEMA_VERSION,
+    AnalysisResult,
+    DiffEntry,
+    DiffResult,
+    ResultMeta,
+    RunMetrics,
+    RunSummary,
+    Template,
+)
 
 
 def _iso(value: datetime | None) -> str | None:
@@ -133,3 +143,57 @@ def diff_payload(result: DiffResult, limit: int | None = None) -> dict[str, Any]
         "disappeared": entries(result.disappeared),
         "changed": entries(result.changed),
     }
+
+
+def _moment(value: object) -> datetime | None:
+    return datetime.fromisoformat(value) if isinstance(value, str) else None
+
+
+def _template(data: dict[str, Any]) -> Template:
+    return Template(
+        id=str(data["id"]),
+        text=str(data["text"]),
+        count=int(data["count"]),
+        first_seen=_moment(data["first_seen"]),
+        last_seen=_moment(data["last_seen"]),
+        example=data["example"],
+        level=data["level"],
+        levels={str(name): int(count) for name, count in data["levels"].items()},
+    )
+
+
+def analysis_from_payload(payload: dict[str, Any]) -> AnalysisResult:
+    """Rebuild an analysis result from its JSON form; the inverse of :func:`analysis_payload`.
+
+    Args:
+        payload: Parsed JSON of an analysis report.
+
+    Returns:
+        The analysis result. ``Template.example`` is whatever the report contained.
+
+    Raises:
+        SourceError: If the payload is not a complete analysis report of a supported schema version.
+    """
+    if payload.get("kind") != "analysis":
+        raise SourceError(f"expected an analysis report, found kind {payload.get('kind')!r}")
+    if payload.get("schema_version") != SCHEMA_VERSION:
+        raise SourceError(f"unsupported report schema version {payload.get('schema_version')!r}")
+    try:
+        templates = tuple(_template(item) for item in payload["templates"])
+        run = {key: value for key, value in payload["run"].items() if key != "unparsed_ratio"}
+        result = AnalysisResult(
+            templates=templates,
+            run=RunSummary(**run),
+            metrics=RunMetrics(**payload["metrics"]),
+            meta=ResultMeta(**payload["meta"]),
+            warnings=tuple(str(item) for item in payload["warnings"]),
+        )
+        expected = int(payload["template_count"])
+    except (KeyError, TypeError, ValueError, AttributeError) as error:
+        raise SourceError(f"malformed analysis report: {error!r}") from error
+    if expected != len(templates):
+        raise SourceError(
+            f"the report holds {len(templates)} of {expected} templates (it was written with a limit); "
+            "save the full report"
+        )
+    return result
