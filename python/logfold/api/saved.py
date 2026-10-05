@@ -13,6 +13,7 @@ import os
 import time
 from typing import Any
 
+from logfold.api.matching import accelerated
 from logfold.comparison import classify
 from logfold.config import DiffConfig, ExamplesMode
 from logfold.engines.base import RunStatsData, TemplateStats
@@ -160,7 +161,7 @@ def diff_saved(before: AnalysisResult, after: AnalysisResult, config: DiffConfig
         )
     config = dataclasses.replace(config, recount=False)
     classification = classify(
-        _join_saved(before, after), before.run, after.run, config, registry.get_matcher(config.matcher)
+        _join_saved(before, after), before.run, after.run, config, accelerated(registry.get_matcher(config.matcher))
     )
     new, gone, moved = classification.new, classification.disappeared, classification.changed
     if examples == "none":

@@ -6,6 +6,7 @@ engine once, and converts the plain-data answer back into engine DTOs.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 
 from logfold.engines.base import MineRequest, MiningResult, ProgressCallback, RunInfo, RunStatsData, TemplateStats
@@ -24,6 +25,37 @@ EXPECTED_CORE_API_VERSION = 1
 def is_available() -> bool:
     """Return True when the native extension is importable and speaks the expected contract version."""
     return _core is not None and _core.api_version() == EXPECTED_CORE_API_VERSION
+
+
+def supports_matching() -> bool:
+    """Return True when the extension can pair templates (older builds of the extension lack the function)."""
+    return is_available() and hasattr(_core, "match_templates")
+
+
+def match_templates(
+    kind: str, before: Sequence[str], after: Sequence[str], threshold: float | None = None
+) -> list[tuple[int, int]]:
+    """Pair the templates of two runs that occur in one run only, in the extension.
+
+    Args:
+        kind: ``token_subset`` or ``jaccard``.
+        before: Template texts present only in the first run.
+        after: Template texts present only in the second run.
+        threshold: Minimum similarity of the ``jaccard`` matcher.
+
+    Returns:
+        ``(i, j)`` pairs, exactly as the pure-Python matcher of the same name returns them.
+
+    Raises:
+        ConfigError: If the extension rejects the request.
+        UnicodeError: If a text cannot be passed to the extension (for example a lone surrogate).
+    """
+    if _core is None:
+        raise EngineError("the native extension is unavailable")
+    try:
+        return list(_core.match_templates(kind, list(before), list(after), threshold))
+    except _core.CoreConfigError as error:
+        raise ConfigError(str(error)) from error
 
 
 def core_versions() -> dict[str, Any] | None:
