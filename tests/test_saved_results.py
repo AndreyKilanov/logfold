@@ -165,3 +165,99 @@ def test_jsonl_logs_are_not_mistaken_for_saved_reports(tmp_path: Path) -> None:
     log.write_text("\n".join(lines) + "\n", encoding="utf-8")
     result = runner.invoke(app, ["diff", str(log), str(log), "-f", "jsonl"])
     assert result.exit_code == 0, result.output
+
+
+def test_masked_examples_are_refused_for_saved_results(tmp_path: Path) -> None:
+    _before, _after, first, second = saved_pair(tmp_path)
+    one, two = logfold.load_analysis(first), logfold.load_analysis(second)
+    with pytest.raises(logfold.ConfigError, match="masked"):
+        logfold.diff(one, two, examples="masked")
+    cli = runner.invoke(app, ["diff", str(first), str(second), "--examples", "masked"])
+    assert cli.exit_code == exit_codes.ERROR
+    assert "masked" in cli.output
+
+
+def test_saved_diff_reports_that_nothing_was_recounted(tmp_path: Path) -> None:
+    _before, _after, first, second = saved_pair(tmp_path)
+    result = logfold.diff(logfold.load_analysis(first), logfold.load_analysis(second))
+    assert result.config.recount is False
+    assert json.loads(result.to_json())["config"]["recount"] is False
+
+
+def test_min_count_does_not_truncate_json_report_files(tmp_path: Path) -> None:
+    before, _after, _first, _second = saved_pair(tmp_path)
+    full = logfold.analyze(str(before), format="app")
+    out = tmp_path / "filtered.json"
+    result = runner.invoke(app, ["analyze", str(before), "-f", "app", "--min-count", "100000", "-o", str(out), "-q"])
+    assert result.exit_code == 0, result.output
+    assert logfold.load_analysis(out).templates == full.templates
+    text = tmp_path / "filtered.txt"
+    assert (
+        runner.invoke(app, ["analyze", str(before), "-f", "app", "--min-count", "100000", "-o", str(text)]).exit_code
+        == 0
+    )
+    assert "cache miss" not in text.read_text(encoding="utf-8")
+
+
+def test_hostile_json_gives_clean_errors(tmp_path: Path) -> None:
+    _before, _after, first, _second = saved_pair(tmp_path)
+    text = first.read_text(encoding="utf-8")
+    infinite = tmp_path / "infinite.json"
+    infinite.write_text(text.replace('"count": ', '"count": Infinity, "x": ', 1), encoding="utf-8")
+    payload = json.loads(text)
+    payload["templates"][0]["count"] = float("inf")
+    infinite.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(logfold.SourceError, match="malformed"):
+        logfold.load_analysis(infinite)
+    deep = tmp_path / "deep.json"
+    deep.write_text("[" * 200_000, encoding="utf-8")
+    with pytest.raises(logfold.SourceError, match="cannot read"):
+        logfold.load_analysis(deep)
+    forged = tmp_path / "forged.json"
+    payload = json.loads(text)
+    payload["templates"][0]["id"] = "0" * 16
+    forged.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(logfold.SourceError, match="does not match"):
+        logfold.load_analysis(forged)
+    duplicate = tmp_path / "duplicate.json"
+    payload = json.loads(text)
+    payload["templates"].append(payload["templates"][0])
+    payload["template_count"] += 1
+    duplicate.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(logfold.SourceError, match="duplicate"):
+        logfold.load_analysis(duplicate)
+    cli = runner.invoke(app, ["diff", str(infinite), str(first)])
+    assert cli.exit_code == exit_codes.ERROR
+    assert "Traceback" not in cli.output
+
+
+def test_reports_with_bom_or_utf16_are_recognized(tmp_path: Path) -> None:
+    _before, _after, first, second = saved_pair(tmp_path)
+    text = first.read_text(encoding="utf-8")
+    bom = tmp_path / "bom.json"
+    bom.write_bytes(b"\xef\xbb\xbf" + text.encode("utf-8"))
+    assert logfold.load_analysis(bom).templates == logfold.load_analysis(first).templates
+    cli = runner.invoke(app, ["diff", str(bom), str(second), "--json"])
+    assert cli.exit_code == 0, cli.output
+    utf16 = tmp_path / "utf16.json"
+    utf16.write_text(text, encoding="utf-16")
+    with pytest.raises(logfold.SourceError, match="UTF-16"):
+        logfold.load_analysis(utf16)
+    cli = runner.invoke(app, ["diff", str(utf16), str(second)])
+    assert cli.exit_code == exit_codes.ERROR
+    assert "UTF-16" in cli.output
+
+
+def test_oversized_report_is_refused(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _before, _after, first, _second = saved_pair(tmp_path)
+    monkeypatch.setattr("logfold.api.MAX_REPORT_BYTES", 100)
+    with pytest.raises(logfold.SourceError, match="refused"):
+        logfold.load_analysis(first)
+
+
+def test_missing_input_is_reported_as_missing(tmp_path: Path) -> None:
+    _before, _after, first, _second = saved_pair(tmp_path)
+    result = runner.invoke(app, ["diff", str(first), str(tmp_path / "nope.log")])
+    assert result.exit_code == exit_codes.ERROR
+    assert "not one of" not in result.output
+    assert "nope.log" in result.output

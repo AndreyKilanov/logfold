@@ -90,7 +90,11 @@ logfold diff before.json after.json --matcher token_subset
 
 The two analyses are mined separately and are not re-counted against a shared tree, so use `--matcher token_subset` to
 pair templates that describe one event. The format, mining and execution options and `--no-recount` are an error in this
-mode, and `--examples none` drops the saved examples.
+mode. `--examples none` drops the saved examples and `--examples masked` is an error: the examples stay as they were
+saved, so use `--examples masked` or `none` when analyzing. Write the reports with `--out`: a PowerShell 5 `>`
+redirect saves UTF-16, which is refused. `--min-count` hides rare templates from the tables and text reports, but a
+`.json` file written with `--out` always holds every template; `--json` on stdout follows `--min-count`, so do not use
+it for reports you will compare.
 
 ## `logfold formats`
 

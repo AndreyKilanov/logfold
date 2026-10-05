@@ -6,6 +6,7 @@ engine's plain-data answer into the public result model.
 
 from __future__ import annotations
 
+import codecs
 import dataclasses
 import json
 import logging
@@ -54,6 +55,7 @@ PathLike = str | os.PathLike[str]
 Progress = Callable[[int], None]
 UNPARSED_WARNING_RATIO = 0.10
 ALGO_VERSION = 1
+MAX_REPORT_BYTES = 256 << 20
 
 
 def _paths(value: PathLike | Sequence[PathLike], what: str) -> tuple[str, ...]:
@@ -312,7 +314,8 @@ def load_analysis(path: PathLike) -> AnalysisResult:
     """Load an analysis result saved as a JSON report (``AnalysisResult.to_json()`` or ``--out result.json``).
 
     Args:
-        path: The JSON report. It must hold every template, so it must not have been written with a ``limit``.
+        path: The JSON report (UTF-8, at most 256 MiB). It must hold every template, so it must not have been
+            written with a ``limit``.
 
     Returns:
         The analysis result, ready for :func:`diff`.
@@ -320,13 +323,25 @@ def load_analysis(path: PathLike) -> AnalysisResult:
     Raises:
         SourceError: If the file cannot be read or is not a complete analysis report of a supported version.
     """
+    name = os.fspath(path)
     try:
-        with open(path, encoding="utf-8") as handle:
-            payload = json.load(handle)
-    except (OSError, ValueError) as error:
-        raise SourceError(f"cannot read an analysis report from {os.fspath(path)!r}: {error}") from error
+        size = os.stat(path).st_size
+        if size > MAX_REPORT_BYTES:
+            raise SourceError(f"{name!r} is {size:,} bytes; a report larger than {MAX_REPORT_BYTES:,} bytes is refused")
+        with open(path, "rb") as handle:
+            raw = handle.read()
+    except OSError as error:
+        raise SourceError(f"cannot read an analysis report from {name!r}: {error}") from error
+    if raw.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
+        raise SourceError(
+            f"{name!r} is UTF-16 text (a PowerShell 5 '>' redirect does that); write the report with --out instead"
+        )
+    try:
+        payload = json.loads(raw.decode("utf-8-sig"))
+    except (ValueError, RecursionError) as error:
+        raise SourceError(f"cannot read an analysis report from {name!r}: {error}") from error
     if not isinstance(payload, dict):
-        raise SourceError(f"{os.fspath(path)!r} is not an analysis report")
+        raise SourceError(f"{name!r} is not an analysis report")
     return analysis_from_payload(payload)
 
 
@@ -421,11 +436,17 @@ def _diff_saved(
     before: AnalysisResult, after: AnalysisResult, config: DiffConfig, examples: ExamplesMode
 ) -> DiffResult:
     started = time.perf_counter()
+    if examples == "masked":
+        raise ConfigError(
+            "examples='masked' cannot be applied to saved analysis results (the masking rules are not saved); "
+            "use 'none', or analyze the logs with examples='masked' before saving"
+        )
     if before.meta.algo_version != after.meta.algo_version:
         raise ConfigError(
             f"the results come from different algorithm versions ({before.meta.algo_version} and "
             f"{after.meta.algo_version}) and cannot be compared; analyze both logs again"
         )
+    config = dataclasses.replace(config, recount=False)
     classification = classify(
         _join_saved(before, after), before.run, after.run, config, registry.get_matcher(config.matcher)
     )

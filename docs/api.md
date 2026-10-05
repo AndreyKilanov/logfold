@@ -60,7 +60,10 @@ shared tree, so the same event can show up as both new and disappeared; `matcher
 The result carries a warning about this, and about different `config_hash` or `format` values. Results of different
 `algo_version` raise `ConfigError`. Options that control reading or mining (`format`, `multiline`, `recount`, `depth`,
 `sim_th`, `max_children`, `max_templates`, `masks`, `high_cardinality`, `mining`, `execution`, `engine`, `strategy`,
-`threads`, `chunk_bytes`, `progress`) raise `ConfigError` in this mode; `examples="none"` drops the saved examples.
+`threads`, `chunk_bytes`, `progress`) raise `ConfigError` in this mode. `examples="none"` drops the saved examples;
+`examples="masked"` raises `ConfigError`, because the masking rules are not saved: the examples stay as they were
+written, so analyze with `examples="masked"` or `"none"` before saving if they may contain sensitive values. The
+result reports `config.recount == False`.
 
 ```python
 before = analyze("before.log")
@@ -76,8 +79,9 @@ load_analysis(path) -> AnalysisResult
 ```
 
 Loads a JSON report written by `AnalysisResult.to_json()` or `logfold analyze --out result.json`. The report must hold
-every template (not be written with `limit`); otherwise, or when the file is not an analysis report of schema version 1,
-`SourceError` is raised.
+every template (not be written with `limit`). The file must be UTF-8 (a BOM is accepted) and at most 256 MiB, every
+template id must equal `sha256(text)[:16]` and be unique; otherwise, or when the file is not an analysis report of
+schema version 1, `SourceError` is raised.
 
 ## Results
 

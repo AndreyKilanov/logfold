@@ -77,7 +77,8 @@ logfold diff before.json after.json --matcher token_subset
 
 The reports were mined separately, with no shared tree and no `recount` pass, so the same event can appear as new in
 one and disappeared in the other; a matcher pairs such templates, and a warning says so. Analyze both logs with the same
-masks and parameters (the `config_hash` of the reports must match, or a warning is added).
+masks and parameters (the `config_hash` of the reports must match, or a warning is added). Examples are kept as saved:
+choose `examples="masked"` or `"none"` when analyzing if they may hold sensitive values.
 
 ## Formats
 

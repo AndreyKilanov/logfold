@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import codecs
 import dataclasses
 import errno
 import os
@@ -84,7 +85,9 @@ def _is_saved_result(path: Path) -> bool:
             head = handle.read(_SAVED_RESULT_SNIFF_BYTES)
     except OSError:
         return False
-    return _SAVED_RESULT_MARKER.match(head.lstrip()) is not None
+    if head.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
+        return True
+    return _SAVED_RESULT_MARKER.match(head.removeprefix(codecs.BOM_UTF8).lstrip()) is not None
 
 
 def _reject_mining_flags(flags: dict[str, bool]) -> None:
@@ -206,7 +209,14 @@ def analyze(
     format: Format = "auto",
     multiline: Multiline = None,
     top: Top = 20,
-    min_count: Annotated[int, typer.Option("--min-count", min=1, help="Hide templates with fewer records.")] = 1,
+    min_count: Annotated[
+        int,
+        typer.Option(
+            "--min-count",
+            min=1,
+            help="Hide templates with fewer records; a .json file from --out stays complete.",
+        ),
+    ] = 1,
     out: Out = None,
     sim_th: SimTh = None,
     depth: Depth = None,
@@ -245,11 +255,12 @@ def analyze(
                     high_cardinality,
                 ),
             )
+        shown = result
         if min_count > 1:
-            result = dataclasses.replace(result, templates=tuple(t for t in result.templates if t.count >= min_count))
-        _emit(result, top, as_json)
+            shown = dataclasses.replace(result, templates=tuple(t for t in result.templates if t.count >= min_count))
+        _emit(shown, top, as_json)
         if out is not None:
-            _write_report(result, out, quiet)
+            _write_report(result if out.suffix.lower() == ".json" else shown, out, quiet)
     except LogfoldError as error:
         raise _fail(error, debug) from None
 
@@ -301,6 +312,9 @@ def diff(
     Each argument is a log file or a saved report of 'logfold analyze --out result.json'; both must be of one kind.
     """
     try:
+        for path in (before, after):
+            if not path.is_file():
+                raise logfold.SourceError(f"cannot read {str(path)!r}: no such file")
         saved = (_is_saved_result(before), _is_saved_result(after))
         if saved[0] != saved[1]:
             raise logfold.ConfigError("diff compares two log files or two saved analysis reports, not one of each")

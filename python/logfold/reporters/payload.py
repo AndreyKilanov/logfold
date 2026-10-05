@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import asdict
 from datetime import datetime
 from typing import Any
@@ -150,9 +151,13 @@ def _moment(value: object) -> datetime | None:
 
 
 def _template(data: dict[str, Any]) -> Template:
+    text = str(data["text"])
+    template_id = str(data["id"])
+    if template_id != hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]:
+        raise ValueError(f"template id {template_id!r} does not match its text")
     return Template(
-        id=str(data["id"]),
-        text=str(data["text"]),
+        id=template_id,
+        text=text,
         count=int(data["count"]),
         first_seen=_moment(data["first_seen"]),
         last_seen=_moment(data["last_seen"]),
@@ -189,8 +194,10 @@ def analysis_from_payload(payload: dict[str, Any]) -> AnalysisResult:
             warnings=tuple(str(item) for item in payload["warnings"]),
         )
         expected = int(payload["template_count"])
-    except (KeyError, TypeError, ValueError, AttributeError) as error:
+    except (KeyError, TypeError, ValueError, AttributeError, OverflowError, RecursionError) as error:
         raise SourceError(f"malformed analysis report: {error!r}") from error
+    if len({template.id for template in templates}) != len(templates):
+        raise SourceError("malformed analysis report: duplicate template ids")
     if expected != len(templates):
         raise SourceError(
             f"the report holds {len(templates)} of {expected} templates (it was written with a limit); "
