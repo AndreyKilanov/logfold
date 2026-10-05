@@ -61,6 +61,9 @@ sits above every real log (at most 0.03) and below the break-even, so the chunke
 
 ## Limits
 
-- The decision is taken from the first chunk. A log that is repetitive at the start and unique later stays chunked.
+- The decision is taken from the first chunk, in both directions. A log that is repetitive at the start and unique later stays
+  chunked (slower and larger, as before). A log that starts with more than 10,000 records of unique messages (a long dump at
+  the start) and is repetitive afterwards is mined sequentially, which takes 4-8 times longer than the chunked run would
+  (HDFS: 7.1 s against 1.3 s); pass `--strategy chunked` for such logs.
 - The merged chunk trees still hold more templates than the sequential tree on logs without masks (HDFS without masks: 341
   against 43); that is the over-splitting of the merge and is not changed here.
