@@ -1,4 +1,4 @@
-<p align="center"><a href="https://github.com/AndreyKilanov/logfold/blob/main/README.md">English</a> · <b>Русский</b></p>
+<p align="center"><a href="README.md">English</a> · <b>Русский</b></p>
 
 <p align="center">
   <img src="docs/assets/logo.png" alt="logfold" width="240">
