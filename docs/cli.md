@@ -74,7 +74,7 @@ see below), plus:
 | `--threshold-ratio` | 2.0 | factor by which a template's share must change to be reported as `changed` (at least 1) |
 | `--min-count` | 10 | records, in either run, needed to report `changed` |
 | `--min-new-count` | 1 | records needed to report a template as new or disappeared |
-| `--matcher` | `exact` | `exact` or `token_subset`; plugins add more |
+| `--matcher` | `jaccard` | `jaccard`, `token_subset` or `exact`; plugins add more ([how to choose](guide.md#choosing-a-matcher)) |
 | `--recount` / `--no-recount` | on | assign every record to the finished template tree; `--no-recount` is faster but can show spurious differences |
 | `--fail-on-new` | off | exit with code 2 when new templates are found |
 | `--fail-on-new-alerts` | off | exit with code 2 when new templates with level WARN, ERROR or FATAL are found |
@@ -83,16 +83,20 @@ see below), plus:
 logfold diff before.log after.log --out diff.html --fail-on-new-alerts
 ```
 
+The gates count *new* templates only. A template that the matcher pairs with an older one (a reworded message) is reported as
+`changed`, not as new, so it does not trip a gate. Use `--matcher exact` when the gate must fail on every text that did not
+exist before.
+
 With saved reports the logs are not read again, so `diff` is instant and the logs may be gone:
 
 ```
 logfold analyze before.log --out before.json
 logfold analyze after.log --out after.json
-logfold diff before.json after.json --matcher token_subset
+logfold diff before.json after.json
 ```
 
-The two analyses are mined separately and are not re-counted against a shared tree, so use `--matcher token_subset` to
-pair templates that describe one event. The format, mining and execution options and `--no-recount` are an error in this
+The two analyses are mined separately and are not re-counted against a shared tree, so the matcher (`jaccard` by
+default) pairs templates that describe one event. The format, mining and execution options and `--no-recount` are an error in this
 mode. `--examples none` drops the saved examples and `--examples masked` is an error: the examples stay as they were
 saved, so use `--examples masked` or `none` when analyzing. Write the reports with `--out`: a PowerShell 5 `>`
 redirect saves UTF-16, which is refused. `--min-count` hides rare templates from the tables and text reports, but a

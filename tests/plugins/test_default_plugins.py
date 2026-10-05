@@ -123,7 +123,8 @@ def test_jaccard_matcher_pairs_the_closest_templates() -> None:
 def test_jaccard_matcher_makes_a_reworded_message_one_template(tmp_path: Path) -> None:
     before = write(tmp_path, "b.log", 'ts=2026-10-04T10:00:01Z level=error msg="retry failed after 3 attempts" id=7\n')
     after = write(tmp_path, "a.log", 'ts=2026-10-04T10:00:01Z level=error msg="retry gave up after 3 attempts" id=7\n')
-    exact = logfold.diff(before, after, format="logfmt", engine="python", min_count=1)
+    exact = logfold.diff(before, after, format="logfmt", engine="python", min_count=1, matcher="exact")
     assert (len(exact.new_templates), len(exact.disappeared)) == (1, 1)
-    paired = logfold.diff(before, after, format="logfmt", engine="python", min_count=1, matcher="jaccard")
+    paired = logfold.diff(before, after, format="logfmt", engine="python", min_count=1)
+    assert paired.config.matcher == "jaccard"
     assert (len(paired.new_templates), len(paired.disappeared)) == (0, 0)

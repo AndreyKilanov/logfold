@@ -43,7 +43,8 @@ New templates (2)
   sizes do not matter. A template counts as changed when its share grew or fell by at least a factor of 2 and it has at
   least 10 records in either run (both thresholds are configurable). Identical inputs give an empty result.
 - **Exit code for CI.** `--fail-on-new` exits with code 2 when there are new templates, `--fail-on-new-alerts` when any
-  of them is WARN, ERROR or FATAL.
+  of them is WARN, ERROR or FATAL. A reworded message that the default matcher pairs with an old one counts as changed,
+  not new; `--matcher exact` makes the gate strict.
 - **Memory.** The file is read as a stream, and memory use does not depend on its size. Inputs: files, gzip, standard
   input, several files as one run.
 - **Parallelism.** A large file is cut into chunks (64 MiB by default) and the chunk trees are merged in order. For a
@@ -90,7 +91,7 @@ Compare saved results without reading the logs again:
 ```
 logfold analyze before.log --out before.json
 logfold analyze after.log  --out after.json
-logfold diff before.json after.json --matcher token_subset
+logfold diff before.json after.json
 ```
 
 A JSON file written with `--out` holds every template, so it is suitable for this kind of comparison.
@@ -125,7 +126,7 @@ diff(load_analysis("before.json"), load_analysis("after.json"))
 | Folding | `--depth` (4), `--sim-th` (0.4), `--max-children` (100), `--max-templates` (100000). The defaults are the same as in Drain3. |
 | Logs with almost unique lines | `--high-cardinality`: at most 5000 templates, the rest go into catch-all templates, runs sequentially. On a 10 MB file with 84 thousand distinct lines 2.0 s becomes 0.14 s. |
 | Reports | HTML, JSON, text, Markdown, CSV; the `--out` suffix picks the format, `--report NAME` picks the report explicitly, including one from a plugin. |
-| Matchers for `diff` | `exact`, `token_subset`, `jaccard`: they link a reworded message to its earlier version so it is not counted as both new and gone. |
+| Matchers for `diff` | `jaccard` (default), `token_subset`, `exact`: they link a reworded message to its earlier version so it is not counted as both new and gone. |
 | Plugins | `logfold plugins list`, `check`, `install`, `new`. |
 | Scripting | `--json` prints JSON to stdout, exit codes are stable, the JSON format is described by a schema in `docs/schema`. |
 
@@ -153,7 +154,7 @@ On the real logs of 0.7 to 1.6 GB peak memory is 42 to 51 MB with one thread and
 >   than the sequential mode (HDFS without masks: 341 against 43). On logs with a very large number of distinct
 >   messages it can be slower than the sequential mode; `--high-cardinality` helps then.
 > - Saved results are compared without a recount against a shared template tree, so the same event can end up both in
->   new and in gone; the `token_subset` and `jaccard` matchers exist for this.
+>   new and in gone; the matcher (`jaccard` by default) exists for this.
 
 ## Measurements and bug reports
 

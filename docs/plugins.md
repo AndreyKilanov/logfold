@@ -41,7 +41,7 @@ result kind the reporter does not support, and from the command line with `--rep
 with `--out` the named reporter writes the file, without it its text is printed instead of the tables. `--out` alone
 chooses by file suffix (`.html`, `.json`, `.txt`, `.md`, `.csv`). A typo in the name fails before any log is read.
 
-With the built-in `exact` matcher a reworded message (`retry failed after 3 attempts` -> `retry gave up after 3
+With the `exact` matcher (`--matcher exact`) a reworded message (`retry failed after 3 attempts` -> `retry gave up after 3
 attempts`) is one *new* and one *disappeared* template. A matcher pairs them, and `diff` compares the pair as one
 template. The reporters neutralize log content for their target: CSV cells that a spreadsheet would read as a formula
 (`=`, `+`, `-`, `@`) get a leading apostrophe, and Markdown table cells cannot be broken by `|` or backticks.

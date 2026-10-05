@@ -68,17 +68,36 @@ from logfold import analyze, diff, load_analysis
 
 analyze("before.log").to_json("before.json")
 analyze("after.log").to_json("after.json")
-d = diff(load_analysis("before.json"), load_analysis("after.json"), matcher="token_subset")
+d = diff(load_analysis("before.json"), load_analysis("after.json"))
 ```
 
 ```
-logfold diff before.json after.json --matcher token_subset
+logfold diff before.json after.json
 ```
 
 The reports were mined separately, with no shared tree and no `recount` pass, so the same event can appear as new in
 one and disappeared in the other; a matcher pairs such templates, and a warning says so. Analyze both logs with the same
 masks and parameters (the `config_hash` of the reports must match, or a warning is added). Examples are kept as saved:
 choose `examples="masked"` or `"none"` when analyzing if they may hold sensitive values.
+
+### Choosing a matcher
+
+A template that exists in one run only can be paired with its closest counterpart, so a reworded message, or one that differs in
+a host name, is compared as one template instead of being reported as one new and one disappeared template. The matcher decides
+what counts as the same template: `--matcher NAME` on the command line, `matcher="NAME"` in Python.
+
+| | `jaccard` (default) | `token_subset` | `exact` |
+|---|---|---|---|
+| what it pairs | templates that share enough words (Jaccard similarity of the word sets, at least 0.6) | templates of equal length where one generalizes the other (`<*>` against a word) | nothing: a template is the same only if its text is the same |
+| speed | the same as the others on real logs; +0.07 s on a worst-case `diff` of 18 thousand one-sided templates | +0.03 s on the same | the fastest, by those fractions of a second |
+| accuracy | the best: 16-71 percent fewer false alarms on saved results; finds 89 percent of the reworded messages in the tests | 2-62 percent fewer false alarms on saved results; finds no reworded message | no pairing, every reword is a new and a disappeared template |
+| risk | may join two similar templates that are different messages (1 pair of 206 in the tests) | only safe merges (one template generalizes the other) | none |
+
+In a `diff` of two logs (the shared tree and the recount) `token_subset` and `exact` give the same result, because the recount
+already merges generalizations; `jaccard` differs only where templates keep host names or other literals. For saved results the
+three differ most. The exit-code gates (`--fail-on-new`, `--fail-on-new-alerts`) count new templates only, and a paired template is
+`changed`, so use `--matcher exact` for a gate that must fail on every new text. Measurements on four large real logs, and how they were made, are in
+[`bench/docs/DIFF_MATCHERS.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/docs/DIFF_MATCHERS.md).
 
 ## Formats
 

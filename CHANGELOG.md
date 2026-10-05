@@ -27,6 +27,17 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Changed
 
+- **The default diff matcher is now `jaccard` instead of `exact`** (`DiffConfig.matcher`, `diff(matcher=...)`,
+  `logfold diff --matcher`). It pairs a template that exists in one run only with its closest counterpart (a reworded
+  message, or one that differs in a host name), so `diff` reports fewer false new/disappeared templates: on 2-3 million
+  line windows of four Loghub-2.0 logs it cut the reported templates by 16-71 percent when comparing saved results and
+  by 45 percent on Thunderbird in a live `diff` (on HDFS and Spark a live `diff` is unchanged). It found 184 of 206
+  reworded templates in the test and joined none of 130 rewritten (different) messages with their originals. The
+  time is the same on real logs (6.9-11.3 s per `diff` of 4.6-6 million lines on one thread for all three matchers) and
+  +0.07 s on a worst-case `diff` of 18 thousand one-sided templates. `--matcher exact` restores the old output. A paired
+  template is reported as `changed`, not as new, so `--fail-on-new` and `--fail-on-new-alerts` no longer fail on a
+  reworded message; use `--matcher exact` for a gate that must fail on every new text. The evaluation and the script are
+  in `bench/docs/DIFF_MATCHERS.md`; the guide has a section on choosing a matcher.
 - The `token_subset` and `jaccard` diff matchers no longer compare every pair of templates: 18 thousand templates per run
   take 0.74 s and 2.2 s instead of 81 s and about 5 minutes (extrapolated); the growth exponent is 1.2 and 1.6 instead
   of 2.0, which makes `diff` of large results usable. They return exactly the pairs they returned before. Measurements

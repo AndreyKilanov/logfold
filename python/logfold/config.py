@@ -126,14 +126,14 @@ class DiffConfig:
         min_new_count: Minimum record count for a template to be reported as new or disappeared.
         recount: Assign every record of both runs to the finished template tree (consistent, needs a second
             pass over the inputs). Disable only to trade accuracy for speed.
-        matcher: Name of the registered diff matcher.
+        matcher: Name of the registered diff matcher (``jaccard``, ``token_subset`` or ``exact``).
     """
 
     threshold_ratio: float = 2.0
     min_count: int = 10
     min_new_count: int = 1
     recount: bool = True
-    matcher: str = "exact"
+    matcher: str = "jaccard"
 
     def __post_init__(self) -> None:
         """Validate values.

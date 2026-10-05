@@ -116,6 +116,14 @@ def test_diff_thresholds_can_hide_new(tmp_path: Path) -> None:
     assert json.loads(result.stdout)["summary"]["new"] == 0
 
 
+def test_diff_matcher_defaults_to_jaccard_and_can_be_changed(tmp_path: Path) -> None:
+    before, after, _truth = synthetic_pair(tmp_path, 8)
+    default = runner.invoke(app, ["diff", str(before), str(after), "-f", "app", "--json"])
+    assert json.loads(default.stdout)["config"]["matcher"] == "jaccard"
+    exact = runner.invoke(app, ["diff", str(before), str(after), "-f", "app", "--json", "--matcher", "exact"])
+    assert json.loads(exact.stdout)["config"]["matcher"] == "exact"
+
+
 def test_diff_writes_html(tmp_path: Path) -> None:
     before, after, _truth = synthetic_pair(tmp_path, 10)
     out = tmp_path / "diff.html"

@@ -110,7 +110,7 @@ def diff(
         min_new_count: Minimum records for a template to be reported as new or disappeared (default 1).
         recount: Assign records to the finished template tree for consistent counts (default True; costs a second
             pass over the inputs).
-        matcher: Name of the diff matcher (default ``exact``).
+        matcher: Name of the diff matcher (default ``jaccard``).
         diff_config: Full comparison configuration; the keyword arguments above override its fields.
         depth: Tree depth.
         sim_th: Similarity threshold.

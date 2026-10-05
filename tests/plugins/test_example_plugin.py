@@ -102,6 +102,7 @@ def test_reporters_render_analysis_and_diff(plugin: ModuleType) -> None:
         format=plugin.LOGFMT,
         engine="python",
         min_count=1,
+        matcher="exact",
     )
     assert "## New templates" in plugin.MarkdownReporter().render(comparison)
     kinds = [row[0] for row in csv.reader(io.StringIO(plugin.CsvReporter().render(comparison)))][1:]
@@ -131,7 +132,7 @@ def test_matcher_changes_the_diff_result(plugin: ModuleType, monkeypatch: pytest
     registry.register_matcher(plugin.JaccardMatcher())
     arguments = (str(SAMPLES / "before.logfmt"), str(SAMPLES / "after.logfmt"))
     options = {"format": plugin.LOGFMT, "engine": "python", "min_count": 1}
-    exact = logfold.diff(*arguments, **options)
+    exact = logfold.diff(*arguments, matcher="exact", **options)
     assert (len(exact.new_templates), len(exact.disappeared)) == (1, 1)
     paired = logfold.diff(*arguments, matcher=matcher, **options)
     assert (len(paired.new_templates), len(paired.disappeared)) == (0, 0)
