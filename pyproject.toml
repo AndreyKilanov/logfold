@@ -107,6 +107,7 @@ ignore_imports = ["logfold.engines.native -> logfold"]
 layers = [
   "logfold.cli",
   "logfold.api",
+  "logfold.saved",
   "logfold.engines | logfold.formats | logfold.reporters | logfold.comparison | logfold.plugins",
   "logfold.model",
   "logfold.ext",
@@ -120,6 +121,7 @@ type = "forbidden"
 source_modules = [
   "logfold.cli",
   "logfold.api",
+  "logfold.saved",
   "logfold.formats",
   "logfold.reporters",
   "logfold.comparison",
