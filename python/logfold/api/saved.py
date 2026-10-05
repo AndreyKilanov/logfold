@@ -117,7 +117,7 @@ def _join_saved(before: AnalysisResult, after: AnalysisResult) -> list[TemplateS
 def _saved_warnings(before: AnalysisResult, after: AnalysisResult) -> list[str]:
     warnings = [
         "saved results were mined separately and are not re-counted against a shared template tree; the same "
-        "event may be reported as new and disappeared (try matcher='token_subset')"
+        "event may be reported as new and disappeared unless the matcher pairs it"
     ]
     if before.meta.config_hash != after.meta.config_hash:
         warnings.append(
