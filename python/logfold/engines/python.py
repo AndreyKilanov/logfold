@@ -17,7 +17,7 @@ from typing import IO, Any, cast
 
 from logfold.engines import _timeparse as tp
 from logfold.engines._reference_tree import Miner, Recount
-from logfold.engines.base import MineRequest, MiningResult, ProgressCallback, RunInfo
+from logfold.engines.base import MineRequest, MiningResult, ProgressCallback, RunInfo, TemplateTable
 from logfold.errors import FormatError, SourceError
 from logfold.ext.formats import FormatSpec, JsonFormat, PlainFormat, RegexFormat
 from logfold.ext.masks import Masker
@@ -302,4 +302,6 @@ class PythonEngine:
             wall_recount_s=recounted - mined,
             wall_freeze_s=done - recounted,
         )
-        return MiningResult(runs=tuple(infos), templates=tuple(templates), metrics=metrics)
+        return MiningResult(
+            runs=tuple(infos), templates=TemplateTable.from_stats(templates, len(request.runs)), metrics=metrics
+        )

@@ -13,9 +13,11 @@ import os
 import time
 from typing import Any
 
-from logfold.api.matching import accelerated
+from logfold.api.comparing import classify_native, result_side
+from logfold.api.matching import accelerated, native_spec
 from logfold.comparison import classify
 from logfold.config import DiffConfig, ExamplesMode
+from logfold.engines import native
 from logfold.engines.base import RunStatsData, TemplateStats
 from logfold.errors import ConfigError, SourceError
 from logfold.ext import registry
@@ -160,14 +162,26 @@ def diff_saved(before: AnalysisResult, after: AnalysisResult, config: DiffConfig
             f"{after.meta.algo_version}) and cannot be compared; analyze both logs again"
         )
     config = dataclasses.replace(config, recount=False)
-    classification = classify(
-        _join_saved(before, after), before.run, after.run, config, accelerated(registry.get_matcher(config.matcher))
-    )
-    new, gone, moved = classification.new, classification.disappeared, classification.changed
-    if examples == "none":
-        new = tuple(dataclasses.replace(e, example=None) for e in new)
-        gone = tuple(dataclasses.replace(e, example=None) for e in gone)
-        moved = tuple(dataclasses.replace(e, example=None) for e in moved)
+    matcher = registry.get_matcher(config.matcher)
+    spec = native_spec(matcher) if native.supports_comparison() else None
+    classification = None
+    if spec is not None:
+        classification = classify_native(
+            result_side(before),
+            result_side(after),
+            config,
+            spec,
+            (lambda text: None) if examples == "none" else (lambda text: text),
+        )
+    if classification is not None:
+        new, gone, moved = classification.new, classification.disappeared, classification.changed
+    else:
+        classification = classify(_join_saved(before, after), before.run, after.run, config, accelerated(matcher))
+        new, gone, moved = classification.new, classification.disappeared, classification.changed
+        if examples == "none":
+            new = tuple(dataclasses.replace(e, example=None) for e in new)
+            gone = tuple(dataclasses.replace(e, example=None) for e in gone)
+            moved = tuple(dataclasses.replace(e, example=None) for e in moved)
     metrics = RunMetrics(
         engine=after.metrics.engine,
         strategy="sequential",

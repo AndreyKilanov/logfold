@@ -16,7 +16,7 @@ mod miner;
 mod stats;
 mod tokenizer;
 
-pub use compare::{jaccard_pairs, token_subset_pairs};
+pub use compare::{compare_runs, jaccard_pairs, token_subset_pairs, Changed, Comparison, Matcher, Side, Thresholds};
 pub use error::CoreError;
 pub use freeze::FrozenTemplate;
 pub use level::{Level, LEVEL_COUNT};

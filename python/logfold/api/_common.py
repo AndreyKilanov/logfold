@@ -18,7 +18,7 @@ from logfold.config import (
     config_fingerprint,
 )
 from logfold.engines import native
-from logfold.engines.base import Engine, MineRequest, MiningResult, RunInfo, TemplateStats
+from logfold.engines.base import Engine, MineRequest, MiningResult, RunInfo, TemplateTable
 from logfold.engines.select import select_engine
 from logfold.errors import ConfigError, SourceError
 from logfold.ext.formats import FormatSpec
@@ -29,8 +29,7 @@ from logfold.model import (
     ResultMeta,
     RunSummary,
     Template,
-    micros_to_datetime,
-    summarize_levels,
+    micros_to_datetimes,
 )
 
 logger = logging.getLogger("logfold")
@@ -156,18 +155,23 @@ def _example(text: str | None, mode: ExamplesMode, masker: Masker) -> str | None
     return masker.mask(text) if mode == "masked" else text
 
 
-def _template(stats: TemplateStats, run: int, tz_aware: bool, mode: ExamplesMode, masker: Masker) -> Template:
-    data = stats.runs[run]
-    level, levels = summarize_levels(data.levels)
-    return Template(
-        id=stats.id,
-        text=stats.text,
-        count=data.count,
-        first_seen=micros_to_datetime(data.first, tz_aware),
-        last_seen=micros_to_datetime(data.last, tz_aware),
-        example=_example(data.example, mode, masker),
-        level=level,
-        levels=levels,
+def _templates(
+    table: TemplateTable, run: int, tz_aware: bool, mode: ExamplesMode, masker: Masker
+) -> tuple[Template, ...]:
+    columns = table.runs[run]
+    first = micros_to_datetimes(columns.first, tz_aware)
+    last = micros_to_datetimes(columns.last, tz_aware)
+    examples: Sequence[str | None] = columns.examples
+    if mode == "none":
+        examples = [None] * len(table)
+    elif mode == "masked":
+        examples = [None if text is None else masker.mask(text) for text in examples]
+    return tuple(
+        Template(identifier, text, count, started, ended, sample, level, levels)
+        for identifier, text, count, started, ended, sample, level, levels in zip(
+            table.ids, table.texts, columns.counts, first, last, examples, columns.level, columns.levels, strict=True
+        )
+        if count > 0
     )
 
 

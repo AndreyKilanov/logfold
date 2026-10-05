@@ -14,7 +14,7 @@ use logfold_engine::{EngineError, MineRequest};
 use observer::PyObserver;
 
 /// Version of the Python <-> Rust data contract; bump on any incompatible change of the request or result layout.
-const CORE_API_VERSION: u32 = 1;
+const CORE_API_VERSION: u32 = 2;
 
 pyo3::create_exception!(_core, CoreConfigError, pyo3::exceptions::PyException, "Invalid configuration.");
 pyo3::create_exception!(_core, CoreFormatError, pyo3::exceptions::PyException, "Invalid or unusable log format.");
@@ -73,6 +73,56 @@ fn match_templates(
     }
 }
 
+/// Splits the templates of two runs into new, disappeared, changed and unchanged (`docs/ALGORITHM.md` §11).
+///
+/// `matcher` is `exact`, `token_subset` or `jaccard` (which needs `threshold`). Returns `(new, disappeared, changed,
+/// unchanged)`: indices into the passed columns, and for every changed template `(before index, after index, before
+/// share, after share, ratio or None)`, each list sorted most significant first.
+#[pyfunction]
+#[pyo3(signature = (before_texts, before_counts, before_total, after_texts, after_counts, after_total, ratio,
+                    min_count, min_new_count, matcher, threshold=None))]
+#[allow(clippy::too_many_arguments, clippy::type_complexity)]
+fn compare_runs(
+    py: Python<'_>,
+    before_texts: Vec<String>,
+    before_counts: Vec<u64>,
+    before_total: u64,
+    after_texts: Vec<String>,
+    after_counts: Vec<u64>,
+    after_total: u64,
+    ratio: f64,
+    min_count: u64,
+    min_new_count: u64,
+    matcher: &str,
+    threshold: Option<f64>,
+) -> PyResult<(Vec<usize>, Vec<usize>, Vec<(usize, usize, f64, f64, Option<f64>)>, usize)> {
+    if before_texts.len() != before_counts.len() || after_texts.len() != after_counts.len() {
+        return Err(CoreConfigError::new_err("every template needs a text and a count"));
+    }
+    let matcher = match matcher {
+        "exact" => logfold_core::Matcher::Exact,
+        "token_subset" => logfold_core::Matcher::TokenSubset,
+        "jaccard" => logfold_core::Matcher::Jaccard(
+            threshold.ok_or_else(|| CoreConfigError::new_err("the jaccard matcher needs a threshold"))?,
+        ),
+        other => return Err(CoreConfigError::new_err(format!("unknown matcher {other:?}"))),
+    };
+    let before_refs: Vec<&str> = before_texts.iter().map(String::as_str).collect();
+    let after_refs: Vec<&str> = after_texts.iter().map(String::as_str).collect();
+    let thresholds = logfold_core::Thresholds { ratio, min_count, min_new_count };
+    let comparison = py.detach(|| {
+        let before = logfold_core::Side { texts: &before_refs, counts: &before_counts, total: before_total };
+        let after = logfold_core::Side { texts: &after_refs, counts: &after_counts, total: after_total };
+        logfold_core::compare_runs(&before, &after, &thresholds, matcher)
+    });
+    let changed = comparison
+        .changed
+        .into_iter()
+        .map(|entry| (entry.before, entry.after, entry.before_share, entry.after_share, entry.ratio))
+        .collect();
+    Ok((comparison.new, comparison.disappeared, changed, comparison.unchanged))
+}
+
 /// Returns the version of the Python <-> Rust data contract.
 #[pyfunction]
 fn api_version() -> u32 {
@@ -105,6 +155,7 @@ fn default_masks(py: Python<'_>) -> PyResult<Bound<'_, PyList>> {
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(mine, m)?)?;
     m.add_function(wrap_pyfunction!(match_templates, m)?)?;
+    m.add_function(wrap_pyfunction!(compare_runs, m)?)?;
     m.add_function(wrap_pyfunction!(api_version, m)?)?;
     m.add_function(wrap_pyfunction!(algo_version, m)?)?;
     m.add_function(wrap_pyfunction!(default_masks, m)?)?;

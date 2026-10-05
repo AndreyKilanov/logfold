@@ -64,7 +64,7 @@ Measured by `tools/diff_scale.py`: three to five small sizes (4.6 to 73 thousand
 | | projected at 54,000 templates | 1.01 | 0.43 | 1.86 | 2.62 | 12.09 |
 | | projected at 100,000 templates | 1.92 | 0.83 | 3.65 | 5.35 | 31.75 |
 
-### The matchers in Rust (current)
+### The matchers in Rust
 
 | lines | templates | analyze | engine part | diff exact | diff token_subset | diff jaccard |
 |---:|---:|---:|---:|---:|---:|---:|
@@ -77,7 +77,20 @@ Measured by `tools/diff_scale.py`: three to five small sizes (4.6 to 73 thousand
 | | projected at 54,000 templates | 1.18 | 0.51 | 1.83 | 2.08 | 2.37 |
 | | projected at 100,000 templates | 2.32 | 1.00 | 3.59 | 4.13 | 4.83 |
 
-Linear but slow per template and now the bulk of a `diff`: the join and the entries of the comparison (about 30 microseconds per template) and the conversion of the engine result in `analyze` (about 17).
+### Columnar result and the comparison in Rust (current)
+
+| lines | templates | analyze | engine part | diff exact | diff token_subset | diff jaccard |
+|---:|---:|---:|---:|---:|---:|---:|
+| 5,000 | 4,571 | 0.05 | 0.04 | 0.05 | 0.05 | 0.06 |
+| 10,000 | 9,122 | 0.11 | 0.07 | 0.10 | 0.11 | 0.12 |
+| 20,000 | 18,209 | 0.22 | 0.16 | 0.19 | 0.23 | 0.27 |
+| 40,000 | 36,320 | 0.47 | 0.31 | 0.38 | 0.46 | 0.61 |
+| 80,000 | 72,615 | 1.05 | 0.73 | 0.81 | 1.01 | 1.63 |
+|  | growth exponent | 1.08 | 1.10 | 1.03 | 1.06 | 1.21 |
+| | projected at 54,000 templates | 0.76 | 0.53 | 0.60 | 0.74 | 1.14 |
+| | projected at 100,000 templates | 1.48 | 1.03 | 1.13 | 1.41 | 2.40 |
+
+What is left is Python object construction: a `DiffEntry` costs about 5 microseconds (these logs share few templates, so almost every template is reported) and a `Template` in `analyze` about 4.
 
 
 ## Reading the numbers
