@@ -94,12 +94,16 @@ class ExecutionConfig:
             sequential when the first chunk shows that almost every record opens a new template).
         threads: Worker threads for the chunked strategy; ``None`` means all cores.
         chunk_bytes: Chunk size of the chunked strategy.
+        warm_start: Chunked strategy only: train the first chunk alone and start every other chunk from a copy of
+            its tree. Gives fewer stray templates (closer to the sequential result) at the price of a serial prefix
+            of one chunk; the default is off.
     """
 
     engine: EngineName = "auto"
     strategy: StrategyName = "auto"
     threads: int | None = None
     chunk_bytes: int = DEFAULT_CHUNK_BYTES
+    warm_start: bool = False
 
     def __post_init__(self) -> None:
         """Validate values.

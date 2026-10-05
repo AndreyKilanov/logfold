@@ -138,6 +138,13 @@ a fixed chunk size the result does not depend on the number of threads. With `au
 after its first 10 000 records it holds more than 0.3 templates per record (logs of unique messages), merging the chunk trees
 would cost more than it saves, and the whole input is mined with one tree instead. `metrics.strategy` shows what was used.
 
+A chunk tree begins empty, so the first records of every chunk are generalized before the common templates exist, and the stray
+templates that result cannot be merged back: the parallel result holds more rare templates than the sequential one (HDFS without
+masks: 341 against 43; the large templates are the same). `--warm-start` (`warm_start=True`) trains the first chunk alone and
+starts every other chunk from a copy of its tree, which removes most of the strays. The price is a serial prefix of one chunk (a
+smaller `--chunk-mb` makes it cheaper) and a copy of the tree per chunk; it does not apply to the sequential strategy, and
+it is off by default. Numbers: [`bench/docs/WARM_START.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/docs/WARM_START.md).
+
 ### High-cardinality data
 
 Free-form text, random ids or hashes in every line can produce one template per line. Mining that is slow and

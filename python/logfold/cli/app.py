@@ -71,6 +71,12 @@ Threads = Annotated[int | None, typer.Option("--threads", min=1, help="Worker th
 Engine = Annotated[str | None, typer.Option("--engine", help="auto, native or python (slow reference engine).")]
 ChunkMb = Annotated[int | None, typer.Option("--chunk-mb", min=1, help="Chunk size in MiB for parallel runs.")]
 Strategy = Annotated[str | None, typer.Option("--strategy", help="auto, sequential (one tree) or chunked (parallel).")]
+WarmStart = Annotated[
+    bool,
+    typer.Option(
+        "--warm-start", help="Chunked: start chunks from the tree of the first one (fewer stray templates, slower)."
+    ),
+]
 NoMasks = Annotated[bool, typer.Option("--no-masks", help="Do not mask numbers, IPs, UUIDs and other values.")]
 HighCardinality = Annotated[
     bool,
@@ -196,6 +202,7 @@ def _options(
     strategy: str | None,
     no_masks: bool,
     high_cardinality: bool,
+    warm_start: bool,
 ) -> dict[str, Any]:
     return {
         "sim_th": sim_th,
@@ -208,6 +215,7 @@ def _options(
         "strategy": strategy,
         "masks": [] if no_masks else None,
         "high_cardinality": high_cardinality,
+        "warm_start": True if warm_start else None,
     }
 
 
@@ -237,6 +245,7 @@ def analyze(
     strategy: Strategy = None,
     no_masks: NoMasks = False,
     high_cardinality: HighCardinality = False,
+    warm_start: WarmStart = False,
     examples: Examples = "raw",
     as_json: AsJson = False,
     quiet: Quiet = False,
@@ -263,6 +272,7 @@ def analyze(
                     strategy,
                     no_masks,
                     high_cardinality,
+                    warm_start,
                 ),
             )
         shown = result
@@ -315,6 +325,7 @@ def diff(
     strategy: Strategy = None,
     no_masks: NoMasks = False,
     high_cardinality: HighCardinality = False,
+    warm_start: WarmStart = False,
     examples: Examples = "raw",
     as_json: AsJson = False,
     quiet: Quiet = False,
@@ -348,6 +359,7 @@ def diff(
                     "--strategy": strategy is not None,
                     "--no-masks": no_masks,
                     "--high-cardinality": high_cardinality,
+                    "--warm-start": warm_start,
                 }
             )
             result = _diff_saved(
@@ -384,6 +396,7 @@ def diff(
                         strategy,
                         no_masks,
                         high_cardinality,
+                        warm_start,
                     ),
                 )
         _emit(result, top, outputs.stdout)

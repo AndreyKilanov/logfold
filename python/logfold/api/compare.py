@@ -87,6 +87,7 @@ def diff(
     strategy: str | None = None,
     threads: int | None = None,
     chunk_bytes: int | None = None,
+    warm_start: bool | None = None,
     examples: ExamplesMode = "raw",
     progress: Progress | None = None,
 ) -> DiffResult:
@@ -124,6 +125,7 @@ def diff(
         strategy: ``auto``, ``sequential`` or ``chunked``.
         threads: Worker threads for the chunked strategy.
         chunk_bytes: Chunk size of the chunked strategy.
+        warm_start: Chunked strategy only; see :func:`analyze`.
         examples: ``raw``, ``masked`` or ``none``; see :func:`analyze`.
         progress: Optional callback receiving consumed input byte counts.
 
@@ -150,7 +152,7 @@ def diff(
     resolved = resolve_format(format, first, multiline)
     spec = resolved.spec
     mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks, high_cardinality)
-    exec_config = _execution(execution, engine, strategy, threads, chunk_bytes, high_cardinality)
+    exec_config = _execution(execution, engine, strategy, threads, chunk_bytes, high_cardinality, warm_start)
     mined, used = _mine((first, second), spec, mining_config, exec_config, progress, config.recount)
     before_summary = _summary(first, mined.runs[0])
     after_summary = _summary(second, mined.runs[1])

@@ -1,0 +1,195 @@
+{
+  "cores": 16,
+  "repeat": 3,
+  "inputs": {
+    "HDFS, no masks": {
+      "sequential_templates": 43,
+      "chunk_8_mib": {
+        "cold": {
+          "templates": 341,
+          "wall_median_s": 0.9118367999908514,
+          "peak_mb": 107.220992
+        },
+        "warm": {
+          "templates": 45,
+          "wall_median_s": 0.9750254999962635,
+          "peak_mb": 107.409408
+        }
+      },
+      "chunk_64_mib": {
+        "cold": {
+          "templates": 102,
+          "wall_median_s": 0.9437324999889825,
+          "peak_mb": 106.831872
+        },
+        "warm": {
+          "templates": 43,
+          "wall_median_s": 1.1216963000188116,
+          "peak_mb": 107.35616
+        }
+      }
+    },
+    "Spark, no masks": {
+      "sequential_templates": 1839,
+      "chunk_8_mib": {
+        "cold": {
+          "templates": 4570,
+          "wall_median_s": 1.1908565000048839,
+          "peak_mb": 112.570368
+        },
+        "warm": {
+          "templates": 2119,
+          "wall_median_s": 1.411332699994091,
+          "peak_mb": 116.854784
+        }
+      },
+      "chunk_64_mib": {
+        "cold": {
+          "templates": 2931,
+          "wall_median_s": 1.257195900019724,
+          "peak_mb": 110.641152
+        },
+        "warm": {
+          "templates": 1847,
+          "wall_median_s": 1.7185437000007369,
+          "peak_mb": 117.256192
+        }
+      }
+    },
+    "Thunderbird, no masks": {
+      "sequential_templates": 5529,
+      "chunk_8_mib": {
+        "cold": {
+          "templates": 12752,
+          "wall_median_s": 0.9638827000162564,
+          "peak_mb": 129.359872
+        },
+        "warm": {
+          "templates": 9155,
+          "wall_median_s": 1.134364800003823,
+          "peak_mb": 178.425856
+        }
+      },
+      "chunk_64_mib": {
+        "cold": {
+          "templates": 10686,
+          "wall_median_s": 1.1612908999959473,
+          "peak_mb": 109.572096
+        },
+        "warm": {
+          "templates": 7356,
+          "wall_median_s": 1.7191601000085939,
+          "peak_mb": 151.73632
+        }
+      }
+    },
+    "Thunderbird": {
+      "sequential_templates": 1098,
+      "chunk_8_mib": {
+        "cold": {
+          "templates": 2488,
+          "wall_median_s": 1.060281899990514,
+          "peak_mb": 114.966528
+        },
+        "warm": {
+          "templates": 2257,
+          "wall_median_s": 1.1938533000065945,
+          "peak_mb": 146.386944
+        }
+      },
+      "chunk_64_mib": {
+        "cold": {
+          "templates": 2032,
+          "wall_median_s": 1.1656423000094946,
+          "peak_mb": 101.994496
+        },
+        "warm": {
+          "templates": 1192,
+          "wall_median_s": 1.6507204000081401,
+          "peak_mb": 121.925632
+        }
+      }
+    },
+    "Spark": {
+      "sequential_templates": 190,
+      "chunk_8_mib": {
+        "cold": {
+          "templates": 196,
+          "wall_median_s": 1.604753299994627,
+          "peak_mb": 108.986368
+        },
+        "warm": {
+          "templates": 190,
+          "wall_median_s": 1.9001613000000361,
+          "peak_mb": 111.517696
+        }
+      },
+      "chunk_64_mib": {
+        "cold": {
+          "templates": 193,
+          "wall_median_s": 1.819779399986146,
+          "peak_mb": 108.908544
+        },
+        "warm": {
+          "templates": 189,
+          "wall_median_s": 2.4939816999831237,
+          "peak_mb": 111.034368
+        }
+      }
+    },
+    "BGL": {
+      "sequential_templates": 156,
+      "chunk_8_mib": {
+        "cold": {
+          "templates": 158,
+          "wall_median_s": 0.8982984000176657,
+          "peak_mb": 108.302336
+        },
+        "warm": {
+          "templates": 158,
+          "wall_median_s": 0.9223955000052229,
+          "peak_mb": 109.027328
+        }
+      },
+      "chunk_64_mib": {
+        "cold": {
+          "templates": 159,
+          "wall_median_s": 0.9407280999876093,
+          "peak_mb": 86.274048
+        },
+        "warm": {
+          "templates": 158,
+          "wall_median_s": 1.3237816999899223,
+          "peak_mb": 82.382848
+        }
+      }
+    },
+    "generated Loghub-like": {
+      "sequential_templates": 1363,
+      "chunk_8_mib": {
+        "cold": {
+          "templates": 1364,
+          "wall_median_s": 0.5480042999843135,
+          "peak_mb": 124.944384
+        },
+        "warm": {
+          "templates": 1363,
+          "wall_median_s": 0.6325841000070795,
+          "peak_mb": 143.200256
+        }
+      },
+      "chunk_64_mib": {
+        "cold": {
+          "templates": 1364,
+          "wall_median_s": 1.0761904999963008,
+          "peak_mb": 72.613888
+        },
+        "warm": {
+          "templates": 1363,
+          "wall_median_s": 1.4386450999882072,
+          "peak_mb": 92.680192
+        }
+      }
+    }
+  }
+}

@@ -10,6 +10,7 @@ use crate::tokenizer::TokenView;
 
 mod leaf;
 mod matching;
+mod merging;
 mod recount;
 
 use leaf::{LeafIndex, Node, INDEX_MIN_CLUSTERS, SCRATCH};
@@ -76,6 +77,7 @@ pub struct RecordMeta<'a> {
     pub level: Option<Level>,
 }
 
+#[derive(Clone)]
 pub(crate) struct Cluster {
     pub(crate) tokens: Vec<Box<[u8]>>,
     pub(crate) stats: Vec<RunStats>,
@@ -90,6 +92,7 @@ impl Cluster {
 }
 
 /// Drain-compatible template miner (see `docs/ALGORITHM.md` §4).
+#[derive(Clone)]
 pub struct DrainMiner {
     cfg: MinerConfig,
     n_runs: usize,
@@ -151,29 +154,6 @@ impl DrainMiner {
         update_stats(&mut stats[run], rec);
         let template: Vec<Box<[u8]>> = (0..tokens.len()).map(|i| Box::from(tokens.get(i))).collect();
         self.insert_cluster(Cluster::new(template, stats));
-    }
-
-    /// Merges `other` into `self` in cluster creation order (see `docs/ALGORITHM.md` §6).
-    pub fn merge(&mut self, other: DrainMiner) {
-        assert_eq!(self.n_runs, other.n_runs, "miners must track the same runs");
-        for (mine, theirs) in self.overflowed.iter_mut().zip(other.overflowed.iter()) {
-            *mine |= *theirs;
-        }
-        for cluster in other.clusters {
-            self.merge_cluster(cluster);
-        }
-        for (length, cluster) in other.overflow {
-            match self.overflow.get_mut(&length) {
-                Some(mine) => {
-                    for (dst, src) in mine.stats.iter_mut().zip(cluster.stats.iter()) {
-                        dst.absorb(src);
-                    }
-                }
-                None => {
-                    self.overflow.insert(length, cluster);
-                }
-            }
-        }
     }
 
     /// Assigns a message to a cluster of the finished tree without changing the tree.
@@ -449,19 +429,6 @@ impl DrainMiner {
                 *template_token = Box::from(WILDCARD);
                 cluster.wild += 1;
             }
-        }
-    }
-
-    fn merge_cluster(&mut self, cluster: Cluster) {
-        let matched = self.find_match(&BoxedTokens(&cluster.tokens));
-        match matched {
-            Some(index) => {
-                self.generalize(index, &BoxedTokens(&cluster.tokens));
-                for (dst, src) in self.clusters[index].stats.iter_mut().zip(cluster.stats.iter()) {
-                    dst.absorb(src);
-                }
-            }
-            None => self.insert_cluster(cluster),
         }
     }
 }

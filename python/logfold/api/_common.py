@@ -82,12 +82,19 @@ def _execution(
     threads: int | None,
     chunk_bytes: int | None,
     high_cardinality: bool = False,
+    warm_start: bool | None = None,
 ) -> ExecutionConfig:
     config = base or ExecutionConfig()
     if high_cardinality and strategy is None and config.strategy == "auto":
         strategy = "sequential"
     changes: dict[str, Any] = {}
-    for key, value in (("engine", engine), ("strategy", strategy), ("threads", threads), ("chunk_bytes", chunk_bytes)):
+    for key, value in (
+        ("engine", engine),
+        ("strategy", strategy),
+        ("threads", threads),
+        ("chunk_bytes", chunk_bytes),
+        ("warm_start", warm_start),
+    ):
         if value is not None:
             changes[key] = value
     return dataclasses.replace(config, **changes) if changes else config
@@ -109,6 +116,8 @@ def _resolve_strategy(engine: Engine, execution: ExecutionConfig, runs: tuple[tu
     if engine.name == "python":
         if execution.strategy == "chunked":
             logger.warning("the pure-Python engine is always sequential; ignoring strategy='chunked'")
+        if execution.warm_start:
+            logger.warning("the pure-Python engine is always sequential; ignoring warm_start")
         return "sequential"
     if execution.strategy != "auto":
         return execution.strategy
@@ -131,6 +140,7 @@ def _mine(
         strategy=_resolve_strategy(engine, execution, runs),
         threads=execution.threads,
         chunk_bytes=execution.chunk_bytes,
+        warm_start=execution.warm_start,
         recount=recount,
     )
     return engine.mine(request, progress), engine

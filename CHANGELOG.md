@@ -27,6 +27,14 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Changed
 
+- `--warm-start` (`warm_start=True` in `analyze` and `diff`, `ExecutionConfig.warm_start`) for the chunked strategy: the first chunk
+  is mined alone and every other chunk starts from a copy of its tree, so the chunk trees no longer begin empty and the result
+  holds far fewer stray templates (HDFS without masks: 45 against 341 with 8 MiB chunks, 43 against 102 with the default chunk;
+  the sequential result has 43). It costs a serial prefix of one chunk, +7-15 percent of the time with 8 MiB chunks and +20-50
+  percent with the default 64 MiB, and some memory where the tree is large. It is off by default: the default result of the
+  chunked strategy and `ALGO_VERSION` are unchanged, and it does nothing for a run that is mined sequentially. The rule is in
+  `docs/ALGORITHM.md` §6, the measurements in `bench/docs/WARM_START.md`. The native extension speaks contract 4 now; an
+  older one is not used.
 - `--strategy auto` (the default) no longer loses to the sequential strategy on logs of mostly unique messages. It starts as
   chunked above 64 MiB, and when the first chunk holds more than 0.3 templates per record after its first 10,000 records
   (real logs: at most 0.03) it cancels the chunks and mines the whole input with one tree, so the result is the sequential

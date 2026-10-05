@@ -28,6 +28,7 @@ class MineRequest:
             resolved, never ``auto``).
         threads: Worker threads for ``chunked``; ``None`` means all cores.
         chunk_bytes: Chunk size for ``chunked``.
+        warm_start: ``chunked`` only: start every chunk but the first from a copy of the tree of the first.
         recount: Re-assign every record to the finished tree after training; gives consistent assignments
             across runs at the cost of a second pass.
     """
@@ -38,6 +39,7 @@ class MineRequest:
     strategy: str = "sequential"
     threads: int | None = None
     chunk_bytes: int = 64 << 20
+    warm_start: bool = False
     recount: bool = False
 
 

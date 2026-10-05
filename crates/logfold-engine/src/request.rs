@@ -68,6 +68,9 @@ pub struct MineRequest {
     pub mining: MiningParams,
     /// Execution strategy.
     pub strategy: Strategy,
+    /// Chunked mining only: train the first chunk alone and start every other chunk from a copy of its tree (see
+    /// `docs/ALGORITHM.md` §6). Fewer stray templates, at the price of a serial prefix of one chunk.
+    pub warm_start: bool,
     /// Re-assign every record to the finished tree after training (see `docs/ALGORITHM.md` §9). Gives a
     /// consistent assignment across runs and costs a second pass over the inputs.
     pub recount: bool,
