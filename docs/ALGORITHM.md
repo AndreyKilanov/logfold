@@ -191,6 +191,9 @@ ordered from the least to the most frequent in both runs (ties by code point ord
 share a word among the first `n - ceil(t * n) + 1` words of each (`n` is the size of the set; the ceiling uses an epsilon
 of 1e-9 on the safe side). A threshold of zero or less scores every pair.
 
+The default matcher of `diff` is `jaccard` with the threshold 0.6 (`DiffConfig.matcher`, `--matcher`); `exact` and `token_subset` are
+selected by name. Changing the default is a change of the public result, not of the mining algorithm, so `ALGO_VERSION` stays.
+
 A matcher that is not built in (a plugin, or a subclass of a built-in one) always runs its own Python code.
 
 ## 11. Comparison (diff)

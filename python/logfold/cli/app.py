@@ -291,7 +291,9 @@ def diff(
     min_new_count: Annotated[
         int, typer.Option("--min-new-count", min=0, help="Records needed to report new or disappeared.")
     ] = 1,
-    matcher: Annotated[str, typer.Option("--matcher", help="Diff matcher: exact or token_subset.")] = "exact",
+    matcher: Annotated[
+        str, typer.Option("--matcher", help="Diff matcher: jaccard, token_subset or exact.")
+    ] = "jaccard",
     recount: Annotated[
         bool, typer.Option("--recount/--no-recount", help="Assign records to the finished tree (slower, consistent).")
     ] = True,

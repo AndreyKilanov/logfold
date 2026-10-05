@@ -48,7 +48,7 @@ template; shares are normalized by the number of records in each run. `before` a
 | `min_count` | 10 | minimum records, in either run, for a template to be `changed` |
 | `min_new_count` | 1 | minimum records for a template to be reported as new or disappeared |
 | `recount` | `True` | assign every record to the finished tree for consistent counts (costs a second pass) |
-| `matcher` | `"exact"` | registered diff matcher name |
+| `matcher` | `"jaccard"` | registered diff matcher name: `jaccard`, `token_subset`, `exact` or a plugin's (see [Choosing a matcher](guide.md#choosing-a-matcher)) |
 | `diff_config` | | a full `DiffConfig`; the keyword arguments override its fields |
 
 ### Comparing saved results
@@ -56,7 +56,7 @@ template; shares are normalized by the number of records in each run. `before` a
 `before` and `after` can also be two `AnalysisResult` objects, straight from `analyze` or loaded with
 `load_analysis`. Nothing is re-read: templates are joined by id, templates present in one result only are paired by the
 `matcher`, and the counts are the saved ones. The results were mined separately and are **not** re-counted against a
-shared tree, so the same event can show up as both new and disappeared; `matcher="token_subset"` pairs most such cases.
+shared tree, so the same event can show up as both new and disappeared; the default `jaccard` matcher pairs most such cases.
 The result carries a warning about this, and about different `config_hash` or `format` values. Results of different
 `algo_version` raise `ConfigError`. Options that control reading or mining (`format`, `multiline`, `recount`, `depth`,
 `sim_th`, `max_children`, `max_templates`, `masks`, `high_cardinality`, `mining`, `execution`, `engine`, `strategy`,
@@ -69,7 +69,7 @@ result reports `config.recount == False`.
 before = analyze("before.log")
 before.to_json("before.json")
 ...
-result = diff(load_analysis("before.json"), load_analysis("after.json"), matcher="token_subset")
+result = diff(load_analysis("before.json"), load_analysis("after.json"))
 ```
 
 ## `load_analysis`
@@ -154,7 +154,7 @@ result = analyze("app.log", mining=mining, execution=ExecutionConfig(threads=4))
 |---|---|
 | `MiningConfig` | `depth=4` (at least 3), `sim_th=0.4` (`[0, 1]`), `max_children=100`, `max_templates=100000`, `delimiters=" \t\n\r"` (ASCII), `masks` (the default rules) |
 | `ExecutionConfig` | `engine="auto"` (`auto`, `native`, `python`), `strategy="auto"` (`auto`, `sequential`, `chunked`), `threads=None` (all cores), `chunk_bytes=64 MiB` |
-| `DiffConfig` | `threshold_ratio=2.0`, `min_count=10`, `min_new_count=1`, `recount=True`, `matcher="exact"` |
+| `DiffConfig` | `threshold_ratio=2.0`, `min_count=10`, `min_new_count=1`, `recount=True`, `matcher="jaccard"` |
 | `MaskRule` | `name`, `pattern` (must not match the empty string), `token`, `ascii=False` |
 
 `masks` replaces the default rules, which are applied in this order: `uuid` -> `<UUID>`, `ts` -> `<TS>`, `ip` -> `<IP>`,
