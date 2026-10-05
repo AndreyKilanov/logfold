@@ -1,13 +1,28 @@
-# logfold
+<p align="center"><b>English</b> · <a href="https://github.com/AndreyKilanov/logfold/blob/main/README.ru.md">Русский</a></p>
 
-[![CI](https://github.com/AndreyKilanov/logfold/actions/workflows/ci.yml/badge.svg)](https://github.com/AndreyKilanov/logfold/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/logfold)](https://pypi.org/project/logfold/)
-[![Python versions](https://img.shields.io/pypi/pyversions/logfold)](https://pypi.org/project/logfold/)
-[![License: MIT](https://img.shields.io/github/license/AndreyKilanov/logfold)](https://github.com/AndreyKilanov/logfold/blob/main/LICENSE)
-[![Rust core](https://img.shields.io/badge/core-Rust-orange)](https://github.com/AndreyKilanov/logfold/blob/main/docs/ALGORITHM.md)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/AndreyKilanov/logfold/main/docs/assets/logo.png" alt="logfold" width="240">
+</p>
 
-**Fold large logs into templates, and see what changed between two runs.** A Python library and command-line tool
-with a Rust core, for offline analysis of big log files: no platform to run, no data to upload.
+<h3 align="center">A library and command-line tool for large logs: folds lines into templates and compares two runs.</h3>
+
+<p align="center">
+  <a href="https://github.com/AndreyKilanov/logfold/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/AndreyKilanov/logfold/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://pypi.org/project/logfold/"><img alt="PyPI" src="https://img.shields.io/pypi/v/logfold"></a>
+  <a href="https://pypi.org/project/logfold/"><img alt="Python versions" src="https://img.shields.io/pypi/pyversions/logfold"></a>
+  <a href="https://github.com/AndreyKilanov/logfold/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/AndreyKilanov/logfold"></a>
+  <a href="https://github.com/AndreyKilanov/logfold/blob/main/docs/ALGORITHM.md"><img alt="Rust core" src="https://img.shields.io/badge/core-Rust-orange"></a>
+</p>
+
+---
+
+logfold reads a log and replaces the variable parts of messages (numbers, IP addresses, UUIDs, paths) with masks. Lines
+with the same text are then grouped into templates. For every template it counts the records, the first and last time it
+appeared, the highest severity level and an example line. The `diff` command compares two runs, for example before and
+after a deploy, and shows the templates that are new, gone or noticeably changed in share.
+
+The core is written in Rust; you can use it from Python or from the command line. Everything runs locally and no data
+is sent anywhere.
 
 ```
 $ logfold diff before.log after.log --out diff.html --fail-on-new
@@ -19,17 +34,26 @@ New templates (2)
          0     44,310       new  WARN   queue depth <NUM> exceeds limit on worker-<NUM>
 ```
 
-- **Templates.** `user alice failed login from 10.0.0.7` and a million siblings become one line
-  `user <*> failed login from <IP>` with a count, first and last timestamp, severity and an example.
-- **Diff.** Compare two runs (before and after a deploy, passing and failing CI job). New, disappeared and changed
-  templates, normalized by run size. Identical inputs produce an empty diff.
-- **Fast.** Rust core, streaming I/O with memory independent of the file size, deterministic multi-threaded mining.
-  See [benchmarks](https://github.com/AndreyKilanov/logfold/blob/main/bench/RESULTS.md).
-- **A Python library first.** `analyze()` and `diff()` return plain, immutable dataclasses; reports are JSON (versioned
-  schema), self-contained HTML or text.
-- **Extensible.** Formats, reporters and diff matchers are plugins discovered through entry points; a default set
-  (`logfmt`, `serilog-clef`, `markdown`, `csv`, `jaccard`) ships with logfold and `logfold plugins` lists, checks and
-  installs more.
+## What it does
+
+- **Templates.** `user alice failed login from 10.0.0.7` and the other lines like it are reduced to one entry,
+  `user <*> failed login from <IP>`. The algorithm is compatible with Drain3. Average grouping accuracy on the 16
+  Loghub-2k datasets: Drain3 0.7658, logfold in sequential mode 0.7658, in parallel mode 0.7643.
+- **Comparing two runs.** Shares of templates are computed from the number of records in each run, so different log
+  sizes do not matter. A template counts as changed when its share grew or fell by at least a factor of 2 and it has at
+  least 10 records in either run (both thresholds are configurable). Identical inputs give an empty result.
+- **Exit code for CI.** `--fail-on-new` exits with code 2 when there are new templates, `--fail-on-new-alerts` when any
+  of them is WARN, ERROR or FATAL.
+- **Memory.** The file is read as a stream, and memory use does not depend on its size. Inputs: files, gzip, standard
+  input, several files as one run.
+- **Parallelism.** A large file is cut into chunks (64 MiB by default) and the chunk trees are merged in order. For a
+  fixed chunk size the result does not depend on the number of threads.
+- **Value masks.** By default UUIDs, timestamps, IPs, hex values, paths and numbers are replaced; the rules can be
+  changed.
+- **Reports.** HTML (one file, no network requests, strict CSP), JSON with a versioned schema, text, Markdown, CSV. A
+  report includes raw example lines by default; `--examples masked` or `none` removes them.
+- **Extensions.** Log formats, reports and template matchers for `diff` are plugins, loaded through entry points or
+  from a folder of `.py` files.
 
 ## Install
 
@@ -37,14 +61,46 @@ New templates (2)
 pip install "logfold[cli]"
 ```
 
-Wheels are published for Linux, macOS and Windows (Python 3.10+), so nothing is compiled on your machine.
+Python 3.10 or newer. PyPI has prebuilt packages for Linux (x86_64, aarch64, musl), macOS (x86_64, arm64) and Windows
+(x86_64), so pip installs without compiling and you do not need Rust. On any other platform pip builds the package from
+source, which needs a Rust compiler. Without `[cli]` you get the library only.
 
-## Use
+## Quick start
+
+Analyze a log:
+
+```
+logfold analyze app.log --top 30 --out report.html
+```
+
+The format is detected from a sample of the file (nginx, apache, syslog, journald, Kubernetes, JSON lines, logfmt and
+others). If it is not sure, the command lists the candidates and asks you to pass `--format`. Indented stack-trace lines
+are joined to the record that started them.
+
+Compare two runs:
+
+```
+logfold diff before.log after.log --out diff.html --fail-on-new-alerts
+```
+
+Exit codes: `0` success, `1` error, `2` something requested by a `--fail-on-*` flag was found.
+
+Compare saved results without reading the logs again:
+
+```
+logfold analyze before.log --out before.json
+logfold analyze after.log  --out after.json
+logfold diff before.json after.json --matcher token_subset
+```
+
+A JSON file written with `--out` holds every template, so it is suitable for this kind of comparison.
+
+## From Python
 
 ```python
-from logfold import analyze, diff
+from logfold import analyze, diff, load_analysis
 
-result = analyze("app.log")  # format auto-detected
+result = analyze("app.log")  # the format is detected
 for template in result.top(10):
     print(template.count, template.level, template.text)
 result.to_html("report.html")
@@ -53,55 +109,108 @@ comparison = diff("before.log", "after.log")
 comparison.new_templates
 comparison.new_alerts  # new WARN/ERROR/FATAL templates
 comparison.to_html("diff.html")
+
+# compare saved results
+diff(load_analysis("before.json"), load_analysis("after.json"))
 ```
 
-```
-logfold analyze app.log --top 30 --out report.html          # fold one run into templates
-logfold diff before.log after.log --fail-on-new-alerts      # exit code 2 in CI when something new is wrong
-logfold formats                                             # list the log formats
-logfold info                                                # versions and engine availability, for bug reports
-logfold plugins check                                       # plugins you do not have yet; `install NAME` adds one
-logfold --version
-```
+`analyze()` and `diff()` return immutable dataclass objects.
+
+## Formats and parameters
+
+| | |
+|---|---|
+| Formats | `nginx`, `apache`, `nginx-error`, `syslog`, `journald`, `k8s` (CRI/containerd), `jsonl`, `app` (`<time> LEVEL message`), `logfmt`, `serilog-clef`, `plain`, your own `regex:<pattern>`. List: `logfold formats`. |
+| Multi-line records | `--multiline`; with `--format auto` it turns on by itself when indented lines are found. |
+| Folding | `--depth` (4), `--sim-th` (0.4), `--max-children` (100), `--max-templates` (100000). The defaults are the same as in Drain3. |
+| Logs with almost unique lines | `--high-cardinality`: at most 5000 templates, the rest go into catch-all templates, runs sequentially. On a 10 MB file with 84 thousand distinct lines 2.0 s becomes 0.14 s. |
+| Reports | HTML, JSON, text, Markdown, CSV; the `--out` suffix picks the format, `--report NAME` picks the report explicitly, including one from a plugin. |
+| Matchers for `diff` | `exact`, `token_subset`, `jaccard`: they link a reworded message to its earlier version so it is not counted as both new and gone. |
+| Plugins | `logfold plugins list`, `check`, `install`, `new`. |
+| Scripting | `--json` prints JSON to stdout, exit codes are stable, the JSON format is described by a schema in `docs/schema`. |
+
+## Speed
+
+Measured on one machine (8 cores, Windows 11); the protocol was fixed before the runs, details and data are in
+[`bench/RESULTS.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/RESULTS.md).
+
+| | logfold, 16 threads | [Drain3](https://github.com/logpai/Drain3) (Python) |
+|---|---:|---:|
+| nginx access log, 100 MB | 0.38 s | 5.26 s |
+| application log, 100 MB | 0.41 s | 9.03 s |
+| nginx access log with value masking | 0.45 s | 26.82 s |
+| HDFS, 1.57 GB, a real log | 0.94 s | not measured |
+| `diff` of two 100 MB logs | 0.7 s | no `diff` |
+
+On the real logs of 0.7 to 1.6 GB peak memory is 42 to 51 MB with one thread and 107 to 129 MB with 16 threads.
+
+## Limitations
+
+> **Warning.** Keep these in mind before running logfold on large logs and comparing results.
+>
+> - Speed was measured on Windows 11 only; on Linux and macOS correctness is tested, but speed is not.
+> - The parallel mode builds a tree per chunk and merges them, so on logs without masks it can return more templates
+>   than the sequential mode (HDFS without masks: 341 against 43). On logs with a very large number of distinct
+>   messages it can be slower than the sequential mode; `--high-cardinality` helps then.
+> - Saved results are compared without a recount against a shared template tree, so the same event can end up both in
+>   new and in gone; the `token_subset` and `jaccard` matchers exist for this.
+
+## Measurements and bug reports
+
+logfold was measured on one machine (Windows 11, 8 cores). If you can run it on other hardware (Linux, macOS, ARM, a
+slower disk, more cores) or on your own logs, we would be glad to get the numbers. We also want to hear about wrong
+results, crashes, templates that are grouped badly, and runs that are slow or use too much memory.
+
+- **Measurements.** Run the benchmark as described in [`bench/README.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/README.md) (the protocol is
+  in [`bench/PROTOCOL.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/PROTOCOL.md)) or time your own command, and open a
+  [performance issue](https://github.com/AndreyKilanov/logfold/issues/new?template=performance.yml). Include the wall time, throughput and peak memory, the
+  command, the size and format of the input, the CPU and number of cores, RAM, disk type, OS, the logfold version and
+  the number of threads.
+- **Bugs.** Open a [bug report](https://github.com/AndreyKilanov/logfold/issues/new?template=bug_report.yml) with what you expected and what happened, a
+  command or Python snippet that reproduces it, the output of `logfold --version` and `logfold info`, and a few lines of
+  the input with secrets removed.
+
+All issue forms are listed on the [new issue page](https://github.com/AndreyKilanov/logfold/issues/new/choose); how issues are written is described in
+[CONTRIBUTING.md](https://github.com/AndreyKilanov/logfold/blob/main/CONTRIBUTING.md#issues).
+
+## How it compares to other tools
+
+| | logfold | [Drain3](https://github.com/logpai/Drain3) | [logdrain](https://github.com/vnvo/logdrain) | [logdelta](https://github.com/antonsoo/logdelta) |
+|---|---|---|---|---|
+| Language | Rust core, Python API and CLI | Python | Rust | Rust |
+| Template quality | same as Drain3 on Loghub-2k | reference | Drain | Drain-based |
+| Comparing two runs | yes (`diff`, shares normalized, recount) | no | no (online "template created" signal) | yes (`diff`, several baselines, blocks) |
+| Python API | yes | yes | no | no |
+| Multi-threaded mining of one big file | yes, deterministic | no | not documented for the CLI | not documented |
+| Reports | JSON, HTML, text, Markdown, CSV | - | text, JSON, CSV | terminal, JSON, Markdown |
+
+Template quality: `python eval/quality.py` (grouping accuracy on the 16 Loghub-2k datasets).
 
 ## Documentation
 
 - [Guide](https://github.com/AndreyKilanov/logfold/blob/main/docs/guide.md): formats, parameters, plugins, engines.
-- [Command-line reference](https://github.com/AndreyKilanov/logfold/blob/main/docs/cli.md): every command, option and
-  exit code.
-- [Plugins](https://github.com/AndreyKilanov/logfold/blob/main/docs/plugins.md): use and write formats, reporters and
-  diff matchers; a complete example package is in
+- [Command-line reference](https://github.com/AndreyKilanov/logfold/blob/main/docs/cli.md): commands, options, exit
+  codes.
+- [Plugins](https://github.com/AndreyKilanov/logfold/blob/main/docs/plugins.md): using and writing formats, reports and
+  matchers; an example package is in
   [`examples/logfold-example-plugin`](https://github.com/AndreyKilanov/logfold/tree/main/examples/logfold-example-plugin).
-- [Python API reference](https://github.com/AndreyKilanov/logfold/blob/main/docs/api.md): `analyze`, `diff`, results,
-  configuration, errors, reporters and extension points.
-- [Algorithm](https://github.com/AndreyKilanov/logfold/blob/main/docs/ALGORITHM.md), [JSON
-  schemas](https://github.com/AndreyKilanov/logfold/tree/main/docs/schema) and the
+- [Python API reference](https://github.com/AndreyKilanov/logfold/blob/main/docs/api.md).
+- [Algorithm](https://github.com/AndreyKilanov/logfold/blob/main/docs/ALGORITHM.md),
+  [JSON schemas](https://github.com/AndreyKilanov/logfold/tree/main/docs/schema) and the
   [changelog](https://github.com/AndreyKilanov/logfold/blob/main/CHANGELOG.md).
-
-## How it relates to other tools
-
-| | logfold | [Drain3](https://github.com/logpai/Drain3) | [logdrain](https://github.com/vnvo/logdrain) | [logdelta](https://github.com/antonsoo/logdelta) |
-|---|---|---|---|---|
-| Language | Rust core, Python API + CLI | Python | Rust | Rust |
-| Template quality | identical to Drain3 on Loghub-2k | reference | Drain | Drain-based |
-| Compare two runs | yes (`diff`, shares normalized, recount) | no | no (online "template created" signal) | yes (`diff`, several baselines, blocks) |
-| Python API | yes | yes | no | no |
-| Multi-threaded mining of one big file | yes, deterministic | no | not documented for the CLI (library `add` is thread-safe) | not documented |
-| Reports | JSON, HTML, text | - | text, JSON, CSV | terminal, JSON, Markdown |
-
-Timings are in [`bench/RESULTS.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/RESULTS.md), measured with the [protocol](https://github.com/AndreyKilanov/logfold/blob/main/bench/PROTOCOL.md) that was fixed
-before the runs. Template quality: `python eval/quality.py` (grouping accuracy on the 16 Loghub-2k datasets).
 
 ## Design
 
-Layered: a pure domain core (masking, tokenizer, Drain-compatible tree, merge) with no I/O, adapters for files and
-formats, an execution layer, a thin PyO3 shim, and a Python package on top. The algorithm is specified in
-[`docs/ALGORITHM.md`](https://github.com/AndreyKilanov/logfold/blob/main/docs/ALGORITHM.md); a pure-Python reference engine implements the same specification, and the Rust
-engine is tested against it for exact equality.
+A pure core (masking, tokenizer, Drain-compatible tree, merge) with no I/O, adapters for files and formats, an
+execution layer, a thin PyO3 shim, and a Python package on top. The algorithm is described in
+[`docs/ALGORITHM.md`](https://github.com/AndreyKilanov/logfold/blob/main/docs/ALGORITHM.md). A pure-Python reference
+engine implements the same specification, and the Rust engine is tested against it for exactly equal results.
 
 ## Development
 
-See [CONTRIBUTING.md](https://github.com/AndreyKilanov/logfold/blob/main/CONTRIBUTING.md) (branches, commits, issues, definition of done).
+Rules for branches, commits and the definition of done are in
+[CONTRIBUTING.md](https://github.com/AndreyKilanov/logfold/blob/main/CONTRIBUTING.md). Report vulnerabilities
+privately, see [SECURITY.md](https://github.com/AndreyKilanov/logfold/blob/main/SECURITY.md).
 
 ## License
 
