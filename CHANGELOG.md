@@ -18,6 +18,14 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   Results of different algorithm versions are rejected. Examples are kept as saved, so `--examples masked` is refused for
   saved results. Reports must be UTF-8 (a BOM is accepted), at most 256 MiB, with template ids matching their text.
 
+### Fixed
+
+- Terminal output no longer acts on control characters from log content: in the tables and in `--report` printed to a
+  terminal an escape sequence (retitle the window, hide text, write to the clipboard) is shown as a visible `\xNN`
+  instead. Files and pipes keep the raw text.
+- A plugin reporter that raises or returns something other than text fails with `error: reporter 'NAME' failed: ...` and
+  exit code 1 instead of a traceback.
+
 ### Changed
 
 - Plugin discovery reads the installed package metadata once instead of three times, so every command that

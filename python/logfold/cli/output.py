@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from logfold.errors import ConfigError
+from logfold.errors import ConfigError, LogfoldError
 from logfold.ext import registry
 from logfold.model import AnalysisResult, DiffResult
 
@@ -81,8 +82,26 @@ def resolve_outputs(kind: str, out: Path | None, report: str | None, as_json: bo
     return Outputs(file=file, stdout=stdout)
 
 
-def render_text(result: AnalysisResult | DiffResult, reporter: str, top: int) -> str:
-    """Render a result for standard output.
+_CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
+
+
+def printable(text: str) -> str:
+    r"""Make text safe to print on a terminal by showing control characters instead of acting on them.
+
+    Log content is untrusted: an escape sequence in a message could retitle the window, hide text or write to the
+    clipboard. Tabs and line feeds are kept; every other control character becomes a visible ``\xNN`` escape.
+
+    Args:
+        text: Text that may contain control characters.
+
+    Returns:
+        The text with control characters replaced.
+    """
+    return _CONTROL.sub(lambda found: f"\\x{ord(found.group()):02x}", text)
+
+
+def render_report(result: AnalysisResult | DiffResult, reporter: str, top: int | None = None) -> str:
+    """Render a result with a named reporter, turning a failing reporter into a clean error.
 
     Args:
         result: The result.
@@ -91,5 +110,16 @@ def render_text(result: AnalysisResult | DiffResult, reporter: str, top: int) ->
 
     Returns:
         The rendered text.
+
+    Raises:
+        ConfigError: If the reporter raises or returns something other than text.
     """
-    return result.render(reporter, top=top) if reporter == "text" else result.render(reporter)
+    try:
+        text = result.render(reporter, top=top) if reporter == "text" and top is not None else result.render(reporter)
+    except LogfoldError:
+        raise
+    except Exception as error:
+        raise ConfigError(f"reporter {reporter!r} failed: {error}") from error
+    if not isinstance(text, str):
+        raise ConfigError(f"reporter {reporter!r} returned {type(text).__name__}, expected text")
+    return text

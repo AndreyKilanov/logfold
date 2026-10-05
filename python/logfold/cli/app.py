@@ -21,7 +21,7 @@ from rich.table import Table
 
 import logfold
 from logfold.cli import exit_codes
-from logfold.cli.output import render_text, resolve_outputs
+from logfold.cli.output import printable, render_report, resolve_outputs
 from logfold.cli.plugins_cmd import plugins_app
 from logfold.cli.render import print_analysis, print_diff
 from logfold.engines import native
@@ -165,14 +165,15 @@ def _fail(error: Exception, debug: bool) -> typer.Exit:
 
 
 def _write_report(result: AnalysisResult | DiffResult, out: Path, reporter: str, quiet: bool) -> None:
-    out.write_text(result.render(reporter), encoding="utf-8")
+    out.write_text(render_report(result, reporter), encoding="utf-8")
     if not quiet:
         _stderr_console().print(f"wrote {out}", highlight=False)
 
 
 def _emit(result: AnalysisResult | DiffResult, top: int, reporter: str | None) -> None:
     if reporter is not None:
-        sys.stdout.write(render_text(result, reporter, top))
+        text = render_report(result, reporter, top)
+        sys.stdout.write(printable(text) if sys.stdout.isatty() else text)
         return
     if sys.stdout.isatty():
         console = _stdout_console()

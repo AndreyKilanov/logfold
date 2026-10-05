@@ -1,14 +1,18 @@
 from __future__ import annotations
 
+import io
 import json
+import sys
 from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
 
+import logfold
 from corpora import synthetic_pair
 from logfold.cli import exit_codes
-from logfold.cli.app import app
+from logfold.cli.app import _emit, app
+from logfold.cli.output import printable
 from logfold.ext import registry
 
 runner = CliRunner()
@@ -110,3 +114,84 @@ def test_text_report_on_stdout_honours_top(tmp_path: Path) -> None:
     full = runner.invoke(app, ["analyze", str(source), "-f", "app", "--report", "text", "--top", "3"])
     assert full.exit_code == 0
     assert len(full.stdout.splitlines()) < 12
+
+
+class Boom:
+    name = "boom"
+    kinds = ("analysis", "diff")
+
+    def render(self, result: object, **options: object) -> str:
+        raise ValueError("plugin exploded")
+
+
+class NoText:
+    name = "notext"
+    kinds = ("analysis", "diff")
+
+    def render(self, result: object, **options: object) -> None:
+        return None
+
+
+@pytest.mark.parametrize(("reporter", "message"), [("boom", "plugin exploded"), ("notext", "expected text")])
+def test_failing_plugin_reporter_is_a_clean_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, reporter: str, message: str
+) -> None:
+    monkeypatch.setitem(registry._reporters, "boom", Boom())
+    monkeypatch.setitem(registry._reporters, "notext", NoText())
+    source = log_file(tmp_path)
+    on_stdout = runner.invoke(app, ["analyze", str(source), "-f", "app", "--report", reporter])
+    assert on_stdout.exit_code == exit_codes.ERROR
+    assert message in on_stdout.output
+    assert "Traceback" not in on_stdout.output
+    out = tmp_path / "report.dat"
+    to_file = runner.invoke(app, ["analyze", str(source), "-f", "app", "--report", reporter, "-o", str(out)])
+    assert to_file.exit_code == exit_codes.ERROR
+    assert "Traceback" not in to_file.output
+    assert not out.exists()
+
+
+def test_printable_shows_control_characters() -> None:
+    assert printable("a\tb\nc") == "a\tb\nc"
+    assert printable("\x1b]0;x\x07\x1b[31m") == r"\x1b]0;x\x07\x1b[31m"
+    assert printable("\x9b\x00\r") == r"\x9b\x00\x0d"
+    assert printable("привет, café 😀") == "привет, café 😀"
+
+
+class FakeTerminal(io.StringIO):
+    def isatty(self) -> bool:
+        return True
+
+
+def hostile_result(tmp_path: Path) -> logfold.AnalysisResult:
+    log = tmp_path / "hostile.log"
+    line = "2026-10-04T12:00:00Z INFO agent \x1b]0;pwned\x07\x1b[31mred done\n"
+    log.write_text(line * 3, encoding="utf-8")
+    return logfold.analyze(str(log), format="app")
+
+
+@pytest.mark.parametrize("reporter", ["text", "markdown", "csv", "json"])
+def test_terminal_output_never_carries_escape_sequences(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, reporter: str
+) -> None:
+    terminal = FakeTerminal()
+    monkeypatch.setattr(sys, "stdout", terminal)
+    _emit(hostile_result(tmp_path), 20, reporter)
+    output = terminal.getvalue()
+    assert "\x1b" not in output
+    assert "\x07" not in output
+
+
+def test_default_tables_never_carry_escape_sequences(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    terminal = FakeTerminal()
+    monkeypatch.setattr(sys, "stdout", terminal)
+    _emit(hostile_result(tmp_path), 20, None)
+    assert "\x1b]" not in terminal.getvalue()
+    assert r"\x1b]" in terminal.getvalue()
+    assert r";pwned\x07\x1b[31m" in terminal.getvalue()
+
+
+def test_redirected_output_keeps_the_raw_text(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    pipe = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", pipe)
+    _emit(hostile_result(tmp_path), 20, "csv")
+    assert "\x1b]" in pipe.getvalue()
