@@ -17,7 +17,7 @@ import logfold
 from conftest import requires_native
 from logfold.ext import DiffMatcher, Reporter, registry
 
-PLUGIN_DIR = Path(__file__).resolve().parent.parent / "examples" / "logfold-example-plugin"
+PLUGIN_DIR = Path(__file__).resolve().parents[2] / "examples" / "logfold-example-plugin"
 SAMPLES = PLUGIN_DIR / "samples"
 
 

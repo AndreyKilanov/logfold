@@ -8,9 +8,9 @@ import pytest
 from typer.testing import CliRunner
 
 import logfold
+from corpora import synthetic_pair
 from logfold.cli import exit_codes
 from logfold.cli.app import app
-from test_diff import synthetic_pair
 
 runner = CliRunner()
 

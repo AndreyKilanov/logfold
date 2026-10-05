@@ -167,3 +167,44 @@ def write(path: Path, lines: list[str], *, crlf: bool = False, final_newline: bo
     text = eol.join(lines) + (eol if final_newline else "")
     path.write_bytes(text.encode("utf-8"))
     return path
+
+
+def synthetic_pair(tmp_path: Path, seed: int) -> tuple[Path, Path, dict[str, set[str]]]:
+    rng = random.Random(seed)
+    base = [
+        "INFO user {u} logged in from {ip}",
+        "INFO cache miss for key {k}",
+        "WARN disk usage {n}% on /dev/sda1",
+        "DEBUG heartbeat from {h}",
+        "INFO job {k} finished in {n}s",
+        "ERROR request {k} failed with status {n}",
+    ]
+    new_messages = ["ERROR database connection lost to replica-{h}", "WARN queue depth exceeded limit {n}"]
+    gone_messages = ["INFO legacy sync completed for tenant {h}"]
+    spike_message = "INFO cache miss for key {k}"
+
+    def fill(pattern: str) -> str:
+        return pattern.format(
+            u=rng.choice(["alice", "bob", "carol"]),
+            ip=f"10.0.{rng.randrange(9)}.{rng.randrange(1, 250)}",
+            k=rng.randrange(10_000),
+            n=rng.randrange(1, 99),
+            h=rng.choice(["a", "b", "c"]),
+        )
+
+    def render(messages: list[str], count: int) -> list[str]:
+        return [f"2026-10-04T12:{(i // 60) % 60:02d}:{i % 60:02d}Z {fill(rng.choice(messages))}" for i in range(count)]
+
+    before_lines = render(base + gone_messages, 4000)
+    after_lines = render(base, 3000) + render(new_messages, 150) + render([spike_message], 2500)
+    rng.shuffle(after_lines)
+    before = tmp_path / "before.log"
+    after = tmp_path / "after.log"
+    before.write_text("\n".join(before_lines) + "\n", encoding="utf-8")
+    after.write_text("\n".join(after_lines) + "\n", encoding="utf-8")
+    truth = {
+        "new": {"database connection lost to <*>", "queue depth exceeded limit <NUM>"},
+        "gone": {"legacy sync completed for tenant <*>"},
+        "changed": {"cache miss for key <NUM>"},
+    }
+    return before, after, truth

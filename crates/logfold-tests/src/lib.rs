@@ -1,3 +1,4 @@
-//! Tests of the logfold Rust crates live in this package, one `tests/<crate>_<topic>.rs` file per topic.
+//! Tests of the logfold Rust crates live in this package: one `tests/<crate>.rs` file per crate, one module per
+//! topic inside it.
 
 #![forbid(unsafe_code)]
