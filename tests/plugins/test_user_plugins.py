@@ -332,7 +332,7 @@ def test_the_off_switch_is_reported_by_the_dir_command(home: Path, monkeypatch: 
 
 
 def test_the_example_in_the_plugins_guide_works(plugin_dir: Path, tmp_path: Path) -> None:
-    guide = (Path(__file__).resolve().parent.parent / "docs" / "plugins.md").read_text(encoding="utf-8")
+    guide = (Path(__file__).resolve().parents[2] / "docs" / "plugins.md").read_text(encoding="utf-8")
     section = guide[guide.index("## Your own plugins in a folder") :]
     code = re.search(r"```python\n(.*?)```", section, re.DOTALL)
     assert code is not None

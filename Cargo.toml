@@ -6,6 +6,7 @@ members = [
     "crates/logfold-engine",
     "crates/logfold-py",
     "crates/logfold-bench",
+    "crates/logfold-tests",
 ]
 
 [workspace.package]

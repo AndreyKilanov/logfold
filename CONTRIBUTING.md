@@ -71,5 +71,8 @@ ruff check . && ruff format --check . && mypy && lint-imports
 pytest
 ```
 
-and new behavior has tests, user-visible changes are in `CHANGELOG.md`, and a change to an irreversible decision
+Rust tests live in one package, `crates/logfold-tests` (`tests/<crate>.rs`, one module per topic), not inline in the crates; a test
+needs only the public API of a crate. A source file has at most 500 lines (checked by `tests/test_source_size.py`).
+
+New behavior has tests, user-visible changes are in `CHANGELOG.md`, and a change to an irreversible decision
 (public contract, algorithm) is called out in the PR.

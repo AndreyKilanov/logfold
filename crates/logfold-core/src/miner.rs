@@ -8,6 +8,14 @@ use crate::level::Level;
 use crate::stats::RunStats;
 use crate::tokenizer::TokenView;
 
+mod leaf;
+mod matching;
+mod recount;
+
+use leaf::{LeafIndex, Node, INDEX_MIN_CLUSTERS, SCRATCH};
+use matching::{has_digit, score_bounded, update_stats, BoxedTokens, Tokens};
+pub use recount::{Assigned, Recount};
+
 /// Token that stands for a variable part of a template.
 pub const WILDCARD: &[u8] = b"<*>";
 
@@ -81,212 +89,6 @@ impl Cluster {
     }
 }
 
-/// Leaves with at least this many clusters get an inverted index so that matching does not scan them linearly.
-const INDEX_MIN_CLUSTERS: usize = 16;
-
-/// Inverted index of a leaf: for every token position, the clusters that hold a given literal token.
-///
-/// Entries are never removed. An entry becomes stale when its position is generalized; readers verify the
-/// cluster's current token, so a stale entry is simply ignored. Wildcards never count as matches, so they are not
-/// indexed.
-struct LeafIndex {
-    exact: Vec<HashMap<Box<[u8]>, Vec<u32>, RandomState>>,
-}
-
-impl LeafIndex {
-    fn new(length: usize) -> Self {
-        LeafIndex { exact: (0..length).map(|_| HashMap::default()).collect() }
-    }
-
-    fn add(&mut self, id: u32, tokens: &[Box<[u8]>]) {
-        for (position, token) in tokens.iter().enumerate() {
-            if &**token != WILDCARD {
-                self.exact[position].entry(token.clone()).or_default().push(id);
-            }
-        }
-    }
-}
-
-#[derive(Default)]
-struct Node {
-    children: HashMap<Box<[u8]>, u32, RandomState>,
-    clusters: Vec<u32>,
-    index: Option<Box<LeafIndex>>,
-}
-
-/// Per-thread counters reused by indexed matching; a generation stamp avoids clearing between calls.
-#[derive(Default)]
-struct Scratch {
-    stamp: u32,
-    seen: Vec<u32>,
-    total: Vec<u32>,
-    touched: Vec<u32>,
-    /// `(list length, position)` of every token position of the message that has an index list.
-    order: Vec<(u32, u32)>,
-    /// Positions whose lists are not walked, see [`DrainMiner::best_indexed`].
-    skipped: Vec<u32>,
-}
-
-impl Scratch {
-    fn begin(&mut self, clusters: usize) {
-        self.stamp = self.stamp.wrapping_add(1);
-        if self.stamp == 0 {
-            self.seen.fill(0);
-            self.stamp = 1;
-        }
-        if self.seen.len() < clusters {
-            self.seen.resize(clusters, 0);
-            self.total.resize(clusters, 0);
-        }
-        self.touched.clear();
-    }
-
-    fn hit(&mut self, id: u32) {
-        let slot = id as usize;
-        if self.seen[slot] != self.stamp {
-            self.seen[slot] = self.stamp;
-            self.total[slot] = 0;
-            self.touched.push(id);
-        }
-        self.total[slot] += 1;
-    }
-}
-
-thread_local! {
-    static SCRATCH: std::cell::RefCell<Scratch> = std::cell::RefCell::new(Scratch::default());
-}
-
-trait Tokens {
-    fn count(&self) -> usize;
-    fn at(&self, index: usize) -> &[u8];
-}
-
-impl Tokens for TokenView<'_> {
-    fn count(&self) -> usize {
-        self.len()
-    }
-    fn at(&self, index: usize) -> &[u8] {
-        self.get(index)
-    }
-}
-
-struct BoxedTokens<'a>(&'a [Box<[u8]>]);
-
-impl Tokens for BoxedTokens<'_> {
-    fn count(&self) -> usize {
-        self.0.len()
-    }
-    fn at(&self, index: usize) -> &[u8] {
-        &self.0[index]
-    }
-}
-
-fn has_digit(token: &[u8]) -> bool {
-    token.iter().any(u8::is_ascii_digit)
-}
-
-fn truncate_example(message: &[u8]) -> Box<[u8]> {
-    let text = String::from_utf8_lossy(message);
-    let mut end = text.len().min(MAX_EXAMPLE_BYTES);
-    while !text.is_char_boundary(end) {
-        end -= 1;
-    }
-    Box::from(text[..end].as_bytes())
-}
-
-pub(crate) fn update_stats(stats: &mut RunStats, rec: &RecordMeta<'_>) {
-    stats.count += 1;
-    if let Some(ts) = rec.timestamp {
-        stats.first = stats.first.min(ts);
-        stats.last = stats.last.max(ts);
-    }
-    if let Some(level) = rec.level {
-        stats.levels[level.rank()] += 1;
-    }
-    if stats.example.is_none() {
-        stats.example = Some(truncate_example(rec.message));
-    }
-}
-
-/// Scores `template` against `tokens`; gives up (`None`) as soon as the exact matches cannot reach `floor`.
-fn score_bounded<T: Tokens>(template: &[Box<[u8]>], tokens: &T, floor: usize) -> Option<(usize, usize)> {
-    let n = template.len();
-    let mut exact = 0;
-    let mut params = 0;
-    for (index, token) in template.iter().enumerate() {
-        if &**token == WILDCARD {
-            params += 1;
-        } else if &**token == tokens.at(index) {
-            exact += 1;
-        }
-        if exact + (n - index - 1) < floor {
-            return None;
-        }
-    }
-    (exact >= floor).then_some((exact, params))
-}
-
-/// Result of [`DrainMiner::assign`].
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Assigned {
-    /// The message belongs to the cluster with this index.
-    Cluster(u32),
-    /// No cluster matches; the payload is the token count of the message.
-    Unmatched(usize),
-}
-
-/// Statistics gathered by assigning records to the clusters of a finished tree (`docs/ALGORITHM.md` §9).
-pub struct Recount {
-    pub(crate) n_runs: usize,
-    pub(crate) stats: HashMap<u32, Vec<RunStats>, RandomState>,
-    pub(crate) unmatched: BTreeMap<usize, Vec<RunStats>>,
-}
-
-impl Recount {
-    /// Creates an empty recount for `n_runs` runs.
-    pub fn new(n_runs: usize) -> Self {
-        Recount { n_runs, stats: HashMap::default(), unmatched: BTreeMap::new() }
-    }
-
-    /// Assigns one record of run `run` using `miner` and updates the statistics.
-    pub fn record(&mut self, miner: &DrainMiner, run: usize, tokens: &TokenView<'_>, rec: &RecordMeta<'_>) {
-        let n_runs = self.n_runs;
-        let slot = match miner.assign(tokens) {
-            Assigned::Cluster(index) => self.stats.entry(index).or_insert_with(|| vec![RunStats::default(); n_runs]),
-            Assigned::Unmatched(length) => {
-                self.unmatched.entry(length).or_insert_with(|| vec![RunStats::default(); n_runs])
-            }
-        };
-        update_stats(&mut slot[run], rec);
-    }
-
-    /// Merges the statistics of a later part of the input into `self`.
-    pub fn merge(&mut self, other: Recount) {
-        for (index, run_stats) in other.stats {
-            match self.stats.get_mut(&index) {
-                Some(mine) => absorb_all(mine, &run_stats),
-                None => {
-                    self.stats.insert(index, run_stats);
-                }
-            }
-        }
-        for (length, run_stats) in other.unmatched {
-            match self.unmatched.get_mut(&length) {
-                Some(mine) => absorb_all(mine, &run_stats),
-                None => {
-                    self.unmatched.insert(length, run_stats);
-                }
-            }
-        }
-    }
-}
-
-fn absorb_all(mine: &mut [RunStats], theirs: &[RunStats]) {
-    for (dst, src) in mine.iter_mut().zip(theirs.iter()) {
-        dst.absorb(src);
-    }
-}
-
 /// Drain-compatible template miner (see `docs/ALGORITHM.md` §4).
 pub struct DrainMiner {
     cfg: MinerConfig,
@@ -317,6 +119,20 @@ impl DrainMiner {
     /// Number of clusters in the tree (overflow clusters excluded).
     pub fn cluster_count(&self) -> usize {
         self.clusters.len()
+    }
+
+    /// Tells whether at least one leaf of the tree has an inverted index (verification aid).
+    pub fn has_indexed_leaf(&self) -> bool {
+        self.nodes.iter().any(|node| node.index.is_some())
+    }
+
+    /// Finds the best cluster for `tokens` twice, with the indexed search and with the plain scan of the leaf.
+    ///
+    /// Returns `(indexed, plain)`; the two are always equal, which the tests verify (verification aid).
+    pub fn match_both_ways(&self, tokens: &[Box<[u8]>]) -> (Option<usize>, Option<usize>) {
+        let tokens = BoxedTokens(tokens);
+        let plain = self.search(&tokens).and_then(|leaf| self.best_in(&self.nodes[leaf as usize].clusters, &tokens));
+        (self.find_match(&tokens), plain)
     }
 
     /// Per-run flags: true when records of the run fell into overflow clusters.
@@ -647,174 +463,5 @@ impl DrainMiner {
             }
             None => self.insert_cluster(cluster),
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::tokenizer::Tokenizer;
-
-    fn feed(miner: &mut DrainMiner, run: usize, line: &str) {
-        let tok = Tokenizer::new(b" \t\n\r").unwrap();
-        let mut spans = Vec::new();
-        tok.tokenize(line.as_bytes(), &mut spans);
-        let view = TokenView::new(line.as_bytes(), &spans);
-        miner.add(run, &view, &RecordMeta { message: line.as_bytes(), timestamp: None, level: None });
-    }
-
-    fn texts(miner: DrainMiner) -> Vec<(String, u64)> {
-        miner.freeze().into_iter().map(|t| (t.text, t.runs.iter().map(|r| r.count).sum())).collect()
-    }
-
-    #[test]
-    fn groups_and_generalizes() {
-        let mut miner = DrainMiner::new(MinerConfig::default(), 1);
-        for user in ["alice", "bob", "carol"] {
-            feed(&mut miner, 0, &format!("user {user} failed login"));
-        }
-        feed(&mut miner, 0, "disk full on sda");
-        let result = texts(miner);
-        assert_eq!(result[0], ("user <*> failed login".to_string(), 3));
-        assert_eq!(result[1], ("disk full on sda".to_string(), 1));
-    }
-
-    #[test]
-    fn numeric_tokens_route_to_wildcard() {
-        let mut miner = DrainMiner::new(MinerConfig::default(), 1);
-        feed(&mut miner, 0, "42 items processed");
-        feed(&mut miner, 0, "43 items processed");
-        let result = texts(miner);
-        assert_eq!(result, vec![("<*> items processed".to_string(), 2)]);
-    }
-
-    #[test]
-    fn empty_messages_form_one_template() {
-        let mut miner = DrainMiner::new(MinerConfig::default(), 1);
-        feed(&mut miner, 0, "");
-        feed(&mut miner, 0, "");
-        assert_eq!(texts(miner), vec![(String::new(), 2)]);
-    }
-
-    #[test]
-    fn counts_are_kept_per_run() {
-        let mut miner = DrainMiner::new(MinerConfig::default(), 2);
-        feed(&mut miner, 0, "ready");
-        feed(&mut miner, 1, "ready");
-        feed(&mut miner, 1, "ready");
-        let frozen = miner.freeze();
-        assert_eq!(frozen.len(), 1);
-        assert_eq!(frozen[0].runs[0].count, 1);
-        assert_eq!(frozen[0].runs[1].count, 2);
-    }
-
-    #[test]
-    fn overflow_collects_excess_templates() {
-        let cfg = MinerConfig::new(4, 0.4, 100, 2).unwrap();
-        let mut miner = DrainMiner::new(cfg, 1);
-        for line in ["a b c", "d e f", "g h i", "j k l"] {
-            feed(&mut miner, 0, line);
-        }
-        assert!(miner.overflowed()[0]);
-        let result = texts(miner);
-        let total: u64 = result.iter().map(|(_, c)| c).sum();
-        assert_eq!(total, 4);
-        assert!(result.iter().any(|(t, c)| t == "<*> <*> <*>" && *c == 2));
-    }
-
-    #[test]
-    fn merge_conserves_counts_and_matches_templates() {
-        let cfg = MinerConfig::default();
-        let mut left = DrainMiner::new(cfg.clone(), 1);
-        let mut right = DrainMiner::new(cfg, 1);
-        for user in ["alice", "bob"] {
-            feed(&mut left, 0, &format!("user {user} failed login"));
-        }
-        for user in ["carol", "dave", "erin"] {
-            feed(&mut right, 0, &format!("user {user} failed login"));
-        }
-        feed(&mut right, 0, "disk full on sda");
-        left.merge(right);
-        let result = texts(left);
-        assert_eq!(result[0], ("user <*> failed login".to_string(), 5));
-        assert_eq!(result[1], ("disk full on sda".to_string(), 1));
-    }
-
-    fn next(state: &mut u64) -> u64 {
-        *state = state.wrapping_mul(6_364_136_223_846_793_005).wrapping_add(1_442_695_040_888_963_407);
-        *state >> 33
-    }
-
-    /// A line with a constant first token (one big leaf per length). Every line belongs to one of 40 families that fix
-    /// about half of the positions; some positions draw from tiny pools (shared by many templates, so their index
-    /// lists are long) and the others from large pools.
-    fn crowded_line(state: &mut u64, length: usize) -> Vec<Box<[u8]>> {
-        let family = next(state) % 40;
-        let mut words: Vec<Box<[u8]>> = vec![b"-".to_vec().into()];
-        for position in 1..length {
-            let word = match position % 5 {
-                0 => format!("s{position}x{}", next(state) % 2),
-                1 => format!("m{position}x{}", next(state) % 30),
-                _ if (family as usize + position) % 2 == 0 => format!("f{family}p{position}"),
-                _ => format!("r{position}x{}", next(state) % 5000),
-            };
-            words.push(word.into_bytes().into());
-        }
-        words
-    }
-
-    #[test]
-    fn indexed_search_equals_the_plain_scan() {
-        let mut configs_with_an_index = 0;
-        let mut all_matches = 0;
-        for (sim_th, seed) in [(0.4, 11_u64), (0.1, 12), (0.7, 13), (0.95, 14)] {
-            let cfg = MinerConfig::new(4, sim_th, 100, 100_000).unwrap();
-            let mut miner = DrainMiner::new(cfg, 1);
-            let mut state = seed;
-            for round in 0..6000 {
-                let length = 6 + round % 14;
-                let line = crowded_line(&mut state, length);
-                let text = line.iter().map(|t| String::from_utf8_lossy(t).into_owned()).collect::<Vec<_>>().join(" ");
-                feed(&mut miner, 0, &text);
-            }
-            if miner.nodes.iter().any(|n| n.index.is_some()) {
-                configs_with_an_index += 1;
-            }
-            let mut compared = 0;
-            let mut matched = 0;
-            for round in 0..4000 {
-                let length = 6 + round % 14;
-                let mut line = crowded_line(&mut state, length);
-                if round % 3 == 0 {
-                    // an unseen token at a random position, and a repeated one elsewhere
-                    let at = 1 + (next(&mut state) as usize) % (length - 1);
-                    line[at] = b"never-seen".to_vec().into();
-                }
-                let tokens = BoxedTokens(&line);
-                let reference =
-                    miner.search(&tokens).and_then(|leaf| miner.best_in(&miner.nodes[leaf as usize].clusters, &tokens));
-                let indexed = miner.find_match(&tokens);
-                assert_eq!(indexed, reference, "sim_th {sim_th}, probe {round}");
-                compared += 1;
-                matched += usize::from(indexed.is_some());
-            }
-            assert_eq!(compared, 4000);
-            all_matches += matched;
-        }
-        assert!(all_matches > 500, "the probes must find matches too ({all_matches})");
-        assert!(configs_with_an_index >= 3, "most configurations must have leaves with an index");
-    }
-
-    #[test]
-    fn identical_input_gives_identical_output() {
-        let run = || {
-            let mut miner = DrainMiner::new(MinerConfig::default(), 1);
-            for i in 0..200 {
-                feed(&mut miner, 0, &format!("worker w{} handled request for tenant t{}", i % 7, i % 3));
-                feed(&mut miner, 0, &format!("cache miss key={}", i % 11));
-            }
-            texts(miner)
-        };
-        assert_eq!(run(), run());
     }
 }

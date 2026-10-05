@@ -10,10 +10,10 @@ import pytest
 from referencing import Registry, Resource
 
 import logfold
+from corpora import synthetic_pair
 from logfold import ConfigError
-from test_diff import synthetic_pair
 
-SCHEMA_DIR = Path(__file__).resolve().parent.parent / "docs" / "schema"
+SCHEMA_DIR = Path(__file__).resolve().parents[2] / "docs" / "schema"
 HOSTILE = [
     "2026-10-04T12:00:00Z ERROR <script>alert(1)</script> failed for <img src=x onerror=alert(2)> now",
     '2026-10-04T12:00:01Z WARN user "><svg onload=alert(3)> logged in',

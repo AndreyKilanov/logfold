@@ -13,10 +13,10 @@ from typer.testing import CliRunner
 
 import logfold
 import logfold.cli.app as cli_app
+from corpora import synthetic_pair
 from logfold.cli import exit_codes
 from logfold.cli.app import app
 from logfold.cli.render import print_diff
-from test_diff import synthetic_pair
 
 runner = CliRunner()
 
