@@ -25,7 +25,7 @@ a different message, so a twin pair in this mode is a **false merge**. Three wor
 on 0.5-20 percent of the lines. A template is *reachable* when its twin exists among the templates of *after* (the miner can
 absorb a reworded template into a more general one, then there is nothing left to pair).
 
-Each pair is run two ways. **live**: `diff before.log after.log`, one shared tree and a recount (ADR-007); the time is the whole
+Each pair is run two ways. **live**: `diff before.log after.log`, one shared tree and a recount (every record of both logs is assigned to the finished tree); the time is the whole
 `diff`, mining included. **saved**: each log analyzed on its own and the two results compared, as `logfold diff before.json
 after.json` does; the time is the comparison only.
 

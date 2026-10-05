@@ -16,7 +16,7 @@ For every log the script builds three kinds of pairs from windows of its first l
   among the templates of *after*) count for recall. Mode ``novel`` is the opposite test: every plain word of the lines
   with ``W`` is rewritten, which is a different message, so a twin pair there is a false merge.
 
-Every pair is run twice: ``live`` (``diff`` of the two files: one shared tree and a recount, ADR-007) and ``saved``
+Every pair is run twice: ``live`` (``diff`` of the two files: one shared tree and a recount) and ``saved``
 (each file analyzed on its own and the two results compared, like ``logfold diff before.json after.json``).
 
 Raw results go to ``bench/results/diff-matchers.json``; the discussion is in ``bench/docs/DIFF_MATCHERS.md``.
