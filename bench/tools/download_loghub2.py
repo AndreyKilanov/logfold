@@ -8,10 +8,10 @@ redistribute it. Downloads resume after an interruption and are verified by size
 
 Usage::
 
-    python bench/download_loghub2.py --list
-    python bench/download_loghub2.py hdfs spark thunderbird bgl
-    python bench/download_loghub2.py --all --out bench/data/loghub2
-    python bench/download_loghub2.py --verify              # check the files you already have
+    python bench/tools/download_loghub2.py --list
+    python bench/tools/download_loghub2.py hdfs spark thunderbird bgl
+    python bench/tools/download_loghub2.py --all --out bench/data/loghub2
+    python bench/tools/download_loghub2.py --verify              # check the files you already have
 """
 
 from __future__ import annotations

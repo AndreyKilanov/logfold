@@ -30,7 +30,7 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 - The `token_subset` and `jaccard` diff matchers no longer compare every pair of templates: 18 thousand templates per run
   take 0.74 s and 2.2 s instead of 81 s and about 5 minutes (extrapolated); the growth exponent is 1.2 and 1.6 instead
   of 2.0, which makes `diff` of large results usable. They return exactly the pairs they returned before. Measurements
-  and the script are in `bench/DIFF_SCALING.md`.
+  and the script are in `bench/RESULTS.md`.
 - The built-in diff matchers run in the native extension when it is available (one call per pair of template lists):
   at 18 thousand templates `token_subset` adds 0.07 s and `jaccard` 0.27 s to a `diff` instead of 0.17 s and 1.6 s; a
   whole `diff` of 100 thousand templates is projected at 4 s and 11 s. The pure-Python matchers stay the reference and

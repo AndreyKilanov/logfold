@@ -2,7 +2,7 @@
 
 Usage::
 
-    python bench/equivalence.py --out bench/results/templates.json
+    python bench/tools/equivalence.py --out bench/results/templates.json
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 PYTHON = sys.executable
 
 
@@ -38,7 +38,7 @@ def drain3_count(path: Path, masked: bool) -> int:
     out = run(
         [
             PYTHON,
-            str(ROOT / "bench" / "competitors" / "drain3_run.py"),
+            str(ROOT / "bench" / "tools" / "competitors" / "drain3_run.py"),
             str(path),
             "--masks",
             "default" if masked else "none",

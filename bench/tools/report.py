@@ -2,23 +2,24 @@
 
 Usage::
 
-    python bench/report.py [results directory]
+    python bench/tools/report.py [results directory]
 """
 
 from __future__ import annotations
 
 import json
+import math
 import sys
 from collections import defaultdict
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def load_results(folder: Path) -> tuple[dict[str, object], list[dict[str, object]]]:
     """Read ``environment.json`` and every scenario file of ``folder``."""
     if not (folder / "environment.json").exists():
-        raise SystemExit(f"no results in {folder}; run bench/run.py first")
+        raise SystemExit(f"no results in {folder}; run bench/tools/run.py first")
     environment = json.loads((folder / "environment.json").read_text(encoding="utf-8"))
     runs: list[dict[str, object]] = []
     for scenario in ("analyze-bare", "analyze-masked", "diff"):
@@ -81,6 +82,86 @@ def table(
     return lines
 
 
+DIFF_SCALE_COLUMNS = (
+    ("analyze_s", "analyze"),
+    ("analyze_engine_s", "engine part"),
+    ("diff_exact_s", "diff exact"),
+    ("diff_token_subset_s", "diff token_subset"),
+    ("diff_jaccard_s", "diff jaccard"),
+)
+DIFF_SCALE_STAGES = {
+    "before": "Before: the matchers compared every pair of templates",
+    "indexed": "Candidates found with an index, in Python",
+    "native": "The matchers in Rust (current)",
+}
+PROJECT_TO = (54_000, 100_000)
+
+
+def exponent(rows: list[dict[str, object]], key: str) -> float | None:
+    """Fit ``t ~ n^k`` between the first and the last size that has a time for ``key``."""
+    timed = [(float(r["templates"]), float(r[key])) for r in rows if r.get(key)]  # type: ignore[arg-type]
+    if len(timed) < 2 or timed[0][1] <= 0:
+        return None
+    (n1, t1), (n2, t2) = timed[0], timed[-1]
+    return math.log(t2 / t1) / math.log(n2 / n1)
+
+
+def project(rows: list[dict[str, object]], key: str, templates: int) -> float | None:
+    """Extrapolate the time of ``key`` to ``templates`` templates with the fitted exponent."""
+    k = exponent(rows, key)
+    timed = [r for r in rows if r.get(key)]
+    if k is None or not timed:
+        return None
+    last = timed[-1]
+    return float(last[key]) * (templates / float(last["templates"])) ** k  # type: ignore[arg-type]
+
+
+def _cell(value: object) -> str:
+    return "skipped" if value is None else f"{float(value):,.2f}"  # type: ignore[arg-type]
+
+
+def diff_scale_table(rows: list[dict[str, object]]) -> list[str]:
+    """Render the rows of one stage: the times in seconds, the growth exponent and the projections."""
+    keys = [(key, title) for key, title in DIFF_SCALE_COLUMNS if any(key in row for row in rows)]
+    out = ["| lines | templates | " + " | ".join(title for _, title in keys) + " |"]
+    out.append("|---:|---:|" + "---:|" * len(keys))
+    for row in rows:
+        out.append(
+            f"| {int(row['lines']):,} | {int(row['templates']):,} | "
+            + " | ".join(_cell(row.get(k)) for k, _ in keys)
+            + " |"
+        )  # type: ignore[call-overload]
+    exponents = ["growth exponent"] + [f"{k:.2f}" if (k := exponent(rows, key)) is not None else "" for key, _ in keys]
+    out.append("| " + " | ".join(["", *exponents]) + " |")
+    for n in PROJECT_TO:
+        cells = [_cell(project(rows, key, n)) if exponent(rows, key) is not None else "" for key, _ in keys]
+        out.append(f"| | projected at {n:,} templates | " + " | ".join(cells) + " |")
+    return out
+
+
+def diff_scale_section(data: dict[str, object]) -> list[str]:
+    """Render ``results/diff-scale.json`` (stages of `bench/tools/diff_scale.py`) as a section."""
+    stages = data["stages"]  # type: ignore[index]
+    out = [
+        "## `diff` and result building: growth with the number of templates",
+        "",
+        "Measured by `tools/diff_scale.py`: three to five small sizes (4.6 to 73 thousand templates per run), best of three "
+        "repeats for the fast measurements, one thread, native engine. `diff` compares two saved results; `analyze` is the "
+        "whole call, the engine part is the time inside the engine. The growth exponent `k` of `t ~ n^k` is fitted between "
+        "the first and the last size, the last two rows extrapolate with it.",
+        "",
+    ]
+    for stage, title in DIFF_SCALE_STAGES.items():
+        if stage in stages:  # type: ignore[operator]
+            out += [f"### {title}", "", *diff_scale_table(stages[stage]["rows"]), ""]  # type: ignore[index]
+    out += [
+        "Linear but slow per template and now the bulk of a `diff`: the join and the entries of the comparison (about 30 "
+        "microseconds per template) and the conversion of the engine result in `analyze` (about 17).",
+        "",
+    ]
+    return out
+
+
 def main() -> None:
     folder = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "bench" / "results"
     env, all_runs = load_results(folder)
@@ -115,7 +196,10 @@ def main() -> None:
         rows = table(runs, scenario, datasets, peaks)
         if rows:
             out += [f"## {title}", "", *rows, ""]
-    notes = ROOT / "bench" / "NOTES.md"
+    scale = folder / "diff-scale.json"
+    if scale.exists():
+        out += diff_scale_section(json.loads(scale.read_text(encoding="utf-8")))
+    notes = ROOT / "bench" / "docs" / "NOTES.md"
     if notes.exists():
         out += ["", notes.read_text(encoding="utf-8").rstrip(), ""]
     (ROOT / "bench" / "RESULTS.md").write_text("\n".join(out) + "\n", encoding="utf-8")
