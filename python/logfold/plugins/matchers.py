@@ -7,7 +7,10 @@ compared as one template instead of being reported as one ``new`` and one ``disa
 
 from __future__ import annotations
 
+import math
+from collections import Counter
 from collections.abc import Sequence
+from itertools import chain
 
 __all__ = ["JaccardMatcher"]
 
@@ -39,13 +42,7 @@ class JaccardMatcher:
         """
         before = [set(text.split()) for text in before_only]
         after = [set(text.split()) for text in after_only]
-        scored: list[tuple[float, int, int]] = []
-        for i, left in enumerate(before):
-            for j, right in enumerate(after):
-                union = len(left | right)
-                score = len(left & right) / union if union else 0.0
-                if score >= self.threshold:
-                    scored.append((score, i, j))
+        scored = self._scored(before, after)
         scored.sort(key=lambda item: (-item[0], item[1], item[2]))
         pairs: list[tuple[int, int]] = []
         used_before: set[int] = set()
@@ -56,3 +53,46 @@ class JaccardMatcher:
                 used_before.add(i)
                 used_after.add(j)
         return sorted(pairs)
+
+    def _scored(self, before: list[set[str]], after: list[set[str]]) -> list[tuple[float, int, int]]:
+        """Return every ``(score, i, j)`` whose similarity reaches the threshold.
+
+        Pairs are found with prefix filtering: the words of every template are ordered from the rarest to the most
+        common, and two sets with similarity ``t`` always share a word among the first ``n - ceil(t * n) + 1`` words
+        of each, so only templates that share such a rare word are compared. The result is the same as comparing all
+        pairs. A threshold above 1, or one that is not a number, is reached by no pair; zero or less pairs everything.
+        """
+        threshold = self.threshold
+        if math.isnan(threshold) or threshold > 1:
+            return []
+        if threshold <= 0:
+            return [
+                (len(left & right) / union if (union := len(left | right)) else 0.0, i, j)
+                for i, left in enumerate(before)
+                for j, right in enumerate(after)
+            ]
+        frequency = Counter(word for words in chain(before, after) for word in words)
+        rank = {word: position for position, word in enumerate(sorted(frequency, key=lambda w: (frequency[w], w)))}
+
+        def prefix(words: set[str]) -> list[str]:
+            ordered = sorted(words, key=rank.__getitem__)
+            keep = len(ordered) - math.ceil(threshold * len(ordered) - 1e-9) + 1
+            return ordered[: max(keep, 1)]
+
+        index: dict[str, list[int]] = {}
+        for i, left in enumerate(before):
+            for word in prefix(left):
+                index.setdefault(word, []).append(i)
+        scored: list[tuple[float, int, int]] = []
+        for j, right in enumerate(after):
+            seen: set[int] = set()
+            for word in prefix(right):
+                for i in index.get(word, ()):
+                    if i in seen:
+                        continue
+                    seen.add(i)
+                    union = len(before[i] | right)
+                    score = len(before[i] & right) / union if union else 0.0
+                    if score >= threshold:
+                        scored.append((score, i, j))
+        return scored

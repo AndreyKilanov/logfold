@@ -27,6 +27,10 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Changed
 
+- The `token_subset` and `jaccard` diff matchers no longer compare every pair of templates: 18 thousand templates per run
+  take 0.74 s and 2.2 s instead of 81 s and about 5 minutes (extrapolated); the growth exponent is 1.2 and 1.6 instead
+  of 2.0, which makes `diff` of large results usable. They return exactly the pairs they returned before. Measurements
+  and the script are in `bench/DIFF_SCALING.md`.
 - Plugin discovery reads the installed package metadata once instead of three times, so every command that
   resolves a format or a reporter starts about 9 ms faster (307 ms instead of 316 ms for `logfold analyze` on a small
   file, median of 25 runs). The output is unchanged.

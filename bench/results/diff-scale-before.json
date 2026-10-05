@@ -1,0 +1,32 @@
+{
+  "logfold": "0.2.1",
+  "rows": [
+    {
+      "lines": 5000,
+      "templates": 4571,
+      "analyze_s": 0.0799430999904871,
+      "analyze_engine_s": 0.0348282,
+      "diff_exact_s": 0.12827340001240373,
+      "diff_token_subset_s": 4.672117899986915,
+      "diff_jaccard_s": 18.931594199995743
+    },
+    {
+      "lines": 10000,
+      "templates": 9122,
+      "analyze_s": 0.15392430001520552,
+      "analyze_engine_s": 0.0605455,
+      "diff_exact_s": 0.25755409998237155,
+      "diff_token_subset_s": 18.391718600003514,
+      "diff_jaccard_s": 77.25603690001299
+    },
+    {
+      "lines": 20000,
+      "templates": 18209,
+      "analyze_s": 0.3232984999776818,
+      "analyze_engine_s": 0.138082,
+      "diff_exact_s": 0.578624799993122,
+      "diff_token_subset_s": 81.20049899999867,
+      "diff_jaccard_s": null
+    }
+  ]
+}
