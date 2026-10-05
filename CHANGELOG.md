@@ -10,7 +10,8 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 - `--report NAME` on `logfold analyze` and `logfold diff` chooses the reporter by name, so plugin reporters work from
   the command line: with `--out` it writes the file, without `--out` its text is printed instead of the tables. The
   `--out` suffix `.csv` selects the `csv` reporter. An unknown or unsuitable reporter and a bad `--out` suffix now fail
-  before the logs are read.
+  before the logs are read. A reporter that raises or returns something other than text ends with
+  `error: reporter 'NAME' failed: ...` and exit code 1.
 - Compare saved results without the logs: `logfold.load_analysis(path)` loads a JSON report of `analyze`, and
   `logfold.diff()` accepts two `AnalysisResult` objects. `logfold diff before.json after.json` detects saved reports
   by their header. The results are mined separately and are not re-counted, so templates are joined by id and the
@@ -23,8 +24,6 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 - Terminal output no longer acts on control characters from log content: in the tables and in `--report` printed to a
   terminal an escape sequence (retitle the window, hide text, write to the clipboard) is shown as a visible `\xNN`
   instead. Files and pipes keep the raw text.
-- A plugin reporter that raises or returns something other than text fails with `error: reporter 'NAME' failed: ...` and
-  exit code 1 instead of a traceback.
 
 ### Changed
 
