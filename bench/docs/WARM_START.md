@@ -9,7 +9,7 @@ starts every other chunk from a copy of its tree. It is off by default; the defa
 Measured with [`warm_start.py`](../tools/warm_start.py) (`python bench/tools/warm_start.py --repeat 3`); raw data
 [`results/warm-start.json`](../results/warm-start.json). `analyze --top 1 -q -f plain --engine native --strategy chunked`, 16
 threads, each command in its own process (the times include about 0.35 s of start-up), median of three runs, peak working set of
-the process tree; the numbers of templates are one run each. logfold 0.2.1 plus the change, Windows 11, 8 cores / 16 threads, warm
+the process tree; the numbers of templates are one run each. The 0.3.0 development code (its version string was still 0.2.1), Windows 11, 8 cores / 16 threads, warm
 page cache.
 
 | input | sequential | chunk | cold: templates | warm: templates | cold: time | warm: time | cold: MB | warm: MB |

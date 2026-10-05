@@ -99,6 +99,13 @@ three differ most. The exit-code gates (`--fail-on-new`, `--fail-on-new-alerts`)
 `changed`, so use `--matcher exact` for a gate that must fail on every new text. Measurements on four large real logs, and how they were made, are in
 [`bench/docs/DIFF_MATCHERS.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/docs/DIFF_MATCHERS.md).
 
+## Reports
+
+`--out FILE` writes a report; the suffix selects the format: `.html`, `.json`, `.txt` (plain text), `.md` (Markdown tables)
+or `.csv`. `--report NAME` picks the reporter by name instead, including one from a plugin: with `--out` it writes the
+file, without it the text is printed instead of the tables. HTML reports are one self-contained file with a strict
+Content-Security-Policy. JSON files follow the schemas in `docs/schema`.
+
 ## Formats
 
 `logfold formats` lists them. `--format auto` (the default) samples the file and picks one; it fails with the best
@@ -114,6 +121,8 @@ guesses instead of guessing wrong silently.
 | `syslog` | classic syslog lines |
 | `k8s` | CRI/containerd container logs (`kubectl logs` raw files) |
 | `app` | `<ISO timestamp> [thread] LEVEL message`, typical of Python, Java and Go services |
+| `logfmt` | `key=value` pairs (default plugin); `msg`, `time`/`ts` and `level` keys are used |
+| `serilog-clef` | Serilog compact JSON (default plugin); `@m`/`@mt`, `@t`, `@l` |
 | `regex:<pattern>` | your own pattern; named groups `message`/`msg`, `timestamp`/`time`/`ts`, `level`/`lvl` are used |
 
 Multi-line records (stack traces): `--multiline` joins lines that do not start a record to the previous one. With
@@ -152,7 +161,8 @@ memory-hungry for any Drain-based tool. `--high-cardinality` (`high_cardinality=
 5000 (unless you pass `--max-templates`), pools every further record into catch-all templates (`<*> <*> ...`, one per
 token count; counts stay exact) and runs sequentially, because merging huge trees costs more than parallelism saves.
 On a 10 MB file with about 84 000 distinct lines this turns 2.0 s into 0.14 s. A warning tells you when the cap was hit,
-also without the mode.
+also without the mode. With `--strategy auto` such a log is noticed after the first chunk and mined sequentially even
+without the mode, but the mode is faster and keeps the result short.
 
 ## Extending logfold
 

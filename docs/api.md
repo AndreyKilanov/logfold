@@ -133,7 +133,7 @@ schema version 1, `SourceError` is raised.
 - `RunSummary`: `name`, `files`, `lines` (non-blank physical lines), `records`, `unparsed` (lines that did not become
   part of a record), `bytes`, `tz_aware` (naive timestamps are interpreted as UTC), `overflowed` (`max_templates` was
   reached), and the property `unparsed_ratio`.
-- `RunMetrics`: `engine`, `strategy`, `threads`, `chunks`, and wall times `wall_total_s`, `wall_mine_s`,
+- `RunMetrics`: `engine`, `strategy` (`sequential` or `chunked`: what was used, which `auto` decides), `threads`, `chunks`, and wall times `wall_total_s`, `wall_mine_s`,
   `wall_merge_s`, `wall_recount_s`, `wall_freeze_s`.
 - `ResultMeta`: `schema_version`, `algo_version`, `logfold_version`, `config_hash` (results with different hashes may
   not be comparable), `format`, `degraded` (the slow reference engine was used).

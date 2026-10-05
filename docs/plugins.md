@@ -23,7 +23,7 @@ They are part of `pip install logfold`; nothing else has to be installed.
 | format | `serilog-clef` | Serilog compact JSON (`@t`, `@m` / `@mt`, `@l`) |
 | reporter | `markdown` | Markdown tables for an analysis or a diff |
 | reporter | `csv` | one template per row, for spreadsheets and scripts |
-| matcher | `jaccard` | pairs templates whose words overlap by at least 60%, so a reworded message is one template |
+| matcher | `jaccard` | the default matcher of `diff`: pairs templates whose words overlap by at least 60%, so a reworded message is one template |
 
 ```
 logfold analyze app.logfmt --format logfmt

@@ -53,7 +53,7 @@ so this is a speed comparison of two different reports.
 
 **Memory.** Peak working set of the process tree, maximum over all runs of a tool. logfold: 42–66 MB with one thread and
 93–130 MB with 16 threads on the regular datasets; on `highcard` (10⁵ templates) 284 MB sequentially and 1.9 GB with 16
-threads when the strategy is forced to `chunked`, because every chunk builds its own huge tree (the default `auto` strategy notices this after the first chunk and mines sequentially: 553 MB with 8 MiB chunks, 286 MB with the default chunk, see `ADAPTIVE.md`; the high-cardinality mode needs 54–55 MB). Drain3 41 MB, logdelta
+threads when the strategy is forced to `chunked`, because every chunk builds its own huge tree (the default `auto` strategy notices this after the first chunk and mines sequentially: 553 MB with 8 MiB chunks, 286 MB with the default chunk, see `bench/docs/ADAPTIVE.md`; the high-cardinality mode needs 54–55 MB). Drain3 41 MB, logdelta
 9–154 MB, logdrain over 1.2 GB. For logfold, memory depends on the number of templates, not on the file size.
 
 ## High-cardinality data
@@ -61,7 +61,7 @@ threads when the strategy is forced to `chunked`, because every chunk builds its
 `highcard` is adversarial: 6–15 random words per line, about 10⁵ distinct templates. It is the weak case for the default
 configuration: 4.3 s per 100 MB with one thread and 8.1 s with 16 when the strategy is forced to `chunked` (**chunked is
 slower than sequential**: merging chunk trees of 10⁵ templates costs more than parallelism saves). The default `auto`
-strategy now sees this in the first chunk and mines sequentially, see `ADAPTIVE.md`. The result is still an unreadable list
+strategy now sees this in the first chunk and mines sequentially, see `bench/docs/ADAPTIVE.md`. The result is still an unreadable list
 of one-line templates.
 
 `--high-cardinality` (templates capped at 5000, the rest pooled into catch-all templates, sequential) addresses it:
