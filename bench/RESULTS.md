@@ -68,14 +68,14 @@ Measured by `tools/diff_scale.py`: three to five small sizes (4.6 to 73 thousand
 
 | lines | templates | analyze | engine part | diff exact | diff token_subset | diff jaccard |
 |---:|---:|---:|---:|---:|---:|---:|
-| 5,000 | 4,571 | 0.08 | 0.03 | 0.12 | 0.14 | 0.15 |
-| 10,000 | 9,122 | 0.16 | 0.07 | 0.26 | 0.28 | 0.34 |
-| 20,000 | 18,209 | 0.32 | 0.14 | 0.54 | 0.61 | 0.81 |
-| 40,000 | 36,320 | 0.70 | 0.31 | 1.23 | 1.36 | 2.31 |
-| 80,000 | 72,615 | 1.66 | 0.77 | 2.62 | 2.93 | 7.22 |
-|  | growth exponent | 1.12 | 1.13 | 1.10 | 1.11 | 1.39 |
-| | projected at 54,000 templates | 1.19 | 0.55 | 1.89 | 2.11 | 4.78 |
-| | projected at 100,000 templates | 2.37 | 1.11 | 3.73 | 4.18 | 11.27 |
+| 5,000 | 4,571 | 0.08 | 0.03 | 0.12 | 0.13 | 0.14 |
+| 10,000 | 9,122 | 0.16 | 0.07 | 0.26 | 0.28 | 0.29 |
+| 20,000 | 18,209 | 0.33 | 0.14 | 0.54 | 0.60 | 0.63 |
+| 40,000 | 36,320 | 0.70 | 0.30 | 1.22 | 1.35 | 1.49 |
+| 80,000 | 72,615 | 1.63 | 0.70 | 2.53 | 2.90 | 3.34 |
+|  | growth exponent | 1.09 | 1.10 | 1.09 | 1.11 | 1.15 |
+| | projected at 54,000 templates | 1.18 | 0.51 | 1.83 | 2.08 | 2.37 |
+| | projected at 100,000 templates | 2.32 | 1.00 | 3.59 | 4.13 | 4.83 |
 
 Linear but slow per template and now the bulk of a `diff`: the join and the entries of the comparison (about 30 microseconds per template) and the conversion of the engine result in `analyze` (about 17).
 

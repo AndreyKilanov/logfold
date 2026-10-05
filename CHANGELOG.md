@@ -32,8 +32,10 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   of 2.0, which makes `diff` of large results usable. They return exactly the pairs they returned before. Measurements
   and the script are in `bench/RESULTS.md`.
 - The built-in diff matchers run in the native extension when it is available (one call per pair of template lists):
-  at 18 thousand templates `token_subset` adds 0.07 s and `jaccard` 0.27 s to a `diff` instead of 0.17 s and 1.6 s; a
-  whole `diff` of 100 thousand templates is projected at 4 s and 11 s. The pure-Python matchers stay the reference and
+  at 18 thousand templates `token_subset` adds 0.07 s and `jaccard` 0.09 s to a `diff` instead of 0.17 s and 1.6 s; a
+  whole `diff` of 100 thousand templates is projected at 4 s and 5 s. The `jaccard` words are ranks, candidates are
+  filtered by the sizes of the sets and the verification stops as soon as the needed overlap is out of reach, which
+  gives the same pairs. The pure-Python matchers stay the reference and
   the fallback (the pure-Python engine, a plugin or a subclass of a built-in matcher, unusual `jaccard` thresholds); the
   pairs are identical, and the rules are written in `docs/ALGORITHM.md` §10.
 - Plugin discovery reads the installed package metadata once instead of three times, so every command that
