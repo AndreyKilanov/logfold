@@ -1,5 +1,6 @@
-use super::*;
-use crate::tokenizer::Tokenizer;
+#![allow(missing_docs)]
+
+use logfold_core::*;
 
 fn feed(miner: &mut DrainMiner, run: usize, line: &str) {
     let tok = Tokenizer::new(b" \t\n\r").unwrap();
@@ -123,7 +124,7 @@ fn indexed_search_equals_the_plain_scan() {
             let text = line.iter().map(|t| String::from_utf8_lossy(t).into_owned()).collect::<Vec<_>>().join(" ");
             feed(&mut miner, 0, &text);
         }
-        if miner.nodes.iter().any(|n| n.index.is_some()) {
+        if miner.has_indexed_leaf() {
             configs_with_an_index += 1;
         }
         let mut compared = 0;
@@ -136,10 +137,7 @@ fn indexed_search_equals_the_plain_scan() {
                 let at = 1 + (next(&mut state) as usize) % (length - 1);
                 line[at] = b"never-seen".to_vec().into();
             }
-            let tokens = BoxedTokens(&line);
-            let reference =
-                miner.search(&tokens).and_then(|leaf| miner.best_in(&miner.nodes[leaf as usize].clusters, &tokens));
-            let indexed = miner.find_match(&tokens);
+            let (indexed, reference) = miner.match_both_ways(&line);
             assert_eq!(indexed, reference, "sim_th {sim_th}, probe {round}");
             compared += 1;
             matched += usize::from(indexed.is_some());

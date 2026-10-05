@@ -11,8 +11,6 @@ use crate::tokenizer::TokenView;
 mod leaf;
 mod matching;
 mod recount;
-#[cfg(test)]
-mod tests;
 
 use leaf::{LeafIndex, Node, INDEX_MIN_CLUSTERS, SCRATCH};
 use matching::{has_digit, score_bounded, update_stats, BoxedTokens, Tokens};
@@ -121,6 +119,20 @@ impl DrainMiner {
     /// Number of clusters in the tree (overflow clusters excluded).
     pub fn cluster_count(&self) -> usize {
         self.clusters.len()
+    }
+
+    /// Tells whether at least one leaf of the tree has an inverted index (verification aid).
+    pub fn has_indexed_leaf(&self) -> bool {
+        self.nodes.iter().any(|node| node.index.is_some())
+    }
+
+    /// Finds the best cluster for `tokens` twice, with the indexed search and with the plain scan of the leaf.
+    ///
+    /// Returns `(indexed, plain)`; the two are always equal, which the tests verify (verification aid).
+    pub fn match_both_ways(&self, tokens: &[Box<[u8]>]) -> (Option<usize>, Option<usize>) {
+        let tokens = BoxedTokens(tokens);
+        let plain = self.search(&tokens).and_then(|leaf| self.best_in(&self.nodes[leaf as usize].clusters, &tokens));
+        (self.find_match(&tokens), plain)
     }
 
     /// Per-run flags: true when records of the run fell into overflow clusters.

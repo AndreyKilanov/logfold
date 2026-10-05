@@ -478,7 +478,6 @@ version = "0.2.1"
 dependencies = [
  "logfold-core",
  "logfold-io",
- "tempfile",
  "thiserror",
 ]
 
@@ -503,6 +502,16 @@ dependencies = [
  "logfold-engine",
  "logfold-io",
  "pyo3",
+]
+
+[[package]]
+name = "logfold-tests"
+version = "0.2.1"
+dependencies = [
+ "logfold-core",
+ "logfold-engine",
+ "logfold-io",
+ "tempfile",
 ]
 
 [[package]]

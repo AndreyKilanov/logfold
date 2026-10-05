@@ -1,6 +1,6 @@
 [package]
-name = "logfold-engine"
-description = "Application layer of logfold: mining pipeline, execution strategies, progress and cancellation."
+name = "logfold-tests"
+description = "Unit, contract and integration tests of the logfold Rust crates."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -14,4 +14,7 @@ workspace = true
 [dependencies]
 logfold-core = { path = "../logfold-core" }
 logfold-io = { path = "../logfold-io" }
-thiserror = "2"
+logfold-engine = { path = "../logfold-engine" }
+
+[dev-dependencies]
+tempfile = "3"
