@@ -1,0 +1,3905 @@
+{
+  "logfold": "0.2.1",
+  "python": "3.13.0",
+  "window": 300000,
+  "block": 1000,
+  "logs": {
+    "hdfs": {
+      "stationary/live": {
+        "records": [
+          300000,
+          300000
+        ],
+        "matchers": {
+          "exact": {
+            "new": 0,
+            "disappeared": 6,
+            "changed": 1,
+            "alarms": 7
+          },
+          "token_subset": {
+            "new": 0,
+            "disappeared": 6,
+            "changed": 1,
+            "alarms": 7
+          },
+          "jaccard": {
+            "new": 0,
+            "disappeared": 6,
+            "changed": 1,
+            "alarms": 7
+          }
+        },
+        "pairs": {
+          "token_subset": {
+            "pairs": 0,
+            "kinds": {},
+            "sample": []
+          },
+          "jaccard": {
+            "pairs": 0,
+            "kinds": {},
+            "sample": []
+          }
+        }
+      },
+      "stationary/saved": {
+        "records": [
+          300000,
+          300000
+        ],
+        "matchers": {
+          "exact": {
+            "new": 4,
+            "disappeared": 10,
+            "changed": 1,
+            "alarms": 15
+          },
+          "token_subset": {
+            "new": 3,
+            "disappeared": 9,
+            "changed": 1,
+            "alarms": 13
+          },
+          "jaccard": {
+            "new": 0,
+            "disappeared": 6,
+            "changed": 1,
+            "alarms": 7
+          }
+        },
+        "pairs": {
+          "token_subset": {
+            "pairs": 1,
+            "kinds": {
+              "generalizing": 1
+            },
+            "sample": [
+              [
+                "generalizing",
+                "<NUM> <NUM> <NUM> INFO dfs.DataNode$BlockReceiver: Exception in receiveBlock for block blk_3858821904894294369 java.io.IOException: Connection reset by peer",
+                "<NUM> <NUM> <NUM> INFO dfs.DataNode$BlockReceiver: Exception in receiveBlock for block <*> java.io.IOException: Connection reset by peer"
+              ]
+            ]
+          },
+          "jaccard": {
+            "pairs": 4,
+            "kinds": {
+              "same length": 3,
+              "generalizing": 1
+            },
+            "sample": [
+              [
+                "same length",
+                "<NUM> <NUM> <NUM> INFO <*> <*> blk_3858821904894294369 <*> <*> java.io.InterruptedIOException: Interruped while waiting for IO on channel java.nio.channels.SocketChannel[connected local=/<IP> remote=/<IP>]. <NUM> millis timeout left.",
+                "<NUM> <NUM> <NUM> INFO dfs.DataNode$PacketResponder: PacketResponder blk_4241467193520768333 <NUM> Exception java.io.InterruptedIOException: Interruped while waiting for IO on channel java.nio.channels.SocketChannel[connected local=/<IP> remote=/<IP>]. <NUM> millis timeout left."
+              ],
+              [
+                "generalizing",
+                "<NUM> <NUM> <NUM> INFO dfs.DataNode$BlockReceiver: Exception in receiveBlock for block blk_3858821904894294369 java.io.IOException: Connection reset by peer",
+                "<NUM> <NUM> <NUM> INFO dfs.DataNode$BlockReceiver: Exception in receiveBlock for block <*> java.io.IOException: Connection reset by peer"
+              ],
+              [
+                "same length",
+                "<NUM> <NUM> <NUM> INFO dfs.DataNode$DataXceiver: writeBlock blk_992101295951175683 received exception java.io.IOException: Block blk_992101295951175683 is valid, and cannot be written to.",
+                "<NUM> <NUM> <NUM> INFO dfs.DataNode$DataXceiver: writeBlock blk_5862064168004546076 received exception java.io.IOException: Block blk_5862064168004546076 is valid, and cannot be written to."
+              ],
+              [
+                "same length",
+                "<NUM> <NUM> <NUM> WARN dfs.DataNode$DataTransfer: <IP>:Failed to transfer blk_992101295951175683 to <IP> got java.io.IOException: Connection reset by peer",
+                "<NUM> <NUM> <NUM> WARN dfs.DataNode$DataTransfer: <IP>:Failed to transfer blk_5862064168004546076 to <IP> got java.io.IOException: Connection reset by peer"
+              ]
+            ]
+          }
+        }
+      },
+      "adjacent/live": {
+        "records": [
+          300000,
+          300000
+        ],
+        "matchers": {
+          "exact": {
+            "new": 3,
+            "disappeared": 8,
+            "changed": 4,
+            "alarms": 15
+          },
+          "token_subset": {
+            "new": 3,
+            "disappeared": 8,
+            "changed": 4,
+            "alarms": 15
+          },
+          "jaccard": {
+            "new": 3,
+            "disappeared": 8,
+            "changed": 4,
+            "alarms": 15
+          }
+        },
+        "pairs": {
+          "token_subset": {
+            "pairs": 0,
+            "kinds": {},
+            "sample": []
+          },
+          "jaccard": {
+            "pairs": 0,
+            "kinds": {},
+            "sample": []
+          }
+        }
+      },
+      "adjacent/saved": {
+        "records": [
+          300000,
+          300000
+        ],
+        "matchers": {
+          "exact": {
+            "new": 7,
+            "disappeared": 12,
+            "changed": 2,
+            "alarms": 21
+          },
+          "token_subset": {
+            "new": 5,
+            "disappeared": 10,
+            "changed": 4,
+            "alarms": 19
+          },
+          "jaccard": {
+            "new": 3,
+            "disappeared": 8,
+            "changed": 4,
+            "alarms": 15
+          }
+        },
+        "pairs": {
+          "token_subset": {
+            "pairs": 2,
+            "kinds": {
+              "generalizing": 2
+            },
+            "sample": [
+              [
+                "generalizing",
+                "<NUM> <NUM> <NUM> INFO <*> <*> <*> <*> <*> <*>",
+                "<NUM> <NUM> <NUM> INFO <*> <*> block <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "<NUM> <NUM> <NUM> INFO dfs.FSNamesystem: BLOCK* ask <IP> to replicate <*> to datanode(s) <IP>",
+                "<NUM> <NUM> <NUM> INFO dfs.FSNamesystem: BLOCK* <*> <*> <*> <*> <*> <*> <*> <IP>"
+              ]
+            ]
+          },
+          "jaccard": {
+            "pairs": 4,
+            "kinds": {
+              "generalizing": 2,
+              "same length": 2
+            },
+            "sample": [
+              [
+                "generalizing",
+                "<NUM> <NUM> <NUM> INFO <*> <*> <*> <*> <*> <*>",
+                "<NUM> <NUM> <NUM> INFO <*> <*> block <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "<NUM> <NUM> <NUM> INFO dfs.FSNamesystem: BLOCK* ask <IP> to replicate <*> to datanode(s) <IP>",
+                "<NUM> <NUM> <NUM> INFO dfs.FSNamesystem: BLOCK* <*> <*> <*> <*> <*> <*> <*> <IP>"
+              ],
+              [
+                "same length",
+                "<NUM> <NUM> <NUM> INFO dfs.DataNode$DataXceiver: writeBlock blk_992101295951175683 received exception java.io.IOException: Block blk_992101295951175683 is valid, and cannot be written to.",
+                "<NUM> <NUM> <NUM> INFO dfs.DataNode$DataXceiver: writeBlock blk_5862064168004546076 received exception java.io.IOException: Block blk_5862064168004546076 is valid, and cannot be written to."
+              ],
+              [
+                "same length",
+                "<NUM> <NUM> <NUM> WARN dfs.DataNode$DataTransfer: <IP>:Failed to transfer blk_992101295951175683 to <IP> got java.io.IOException: Connection reset by peer",
+                "<NUM> <NUM> <NUM> WARN dfs.DataNode$DataTransfer: <IP>:Failed to transfer blk_5862064168004546076 to <IP> got java.io.IOException: Connection reset by peer"
+              ]
+            ]
+          }
+        }
+      },
+      "reworded": [
+        {
+          "word": "added",
+          "mode": "swap",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            6,
+            0
+          ]
+        },
+        {
+          "word": "added",
+          "mode": "swap",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 1,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 1,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 5,
+              "twin": 1,
+              "misplaced": 0,
+              "other": 4,
+              "twin_share": 1.0
+            }
+          },
+          "one_sided": [
+            11,
+            5
+          ]
+        },
+        {
+          "word": "added",
+          "mode": "extend",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 1,
+              "twin": 1,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": 1.0
+            }
+          },
+          "one_sided": [
+            7,
+            1
+          ]
+        },
+        {
+          "word": "added",
+          "mode": "extend",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 2,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 2,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 6,
+              "twin": 1,
+              "misplaced": 0,
+              "other": 5,
+              "twin_share": 1.0
+            }
+          },
+          "one_sided": [
+            12,
+            7
+          ]
+        },
+        {
+          "word": "added",
+          "mode": "novel",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            6,
+            0
+          ]
+        },
+        {
+          "word": "added",
+          "mode": "novel",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 2,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 2,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 5,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 5,
+              "twin_share": 0.0
+            }
+          },
+          "one_sided": [
+            12,
+            6
+          ]
+        },
+        {
+          "word": "PacketResponder",
+          "mode": "swap",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 2,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 2,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            6,
+            0
+          ]
+        },
+        {
+          "word": "PacketResponder",
+          "mode": "swap",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 3,
+              "reachable": 1,
+              "pairs": 1,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 1,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 3,
+              "reachable": 1,
+              "pairs": 5,
+              "twin": 1,
+              "misplaced": 0,
+              "other": 4,
+              "twin_share": 1.0
+            }
+          },
+          "one_sided": [
+            11,
+            5
+          ]
+        },
+        {
+          "word": "PacketResponder",
+          "mode": "extend",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 1,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 1,
+              "reachable": 0,
+              "pairs": 1,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 1,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            6,
+            1
+          ]
+        },
+        {
+          "word": "PacketResponder",
+          "mode": "extend",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 3,
+              "reachable": 1,
+              "pairs": 2,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 2,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 3,
+              "reachable": 1,
+              "pairs": 6,
+              "twin": 1,
+              "misplaced": 0,
+              "other": 5,
+              "twin_share": 1.0
+            }
+          },
+          "one_sided": [
+            12,
+            7
+          ]
+        },
+        {
+          "word": "PacketResponder",
+          "mode": "novel",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 2,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 2,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            7,
+            1
+          ]
+        },
+        {
+          "word": "PacketResponder",
+          "mode": "novel",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 3,
+              "reachable": 1,
+              "pairs": 2,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 2,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 3,
+              "reachable": 1,
+              "pairs": 4,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 4,
+              "twin_share": 0.0
+            }
+          },
+          "one_sided": [
+            12,
+            7
+          ]
+        },
+        {
+          "word": "serving",
+          "mode": "swap",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            6,
+            0
+          ]
+        },
+        {
+          "word": "serving",
+          "mode": "swap",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 1,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 1,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 5,
+              "twin": 1,
+              "misplaced": 0,
+              "other": 4,
+              "twin_share": 1.0
+            }
+          },
+          "one_sided": [
+            11,
+            5
+          ]
+        },
+        {
+          "word": "serving",
+          "mode": "extend",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 1,
+              "twin": 1,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": 1.0
+            }
+          },
+          "one_sided": [
+            7,
+            1
+          ]
+        },
+        {
+          "word": "serving",
+          "mode": "extend",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 1,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 1,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 5,
+              "twin": 1,
+              "misplaced": 0,
+              "other": 4,
+              "twin_share": 1.0
+            }
+          },
+          "one_sided": [
+            11,
+            5
+          ]
+        },
+        {
+          "word": "serving",
+          "mode": "novel",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            6,
+            0
+          ]
+        },
+        {
+          "word": "serving",
+          "mode": "novel",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 1,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 1,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 4,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 4,
+              "twin_share": 0.0
+            }
+          },
+          "one_sided": [
+            11,
+            5
+          ]
+        }
+      ]
+    },
+    "bgl": {
+      "stationary/live": {
+        "records": [
+          300000,
+          300000
+        ],
+        "matchers": {
+          "exact": {
+            "new": 9,
+            "disappeared": 2,
+            "changed": 3,
+            "alarms": 14
+          },
+          "token_subset": {
+            "new": 9,
+            "disappeared": 2,
+            "changed": 3,
+            "alarms": 14
+          },
+          "jaccard": {
+            "new": 9,
+            "disappeared": 2,
+            "changed": 3,
+            "alarms": 14
+          }
+        },
+        "pairs": {
+          "token_subset": {
+            "pairs": 0,
+            "kinds": {},
+            "sample": []
+          },
+          "jaccard": {
+            "pairs": 0,
+            "kinds": {},
+            "sample": []
+          }
+        }
+      },
+      "stationary/saved": {
+        "records": [
+          300000,
+          300000
+        ],
+        "matchers": {
+          "exact": {
+            "new": 13,
+            "disappeared": 7,
+            "changed": 3,
+            "alarms": 23
+          },
+          "token_subset": {
+            "new": 10,
+            "disappeared": 4,
+            "changed": 3,
+            "alarms": 17
+          },
+          "jaccard": {
+            "new": 9,
+            "disappeared": 3,
+            "changed": 5,
+            "alarms": 17
+          }
+        },
+        "pairs": {
+          "token_subset": {
+            "pairs": 3,
+            "kinds": {
+              "generalizing": 3
+            },
+            "sample": [
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS KERNEL FATAL <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS KERNEL <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS KERNEL INFO <NUM> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS KERNEL INFO <NUM> tree receiver <NUM> in re-synch state event(s) (dcr <HEX>) detected"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS KERNEL FATAL summary...........................<NUM>",
+                "- <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS KERNEL FATAL <*>"
+              ]
+            ]
+          },
+          "jaccard": {
+            "pairs": 4,
+            "kinds": {
+              "other length": 3,
+              "same length": 1
+            },
+            "sample": [
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS KERNEL FATAL <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS KERNEL FATAL <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS KERNEL INFO <NUM> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS KERNEL <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS KERNEL FATAL summary...........................<NUM>",
+                "- <NUM> <NUM>.<NUM> R33-M1-ND-C:J15-U11 <NUM><NUM><NUM><NUM>.<NUM> R33-M1-ND-C:J15-U11 RAS KERNEL FATAL <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "same length",
+                "- <NUM> <NUM>.<NUM> UNKNOWN_LOCATION <NUM><NUM><NUM><NUM>.<NUM> UNKNOWN_LOCATION NULL HARDWARE WARNING EndServiceAction <NUM> performed upon R33-M1-ND by root",
+                "- <NUM> <NUM>.<NUM> UNKNOWN_LOCATION <NUM><NUM><NUM><NUM>.<NUM> UNKNOWN_LOCATION NULL HARDWARE WARNING EndServiceAction <NUM> performed upon R30-M0-N9 by root"
+              ]
+            ]
+          }
+        }
+      },
+      "adjacent/live": {
+        "records": [
+          300000,
+          300000
+        ],
+        "matchers": {
+          "exact": {
+            "new": 5,
+            "disappeared": 6,
+            "changed": 18,
+            "alarms": 29
+          },
+          "token_subset": {
+            "new": 5,
+            "disappeared": 6,
+            "changed": 18,
+            "alarms": 29
+          },
+          "jaccard": {
+            "new": 5,
+            "disappeared": 6,
+            "changed": 18,
+            "alarms": 29
+          }
+        },
+        "pairs": {
+          "token_subset": {
+            "pairs": 0,
+            "kinds": {},
+            "sample": []
+          },
+          "jaccard": {
+            "pairs": 0,
+            "kinds": {},
+            "sample": []
+          }
+        }
+      },
+      "adjacent/saved": {
+        "records": [
+          300000,
+          300000
+        ],
+        "matchers": {
+          "exact": {
+            "new": 11,
+            "disappeared": 12,
+            "changed": 17,
+            "alarms": 40
+          },
+          "token_subset": {
+            "new": 6,
+            "disappeared": 7,
+            "changed": 18,
+            "alarms": 31
+          },
+          "jaccard": {
+            "new": 6,
+            "disappeared": 7,
+            "changed": 17,
+            "alarms": 30
+          }
+        },
+        "pairs": {
+          "token_subset": {
+            "pairs": 5,
+            "kinds": {
+              "generalizing": 5
+            },
+            "sample": [
+              [
+                "generalizing",
+                "KERNDTLB <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS KERNEL FATAL data TLB error interrupt",
+                "KERNDTLB <NUM> <NUM>.<NUM> R30-M0-N9-C:J16-U01 <NUM><NUM><NUM><NUM>.<NUM> R30-M0-N9-C:J16-U01 RAS KERNEL FATAL data TLB error interrupt"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS KERNEL FATAL <*>",
+                "- <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS KERNEL FATAL summary...........................<NUM>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS <*> INFO <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> NULL <NUM><NUM><NUM><NUM>.<NUM> NULL RAS MMCS INFO ciodb has been restarted."
+              ],
+              [
+                "generalizing",
+                "KERNMC <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS KERNEL FATAL machine check interrupt",
+                "KERNMC <NUM> <NUM>.<NUM> R01-M0-N1-C:J13-U01 <NUM><NUM><NUM><NUM>.<NUM> R01-M0-N1-C:J13-U01 RAS KERNEL FATAL machine check interrupt"
+              ],
+              [
+                "generalizing",
+                "KERNMC <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS KERNEL FATAL machine check interrupt (bit=<HEX>): <*> <*> <*> error",
+                "KERNMC <NUM> <NUM>.<NUM> R30-M0-N9-C:J16-U01 <NUM><NUM><NUM><NUM>.<NUM> R30-M0-N9-C:J16-U01 RAS KERNEL FATAL machine check interrupt (bit=<HEX>): L2 DCU read error"
+              ]
+            ]
+          },
+          "jaccard": {
+            "pairs": 5,
+            "kinds": {
+              "generalizing": 4,
+              "same length": 1
+            },
+            "sample": [
+              [
+                "generalizing",
+                "KERNDTLB <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS KERNEL FATAL data TLB error interrupt",
+                "KERNDTLB <NUM> <NUM>.<NUM> R30-M0-N9-C:J16-U01 <NUM><NUM><NUM><NUM>.<NUM> R30-M0-N9-C:J16-U01 RAS KERNEL FATAL data TLB error interrupt"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS KERNEL FATAL <*>",
+                "- <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS KERNEL FATAL summary...........................<NUM>"
+              ],
+              [
+                "generalizing",
+                "KERNMC <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS KERNEL FATAL machine check interrupt",
+                "KERNMC <NUM> <NUM>.<NUM> R01-M0-N1-C:J13-U01 <NUM><NUM><NUM><NUM>.<NUM> R01-M0-N1-C:J13-U01 RAS KERNEL FATAL machine check interrupt"
+              ],
+              [
+                "generalizing",
+                "KERNMC <NUM> <NUM>.<NUM> <*> <NUM><NUM><NUM><NUM>.<NUM> <*> RAS KERNEL FATAL machine check interrupt (bit=<HEX>): <*> <*> <*> error",
+                "KERNMC <NUM> <NUM>.<NUM> R30-M0-N9-C:J16-U01 <NUM><NUM><NUM><NUM>.<NUM> R30-M0-N9-C:J16-U01 RAS KERNEL FATAL machine check interrupt (bit=<HEX>): L2 DCU read error"
+              ],
+              [
+                "same length",
+                "- <NUM> <NUM>.<NUM> UNKNOWN_LOCATION <NUM><NUM><NUM><NUM>.<NUM> UNKNOWN_LOCATION NULL HARDWARE WARNING EndServiceAction <NUM> performed upon R33-M1-ND by root",
+                "- <NUM> <NUM>.<NUM> UNKNOWN_LOCATION <NUM><NUM><NUM><NUM>.<NUM> UNKNOWN_LOCATION NULL HARDWARE WARNING EndServiceAction <NUM> performed upon R30-M0-N9 by root"
+              ]
+            ]
+          }
+        }
+      },
+      "reworded": [
+        {
+          "word": "instruction",
+          "mode": "swap",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            2,
+            9
+          ]
+        },
+        {
+          "word": "instruction",
+          "mode": "swap",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 3,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 3,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 4,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 4,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            7,
+            13
+          ]
+        },
+        {
+          "word": "instruction",
+          "mode": "extend",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            2,
+            9
+          ]
+        },
+        {
+          "word": "instruction",
+          "mode": "extend",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 4,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 4,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 5,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 5,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            8,
+            14
+          ]
+        },
+        {
+          "word": "instruction",
+          "mode": "novel",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            2,
+            12
+          ]
+        },
+        {
+          "word": "instruction",
+          "mode": "novel",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 4,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 4,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 5,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 5,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            8,
+            17
+          ]
+        },
+        {
+          "word": "store",
+          "mode": "swap",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            2,
+            9
+          ]
+        },
+        {
+          "word": "store",
+          "mode": "swap",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 3,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 3,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 4,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 4,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            7,
+            13
+          ]
+        },
+        {
+          "word": "store",
+          "mode": "extend",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            2,
+            9
+          ]
+        },
+        {
+          "word": "store",
+          "mode": "extend",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 3,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 3,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 4,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 4,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            7,
+            13
+          ]
+        },
+        {
+          "word": "store",
+          "mode": "novel",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            2,
+            13
+          ]
+        },
+        {
+          "word": "store",
+          "mode": "novel",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 3,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 3,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 4,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 4,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            7,
+            17
+          ]
+        },
+        {
+          "word": "point",
+          "mode": "swap",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            2,
+            9
+          ]
+        },
+        {
+          "word": "point",
+          "mode": "swap",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 3,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 3,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 4,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 4,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            7,
+            13
+          ]
+        },
+        {
+          "word": "point",
+          "mode": "extend",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            2,
+            9
+          ]
+        },
+        {
+          "word": "point",
+          "mode": "extend",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 3,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 3,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 4,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 4,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            7,
+            13
+          ]
+        },
+        {
+          "word": "point",
+          "mode": "novel",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            2,
+            11
+          ]
+        },
+        {
+          "word": "point",
+          "mode": "novel",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 3,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 3,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 4,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 4,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            7,
+            15
+          ]
+        }
+      ]
+    },
+    "spark": {
+      "stationary/live": {
+        "records": [
+          300000,
+          300000
+        ],
+        "matchers": {
+          "exact": {
+            "new": 8,
+            "disappeared": 2,
+            "changed": 10,
+            "alarms": 20
+          },
+          "token_subset": {
+            "new": 8,
+            "disappeared": 2,
+            "changed": 10,
+            "alarms": 20
+          },
+          "jaccard": {
+            "new": 8,
+            "disappeared": 2,
+            "changed": 10,
+            "alarms": 20
+          }
+        },
+        "pairs": {
+          "token_subset": {
+            "pairs": 0,
+            "kinds": {},
+            "sample": []
+          },
+          "jaccard": {
+            "pairs": 0,
+            "kinds": {},
+            "sample": []
+          }
+        }
+      },
+      "stationary/saved": {
+        "records": [
+          300000,
+          300000
+        ],
+        "matchers": {
+          "exact": {
+            "new": 28,
+            "disappeared": 20,
+            "changed": 6,
+            "alarms": 54
+          },
+          "token_subset": {
+            "new": 10,
+            "disappeared": 2,
+            "changed": 10,
+            "alarms": 22
+          },
+          "jaccard": {
+            "new": 10,
+            "disappeared": 2,
+            "changed": 10,
+            "alarms": 22
+          }
+        },
+        "pairs": {
+          "token_subset": {
+            "pairs": 18,
+            "kinds": {
+              "generalizing": 18
+            },
+            "sample": [
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Received new token for : <*>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO AMRMClientImpl: Received new token for : <*>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Container request (host: Any, capability: <memory:<NUM>, vCores:<NUM>>)",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnAllocator: Container request (host: Any, capability: <memory:<NUM>, vCores:<NUM>>)"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> MemoryStore started with capacity <NUM> <*>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> MemoryStore started with capacity <NUM> GB"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Registering block manager <*> with <NUM> <*> RAM, <*> <*> <NUM>)",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Registering block manager <*> with <NUM> GB RAM, <*> <*> <NUM>)"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnClusterSchedulerBackend: Registered executor NettyRpcEndpointRef(null) <*> with ID <NUM>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Registered executor NettyRpcEndpointRef(null) <*> with ID <NUM>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnAllocator: Completed container <*> on host: <*> (state: COMPLETE, exit status: -<NUM>)",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnAllocator: Completed container <*> on host: <*> (state: COMPLETE, exit status: <*>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Will request <NUM> executor containers, each with <NUM> cores and <NUM> MB memory including <NUM> MB overhead",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnAllocator: Will request <NUM> executor containers, each with <NUM> cores and <NUM> MB memory including <NUM> MB overhead"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Started progress reporter thread with (heartbeat : <NUM>, initial allocation : <NUM>) intervals",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO ApplicationMaster: Started progress reporter thread with (heartbeat : <NUM>, initial allocation : <NUM>) intervals"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO SparkContext: Invoking stop() from shutdown hook",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Invoking stop() from shutdown hook"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO SparkContext: Created broadcast <NUM> from textFile at NativeMethodAccessorImpl.java:-<NUM>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Created broadcast <NUM> from textFile at NativeMethodAccessorImpl.java:-<NUM>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO FileInputFormat: Total input paths to process : <NUM>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Total input paths to process : <NUM>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO ApplicationMaster$AMEndpoint: Driver terminated or disconnected! Shutting down. mesos-master<NUM>:<NUM>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO ApplicationMaster$AMEndpoint: Driver terminated or disconnected! Shutting down. <*>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Starting the user application in a separate Thread",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO ApplicationMaster: Starting the user application in a separate Thread"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Waiting for spark context initialization ...",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO ApplicationMaster: Waiting for spark context initialization ..."
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Running Spark version <NUM>.<NUM>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO SparkContext: Running Spark version <NUM>.<NUM>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Started SparkUI at http://<IP>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO SparkUI: Started SparkUI at http://<IP>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> ApplicationMaster registered as NettyRpcEndpointRef(spark://YarnAM@<IP>)",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnSchedulerBackend$YarnSchedulerEndpoint: ApplicationMaster registered as NettyRpcEndpointRef(spark://YarnAM@<IP>)"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> WARN netty.NettyRpcEndpointRef: Error sending message [message = <*> <*> <NUM>))] in <NUM> attempts",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> WARN netty.NettyRpcEndpointRef: Error sending message [message = Heartbeat(<NUM>,[Lscala.Tuple2;@72a70299,BlockManagerId(<NUM>, mesos-slave<NUM>, <NUM>))] in <NUM> attempts"
+              ]
+            ]
+          },
+          "jaccard": {
+            "pairs": 18,
+            "kinds": {
+              "generalizing": 18
+            },
+            "sample": [
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Container request (host: Any, capability: <memory:<NUM>, vCores:<NUM>>)",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnAllocator: Container request (host: Any, capability: <memory:<NUM>, vCores:<NUM>>)"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> MemoryStore started with capacity <NUM> <*>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> MemoryStore started with capacity <NUM> GB"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Received new token for : <*>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO AMRMClientImpl: Received new token for : <*>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Registering block manager <*> with <NUM> <*> RAM, <*> <*> <NUM>)",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Registering block manager <*> with <NUM> GB RAM, <*> <*> <NUM>)"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnClusterSchedulerBackend: Registered executor NettyRpcEndpointRef(null) <*> with ID <NUM>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Registered executor NettyRpcEndpointRef(null) <*> with ID <NUM>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Will request <NUM> executor containers, each with <NUM> cores and <NUM> MB memory including <NUM> MB overhead",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnAllocator: Will request <NUM> executor containers, each with <NUM> cores and <NUM> MB memory including <NUM> MB overhead"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnAllocator: Completed container <*> on host: <*> (state: COMPLETE, exit status: -<NUM>)",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnAllocator: Completed container <*> on host: <*> (state: COMPLETE, exit status: <*>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> WARN netty.NettyRpcEndpointRef: Error sending message [message = <*> <*> <NUM>))] in <NUM> attempts",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> WARN netty.NettyRpcEndpointRef: Error sending message [message = Heartbeat(<NUM>,[Lscala.Tuple2;@72a70299,BlockManagerId(<NUM>, mesos-slave<NUM>, <NUM>))] in <NUM> attempts"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Started progress reporter thread with (heartbeat : <NUM>, initial allocation : <NUM>) intervals",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO ApplicationMaster: Started progress reporter thread with (heartbeat : <NUM>, initial allocation : <NUM>) intervals"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> ApplicationMaster registered as NettyRpcEndpointRef(spark://YarnAM@<IP>)",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnSchedulerBackend$YarnSchedulerEndpoint: ApplicationMaster registered as NettyRpcEndpointRef(spark://YarnAM@<IP>)"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Running Spark version <NUM>.<NUM>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO SparkContext: Running Spark version <NUM>.<NUM>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Started SparkUI at http://<IP>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO SparkUI: Started SparkUI at http://<IP>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Starting the user application in a separate Thread",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO ApplicationMaster: Starting the user application in a separate Thread"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Waiting for spark context initialization ...",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO ApplicationMaster: Waiting for spark context initialization ..."
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO FileInputFormat: Total input paths to process : <NUM>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Total input paths to process : <NUM>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO SparkContext: Created broadcast <NUM> from textFile at NativeMethodAccessorImpl.java:-<NUM>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Created broadcast <NUM> from textFile at NativeMethodAccessorImpl.java:-<NUM>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO SparkContext: Invoking stop() from shutdown hook",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Invoking stop() from shutdown hook"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO ApplicationMaster$AMEndpoint: Driver terminated or disconnected! Shutting down. mesos-master<NUM>:<NUM>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO ApplicationMaster$AMEndpoint: Driver terminated or disconnected! Shutting down. <*>"
+              ]
+            ]
+          }
+        }
+      },
+      "adjacent/live": {
+        "records": [
+          300000,
+          300000
+        ],
+        "matchers": {
+          "exact": {
+            "new": 2,
+            "disappeared": 38,
+            "changed": 38,
+            "alarms": 78
+          },
+          "token_subset": {
+            "new": 2,
+            "disappeared": 38,
+            "changed": 38,
+            "alarms": 78
+          },
+          "jaccard": {
+            "new": 2,
+            "disappeared": 38,
+            "changed": 38,
+            "alarms": 78
+          }
+        },
+        "pairs": {
+          "token_subset": {
+            "pairs": 0,
+            "kinds": {},
+            "sample": []
+          },
+          "jaccard": {
+            "pairs": 0,
+            "kinds": {},
+            "sample": []
+          }
+        }
+      },
+      "adjacent/saved": {
+        "records": [
+          300000,
+          300000
+        ],
+        "matchers": {
+          "exact": {
+            "new": 39,
+            "disappeared": 75,
+            "changed": 23,
+            "alarms": 137
+          },
+          "token_subset": {
+            "new": 3,
+            "disappeared": 39,
+            "changed": 40,
+            "alarms": 82
+          },
+          "jaccard": {
+            "new": 5,
+            "disappeared": 41,
+            "changed": 36,
+            "alarms": 82
+          }
+        },
+        "pairs": {
+          "token_subset": {
+            "pairs": 36,
+            "kinds": {
+              "generalizing": 36
+            },
+            "sample": [
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Received new token for : <*>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO AMRMClientImpl: Received new token for : <*>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Container request (host: Any, capability: <memory:<NUM>, vCores:<NUM>>)",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnAllocator: Container request (host: Any, capability: <memory:<NUM>, vCores:<NUM>>)"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Opening proxy : <*>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO ContainerManagementProtocolProxy: Opening proxy : <*>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Prepared Local resources Map(__spark__.jar -> resource { scheme: \"hdfs\" host: \"<IP>\" port: <NUM> file: \"<PATH>\" } size: <NUM> timestamp: <NUM> type: FILE visibility: PRIVATE, pyspark.zip -> resource { scheme: \"hdfs\" host: \"<IP>\" port: <NUM> file: \"<PATH>\" } size: <NUM> timestamp: <NUM> type: FILE visibility: PRIVATE, py4j<NUM>-src.zip -> resource { scheme: \"hdfs\" host: \"<IP>\" port: <NUM> file: \"<PATH>\" } size: <NUM> timestamp: <NUM> type: FILE visibility: PRIVATE)",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO ExecutorRunnable: Prepared Local resources Map(__spark__.jar -> resource { scheme: \"hdfs\" host: \"<IP>\" port: <NUM> file: \"<PATH>\" } size: <NUM> timestamp: <NUM> type: FILE visibility: PRIVATE, pyspark.zip -> resource { scheme: \"hdfs\" host: \"<IP>\" port: <NUM> file: \"<PATH>\" } size: <NUM> timestamp: <NUM> type: FILE visibility: PRIVATE, py4j<NUM>-src.zip -> resource { scheme: \"hdfs\" host: \"<IP>\" port: <NUM> file: \"<PATH>\" } size: <NUM> timestamp: <NUM> type: FILE visibility: PRIVATE)"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Launching ExecutorRunnable. driverUrl: spark://CoarseGrainedScheduler@<IP>, executorHostname: <*>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnAllocator: Launching ExecutorRunnable. driverUrl: spark://CoarseGrainedScheduler@<IP>, executorHostname: <*>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> WARN netty.NettyRpcEndpointRef: Error sending message [message = <*> in <NUM> attempts",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> WARN netty.NettyRpcEndpointRef: Error sending message [message = RetrieveSparkProps] in <NUM> attempts"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> MemoryStore started with capacity <NUM> <*>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> MemoryStore started with capacity <NUM> GB"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Received <NUM> containers from YARN, launching executors on <NUM> of them.",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnAllocator: Received <NUM> containers from YARN, launching executors on <NUM> of them."
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnAllocator: Completed container <*> on host: <*> (state: COMPLETE, exit status: -<NUM>)",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnAllocator: Completed container <*> on host: <*> (state: COMPLETE, exit status: <*>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> ERROR client.TransportClient: Failed to send RPC <NUM> to <*> java.nio.channels.ClosedChannelException",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> ERROR client.TransportClient: Failed to send RPC <NUM> to mesos-master<NUM>/<IP>: java.nio.channels.ClosedChannelException"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Registering block manager <*> with <NUM> <*> RAM, <*> <*> <NUM>)",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO BlockManagerMasterEndpoint: Registering block manager <*> with <NUM> GB RAM, <*> <*> <NUM>)"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Will request <NUM> executor containers, each with <NUM> cores and <NUM> MB memory including <NUM> MB overhead",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnAllocator: Will request <NUM> executor containers, each with <NUM> cores and <NUM> MB memory including <NUM> MB overhead"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> <*> <*> <*> <*> <*> <*> (size: <NUM> <*> free: <NUM> <*>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO BlockManagerInfo: Added <*> in memory on <*> (size: <NUM> KB, free: <NUM> GB)"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Registered executor NettyRpcEndpointRef(null) <*> with ID <NUM>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnClusterSchedulerBackend: Registered executor NettyRpcEndpointRef(null) <*> with ID <NUM>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> ERROR client.TransportResponseHandler: Still have <NUM> requests outstanding when connection from <*> is closed",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> ERROR client.TransportResponseHandler: Still have <NUM> requests outstanding when connection from mesos-master<NUM>/<IP> is closed"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> WARN Dispatcher: Message RemoteProcessDisconnected(mesos-slave<NUM>:<NUM>) dropped.",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> WARN Dispatcher: Message <*> dropped."
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Started progress reporter thread with (heartbeat : <NUM>, initial allocation : <NUM>) intervals",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO ApplicationMaster: Started progress reporter thread with (heartbeat : <NUM>, initial allocation : <NUM>) intervals"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO ApplicationMaster$AMEndpoint: Driver terminated or disconnected! Shutting down. mesos-master<NUM>:<NUM>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO ApplicationMaster$AMEndpoint: Driver terminated or disconnected! Shutting down. <*>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> <*> <NUM> <*> <*> <*> <*> <*> <NUM> s",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO DAGScheduler: <*> <NUM> <*> <*> <*> <*> <*> <NUM> s"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Starting task <NUM> in stage <NUM> (TID <NUM>, <*> partition <*> <NUM> bytes)",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO TaskSetManager: Starting task <NUM> in stage <NUM> (TID <NUM>, <*> partition <*> <NUM> bytes)"
+              ]
+            ]
+          },
+          "jaccard": {
+            "pairs": 34,
+            "kinds": {
+              "generalizing": 33,
+              "same length": 1
+            },
+            "sample": [
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Starting task <NUM> in stage <NUM> (TID <NUM>, <*> partition <*> <NUM> bytes)",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO TaskSetManager: Starting task <NUM> in stage <NUM> (TID <NUM>, <*> partition <*> <NUM> bytes)"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Removed TaskSet <NUM>, whose tasks have all completed, from pool",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnClusterScheduler: Removed TaskSet <NUM>, whose tasks have all completed, from pool"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> MemoryStore started with capacity <NUM> <*>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> MemoryStore started with capacity <NUM> GB"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Container request (host: Any, capability: <memory:<NUM>, vCores:<NUM>>)",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnAllocator: Container request (host: Any, capability: <memory:<NUM>, vCores:<NUM>>)"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Submitting <NUM> missing tasks from ResultStage <NUM> <*> at <*> at <*>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO DAGScheduler: Submitting <NUM> missing tasks from ResultStage <NUM> (PythonRDD[<NUM>] at collect at pnmf4.py:<NUM>)"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Submitting ResultStage <NUM> <*> at <*> at <*> which has no missing parents",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO DAGScheduler: Submitting ResultStage <NUM> (PythonRDD[<NUM>] at collect at pnmf4.py:<NUM>), which has no missing parents"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Launching ExecutorRunnable. driverUrl: spark://CoarseGrainedScheduler@<IP>, executorHostname: <*>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnAllocator: Launching ExecutorRunnable. driverUrl: spark://CoarseGrainedScheduler@<IP>, executorHostname: <*>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Opening proxy : <*>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO ContainerManagementProtocolProxy: Opening proxy : <*>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Prepared Local resources Map(__spark__.jar -> resource { scheme: \"hdfs\" host: \"<IP>\" port: <NUM> file: \"<PATH>\" } size: <NUM> timestamp: <NUM> type: FILE visibility: PRIVATE, pyspark.zip -> resource { scheme: \"hdfs\" host: \"<IP>\" port: <NUM> file: \"<PATH>\" } size: <NUM> timestamp: <NUM> type: FILE visibility: PRIVATE, py4j<NUM>-src.zip -> resource { scheme: \"hdfs\" host: \"<IP>\" port: <NUM> file: \"<PATH>\" } size: <NUM> timestamp: <NUM> type: FILE visibility: PRIVATE)",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO ExecutorRunnable: Prepared Local resources Map(__spark__.jar -> resource { scheme: \"hdfs\" host: \"<IP>\" port: <NUM> file: \"<PATH>\" } size: <NUM> timestamp: <NUM> type: FILE visibility: PRIVATE, pyspark.zip -> resource { scheme: \"hdfs\" host: \"<IP>\" port: <NUM> file: \"<PATH>\" } size: <NUM> timestamp: <NUM> type: FILE visibility: PRIVATE, py4j<NUM>-src.zip -> resource { scheme: \"hdfs\" host: \"<IP>\" port: <NUM> file: \"<PATH>\" } size: <NUM> timestamp: <NUM> type: FILE visibility: PRIVATE)"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Received new token for : <*>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO AMRMClientImpl: Received new token for : <*>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Registering block manager <*> with <NUM> <*> RAM, <*> <*> <NUM>)",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO BlockManagerMasterEndpoint: Registering block manager <*> with <NUM> GB RAM, <*> <*> <NUM>)"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Registered executor NettyRpcEndpointRef(null) <*> with ID <NUM>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnClusterSchedulerBackend: Registered executor NettyRpcEndpointRef(null) <*> with ID <NUM>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> <*> <NUM> <*> <*> <*> <*> <*> <NUM> s",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO DAGScheduler: <*> <NUM> <*> <*> <*> <*> <*> <NUM> s"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Received <NUM> containers from YARN, launching executors on <NUM> of them.",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnAllocator: Received <NUM> containers from YARN, launching executors on <NUM> of them."
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Will request <NUM> executor containers, each with <NUM> cores and <NUM> MB memory including <NUM> MB overhead",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnAllocator: Will request <NUM> executor containers, each with <NUM> cores and <NUM> MB memory including <NUM> MB overhead"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> ERROR client.TransportResponseHandler: Still have <NUM> requests outstanding when connection from <*> is closed",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> ERROR client.TransportResponseHandler: Still have <NUM> requests outstanding when connection from mesos-master<NUM>/<IP> is closed"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnAllocator: Completed container <*> on host: <*> (state: COMPLETE, exit status: -<NUM>)",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO YarnAllocator: Completed container <*> on host: <*> (state: COMPLETE, exit status: <*>"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> WARN netty.NettyRpcEndpointRef: Error sending message [message = <*> in <NUM> attempts",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> WARN netty.NettyRpcEndpointRef: Error sending message [message = RetrieveSparkProps] in <NUM> attempts"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> ERROR client.TransportClient: Failed to send RPC <NUM> to <*> java.nio.channels.ClosedChannelException",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> ERROR client.TransportClient: Failed to send RPC <NUM> to mesos-master<NUM>/<IP>: java.nio.channels.ClosedChannelException"
+              ],
+              [
+                "generalizing",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO <*> Final stage: ResultStage <NUM> (collect at <*>",
+                "<NUM><PATH> <NUM>:<NUM>:<NUM> INFO DAGScheduler: Final stage: ResultStage <NUM> (collect at pnmf4.py:<NUM>)"
+              ]
+            ]
+          }
+        }
+      },
+      "reworded": [
+        {
+          "word": "size",
+          "mode": "swap",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            2,
+            8
+          ]
+        },
+        {
+          "word": "size",
+          "mode": "swap",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 2,
+              "reachable": 2,
+              "pairs": 18,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 18,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 2,
+              "reachable": 2,
+              "pairs": 20,
+              "twin": 2,
+              "misplaced": 0,
+              "other": 18,
+              "twin_share": 1.0
+            }
+          },
+          "one_sided": [
+            22,
+            30
+          ]
+        },
+        {
+          "word": "size",
+          "mode": "extend",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 2,
+              "reachable": 2,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 2,
+              "reachable": 2,
+              "pairs": 2,
+              "twin": 2,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": 1.0
+            }
+          },
+          "one_sided": [
+            4,
+            10
+          ]
+        },
+        {
+          "word": "size",
+          "mode": "extend",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 2,
+              "reachable": 2,
+              "pairs": 18,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 18,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 2,
+              "reachable": 2,
+              "pairs": 20,
+              "twin": 2,
+              "misplaced": 0,
+              "other": 18,
+              "twin_share": 1.0
+            }
+          },
+          "one_sided": [
+            22,
+            30
+          ]
+        },
+        {
+          "word": "size",
+          "mode": "novel",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 2,
+              "reachable": 2,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 2,
+              "reachable": 2,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": 0.0
+            }
+          },
+          "one_sided": [
+            4,
+            10
+          ]
+        },
+        {
+          "word": "size",
+          "mode": "novel",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 2,
+              "reachable": 2,
+              "pairs": 18,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 18,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 2,
+              "reachable": 2,
+              "pairs": 18,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 18,
+              "twin_share": 0.0
+            }
+          },
+          "one_sided": [
+            22,
+            30
+          ]
+        },
+        {
+          "word": "result",
+          "mode": "swap",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            2,
+            8
+          ]
+        },
+        {
+          "word": "result",
+          "mode": "swap",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 18,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 18,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 18,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 18,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            20,
+            28
+          ]
+        },
+        {
+          "word": "result",
+          "mode": "extend",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            2,
+            8
+          ]
+        },
+        {
+          "word": "result",
+          "mode": "extend",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 20,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 20,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 19,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 19,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            22,
+            30
+          ]
+        },
+        {
+          "word": "result",
+          "mode": "novel",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            2,
+            9
+          ]
+        },
+        {
+          "word": "result",
+          "mode": "novel",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 19,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 19,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 19,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 19,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            21,
+            30
+          ]
+        },
+        {
+          "word": "File",
+          "mode": "swap",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            2,
+            8
+          ]
+        },
+        {
+          "word": "File",
+          "mode": "swap",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 18,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 18,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 19,
+              "twin": 1,
+              "misplaced": 0,
+              "other": 18,
+              "twin_share": 1.0
+            }
+          },
+          "one_sided": [
+            21,
+            29
+          ]
+        },
+        {
+          "word": "File",
+          "mode": "extend",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 1,
+              "twin": 1,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": 1.0
+            }
+          },
+          "one_sided": [
+            3,
+            9
+          ]
+        },
+        {
+          "word": "File",
+          "mode": "extend",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 18,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 18,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 19,
+              "twin": 1,
+              "misplaced": 0,
+              "other": 18,
+              "twin_share": 1.0
+            }
+          },
+          "one_sided": [
+            21,
+            29
+          ]
+        },
+        {
+          "word": "File",
+          "mode": "novel",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": 0.0
+            }
+          },
+          "one_sided": [
+            3,
+            9
+          ]
+        },
+        {
+          "word": "File",
+          "mode": "novel",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 18,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 18,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 18,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 18,
+              "twin_share": 0.0
+            }
+          },
+          "one_sided": [
+            21,
+            29
+          ]
+        }
+      ]
+    },
+    "thunderbird": {
+      "stationary/live": {
+        "records": [
+          300000,
+          300000
+        ],
+        "matchers": {
+          "exact": {
+            "new": 62,
+            "disappeared": 82,
+            "changed": 50,
+            "alarms": 194
+          },
+          "token_subset": {
+            "new": 62,
+            "disappeared": 82,
+            "changed": 50,
+            "alarms": 194
+          },
+          "jaccard": {
+            "new": 6,
+            "disappeared": 26,
+            "changed": 60,
+            "alarms": 92
+          }
+        },
+        "pairs": {
+          "token_subset": {
+            "pairs": 0,
+            "kinds": {},
+            "sample": []
+          },
+          "jaccard": {
+            "pairs": 56,
+            "kinds": {
+              "same length": 38,
+              "other length": 18
+            },
+            "sample": [
+              [
+                "same length",
+                "- <NUM> <NUM>.<NUM> an53 Nov <NUM> <NUM>:<NUM>:<NUM> an53/an53 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an421 Nov <NUM> <NUM>:<NUM>:<NUM> an421/an421 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "same length",
+                "- <NUM> <NUM>.<NUM> an53 Nov <NUM> <NUM>:<NUM>:<NUM> an53/an53 <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> cn348 Nov <NUM> <NUM>:<NUM>:<NUM> cn348/cn348 <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "same length",
+                "- <NUM> <NUM>.<NUM> bn715 Nov <NUM> <NUM>:<NUM>:<NUM> bn715/bn715 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> cn13 Nov <NUM> <NUM>:<NUM>:<NUM> cn13/cn13 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> cn450 Nov <NUM> <NUM>:<NUM>:<NUM> cn450/cn450 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> dn217 Nov <NUM> <NUM>:<NUM>:<NUM> dn217/dn217 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> cn705 Nov <NUM> <NUM>:<NUM>:<NUM> cn705/cn705 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an532 Nov <NUM> <NUM>:<NUM>:<NUM> an532/an532 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "same length",
+                "- <NUM> <NUM>.<NUM> cn922 Nov <NUM> <NUM>:<NUM>:<NUM> cn922/cn922 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> dn210 Nov <NUM> <NUM>:<NUM>:<NUM> dn210/dn210 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "same length",
+                "- <NUM> <NUM>.<NUM> dn115 Nov <NUM> <NUM>:<NUM>:<NUM> dn115/dn115 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> dn213 Nov <NUM> <NUM>:<NUM>:<NUM> dn213/dn213 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "same length",
+                "- <NUM> <NUM>.<NUM> dn221 Nov <NUM> <NUM>:<NUM>:<NUM> dn221/dn221 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> dn218 Nov <NUM> <NUM>:<NUM>:<NUM> dn218/dn218 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> dn582 Nov <NUM> <NUM>:<NUM>:<NUM> dn582/dn582 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> dn210 Nov <NUM> <NUM>:<NUM>:<NUM> dn210/dn210 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "same length",
+                "- <NUM> <NUM>.<NUM> dn216 Nov <NUM> <NUM>:<NUM>:<NUM> dn216/dn216 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> en8 Nov <NUM> <NUM>:<NUM>:<NUM> en8/en8 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> an519 Nov <NUM> <NUM>:<NUM>:<NUM> an519/an519 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> en183 Nov <NUM> <NUM>:<NUM>:<NUM> en183/en183 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "same length",
+                "- <NUM> <NUM>.<NUM> an778 Nov <NUM> <NUM>:<NUM>:<NUM> an778/an778 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> en134 Nov <NUM> <NUM>:<NUM>:<NUM> en134/en134 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> an99 Nov <NUM> <NUM>:<NUM>:<NUM> an99/an99 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> cn6 Nov <NUM> <NUM>:<NUM>:<NUM> cn6/cn6 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "same length",
+                "- <NUM> <NUM>.<NUM> cn2 Nov <NUM> <NUM>:<NUM>:<NUM> cn2/cn2 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> dn218 Nov <NUM> <NUM>:<NUM>:<NUM> dn218/dn218 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> cn15 Nov <NUM> <NUM>:<NUM>:<NUM> cn15/cn15 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> cn329 Nov <NUM> <NUM>:<NUM>:<NUM> cn329/cn329 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "same length",
+                "- <NUM> <NUM>.<NUM> cn16 Nov <NUM> <NUM>:<NUM>:<NUM> cn16/cn16 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> dn219 Nov <NUM> <NUM>:<NUM>:<NUM> dn219/dn219 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> cn705 Nov <NUM> <NUM>:<NUM>:<NUM> cn705/cn705 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> en171 Nov <NUM> <NUM>:<NUM>:<NUM> en171/en171 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> dn582 Nov <NUM> <NUM>:<NUM>:<NUM> dn582/dn582 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> en86 Nov <NUM> <NUM>:<NUM>:<NUM> en86/en86 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "same length",
+                "- <NUM> <NUM>.<NUM> bn395 Nov <NUM> <NUM>:<NUM>:<NUM> bn395/bn395 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> bn549 Nov <NUM> <NUM>:<NUM>:<NUM> bn549/bn549 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "same length",
+                "- <NUM> <NUM>.<NUM> cn16 Nov <NUM> <NUM>:<NUM>:<NUM> cn16/cn16 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> cn10 Nov <NUM> <NUM>:<NUM>:<NUM> cn10/cn10 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ]
+            ]
+          }
+        }
+      },
+      "stationary/saved": {
+        "records": [
+          300000,
+          300000
+        ],
+        "matchers": {
+          "exact": {
+            "new": 243,
+            "disappeared": 326,
+            "changed": 26,
+            "alarms": 595
+          },
+          "token_subset": {
+            "new": 202,
+            "disappeared": 285,
+            "changed": 46,
+            "alarms": 533
+          },
+          "jaccard": {
+            "new": 41,
+            "disappeared": 124,
+            "changed": 61,
+            "alarms": 226
+          }
+        },
+        "pairs": {
+          "token_subset": {
+            "pairs": 41,
+            "kinds": {
+              "generalizing": 41
+            },
+            "sample": [
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> kernel: <*> <*> <*> <*> <*> address <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> kernel: IOAPIC[<NUM>]: apic_id <NUM>, version <NUM>, address <HEX>, GSI <NUM><NUM>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> kernel: Memory: <*> available <*> kernel code, 0k reserved, <*> data, 188k init)",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> kernel: Memory: 6106088k/7340032k available (2076k kernel code, 0k reserved, 1278k data, 188k init)"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> smartd[<NUM>]: Unable to <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> smartd[<NUM>]: Unable to register SCSI device <PATH> at line <NUM> of file <PATH>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> cn6 Nov <NUM> <NUM>:<NUM>:<NUM> cn6/cn6 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> cn6 Nov <NUM> <NUM>:<NUM>:<NUM> cn6/cn6 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> #<NUM># Nov <NUM> <NUM>:<NUM>:<NUM> #<NUM>#/#<NUM># userhelper[<NUM>]: running '<PATH> --nox -i -f kernel-devel' with root privileges on behalf of 'root'",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> userhelper[<NUM>]: running '<PATH> --nox -i -f kernel-devel' with root privileges on behalf of 'root'"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> an421 Nov <NUM> <NUM>:<NUM>:<NUM> an421/an421 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an421 Nov <NUM> <NUM>:<NUM>:<NUM> an421/an421 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> sudo: #<NUM># : <*> ; PWD=/home/#<NUM># ; USER=root ; COMMAND=<PATH> <*>",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> sudo: <*> : <*> ; <*> ; USER=root ; COMMAND=<PATH> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> cn741 Nov <NUM> <NUM>:<NUM>:<NUM> cn741/cn741 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> cn741 Nov <NUM> <NUM>:<NUM>:<NUM> cn741/cn741 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> cn13 Nov <NUM> <NUM>:<NUM>:<NUM> cn13/cn13 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> cn13 Nov <NUM> <NUM>:<NUM>:<NUM> cn13/cn13 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> cn7 Nov <NUM> <NUM>:<NUM>:<NUM> cn7/cn7 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> cn7 Nov <NUM> <NUM>:<NUM>:<NUM> cn7/cn7 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> cn11 Nov <NUM> <NUM>:<NUM>:<NUM> cn11/cn11 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> cn11 Nov <NUM> <NUM>:<NUM>:<NUM> cn11/cn11 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> en165 Nov <NUM> <NUM>:<NUM>:<NUM> en165/en165 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> en165 Nov <NUM> <NUM>:<NUM>:<NUM> en165/en165 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> cn450 Nov <NUM> <NUM>:<NUM>:<NUM> cn450/cn450 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> cn450 Nov <NUM> <NUM>:<NUM>:<NUM> cn450/cn450 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> dn212 Nov <NUM> <NUM>:<NUM>:<NUM> dn212/dn212 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> dn212 Nov <NUM> <NUM>:<NUM>:<NUM> dn212/dn212 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> tbird-sm1 Nov <NUM> <NUM>:<NUM>:<NUM> src@tbird-sm1 ib_sm.x[<NUM>]: [ib_sm_bringup.c:<NUM>]: Skip node= <*> port= <NUM> bringup because topology is stale, no response",
+                "- <NUM> <NUM>.<NUM> tbird-sm1 Nov <NUM> <NUM>:<NUM>:<NUM> src@tbird-sm1 ib_sm.x[<NUM>]: [ib_sm_bringup.c:<NUM>]: Skip node= 5ad0000027e5c, port= <NUM> bringup because topology is stale, no response"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> dn227 Nov <NUM> <NUM>:<NUM>:<NUM> dn227/dn227 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> dn227 Nov <NUM> <NUM>:<NUM>:<NUM> dn227/dn227 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> dn222 Nov <NUM> <NUM>:<NUM>:<NUM> dn222/dn222 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> dn222 Nov <NUM> <NUM>:<NUM>:<NUM> dn222/dn222 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> cn8 Nov <NUM> <NUM>:<NUM>:<NUM> cn8/cn8 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> cn8 Nov <NUM> <NUM>:<NUM>:<NUM> cn8/cn8 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> dn223 Nov <NUM> <NUM>:<NUM>:<NUM> dn223/dn223 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> dn223 Nov <NUM> <NUM>:<NUM>:<NUM> dn223/dn223 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> #<NUM># Nov <NUM> <NUM>:<NUM>:<NUM> #<NUM>#/#<NUM># <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> #<NUM># Nov <NUM> <NUM>:<NUM>:<NUM> #<NUM>#/#<NUM># ifup: ts_ipoib device ib0 does not seem to be present, delaying initialization."
+              ]
+            ]
+          },
+          "jaccard": {
+            "pairs": 202,
+            "kinds": {
+              "generalizing": 16,
+              "other length": 113,
+              "same length": 73
+            },
+            "sample": [
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> kernel: <*> <*> <*> <*> <*> address <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> bn863 Nov <NUM> <NUM>:<NUM>:<NUM> bn863/bn863 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> #<NUM># Nov <NUM> <NUM>:<NUM>:<NUM> #<NUM>#/#<NUM># userhelper[<NUM>]: running '<PATH> --nox -i -f kernel-devel' with root privileges on behalf of 'root'",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> userhelper[<NUM>]: running '<PATH> --nox -i -f kernel-devel' with root privileges on behalf of 'root'"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> an53 Nov <NUM> <NUM>:<NUM>:<NUM> an53/an53 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> cn12 Nov <NUM> <NUM>:<NUM>:<NUM> cn12/cn12 <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> dn582 Nov <NUM> <NUM>:<NUM>:<NUM> dn582/dn582 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> dn582 Nov <NUM> <NUM>:<NUM>:<NUM> dn582/dn582 <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> dn211 Nov <NUM> <NUM>:<NUM>:<NUM> dn211/dn211 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> dn211 Nov <NUM> <NUM>:<NUM>:<NUM> dn211/dn211 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "same length",
+                "- <NUM> <NUM>.<NUM> cn705 Nov <NUM> <NUM>:<NUM>:<NUM> cn705/cn705 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> cn12 Nov <NUM> <NUM>:<NUM>:<NUM> cn12/cn12 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "same length",
+                "- <NUM> <NUM>.<NUM> dn216 Nov <NUM> <NUM>:<NUM>:<NUM> dn216/dn216 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> cn10 Nov <NUM> <NUM>:<NUM>:<NUM> cn10/cn10 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> cn2 Nov <NUM> <NUM>:<NUM>:<NUM> cn2/cn2 <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> en212 Nov <NUM> <NUM>:<NUM>:<NUM> en212/en212 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> bn395 Nov <NUM> <NUM>:<NUM>:<NUM> bn395/bn395 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> bn395 Nov <NUM> <NUM>:<NUM>:<NUM> bn395/bn395 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "same length",
+                "- <NUM> <NUM>.<NUM> an5 Nov <NUM> <NUM>:<NUM>:<NUM> an5/an5 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an60 Nov <NUM> <NUM>:<NUM>:<NUM> an60/an60 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> bn551 Nov <NUM> <NUM>:<NUM>:<NUM> bn551/bn551 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> bn91 Nov <NUM> <NUM>:<NUM>:<NUM> bn91/bn91 <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> tbird-sm1 Nov <NUM> <NUM>:<NUM>:<NUM> src@tbird-sm1 ib_sm.x[<NUM>]: <*> <*> <*> <*> <*> <*> <*> INIT state",
+                "- <NUM> <NUM>.<NUM> tbird-sm1 Nov <NUM> <NUM>:<NUM>:<NUM> src@tbird-sm1 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> an534 Nov <NUM> <NUM>:<NUM>:<NUM> an534/an534 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> en267 Nov <NUM> <NUM>:<NUM>:<NUM> en267/en267 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> dn803 Nov <NUM> <NUM>:<NUM>:<NUM> dn803/dn803 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> en186 Nov <NUM> <NUM>:<NUM>:<NUM> en186/en186 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> cn6 Nov <NUM> <NUM>:<NUM>:<NUM> cn6/cn6 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> cn6 Nov <NUM> <NUM>:<NUM>:<NUM> cn6/cn6 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "same length",
+                "- <NUM> <NUM>.<NUM> dn226 Nov <NUM> <NUM>:<NUM>:<NUM> dn226/dn226 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> cn348 Nov <NUM> <NUM>:<NUM>:<NUM> cn348/cn348 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> an421 Nov <NUM> <NUM>:<NUM>:<NUM> an421/an421 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an421 Nov <NUM> <NUM>:<NUM>:<NUM> an421/an421 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "same length",
+                "- <NUM> <NUM>.<NUM> an106 Nov <NUM> <NUM>:<NUM>:<NUM> an106/an106 smartd[<NUM>]: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> bn29 Nov <NUM> <NUM>:<NUM>:<NUM> bn29/bn29 smartd[<NUM>]: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "same length",
+                "- <NUM> <NUM>.<NUM> an772 Nov <NUM> <NUM>:<NUM>:<NUM> an772/an772 smartd[<NUM>]: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an772 Nov <NUM> <NUM>:<NUM>:<NUM> an772/an772 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> dn209 Nov <NUM> <NUM>:<NUM>:<NUM> dn209/dn209 smartd[<NUM>]: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> dn209 Nov <NUM> <NUM>:<NUM>:<NUM> dn209/dn209 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ]
+            ]
+          }
+        }
+      },
+      "adjacent/live": {
+        "records": [
+          300000,
+          300000
+        ],
+        "matchers": {
+          "exact": {
+            "new": 314,
+            "disappeared": 263,
+            "changed": 116,
+            "alarms": 693
+          },
+          "token_subset": {
+            "new": 314,
+            "disappeared": 263,
+            "changed": 116,
+            "alarms": 693
+          },
+          "jaccard": {
+            "new": 254,
+            "disappeared": 203,
+            "changed": 176,
+            "alarms": 633
+          }
+        },
+        "pairs": {
+          "token_subset": {
+            "pairs": 0,
+            "kinds": {},
+            "sample": []
+          },
+          "jaccard": {
+            "pairs": 60,
+            "kinds": {
+              "other length": 58,
+              "generalizing": 2
+            },
+            "sample": [
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> tbird-admin1 Nov <NUM> <NUM>:<NUM>:<NUM> local@tbird-admin1 <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> smartd[<NUM>]: <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> cn6 Nov <NUM> <NUM>:<NUM>:<NUM> cn6/cn6 <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> en318 Nov <NUM> <NUM>:<NUM>:<NUM> en318/en318 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> cn12 Nov <NUM> <NUM>:<NUM>:<NUM> cn12/cn12 <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> en290 Nov <NUM> <NUM>:<NUM>:<NUM> en290/en290 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> cn10 Nov <NUM> <NUM>:<NUM>:<NUM> cn10/cn10 <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> en134 Nov <NUM> <NUM>:<NUM>:<NUM> en134/en134 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> <*> <*> <*> to <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> fsck: <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> dn217 Nov <NUM> <NUM>:<NUM>:<NUM> dn217/dn217 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> kernel: <*> <*> <*> <*> <*> <*> <*> <NUM> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> dn131 Nov <NUM> <NUM>:<NUM>:<NUM> dn131/dn131 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> kernel: <*> <*> <*> <*> <*> <*> <NUM>, <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> bn395 Nov <NUM> <NUM>:<NUM>:<NUM> bn395/bn395 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an101 Nov <NUM> <NUM>:<NUM>:<NUM> an101/an101 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> bn91 Nov <NUM> <NUM>:<NUM>:<NUM> bn91/bn91 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an104 Nov <NUM> <NUM>:<NUM>:<NUM> an104/an104 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> cn12 Nov <NUM> <NUM>:<NUM>:<NUM> cn12/cn12 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an107 Nov <NUM> <NUM>:<NUM>:<NUM> an107/an107 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> cn16 Nov <NUM> <NUM>:<NUM>:<NUM> cn16/cn16 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an110 Nov <NUM> <NUM>:<NUM>:<NUM> an110/an110 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> cn5 Nov <NUM> <NUM>:<NUM>:<NUM> cn5/cn5 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an124 Nov <NUM> <NUM>:<NUM>:<NUM> an124/an124 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> cn9 Nov <NUM> <NUM>:<NUM>:<NUM> cn9/cn9 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an128 Nov <NUM> <NUM>:<NUM>:<NUM> an128/an128 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> cn989 Nov <NUM> <NUM>:<NUM>:<NUM> cn989/cn989 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an260 Nov <NUM> <NUM>:<NUM>:<NUM> an260/an260 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> dn210 Nov <NUM> <NUM>:<NUM>:<NUM> dn210/dn210 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an273 Nov <NUM> <NUM>:<NUM>:<NUM> an273/an273 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> dn213 Nov <NUM> <NUM>:<NUM>:<NUM> dn213/dn213 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an285 Nov <NUM> <NUM>:<NUM>:<NUM> an285/an285 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> dn218 Nov <NUM> <NUM>:<NUM>:<NUM> dn218/dn218 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an3 Nov <NUM> <NUM>:<NUM>:<NUM> an3/an3 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> dn222 Nov <NUM> <NUM>:<NUM>:<NUM> dn222/dn222 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an304 Nov <NUM> <NUM>:<NUM>:<NUM> an304/an304 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> dn226 Nov <NUM> <NUM>:<NUM>:<NUM> dn226/dn226 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an314 Nov <NUM> <NUM>:<NUM>:<NUM> an314/an314 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> dn582 Nov <NUM> <NUM>:<NUM>:<NUM> dn582/dn582 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an378 Nov <NUM> <NUM>:<NUM>:<NUM> an378/an378 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ]
+            ]
+          }
+        }
+      },
+      "adjacent/saved": {
+        "records": [
+          300000,
+          300000
+        ],
+        "matchers": {
+          "exact": {
+            "new": 641,
+            "disappeared": 393,
+            "changed": 32,
+            "alarms": 1066
+          },
+          "token_subset": {
+            "new": 617,
+            "disappeared": 369,
+            "changed": 55,
+            "alarms": 1041
+          },
+          "jaccard": {
+            "new": 416,
+            "disappeared": 168,
+            "changed": 229,
+            "alarms": 813
+          }
+        },
+        "pairs": {
+          "token_subset": {
+            "pairs": 24,
+            "kinds": {
+              "generalizing": 24
+            },
+            "sample": [
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> dhcpd: <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> dhcpd: <*> on <IP> to <*> via eth1"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> dhcpd: <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> dhcpd: DHCPREQUEST for <IP> (<IP>) from <*> via eth1"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> tbird-sm1 Nov <NUM> <NUM>:<NUM>:<NUM> src@tbird-sm1 ib_sm.x[<NUM>]: <*> Force port <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> tbird-sm1 Nov <NUM> <NUM>:<NUM>:<NUM> src@tbird-sm1 ib_sm.x[<NUM>]: [ib_sm_assign.c:<NUM>]: Force port to go down due to LID conflict, node - <*> port=<NUM>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> kernel: Linux version <*> (#<NUM>#@#<NUM>#) (gcc version <NUM>.<NUM> <NUM> (Red Hat <NUM>.<NUM><NUM>)) #<NUM> SMP Tue <*> <NUM> <NUM>:<NUM>:<NUM> <*> <NUM>",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> kernel: Linux version <NUM>.<NUM><NUM>.EL.rootsmp (#<NUM>#@#<NUM>#) (gcc version <NUM>.<NUM> <NUM> (Red Hat <NUM>.<NUM><NUM>)) #<NUM> SMP Tue Aug <NUM> <NUM>:<NUM>:<NUM> MDT <NUM>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> kernel: Memory: <*> available <*> kernel code, 0k reserved, <*> data, 188k init)",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> kernel: Memory: 6106088k/7340032k available (2076k kernel code, 0k reserved, 1278k data, 188k init)"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> <*> <*> <*> <*> <*> <*> <*> <NUM> <NUM> <NUM> <NUM> <NUM> <NUM> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> kernel: ACPI: PCI Interrupt Link [LNKA] (IRQs <NUM> <NUM> <NUM> <NUM> <NUM> <NUM> <NUM> <NUM>) *<NUM>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> tbird-sm1 Nov <NUM> <NUM>:<NUM>:<NUM> src@tbird-sm1 ib_sm.x[<NUM>]: <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> tbird-sm1 Nov <NUM> <NUM>:<NUM>:<NUM> src@tbird-sm1 ib_sm.x[<NUM>]: [INFO]: <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> smartd[<NUM>]: Unable to register SCSI device <PATH> at line <NUM> of file <PATH>",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> smartd[<NUM>]: Unable to <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> <*> <*> <*> for <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> <*> session opened for user root by <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> <*> <*> <*> <*> <NUM> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> fsck: Clearing orphaned inode <NUM> (uid=<NUM>, gid=<NUM>, mode=<NUM>, size=<NUM>)"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> sshd[<NUM>]: Accepted publickey for <*> from ::ffff:<IP> port <NUM> ssh2",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> sshd[<NUM>]: Accepted publickey for root from ::ffff:<IP> port <NUM> ssh2"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> bn863 Nov <NUM> <NUM>:<NUM>:<NUM> bn863/bn863 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> bn863 Nov <NUM> <NUM>:<NUM>:<NUM> bn863/bn863 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> bn347 Nov <NUM> <NUM>:<NUM>:<NUM> bn347/bn347 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> bn347 Nov <NUM> <NUM>:<NUM>:<NUM> bn347/bn347 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> cn2 Nov <NUM> <NUM>:<NUM>:<NUM> cn2/cn2 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> cn2 Nov <NUM> <NUM>:<NUM>:<NUM> cn2/cn2 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> #<NUM># Nov <NUM> <NUM>:<NUM>:<NUM> #<NUM>#/#<NUM># <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> #<NUM># Nov <NUM> <NUM>:<NUM>:<NUM> #<NUM>#/#<NUM># kernel: Swap cache: add <NUM>, delete <NUM>, find <NUM>/<NUM>, race <NUM><NUM>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> Server Administrator: Instrumentation Service EventID: <NUM> Temperature sensor <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> Temperature sensor value (in Degrees Celsius): <NUM>",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> Server Administrator: Instrumentation Service EventID: <NUM> Temperature sensor detected a warning value Sensor location: BMC Ambient Temp Chassis location: Main System Chassis Previous state was: OK (Normal) Temperature sensor value (in Degrees Celsius): <NUM>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> tbird-admin1 Nov <NUM> <NUM>:<NUM>:<NUM> local@tbird-admin1 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> tbird-admin1 Nov <NUM> <NUM>:<NUM>:<NUM> local@tbird-admin1 postfix/postdrop[<NUM>]: warning: unable to look up public/pickup: No such file or directory"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> tbird-sm1 Nov <NUM> <NUM>:<NUM>:<NUM> src@tbird-sm1 ib_sm.x[<NUM>]: <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> tbird-sm1 Nov <NUM> <NUM>:<NUM>:<NUM> src@tbird-sm1 ib_sm.x[<NUM>]: [INFO]: Configuration caused by previous GET/SET operation failures"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> #<NUM># Nov <NUM> <NUM>:<NUM>:<NUM> #<NUM>#/#<NUM># <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> #<NUM># Nov <NUM> <NUM>:<NUM>:<NUM> #<NUM>#/#<NUM># logger: Kickstart Install: <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "generalizing",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> userhelper[<NUM>]: running '<PATH> --nox -i <*> with root privileges on behalf of 'root'",
+                "- <NUM> <NUM>.<NUM> #<NUM># Nov <NUM> <NUM>:<NUM>:<NUM> #<NUM>#/#<NUM># userhelper[<NUM>]: running '<PATH> --nox -i <*> with root privileges on behalf of 'root'"
+              ]
+            ]
+          },
+          "jaccard": {
+            "pairs": 225,
+            "kinds": {
+              "other length": 200,
+              "generalizing": 9,
+              "same length": 16
+            },
+            "sample": [
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> tbird-admin1 Nov <NUM> <NUM>:<NUM>:<NUM> local@tbird-admin1 <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> en318 Nov <NUM> <NUM>:<NUM>:<NUM> en318/en318 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> <*> <*> <*> <*> <*> <*> <*> <NUM> <NUM> <NUM> <NUM> <NUM> <NUM> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> kernel: <*> <*> <*> <*> <*> <*> <*> <*> <NUM>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> <*> <*> <*> to <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> smartd[<NUM>]: Unable to <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> an53 Nov <NUM> <NUM>:<NUM>:<NUM> an53/an53 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> <*> Nov <NUM> <NUM>:<NUM>:<NUM> <*> kernel: <*> <*> <*> <*> <*> <NUM> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> an532 Nov <NUM> <NUM>:<NUM>:<NUM> an532/an532 <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an32 Nov <NUM> <NUM>:<NUM>:<NUM> an32/an32 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> dn214 Nov <NUM> <NUM>:<NUM>:<NUM> dn214/dn214 <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an541 Nov <NUM> <NUM>:<NUM>:<NUM> an541/an541 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> cn15 Nov <NUM> <NUM>:<NUM>:<NUM> cn15/cn15 <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an772 Nov <NUM> <NUM>:<NUM>:<NUM> an772/an772 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> dn222 Nov <NUM> <NUM>:<NUM>:<NUM> dn222/dn222 <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> bn15 Nov <NUM> <NUM>:<NUM>:<NUM> bn15/bn15 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> bn549 Nov <NUM> <NUM>:<NUM>:<NUM> bn549/bn549 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> bn515 Nov <NUM> <NUM>:<NUM>:<NUM> bn515/bn515 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> cn4 Nov <NUM> <NUM>:<NUM>:<NUM> cn4/cn4 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> bn782 Nov <NUM> <NUM>:<NUM>:<NUM> bn782/bn782 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> dn226 Nov <NUM> <NUM>:<NUM>:<NUM> dn226/dn226 <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> cn821 Nov <NUM> <NUM>:<NUM>:<NUM> cn821/cn821 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> bn863 Nov <NUM> <NUM>:<NUM>:<NUM> bn863/bn863 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> dn514 Nov <NUM> <NUM>:<NUM>:<NUM> dn514/dn514 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> cn329 Nov <NUM> <NUM>:<NUM>:<NUM> cn329/cn329 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> dn803 Nov <NUM> <NUM>:<NUM>:<NUM> dn803/dn803 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "same length",
+                "- <NUM> <NUM>.<NUM> cn922 Nov <NUM> <NUM>:<NUM>:<NUM> cn922/cn922 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> en134 Nov <NUM> <NUM>:<NUM>:<NUM> en134/en134 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> dn220 Nov <NUM> <NUM>:<NUM>:<NUM> dn220/dn220 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> en418 Nov <NUM> <NUM>:<NUM>:<NUM> en418/en418 <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> cn741 Nov <NUM> <NUM>:<NUM>:<NUM> cn741/cn741 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an572 Nov <NUM> <NUM>:<NUM>:<NUM> an572/an572 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> bn91 Nov <NUM> <NUM>:<NUM>:<NUM> bn91/bn91 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an75 Nov <NUM> <NUM>:<NUM>:<NUM> an75/an75 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> cn8 Nov <NUM> <NUM>:<NUM>:<NUM> cn8/cn8 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an792 Nov <NUM> <NUM>:<NUM>:<NUM> an792/an792 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> dn215 Nov <NUM> <NUM>:<NUM>:<NUM> dn215/dn215 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> an86 Nov <NUM> <NUM>:<NUM>:<NUM> an86/an86 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ],
+              [
+                "other length",
+                "- <NUM> <NUM>.<NUM> dn582 Nov <NUM> <NUM>:<NUM>:<NUM> dn582/dn582 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*>",
+                "- <NUM> <NUM>.<NUM> bn24 Nov <NUM> <NUM>:<NUM>:<NUM> bn24/bn24 kernel: <*> <*> <*> <*> <*> <*> <*> <*> <*>"
+              ]
+            ]
+          }
+        }
+      },
+      "reworded": [
+        {
+          "word": "from",
+          "mode": "swap",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 56,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 56,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            82,
+            62
+          ]
+        },
+        {
+          "word": "from",
+          "mode": "swap",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 5,
+              "reachable": 5,
+              "pairs": 41,
+              "twin": 1,
+              "misplaced": 0,
+              "other": 40,
+              "twin_share": 0.2
+            },
+            "jaccard": {
+              "expected": 5,
+              "reachable": 5,
+              "pairs": 206,
+              "twin": 4,
+              "misplaced": 0,
+              "other": 202,
+              "twin_share": 0.8
+            }
+          },
+          "one_sided": [
+            330,
+            247
+          ]
+        },
+        {
+          "word": "from",
+          "mode": "extend",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 4,
+              "reachable": 4,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 4,
+              "reachable": 4,
+              "pairs": 63,
+              "twin": 4,
+              "misplaced": 0,
+              "other": 59,
+              "twin_share": 1.0
+            }
+          },
+          "one_sided": [
+            85,
+            71
+          ]
+        },
+        {
+          "word": "from",
+          "mode": "extend",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 5,
+              "reachable": 5,
+              "pairs": 41,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 41,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 5,
+              "reachable": 5,
+              "pairs": 211,
+              "twin": 5,
+              "misplaced": 0,
+              "other": 206,
+              "twin_share": 1.0
+            }
+          },
+          "one_sided": [
+            330,
+            252
+          ]
+        },
+        {
+          "word": "from",
+          "mode": "novel",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 2,
+              "reachable": 2,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 2,
+              "reachable": 2,
+              "pairs": 56,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 56,
+              "twin_share": 0.0
+            }
+          },
+          "one_sided": [
+            84,
+            68
+          ]
+        },
+        {
+          "word": "from",
+          "mode": "novel",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 5,
+              "reachable": 5,
+              "pairs": 45,
+              "twin": 1,
+              "misplaced": 0,
+              "other": 44,
+              "twin_share": 0.2
+            },
+            "jaccard": {
+              "expected": 5,
+              "reachable": 5,
+              "pairs": 205,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 205,
+              "twin_share": 0.0
+            }
+          },
+          "one_sided": [
+            334,
+            261
+          ]
+        },
+        {
+          "word": "Interrupt",
+          "mode": "swap",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 56,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 56,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            82,
+            62
+          ]
+        },
+        {
+          "word": "Interrupt",
+          "mode": "swap",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 40,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 40,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 202,
+              "twin": 1,
+              "misplaced": 0,
+              "other": 201,
+              "twin_share": 1.0
+            }
+          },
+          "one_sided": [
+            326,
+            243
+          ]
+        },
+        {
+          "word": "Interrupt",
+          "mode": "extend",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 1,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 1,
+              "reachable": 0,
+              "pairs": 57,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 57,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            83,
+            63
+          ]
+        },
+        {
+          "word": "Interrupt",
+          "mode": "extend",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 41,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 41,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 203,
+              "twin": 1,
+              "misplaced": 0,
+              "other": 202,
+              "twin_share": 1.0
+            }
+          },
+          "one_sided": [
+            327,
+            244
+          ]
+        },
+        {
+          "word": "Interrupt",
+          "mode": "novel",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 57,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 57,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            82,
+            63
+          ]
+        },
+        {
+          "word": "Interrupt",
+          "mode": "novel",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 40,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 40,
+              "twin_share": 0.0
+            },
+            "jaccard": {
+              "expected": 1,
+              "reachable": 1,
+              "pairs": 201,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 201,
+              "twin_share": 0.0
+            }
+          },
+          "one_sided": [
+            327,
+            248
+          ]
+        },
+        {
+          "word": "Probing",
+          "mode": "swap",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 56,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 56,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            82,
+            62
+          ]
+        },
+        {
+          "word": "Probing",
+          "mode": "swap",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 41,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 41,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 202,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 202,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            326,
+            243
+          ]
+        },
+        {
+          "word": "Probing",
+          "mode": "extend",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 56,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 56,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            82,
+            62
+          ]
+        },
+        {
+          "word": "Probing",
+          "mode": "extend",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 41,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 41,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 202,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 202,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            326,
+            243
+          ]
+        },
+        {
+          "word": "Probing",
+          "mode": "novel",
+          "source": "live",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 0,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 0,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 58,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 58,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            82,
+            64
+          ]
+        },
+        {
+          "word": "Probing",
+          "mode": "novel",
+          "source": "saved",
+          "matchers": {
+            "token_subset": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 41,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 41,
+              "twin_share": null
+            },
+            "jaccard": {
+              "expected": 0,
+              "reachable": 0,
+              "pairs": 202,
+              "twin": 0,
+              "misplaced": 0,
+              "other": 202,
+              "twin_share": null
+            }
+          },
+          "one_sided": [
+            326,
+            250
+          ]
+        }
+      ]
+    }
+  }
+}
