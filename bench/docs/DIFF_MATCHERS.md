@@ -29,7 +29,7 @@ Each pair is run two ways. **live**: `diff before.log after.log`, one shared tre
 `diff`, mining included. **saved**: each log analyzed on its own and the two results compared, as `logfold diff before.json
 after.json` does; the time is the comparison only.
 
-logfold 0.2.1 defaults (masks on, depth 4, similarity 0.4), native engine, Python 3.13, Windows 11, 8 cores / 16 threads, warm
+The 0.3.0 development code (its version string was still 0.2.1) with the defaults (masks on, depth 4, similarity 0.4), native engine, Python 3.13, Windows 11, 8 cores / 16 threads, warm
 page cache. Timed runs: median of three.
 
 ## False alarms (reported templates, lower is better)

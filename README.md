@@ -48,7 +48,10 @@ New templates (2)
 - **Memory.** The file is read as a stream, and memory use does not depend on its size. Inputs: files, gzip, standard
   input, several files as one run.
 - **Parallelism.** A large file is cut into chunks (64 MiB by default) and the chunk trees are merged in order. For a
-  fixed chunk size the result does not depend on the number of threads.
+  fixed chunk size the result does not depend on the number of threads. The strategy is chosen automatically: a large file
+  is mined in parallel, and sequentially when the first chunk shows that almost every line is a new message (`--strategy
+  auto`, the default). `--warm-start` starts every chunk from the tree of the first one: far fewer stray templates, at the
+  price of mining the first chunk alone.
 - **Value masks.** By default UUIDs, timestamps, IPs, hex values, paths and numbers are replaced; the rules can be
   changed.
 - **Reports.** HTML (one file, no network requests, strict CSP), JSON with a versioned schema, text, Markdown, CSV. A
@@ -124,6 +127,7 @@ diff(load_analysis("before.json"), load_analysis("after.json"))
 | Formats | `nginx`, `apache`, `nginx-error`, `syslog`, `journald`, `k8s` (CRI/containerd), `jsonl`, `app` (`<time> LEVEL message`), `logfmt`, `serilog-clef`, `plain`, your own `regex:<pattern>`. List: `logfold formats`. |
 | Multi-line records | `--multiline`; with `--format auto` it turns on by itself when indented lines are found. |
 | Folding | `--depth` (4), `--sim-th` (0.4), `--max-children` (100), `--max-templates` (100000). The defaults are the same as in Drain3. |
+| Execution | `--strategy auto` (default; parallel chunks, sequential for logs of unique messages), `sequential`, `chunked`; `--threads`, `--chunk-mb`; `--warm-start` (opt-in, chunked only). |
 | Logs with almost unique lines | `--high-cardinality`: at most 5000 templates, the rest go into catch-all templates, runs sequentially. On a 10 MB file with 84 thousand distinct lines 2.0 s becomes 0.14 s. |
 | Reports | HTML, JSON, text, Markdown, CSV; the `--out` suffix picks the format, `--report NAME` picks the report explicitly, including one from a plugin. |
 | Matchers for `diff` | `jaccard` (default), `token_subset`, `exact`: they link a reworded message to its earlier version so it is not counted as both new and gone. |

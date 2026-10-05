@@ -9,7 +9,7 @@ anything is merged) and the whole input is mined with one tree. The result is th
 
 Measured with [`adaptive.py`](../tools/adaptive.py) (`python bench/tools/adaptive.py --repeat 3`); raw data
 [`results/adaptive.json`](../results/adaptive.json). `analyze --top 1 -q -f plain --engine native`, masks on, 16 threads, each
-command in its own process, median of three runs, peak working set of the process tree. logfold 0.2.1 plus the change,
+command in its own process, median of three runs, peak working set of the process tree. The 0.3.0 development code (its version string was still 0.2.1),
 Windows 11, 8 cores / 16 threads, warm page cache. "Chunked" is what `auto` did before.
 
 | input | chunk | `auto` chose | chunked | auto | sequential | chunked MB | auto MB | sequential MB |
