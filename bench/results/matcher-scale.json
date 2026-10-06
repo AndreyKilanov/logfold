@@ -1,0 +1,177 @@
+{
+  "sizes": [
+    5000,
+    20000,
+    100000
+  ],
+  "runs": [
+    {
+      "shape": "sparse",
+      "size": 5000,
+      "matcher": "jaccard",
+      "seconds": 0.014166100008878857,
+      "pairs": 0
+    },
+    {
+      "shape": "sparse",
+      "size": 5000,
+      "matcher": "jaccard-idf",
+      "seconds": 0.015976599999703467,
+      "pairs": 4
+    },
+    {
+      "shape": "sparse",
+      "size": 5000,
+      "matcher": "overlap",
+      "seconds": 0.0152726000524126,
+      "pairs": 0
+    },
+    {
+      "shape": "sparse",
+      "size": 5000,
+      "matcher": "rules",
+      "seconds": 0.02671920001739636,
+      "pairs": 2500
+    },
+    {
+      "shape": "sparse",
+      "size": 20000,
+      "matcher": "jaccard",
+      "seconds": 0.09357289999024943,
+      "pairs": 0
+    },
+    {
+      "shape": "sparse",
+      "size": 20000,
+      "matcher": "jaccard-idf",
+      "seconds": 0.05415689997607842,
+      "pairs": 5233
+    },
+    {
+      "shape": "sparse",
+      "size": 20000,
+      "matcher": "overlap",
+      "seconds": 0.0865271000075154,
+      "pairs": 0
+    },
+    {
+      "shape": "sparse",
+      "size": 20000,
+      "matcher": "rules",
+      "seconds": 0.09007249999558553,
+      "pairs": 2000
+    },
+    {
+      "shape": "sparse",
+      "size": 100000,
+      "matcher": "jaccard",
+      "seconds": 1.370314400002826,
+      "pairs": 0
+    },
+    {
+      "shape": "sparse",
+      "size": 100000,
+      "matcher": "jaccard-idf",
+      "seconds": 0.32514679996529594,
+      "pairs": 72299
+    },
+    {
+      "shape": "sparse",
+      "size": 100000,
+      "matcher": "overlap",
+      "seconds": 1.2171013000188395,
+      "pairs": 18
+    },
+    {
+      "shape": "sparse",
+      "size": 100000,
+      "matcher": "rules",
+      "seconds": 0.4130902999895625,
+      "pairs": 2000
+    },
+    {
+      "shape": "dense",
+      "size": 5000,
+      "matcher": "jaccard",
+      "seconds": 0.03283530002227053,
+      "pairs": 0
+    },
+    {
+      "shape": "dense",
+      "size": 5000,
+      "matcher": "jaccard-idf",
+      "seconds": 0.012107199989259243,
+      "pairs": 3521
+    },
+    {
+      "shape": "dense",
+      "size": 5000,
+      "matcher": "overlap",
+      "seconds": 0.02025520004099235,
+      "pairs": 50
+    },
+    {
+      "shape": "dense",
+      "size": 5000,
+      "matcher": "rules",
+      "seconds": 0.015334199997596443,
+      "pairs": 2500
+    },
+    {
+      "shape": "dense",
+      "size": 20000,
+      "matcher": "jaccard",
+      "seconds": 0.45504309999523684,
+      "pairs": 3
+    },
+    {
+      "shape": "dense",
+      "size": 20000,
+      "matcher": "jaccard-idf",
+      "seconds": 0.05256600002758205,
+      "pairs": 14488
+    },
+    {
+      "shape": "dense",
+      "size": 20000,
+      "matcher": "overlap",
+      "seconds": 0.3179514000075869,
+      "pairs": 588
+    },
+    {
+      "shape": "dense",
+      "size": 20000,
+      "matcher": "rules",
+      "seconds": 0.064703100011684,
+      "pairs": 2000
+    },
+    {
+      "shape": "dense",
+      "size": 100000,
+      "matcher": "jaccard",
+      "seconds": 10.721562599996105,
+      "pairs": 99
+    },
+    {
+      "shape": "dense",
+      "size": 100000,
+      "matcher": "jaccard-idf",
+      "seconds": 0.2804504000232555,
+      "pairs": 72398
+    },
+    {
+      "shape": "dense",
+      "size": 100000,
+      "matcher": "overlap",
+      "seconds": 8.173959599982481,
+      "pairs": 12029
+    },
+    {
+      "shape": "dense",
+      "size": 100000,
+      "matcher": "rules",
+      "seconds": 0.30065739998826757,
+      "pairs": 2000
+    }
+  ]
+}
