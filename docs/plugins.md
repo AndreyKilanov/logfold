@@ -316,7 +316,9 @@ class CsvReporter:
 
 Tell `AnalysisResult` and `DiffResult` apart with `isinstance(result, DiffResult)`. Log lines are untrusted input:
 templates and examples can contain markup, so escape them for the format you produce (the built-in HTML reporter
-escapes everything; the CSV reporter relies on the `csv` module's quoting).
+escapes everything; the CSV reporter relies on the `csv` module's quoting). For text that people read in a terminal, pass
+values taken from a log through `logfold.ext.printable`, which shows control characters (escape sequences, bell) as `\xNN`
+instead of letting them reach the terminal; the built-in `text`, `markdown`, `csv` and `html` reporters do.
 
 ### A diff matcher
 

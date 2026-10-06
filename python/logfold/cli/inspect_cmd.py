@@ -14,10 +14,10 @@ from rich.text import Text
 
 from logfold.api.inspecting import SAMPLE_LINES, SHOWN_RECORDS, Inspection, inspect_file
 from logfold.cli.options import PANEL_INPUT, PANEL_OUTPUT, Debug, Format, Multiline
-from logfold.cli.output import printable
 from logfold.cli.render import level_text
 from logfold.cli.runtime import fail, stdout_console
 from logfold.errors import ConfigError, LogfoldError
+from logfold.ext.text import printable
 
 EXAMPLES = """\
 Examples:

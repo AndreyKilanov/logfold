@@ -13,7 +13,8 @@ from typing import Protocol
 
 from logfold.config import MiningConfig
 from logfold.ext.formats import FormatSpec
-from logfold.model import LEVEL_NAMES, RunMetrics, summarize_levels
+from logfold.levels import LEVEL_NAMES, summarize_levels
+from logfold.model import RunMetrics
 
 
 @dataclass(frozen=True, slots=True)

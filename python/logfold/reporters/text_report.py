@@ -1,9 +1,14 @@
-"""Plain-text reporter (no dependencies); the CLI uses Rich when it is installed."""
+"""Plain-text reporter (no dependencies); the CLI uses Rich when it is installed.
+
+Values that come from a log are passed through :func:`logfold.ext.printable`, so the text is safe to print on a
+terminal.
+"""
 
 from __future__ import annotations
 
 from collections.abc import Sequence
 
+from logfold.ext.text import printable
 from logfold.model import AnalysisResult, DiffEntry, DiffResult, Template
 
 DEFAULT_TOP = 20
@@ -11,18 +16,18 @@ TEXT_WIDTH = 100
 
 
 def _clip(text: str, width: int = TEXT_WIDTH) -> str:
-    flat = " ".join(text.split())
+    flat = " ".join(printable(text).split())
     return flat if len(flat) <= width else flat[: width - 1] + "…"
 
 
 def _analysis_lines(result: AnalysisResult, top: int) -> list[str]:
     run = result.run
     lines = [
-        f"{run.name}: {run.records:,} records, {len(result.templates):,} templates, "
+        f"{printable(run.name)}: {run.records:,} records, {len(result.templates):,} templates, "
         f"{run.unparsed:,} unparsed lines, format {result.meta.format}, "
         f"{result.metrics.engine} engine, {result.metrics.wall_total_s:.2f}s",
     ]
-    lines.extend(f"warning: {text}" for text in result.warnings)
+    lines.extend(f"warning: {printable(text)}" for text in result.warnings)
     lines.append("")
     shown: Sequence[Template] = result.top(top)
     lines.append(f"{'count':>10}  {'share':>7}  {'level':<5}  template")
@@ -52,13 +57,13 @@ def _entries(title: str, entries: Sequence[DiffEntry], top: int) -> list[str]:
 
 def _diff_lines(result: DiffResult, top: int) -> list[str]:
     lines = [
-        f"{result.before.name} -> {result.after.name}: "
+        f"{printable(result.before.name)} -> {printable(result.after.name)}: "
         f"{result.before.records:,} -> {result.after.records:,} records, "
         f"{len(result.new_templates):,} new ({len(result.new_alerts):,} WARN+), "
         f"{len(result.disappeared):,} disappeared, {len(result.changed):,} changed, {result.unchanged:,} unchanged, "
         f"{result.metrics.engine} engine, {result.metrics.wall_total_s:.2f}s",
     ]
-    lines.extend(f"warning: {text}" for text in result.warnings)
+    lines.extend(f"warning: {printable(text)}" for text in result.warnings)
     lines.extend(_entries("New templates", result.new_templates, top))
     lines.extend(_entries("Changed templates", result.changed, top))
     lines.extend(_entries("Disappeared templates", result.disappeared, top))

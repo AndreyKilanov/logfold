@@ -207,8 +207,8 @@ width. `--debug` shows the traceback instead.
 - `logfold analyze --help` and `logfold diff --help` group the options into the panels Input, Output, Diff (`diff` only),
   Mining, Execution and General, and end with usage examples.
 - `--warm-start` and `--chunk-mb` only matter for the chunked strategy. When the run turned out sequential (a small input
-  with `--strategy auto`, `--high-cardinality`, or the python engine) a `warning:` line on standard error says the flag was
-  ignored; `--quiet` hides it and the exit code does not change.
+  with `--strategy auto`, `--strategy sequential`, `--high-cardinality`, or the python engine) the result's warnings say that
+  `warm_start` was ignored, and for the last three also `chunk_bytes`, and they are printed with the other warnings; the exit code does not change.
 - `LOGFOLD_ENGINE=auto|native|python` selects the engine when `--engine` is not given. `python` forces the slow
   reference engine.
 - `LOGFOLD_OFFLINE=1` forbids the network access of `logfold plugins check|install --online` and `--catalog URL`.

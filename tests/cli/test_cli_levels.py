@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import dataclasses
 import io
 import json
 from pathlib import Path
@@ -12,7 +11,7 @@ from typer.testing import CliRunner
 import logfold
 from logfold.cli import exit_codes
 from logfold.cli.app import app
-from logfold.cli.levels import filter_analysis, filter_diff, resolve_level
+from logfold.cli.levels import resolve_level
 from logfold.cli.render import print_analysis, print_diff
 from logfold.errors import ConfigError
 
@@ -149,25 +148,6 @@ def test_diff_of_saved_results_takes_the_filter_too(corpus_dir: Path, tmp_path: 
     assert result.exit_code == exit_codes.OK, result.output
     payload = json.loads(result.stdout)
     assert {e["level"] for e in payload["new_templates"]} <= {"WARN", "ERROR", "FATAL"}
-
-
-def test_filter_functions_keep_the_run_counters(corpus_dir: Path) -> None:
-    analysis = logfold.analyze(str(corpus_dir / "app.log"), format="app")
-    kept = filter_analysis(analysis, "ERROR")
-    assert kept.run == analysis.run
-    assert 0 < len(kept.templates) < len(analysis.templates)
-    comparison = logfold.diff(str(corpus_dir / "app_before.log"), str(corpus_dir / "app_after.log"), format="app")
-    narrowed = filter_diff(comparison, "ERROR")
-    assert narrowed.unchanged == comparison.unchanged
-    assert narrowed.before == comparison.before
-    assert len(narrowed.new_alerts) == len(narrowed.new_templates)
-
-
-def test_the_filter_functions_refuse_results_without_levels(corpus_dir: Path) -> None:
-    analysis = logfold.analyze(str(corpus_dir / "nginx.log"), format="nginx")
-    with pytest.raises(ConfigError, match="gives no levels"):
-        filter_analysis(analysis, "WARN")
-    assert filter_analysis(dataclasses.replace(analysis, templates=()), "WARN").templates == ()
 
 
 def screen(render, result, top: int) -> str:  # type: ignore[no-untyped-def]

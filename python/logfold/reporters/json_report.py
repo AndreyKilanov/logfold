@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import json
+import re
 
 from logfold.model import AnalysisResult, DiffResult
 from logfold.reporters.payload import analysis_payload, diff_payload
+
+_C1_AND_DEL = re.compile("[\x7f-\x9f]")
+"""``json`` escapes the C0 controls but leaves DEL and the C1 codes (8-bit terminal escapes) raw; escape them too."""
 
 
 class JsonReporter:
@@ -37,4 +41,5 @@ class JsonReporter:
             payload = diff_payload(result, limit_value)
         else:
             payload = analysis_payload(result, limit_value)
-        return json.dumps(payload, indent=indent_value, ensure_ascii=False) + "\n"
+        text = json.dumps(payload, indent=indent_value, ensure_ascii=False)
+        return _C1_AND_DEL.sub(lambda found: f"\\u{ord(found.group()):04x}", text) + "\n"

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import codecs
-import re
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -11,7 +9,7 @@ import typer
 
 import logfold
 from logfold.cli import exit_codes
-from logfold.cli.levels import diff_note, filter_diff, resolve_level
+from logfold.cli.levels import diff_note, resolve_level
 from logfold.cli.options import (
     PANEL_DIFF,
     AsJson,
@@ -39,24 +37,9 @@ from logfold.cli.options import (
     mining_options,
 )
 from logfold.cli.output import resolve_outputs
-from logfold.cli.runtime import emit, fail, note, progress_reporter, warn_ignored, write_report
+from logfold.cli.runtime import emit, fail, note, progress_reporter, write_report
 from logfold.errors import LogfoldError
 from logfold.model import DiffResult
-
-_SAVED_RESULT_MARKER = re.compile(rb'\{\s*"schema_version"\s*:\s*\d+\s*,\s*"kind"\s*:\s*"analysis"')
-_SAVED_RESULT_SNIFF_BYTES = 4096
-
-
-def _is_saved_result(path: Path) -> bool:
-    """Tell whether a file is a JSON analysis report (``analyze --out result.json``) rather than a log."""
-    try:
-        with path.open("rb") as handle:
-            head = handle.read(_SAVED_RESULT_SNIFF_BYTES)
-    except OSError:
-        return False
-    if head.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
-        return True
-    return _SAVED_RESULT_MARKER.match(head.removeprefix(codecs.BOM_UTF8).lstrip()) is not None
 
 
 def _reject_mining_flags(flags: dict[str, bool]) -> None:
@@ -178,7 +161,7 @@ def diff(
         for path in (before, after):
             if not path.is_file():
                 raise logfold.SourceError(f"cannot read '{path}': no such file")
-        saved = (_is_saved_result(before), _is_saved_result(after))
+        saved = (logfold.is_saved_analysis(before), logfold.is_saved_analysis(after))
         if saved[0] != saved[1]:
             raise logfold.ConfigError("diff compares two log files or two saved analysis reports, not one of each")
         if all(saved):
@@ -237,9 +220,8 @@ def diff(
                         warm_start,
                     ),
                 )
-            warn_ignored(result.metrics, warm_start, chunk_mb, quiet)
         if threshold is not None:
-            filtered = filter_diff(result, threshold)
+            filtered = result.filter(min_level=threshold)
             note(diff_note(result, filtered, threshold), quiet)
             result = filtered
         emit(result, top, outputs.stdout)

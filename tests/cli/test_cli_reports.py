@@ -12,9 +12,8 @@ import logfold
 from corpora import synthetic_pair
 from logfold.cli import exit_codes
 from logfold.cli.app import app
-from logfold.cli.output import printable
 from logfold.cli.runtime import emit
-from logfold.ext import registry
+from logfold.ext import printable, registry
 
 runner = CliRunner()
 
@@ -191,8 +190,11 @@ def test_default_tables_never_carry_escape_sequences(tmp_path: Path, monkeypatch
     assert r";pwned\x07\x1b[31m" in terminal.getvalue()
 
 
-def test_redirected_output_keeps_the_raw_text(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_redirected_output_is_safe_because_the_library_reporters_are(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     pipe = io.StringIO()
     monkeypatch.setattr(sys, "stdout", pipe)
     emit(hostile_result(tmp_path), 20, "csv")
-    assert "\x1b]" in pipe.getvalue()
+    assert "\x1b" not in pipe.getvalue()
+    assert "\\x1b]" in pipe.getvalue()

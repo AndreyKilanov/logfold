@@ -10,6 +10,7 @@ import codecs
 import dataclasses
 import json
 import os
+import re
 import time
 from typing import Any
 
@@ -21,8 +22,8 @@ from logfold.engines import native
 from logfold.engines.base import RunStatsData, TemplateStats
 from logfold.errors import ConfigError, SourceError
 from logfold.ext import registry
+from logfold.levels import LEVEL_NAMES
 from logfold.model import (
-    LEVEL_NAMES,
     AnalysisResult,
     DiffResult,
     RunMetrics,
@@ -68,6 +69,33 @@ def load_analysis(path: PathLike) -> AnalysisResult:
     if not isinstance(payload, dict):
         raise SourceError(f"{name!r} is not an analysis report")
     return analysis_from_payload(payload)
+
+
+_SAVED_MARKER = re.compile(rb'\{\s*"schema_version"\s*:\s*\d+\s*,\s*"kind"\s*:\s*"analysis"')
+_SNIFF_BYTES = 4096
+
+
+def is_saved_analysis(path: PathLike) -> bool:
+    """Tell whether a file is a JSON analysis report (``AnalysisResult.to_json()``) rather than a log.
+
+    Only the first 4096 bytes are read: the report starts with ``{"schema_version": N, "kind": "analysis"``. A UTF-16
+    file (a PowerShell 5 ``>`` redirect) also counts, because that is how an unreadable report looks;
+    :func:`load_analysis` then explains the problem.
+
+    Args:
+        path: The file.
+
+    Returns:
+        ``False`` for a log and for a file that cannot be read.
+    """
+    try:
+        with open(path, "rb") as handle:
+            head = handle.read(_SNIFF_BYTES)
+    except OSError:
+        return False
+    if head.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
+        return True
+    return _SAVED_MARKER.match(head.removeprefix(codecs.BOM_UTF8).lstrip()) is not None
 
 
 MINING_ONLY_DEFAULTS: dict[str, Any] = {

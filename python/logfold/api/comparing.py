@@ -17,8 +17,8 @@ from logfold.comparison import Classification
 from logfold.config import DiffConfig
 from logfold.engines import native
 from logfold.engines.base import TemplateTable
+from logfold.levels import LEVEL_NAMES
 from logfold.model import (
-    LEVEL_NAMES,
     AnalysisResult,
     DiffEntry,
     RunSummary,

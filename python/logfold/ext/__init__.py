@@ -12,14 +12,17 @@ from logfold.ext.registry import (
     get_format,
     get_matcher,
     get_reporter,
+    matcher_names,
     plugin_directories,
     plugin_sources,
     register_format,
     register_matcher,
     register_reporter,
+    reporter_for_suffix,
     reporter_names,
 )
 from logfold.ext.reporters import Reporter
+from logfold.ext.text import printable
 
 __all__ = [
     "DEFAULT_MASKS",
@@ -37,10 +40,13 @@ __all__ = [
     "get_format",
     "get_matcher",
     "get_reporter",
+    "matcher_names",
     "plugin_directories",
     "plugin_sources",
+    "printable",
     "register_format",
     "register_matcher",
     "register_reporter",
+    "reporter_for_suffix",
     "reporter_names",
 ]

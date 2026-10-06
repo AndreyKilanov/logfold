@@ -1,8 +1,8 @@
 """Reporters that ship with logfold as default plugins: Markdown tables and CSV.
 
 Log lines are untrusted input, so every value that comes from a log is neutralized for the target format: Markdown
-table cells cannot break out of their cell or code span, and CSV cells that a spreadsheet would read as a formula get
-a leading apostrophe.
+table cells cannot break out of their cell or code span, CSV cells that a spreadsheet would read as a formula get
+a leading apostrophe, and in both control characters (terminal escape sequences) are shown as visible hex escapes.
 """
 
 from __future__ import annotations
@@ -10,6 +10,7 @@ from __future__ import annotations
 import csv
 import io
 
+from logfold.ext.text import printable
 from logfold.model import AnalysisResult, DiffEntry, DiffResult
 
 __all__ = ["CsvReporter", "MarkdownReporter"]
@@ -23,11 +24,12 @@ def _top(options: dict[str, object], default: int | None) -> int | None:
 
 
 def _md(text: str) -> str:
-    return text.replace("|", "/").replace("`", "'").replace("\n", " ").replace("\r", " ")
+    return printable(text).replace("|", "/").replace("`", "'").replace("\n", " ")
 
 
 def _csv(text: str) -> str:
-    return "'" + text if text.startswith(_FORMULA_PREFIXES) else text
+    safe = printable(text)
+    return "'" + safe if safe.startswith(_FORMULA_PREFIXES) else safe
 
 
 def _diff_sections(result: DiffResult) -> tuple[tuple[str, tuple[DiffEntry, ...]], ...]:

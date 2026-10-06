@@ -7,36 +7,34 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Added
 
-- `logfold inspect FILE` shows how a file is read without mining it: the detected format and its confidence, the first records
-  as parsed (time, level, message), and from a sample of the start of the file the level counts, the time range and the
-  number of unparsed lines, with hints for a format that does not fit. `--records`, `--sample-lines`, `--json`.
-- `--level LEVEL` and `--only-alerts` on `logfold analyze` and `logfold diff` keep the templates whose most severe level is at
-  least LEVEL (`--only-alerts` is `--level WARN`). In `analyze` the tables and reports are filtered and a `.json` file
-  from `--out` stays complete; in `diff` the lists, the reports and the `--fail-on-new*` gates all use the filtered result. A
-  format without levels is an error with a hint.
-- Terminal output: a `levels:` line in the `analyze` summary, "N more templates (X% of records)" with the option that shows
-  them, `wrote report.html  (open it in a browser)` after an HTML report, and the transfer speed in the progress indicator.
-- `logfold analyze --help` and `logfold diff --help` group the options into panels (Input, Output, Diff, Mining, Execution,
-  General) and end with examples; `--min-count` and `--matcher` say what they do in the command. The flags and their defaults
-  are unchanged.
-- A warning on standard error when `--warm-start` or `--chunk-mb` was given but the run was sequential, instead of ignoring the
-  flag silently. `--quiet` hides it; the exit code does not change.
-- Errors carry a next step: `LogfoldError.hint`, and in the CLI a `hint:` line under `error:`. A misspelled format, reporter
-  or diff matcher suggests the closest name (`did you mean 'nginx'?`) and the command that lists them, an undetected format
-  names `-f plain` and `-f regex:<pattern>`, and `--out` without a known suffix lists the suffixes. New subclasses
-  `UnknownFormatError`, `UnknownReporterError`, `UnknownMatcherError` and `FormatDetectionError` (in `logfold.errors`) hold the
-  details; they derive from `FormatError` and `ConfigError`, so existing `except` clauses keep working.
+- `logfold inspect FILE`: the detected format, the first records as parsed, and the levels, time range and unparsed lines
+  of a sample of the file.
+- `--level` and `--only-alerts` on `analyze` and `diff`; in `diff` the filter also applies to the `--fail-on-new*` gates.
+- Errors carry a next step: `LogfoldError.hint`, a `hint:` line in the CLI, and "did you mean" for a misspelled format,
+  reporter or matcher (new subclasses of `FormatError` and `ConfigError` in `logfold.errors`).
+- `--help` of `analyze` and `diff` groups the options into panels and ends with examples.
+- Library: `AnalysisResult.filter()`, `DiffResult.filter()`, `AnalysisResult.levels`, `result.save(path)` (reporter by suffix),
+  `logfold.inspect_file()`, `logfold.info()`, `logfold.is_saved_analysis()`, and `logfold.ext.printable()`.
+- `result.warnings` says when `warm_start` or `chunk_bytes` was ignored because the run was sequential. The python engine's
+  `warm_start` warning moved there from the log.
 
 ### Changed
 
-- Format detection (and `inspect`) reads a bounded sample: a line longer than 1 MiB is cut there and reading stops after
-  8 MiB, so a file that is one huge line, or a gzip bomb, no longer makes `--format auto` allocate memory in proportion to
-  the file (a 300 MiB single line took 600 MiB before).
-- Error messages are shorter and read the same on every system: a path is shown as is (no doubled backslashes on Windows) and
-  is not wrapped at the terminal width, a missing file says `no such file` instead of repeating the path with the system's
-  localized text, and text such as `[red]` in a path is printed literally instead of being read as markup.
-  `--engine` and `--strategy` errors list the valid values. The advice that ended the undetected-format message ("pass a
-  format explicitly...") is now `error.hint`, so `str(error)` no longer contains it.
+- Error messages are shorter: the system's localized text is not repeated and markup in a path is printed literally.
+- Terminal output: a `levels:` line, "N more templates (X% of records)", a hint to open a written HTML report, and the
+  transfer speed in progress.
+
+### Fixed
+
+- An unwritable `--out` file is an error, not a traceback; paths in errors are not wrapped or shown with doubled
+  backslashes on Windows.
+
+### Security
+
+- No built-in reporter returns a raw control character from a log (terminal escape sequences): they are shown as hex
+  escapes (`json` uses unicode escapes). Values on the result objects stay raw.
+- Format detection reads a bounded sample (lines cut at 1 MiB, 8 MiB in total), so a huge single-line file or a gzip bomb
+  no longer allocates memory in proportion to its size.
 
 ## [0.3.0] - 2026-10-05
 

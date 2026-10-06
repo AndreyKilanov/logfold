@@ -105,11 +105,8 @@ def test_saved_results_refuse_the_keyword(tmp_path: Path) -> None:
         logfold.diff(result, result, warm_start=True)
 
 
-def test_the_pure_python_engine_says_that_it_ignores_the_option(
-    tmp_path: Path, caplog: pytest.LogCaptureFixture
-) -> None:
+def test_the_pure_python_engine_says_that_it_ignores_the_option(tmp_path: Path) -> None:
     path = stray_log(tmp_path, 2_000)
-    with caplog.at_level("WARNING", logger="logfold"):
-        result = logfold.analyze(path, format="plain", engine="python", warm_start=True, examples="none")
+    result = logfold.analyze(path, format="plain", engine="python", warm_start=True, examples="none")
     assert result.metrics.strategy == "sequential"
-    assert "warm_start" in caplog.text
+    assert any("warm_start was ignored" in warning and "python engine" in warning for warning in result.warnings)

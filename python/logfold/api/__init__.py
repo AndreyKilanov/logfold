@@ -1,4 +1,4 @@
-"""Public facade: :func:`analyze`, :func:`diff` and :func:`load_analysis`.
+"""Public facade: :func:`analyze`, :func:`diff`, :func:`load_analysis`, :func:`inspect_file` and :func:`info`.
 
 The facade turns user options into frozen configuration, picks an engine, runs one mining call and converts the
 engine's plain-data answer into the public result model.
@@ -8,6 +8,18 @@ from __future__ import annotations
 
 from logfold.api.analysis import analyze
 from logfold.api.compare import diff
-from logfold.api.saved import load_analysis
+from logfold.api.info import Info, info
+from logfold.api.inspecting import InspectedRecord, Inspection, inspect_file
+from logfold.api.saved import is_saved_analysis, load_analysis
 
-__all__ = ["analyze", "diff", "load_analysis"]
+__all__ = [
+    "Info",
+    "InspectedRecord",
+    "Inspection",
+    "analyze",
+    "diff",
+    "info",
+    "inspect_file",
+    "is_saved_analysis",
+    "load_analysis",
+]

@@ -2,17 +2,20 @@
 
 from __future__ import annotations
 
+import dataclasses
 import os
+from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from logfold.config import DiffConfig
+from logfold.errors import ConfigError, NoLevelsError
 from logfold.ext import registry
+from logfold.levels import LEVEL_NAMES, at_least, normalize_level
 
 SCHEMA_VERSION = 1
-LEVEL_NAMES = ("TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL")
 _EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
 
@@ -59,21 +62,6 @@ def datetime_to_micros(moment: datetime | None) -> int | None:
         return None
     aware = moment if moment.tzinfo is not None else moment.replace(tzinfo=timezone.utc)
     return (aware - _EPOCH) // timedelta(microseconds=1)
-
-
-def summarize_levels(counts: Sequence[int]) -> tuple[str | None, dict[str, int]]:
-    """Summarize per-rank level counts.
-
-    Args:
-        counts: Record counts indexed by level rank (TRACE..FATAL).
-
-    Returns:
-        The most severe level that occurred (or ``None``) and a mapping of level name to count for levels that
-        occurred.
-    """
-    levels = {LEVEL_NAMES[rank]: count for rank, count in enumerate(counts) if count > 0}
-    most_severe = next((LEVEL_NAMES[rank] for rank in range(len(counts) - 1, -1, -1) if counts[rank] > 0), None)
-    return most_severe, levels
 
 
 @dataclass(frozen=True, slots=True)
@@ -183,6 +171,17 @@ def _write(path: str | os.PathLike[str], text: str) -> None:
     Path(path).write_text(text, encoding="utf-8")
 
 
+def _save(
+    result: AnalysisResult | DiffResult, path: str | os.PathLike[str], reporter: str | None, options: dict[str, object]
+) -> str:
+    name = reporter if reporter is not None else registry.reporter_for_suffix(path)
+    text = result.render(name, **options)
+    if not isinstance(text, str):
+        raise ConfigError(f"reporter {name!r} returned {type(text).__name__}, expected text")
+    _write(path, text)
+    return text
+
+
 @dataclass(frozen=True, slots=True)
 class AnalysisResult:
     """Result of :func:`logfold.analyze`.
@@ -212,6 +211,39 @@ class AnalysisResult:
         """
         return self.templates[: max(n, 0)]
 
+    @property
+    def levels(self) -> Mapping[str, int]:
+        """Records per level name over all templates: only levels that occurred, least severe first."""
+        totals: Counter[str] = Counter()
+        for template in self.templates:
+            totals.update(template.levels)
+        return {name: totals[name] for name in LEVEL_NAMES if totals[name]}
+
+    def filter(self, *, min_level: str | None = None, min_count: int | None = None) -> AnalysisResult:
+        """Keep only some templates; the run counters, metrics and meta stay as they were.
+
+        Args:
+            min_level: Keep templates whose most severe level is at least this one (``TRACE`` to ``FATAL``, any case).
+                A template without a level is dropped.
+            min_count: Keep templates with at least this many records.
+
+        Returns:
+            A new result with the kept templates, most frequent first.
+
+        Raises:
+            ConfigError: If ``min_level`` is not a level name.
+            NoLevelsError: If ``min_level`` is given and no template has a level, which means the format has none.
+        """
+        kept = self.templates
+        if min_level is not None:
+            level = normalize_level(min_level)
+            if kept and all(template.level is None for template in kept):
+                raise NoLevelsError(self.meta.format)
+            kept = tuple(template for template in kept if at_least(template.level, level))
+        if min_count is not None:
+            kept = tuple(template for template in kept if template.count >= min_count)
+        return dataclasses.replace(self, templates=kept)
+
     def render(self, reporter: str, **options: object) -> str:
         """Render with a registered reporter.
 
@@ -223,6 +255,25 @@ class AnalysisResult:
             The rendered text.
         """
         return registry.render(self, reporter, **options)
+
+    def save(self, path: str | os.PathLike[str], reporter: str | None = None, **options: object) -> str:
+        """Render with a reporter and write the text to a file.
+
+        Args:
+            path: Destination file (UTF-8).
+            reporter: Reporter name; when ``None`` the suffix of ``path`` selects it (``.html``, ``.json``, ``.txt``,
+                ``.md`` or ``.csv``, see :data:`logfold.ext.registry.SUFFIX_REPORTERS`).
+            **options: Reporter options.
+
+        Returns:
+            The rendered text.
+
+        Raises:
+            UnknownSuffixError: If no reporter is named and the suffix selects none.
+            ConfigError: If the reporter is unknown or does not support this kind of result.
+            OSError: If the file cannot be written.
+        """
+        return _save(self, path, reporter, options)
 
     def to_json(self, path: str | os.PathLike[str] | None = None, **options: object) -> str:
         """Render as JSON and optionally write it to a file.
@@ -321,6 +372,40 @@ class DiffResult:
         """New templates whose most severe level is WARN or higher."""
         return tuple(entry for entry in self.new_templates if entry.level in ("WARN", "ERROR", "FATAL"))
 
+    def filter(self, *, min_level: str | None = None) -> DiffResult:
+        """Keep only the new, disappeared and changed templates at or above a level.
+
+        ``unchanged``, the run counters, metrics and meta stay as they were. Gates such as ``new_alerts`` then see the
+        filtered lists.
+
+        Args:
+            min_level: Keep entries whose most severe level is at least this one (``TRACE`` to ``FATAL``, any case).
+                An entry without a level is dropped.
+
+        Returns:
+            A new result with the kept entries.
+
+        Raises:
+            ConfigError: If ``min_level`` is not a level name.
+            NoLevelsError: If ``min_level`` is given, there are entries and none has a level.
+        """
+        if min_level is None:
+            return self
+        level = normalize_level(min_level)
+        listed = (*self.new_templates, *self.disappeared, *self.changed)
+        if listed and all(entry.level is None for entry in listed):
+            raise NoLevelsError(self.meta.format)
+
+        def keep(entries: tuple[DiffEntry, ...]) -> tuple[DiffEntry, ...]:
+            return tuple(entry for entry in entries if at_least(entry.level, level))
+
+        return dataclasses.replace(
+            self,
+            new_templates=keep(self.new_templates),
+            disappeared=keep(self.disappeared),
+            changed=keep(self.changed),
+        )
+
     def render(self, reporter: str, **options: object) -> str:
         """Render with a registered reporter.
 
@@ -332,6 +417,25 @@ class DiffResult:
             The rendered text.
         """
         return registry.render(self, reporter, **options)
+
+    def save(self, path: str | os.PathLike[str], reporter: str | None = None, **options: object) -> str:
+        """Render with a reporter and write the text to a file.
+
+        Args:
+            path: Destination file (UTF-8).
+            reporter: Reporter name; when ``None`` the suffix of ``path`` selects it (``.html``, ``.json``, ``.txt``,
+                ``.md`` or ``.csv``, see :data:`logfold.ext.registry.SUFFIX_REPORTERS`).
+            **options: Reporter options.
+
+        Returns:
+            The rendered text.
+
+        Raises:
+            UnknownSuffixError: If no reporter is named and the suffix selects none.
+            ConfigError: If the reporter is unknown or does not support this kind of result.
+            OSError: If the file cannot be written.
+        """
+        return _save(self, path, reporter, options)
 
     def to_json(self, path: str | os.PathLike[str] | None = None, **options: object) -> str:
         """Render as JSON and optionally write it to a file.

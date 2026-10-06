@@ -3,15 +3,14 @@
 from __future__ import annotations
 
 import re
-from collections import Counter
 from collections.abc import Sequence
 
 from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-from logfold.cli.output import printable
-from logfold.model import LEVEL_NAMES, AnalysisResult, DiffEntry, DiffResult
+from logfold.ext.text import printable
+from logfold.model import AnalysisResult, DiffEntry, DiffResult
 
 _VARIABLE = re.compile(r"(<[A-Z]+>|<\*>)")
 _LEVEL_STYLE = {"WARN": "yellow", "ERROR": "red", "FATAL": "bold red"}
@@ -24,10 +23,6 @@ def _template_text(text: str, limit: int = 160) -> Text:
     for index, part in enumerate(_VARIABLE.split(flat)):
         result.append(part, style="orange3" if index % 2 else "")
     return result
-
-
-def _severity(level: str) -> int:
-    return LEVEL_NAMES.index(level) if level in LEVEL_NAMES else -1
 
 
 def level_text(level: str | None) -> Text:
@@ -50,12 +45,9 @@ def print_analysis(console: Console, result: AnalysisResult, top: int) -> None:
         f"{result.metrics.engine} engine, {result.metrics.wall_total_s:.2f}s",
         highlight=False,
     )
-    levels: Counter[str] = Counter()
-    for template in result.templates:
-        levels.update(template.levels)
-    if levels:
-        ordered = sorted(levels.items(), key=lambda item: -_severity(item[0]))
-        console.print("levels: " + " ".join(f"{name} {count:,}" for name, count in ordered), style="dim")
+    if result.levels:
+        counts = " ".join(f"{name} {count:,}" for name, count in reversed(list(result.levels.items())))
+        console.print(f"levels: {counts}", style="dim")
     for warning in result.warnings:
         console.print(f"[yellow]warning:[/yellow] {warning}", highlight=False)
     table = Table(show_header=True, header_style="bold", box=None, pad_edge=False)

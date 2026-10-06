@@ -12,11 +12,14 @@ from logfold.errors import (
     FormatDetectionError,
     FormatError,
     LogfoldError,
+    NoLevelsError,
     SourceError,
     UnknownFormatError,
     UnknownMatcherError,
     UnknownReporterError,
+    UnknownSuffixError,
     read_error,
+    write_error,
 )
 from logfold.ext import registry
 from logfold.formats.auto import detect_format
@@ -113,6 +116,8 @@ def _samples() -> list[LogfoldError]:
         UnknownReporterError("jsno", ["json", "csv"]),
         UnknownMatcherError("exat", ["exact"]),
         FormatDetectionError("p.log", (("plain", 0.5), ("jsonl", 0.0))),
+        UnknownSuffixError("report", [".html", ".csv"]),
+        NoLevelsError("nginx"),
     ]
 
 
@@ -124,3 +129,31 @@ def test_errors_survive_pickle_and_copy(error: LogfoldError, clone) -> None:
     assert str(again) == str(error)
     assert again.hint == error.hint
     assert again.__dict__ == error.__dict__
+
+
+def test_unknown_suffix_error_names_the_suffixes_and_keeps_its_base() -> None:
+    error = UnknownSuffixError("out/report.xyz", [".html", ".csv"])
+    assert isinstance(error, ConfigError)
+    assert error.suffixes == (".csv", ".html")
+    assert str(error) == "cannot choose a report format for 'out/report.xyz': the suffix '.xyz' is not known"
+    assert error.hint is not None
+    assert ".csv, .html" in error.hint
+    assert "it has no suffix" in str(UnknownSuffixError("report", [".html"]))
+
+
+def test_no_levels_error_names_the_format() -> None:
+    error = NoLevelsError("nginx")
+    assert isinstance(error, ConfigError)
+    assert str(error) == "cannot filter by level: the nginx format gives no levels"
+    assert error.format == "nginx"
+    assert error.hint is not None
+
+
+def test_write_error_gives_a_fixed_reason_for_the_usual_failures() -> None:
+    assert str(write_error("a/b.html", FileNotFoundError(2, "Das System kann nicht"))) == (
+        "cannot write 'a/b.html': the folder does not exist"
+    )
+    assert str(write_error("x", PermissionError(13, "Zugriff verweigert"))) == "cannot write 'x': permission denied"
+    assert str(write_error("x", IsADirectoryError(21, "Is a directory"))) == "cannot write 'x': is a directory"
+    assert str(write_error("x", OSError(28, "No space left on device"))) == "cannot write 'x': No space left on device"
+    assert isinstance(write_error("x", OSError("boom")), SourceError)
