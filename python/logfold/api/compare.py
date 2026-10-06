@@ -21,6 +21,16 @@ from logfold.api._common import (
 from logfold.api.comparing import classify_native, table_side
 from logfold.api.matching import accelerated, native_spec
 from logfold.api.saved import MINING_ONLY_DEFAULTS, diff_saved
+from logfold.api.windows import (
+    OPEN,
+    TimeBound,
+    Window,
+    labeled,
+    require_time,
+    split_windows,
+    window,
+    window_warnings,
+)
 from logfold.comparison import Classification, classify
 from logfold.config import (
     DiffConfig,
@@ -65,9 +75,17 @@ def _diff_config(
     return dataclasses.replace(config, **changes) if changes else config
 
 
+def _windows(since: TimeBound, until: TimeBound, split_at: TimeBound) -> tuple[Window, ...]:
+    """The windows of the two runs: empty without any bound, otherwise one per run."""
+    if split_at is not None:
+        return split_windows(since, until, split_at)
+    bounds = window(since, until)
+    return (bounds, bounds) if bounds != OPEN else ()
+
+
 def diff(
     before: PathLike | Sequence[PathLike] | AnalysisResult,
-    after: PathLike | Sequence[PathLike] | AnalysisResult,
+    after: PathLike | Sequence[PathLike] | AnalysisResult | None = None,
     *,
     format: str | FormatSpec | Format = "auto",
     multiline: bool | None = None,
@@ -92,6 +110,9 @@ def diff(
     chunk_bytes: int | None = None,
     warm_start: bool | None = None,
     examples: ExamplesMode = "raw",
+    since: TimeBound = None,
+    until: TimeBound = None,
+    split_at: TimeBound = None,
     progress: Progress | None = None,
 ) -> DiffResult:
     """Compare two runs of a log: what appeared, disappeared or changed its share.
@@ -131,6 +152,12 @@ def diff(
         chunk_bytes: Chunk size of the chunked strategy.
         warm_start: Chunked strategy only; see :func:`analyze`.
         examples: ``raw``, ``masked`` or ``none``; see :func:`analyze`.
+        since: Keep only records at or after this time, in both runs; see :func:`analyze`. With ``split_at`` it is the
+            start of the first run.
+        until: Keep only records before this time, in both runs. With ``split_at`` it is the end of the second run.
+        split_at: Compare two parts of one input: ``before`` is the only input, the records before this time are the
+            first run and the records from this time on are the second run (``after`` is left out). The input is read
+            once for each run and one template tree is shared, as for two inputs.
         progress: Optional callback receiving consumed input byte counts.
 
     Returns:
@@ -143,6 +170,12 @@ def diff(
         EngineError: If the requested engine is unavailable.
     """
     config = _diff_config(diff_config, threshold_ratio, min_count, min_new_count, recount, matcher, significance)
+    if after is None:
+        if split_at is None:
+            raise ConfigError("diff() needs two inputs, or one input and split_at")
+        after = before
+    elif split_at is not None:
+        raise ConfigError("split_at compares two parts of one input: give one input and no 'after'")
     if isinstance(before, AnalysisResult) or isinstance(after, AnalysisResult):
         if not (isinstance(before, AnalysisResult) and isinstance(after, AnalysisResult)):
             raise ConfigError("diff() compares two analysis results or two sets of inputs, not one of each")
@@ -155,11 +188,18 @@ def diff(
     second = _paths(after, "diff() after")
     resolved = resolve_format(format, first, multiline)
     spec = resolved.spec
+    windows = _windows(since, until, split_at)
+    if windows:
+        require_time(spec)
+    if split_at is not None and "-" in first:
+        raise ConfigError(
+            "split_at reads the input once for each run, so it cannot read standard input; save it to a file"
+        )
     mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks, high_cardinality)
     exec_config = _execution(execution, engine, strategy, threads, chunk_bytes, high_cardinality, warm_start)
-    mined, used = _mine((first, second), spec, mining_config, exec_config, progress, config.recount)
-    before_summary = _summary(first, mined.runs[0])
-    after_summary = _summary(second, mined.runs[1])
+    mined, used = _mine((first, second), spec, mining_config, exec_config, progress, config.recount, windows)
+    before_summary = labeled(_summary(first, mined.runs[0]), windows[0] if windows else OPEN)
+    after_summary = labeled(_summary(second, mined.runs[1]), windows[1] if windows else OPEN)
     masker = Masker(mining_config.masks)
     resolved_matcher = registry.get_matcher(config.matcher)
     native_matcher = native_spec(resolved_matcher) if used.name == "native" and native.supports_comparison() else None
@@ -199,8 +239,8 @@ def diff(
         config=config,
         metrics=mined.metrics,
         meta=_meta(spec, mining_config, used),
-        warnings=tuple(
-            _warnings(
+        warnings=(
+            *_warnings(
                 [before_summary, after_summary],
                 used,
                 exec_config,
@@ -208,6 +248,8 @@ def diff(
                 mining_config,
                 high_cardinality,
                 mined.metrics.strategy,
-            )
+            ),
+            *window_warnings(before_summary),
+            *window_warnings(after_summary),
         ),
     )

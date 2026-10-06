@@ -18,7 +18,7 @@ from typing import IO, Any, cast
 from logfold.engines import _timeparse as tp
 from logfold.engines._reference_tree import Miner, Recount
 from logfold.engines.base import MineRequest, MiningResult, ProgressCallback, RunInfo, TemplateTable
-from logfold.errors import FormatError, SourceError, read_error
+from logfold.errors import ConfigError, FormatError, SourceError, read_error
 from logfold.ext.formats import FormatSpec, JsonFormat, PlainFormat, RegexFormat
 from logfold.ext.masks import Masker
 from logfold.model import RunMetrics
@@ -143,12 +143,14 @@ def _first_key(obj: dict[str, Any], keys: tuple[str, ...]) -> Any:
 
 
 class _Counters:
-    __slots__ = ("lines", "records", "tz_aware", "unparsed")
+    __slots__ = ("lines", "out_of_range", "records", "tz_aware", "unparsed", "untimed")
 
     def __init__(self) -> None:
         self.lines = 0
         self.records = 0
         self.unparsed = 0
+        self.out_of_range = 0
+        self.untimed = 0
         self.tz_aware = False
 
 
@@ -181,7 +183,10 @@ def _scan(
     counters: _Counters,
     on_record: Callable[[str, int | None, int | None], None],
     tick: Callable[[int], None],
+    window: tuple[int | None, int | None] = (None, None),
 ) -> int:
+    since, until = window
+    bounded = since is not None or until is not None
     stream, size = _open(path)
     record_first = ""
     record_rest = ""
@@ -195,6 +200,13 @@ def _scan(
             counters.unparsed += 1
             return
         message, timestamp, tz_aware, level = parsed
+        if bounded:
+            if timestamp is None:
+                counters.untimed += 1
+                return
+            if (since is not None and timestamp < since) or (until is not None and timestamp >= until):
+                counters.out_of_range += 1
+                return
         counters.records += 1
         counters.tz_aware = counters.tz_aware or tz_aware
         on_record(message, timestamp, level)
@@ -257,6 +269,8 @@ class PythonEngine:
             Templates with per-run statistics.
         """
         started = time.perf_counter()
+        if request.windows and len(request.windows) != len(request.runs):
+            raise ConfigError("there must be one time window per run")
         parser = RecordParser(request.format)
         masker = Masker(request.mining.masks)
         splitter = re.compile("[^" + re.escape(request.mining.delimiters) + "]+")
@@ -267,13 +281,14 @@ class PythonEngine:
         for run, files in enumerate(request.runs):
             counters = _Counters()
             total_bytes = 0
+            window = request.windows[run] if request.windows else (None, None)
 
             def on_record(message: str, timestamp: int | None, level: int | None, run: int = run) -> None:
                 tokens = splitter.findall(masker.mask(message))
                 miner.add(run, tokens, message, timestamp, level)
 
             for path in files:
-                total_bytes += _scan(path, parser, counters, on_record, tick)
+                total_bytes += _scan(path, parser, counters, on_record, tick, window)
             trained.append((counters, total_bytes))
         mined = time.perf_counter()
         recounted = time.perf_counter()
@@ -285,8 +300,9 @@ class PythonEngine:
                     tokens = splitter.findall(masker.mask(message))
                     recount.record(miner, run, tokens, message, timestamp, level)
 
+                window = request.windows[run] if request.windows else (None, None)
                 for path in files:
-                    _scan(path, parser, _Counters(), on_recount, tick)
+                    _scan(path, parser, _Counters(), on_recount, tick, window)
             recounted = time.perf_counter()
             templates, overflowed = miner.freeze_recounted(recount)
         else:
@@ -299,6 +315,8 @@ class PythonEngine:
                 lines=counters.lines,
                 records=counters.records,
                 unparsed=counters.unparsed,
+                out_of_range=counters.out_of_range,
+                untimed=counters.untimed,
                 bytes=total_bytes,
                 tz_aware=counters.tz_aware,
                 overflowed=overflowed[run],

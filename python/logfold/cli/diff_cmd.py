@@ -12,6 +12,7 @@ from logfold.cli import exit_codes
 from logfold.cli.levels import diff_note, resolve_level
 from logfold.cli.options import (
     PANEL_DIFF,
+    PANEL_INPUT,
     AsJson,
     ChunkMb,
     Debug,
@@ -30,9 +31,11 @@ from logfold.cli.options import (
     Quiet,
     Report,
     SimTh,
+    Since,
     Strategy,
     Threads,
     Top,
+    Until,
     WarmStart,
     mining_options,
 )
@@ -60,16 +63,33 @@ EXAMPLES = """Examples:
 
   logfold diff before.log after.log --fail-on-new-alerts -q
 
-  logfold diff before.json after.json"""
+  logfold diff before.json after.json
+
+  logfold diff app.log --split-at 2026-10-06T12:00"""
 
 
 def diff(
     before: Annotated[
         Path, typer.Argument(help="Log file of the first run, for example before a deploy, or a saved report.")
     ],
-    after: Annotated[Path, typer.Argument(help="Log file of the second run, or a saved report.")],
+    after: Annotated[
+        Path | None,
+        typer.Argument(help="Log file of the second run, or a saved report; leave it out with --split-at."),
+    ] = None,
     format: Format = "auto",
     multiline: Multiline = None,
+    since: Since = None,
+    until: Until = None,
+    split_at: Annotated[
+        str | None,
+        typer.Option(
+            "--split-at",
+            metavar="TIME",
+            help="Compare two parts of one log: records before TIME are the first run, from TIME on the second "
+            "(give one file and no second argument; --since and --until bound the whole range).",
+            rich_help_panel=PANEL_INPUT,
+        ),
+    ] = None,
     top: Top = 20,
     threshold_ratio: Annotated[
         float,
@@ -164,14 +184,20 @@ def diff(
     """Compare two runs: new, disappeared and changed templates.
 
     Each argument is a log file or a saved report of 'logfold analyze --out result.json'; both must be of one kind.
+    With --split-at TIME, give one log file: the records before TIME are compared with the records from TIME on.
     """
     try:
         outputs = resolve_outputs("diff", out, report, as_json)
         threshold = resolve_level(level, only_alerts)
-        for path in (before, after):
+        if split_at is None and after is None:
+            raise logfold.ConfigError("diff needs two files, or one file and --split-at TIME")
+        if split_at is not None and after is not None:
+            raise logfold.ConfigError("--split-at compares two parts of one file: give one file and no second argument")
+        second = after if after is not None else before
+        for path in (before, second):
             if not path.is_file():
                 raise logfold.SourceError(f"cannot read '{path}': no such file")
-        saved = (logfold.is_saved_analysis(before), logfold.is_saved_analysis(after))
+        saved = (logfold.is_saved_analysis(before), logfold.is_saved_analysis(second))
         if saved[0] != saved[1]:
             raise logfold.ConfigError("diff compares two log files or two saved analysis reports, not one of each")
         if all(saved):
@@ -191,11 +217,14 @@ def diff(
                     "--no-masks": no_masks,
                     "--high-cardinality": high_cardinality,
                     "--warm-start": warm_start,
+                    "--since": since is not None,
+                    "--until": until is not None,
+                    "--split-at": split_at is not None,
                 }
             )
             result = _diff_saved(
                 before,
-                after,
+                second,
                 threshold_ratio=threshold_ratio,
                 min_count=min_count,
                 min_new_count=min_new_count,
@@ -207,9 +236,12 @@ def diff(
             with progress_reporter(quiet) as progress:
                 result = logfold.diff(
                     str(before),
-                    str(after),
+                    None if split_at is not None else str(second),
                     format=format,
                     multiline=multiline,
+                    since=since,
+                    until=until,
+                    split_at=split_at,
                     threshold_ratio=threshold_ratio,
                     min_count=min_count,
                     min_new_count=min_new_count,

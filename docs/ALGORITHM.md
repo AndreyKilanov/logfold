@@ -161,6 +161,21 @@ first chunk, never the thread count or the timing, so it is deterministic for a 
 than 10 000 records stays chunked. An explicit `chunked` or `sequential` is never changed. The thresholds are execution
 parameters, not part of the mining rules: `ALGO_VERSION` stays.
 
+## 8a. Time window
+
+A run may carry a time window `[since, until)` in microseconds since the Unix epoch, each bound optional. It is applied to
+every record after parsing and before masking: a record whose timestamp `t` satisfies `since <= t < until` is processed
+as usual; a record with a timestamp outside the window is counted as `out_of_range`; a record **without** a timestamp
+(none was read or it could not be parsed) cannot be placed and is counted as `untimed`; neither is masked, assigned,
+counted as a record or used for the share denominators. A window without bounds admits every record, with or without a
+timestamp, so a run without a window is mined exactly as before and `ALGO_VERSION` does not change. The decision uses the
+record alone, never its neighbours, so it is the same for every chunk layout and thread count. Lines are counted as
+before (`lines` includes the lines of records that were left out). A timestamp without a zone is the wall-clock time as
+written, treated as UTC, the same as in §1.3; a bound with a zone is converted to UTC by the caller.
+
+`diff` of one input cut at `T` is two runs over the same input with the windows `[since, T)` and `[T, until)`, mined with
+one tree and recounted as for two files (§9).
+
 ## 9. Recount (diff)
 
 Training assigns each record to the tree *as it was at that moment*, so the same line can land in different clusters

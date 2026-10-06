@@ -6,6 +6,53 @@ use crate::lines::LineReader;
 /// Number of consumed bytes between two progress callbacks.
 pub const TICK_BYTES: u64 = 1 << 20;
 
+/// Where a record falls relative to a [`TimeWindow`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Placement {
+    /// The record belongs to the window.
+    Inside,
+    /// The record has a timestamp outside the window.
+    Outside,
+    /// The record has no timestamp, so it cannot be placed in a window that has a bound.
+    Untimed,
+}
+
+/// A half-open range of record timestamps in microseconds since the Unix epoch: `since <= timestamp < until`
+/// (see `docs/ALGORITHM.md` §8a). A bound that is `None` is open; the default window admits every record.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct TimeWindow {
+    /// First admitted timestamp.
+    pub since: Option<i64>,
+    /// First timestamp that is no longer admitted.
+    pub until: Option<i64>,
+}
+
+impl TimeWindow {
+    /// True when the window has no bound.
+    pub fn is_open(&self) -> bool {
+        self.since.is_none() && self.until.is_none()
+    }
+
+    /// Places a record with `timestamp` relative to the window.
+    pub fn place(&self, timestamp: Option<i64>) -> Placement {
+        if self.is_open() {
+            return Placement::Inside;
+        }
+        match timestamp {
+            None => Placement::Untimed,
+            Some(moment) => {
+                let after_start = self.since.map_or(true, |since| moment >= since);
+                let before_end = self.until.map_or(true, |until| moment < until);
+                if after_start && before_end {
+                    Placement::Inside
+                } else {
+                    Placement::Outside
+                }
+            }
+        }
+    }
+}
+
 /// Which part of a stream a scan owns (see `docs/ALGORITHM.md` §8).
 #[derive(Clone, Copy, Debug)]
 pub struct ScanWindow {
@@ -15,12 +62,19 @@ pub struct ScanWindow {
     pub skip_leading_continuations: bool,
     /// Records whose first line starts at or after this offset belong to the next chunk.
     pub end: u64,
+    /// Only records inside this time window are emitted and counted as records.
+    pub time: TimeWindow,
 }
 
 impl ScanWindow {
     /// A window covering a whole stream.
     pub fn whole() -> Self {
-        ScanWindow { skip_first_line: false, skip_leading_continuations: false, end: u64::MAX }
+        ScanWindow {
+            skip_first_line: false,
+            skip_leading_continuations: false,
+            end: u64::MAX,
+            time: TimeWindow::default(),
+        }
     }
 }
 
@@ -33,6 +87,10 @@ pub struct Counters {
     pub records: u64,
     /// Lines that did not become part of a record.
     pub unparsed: u64,
+    /// Records parsed but left out because their timestamp is outside the time window.
+    pub out_of_range: u64,
+    /// Records parsed but left out because they have no timestamp and the time window has a bound.
+    pub untimed: u64,
     /// True when any timestamp carried a zone.
     pub tz_aware: bool,
 }
@@ -43,6 +101,8 @@ impl Counters {
         self.lines += other.lines;
         self.records += other.records;
         self.unparsed += other.unparsed;
+        self.out_of_range += other.out_of_range;
+        self.untimed += other.untimed;
         self.tz_aware |= other.tz_aware;
     }
 }
@@ -62,6 +122,7 @@ fn is_blank(line: &[u8]) -> bool {
 
 struct Scan<'f, F> {
     format: &'f CompiledFormat,
+    time: TimeWindow,
     counters: Counters,
     on_record: F,
 }
@@ -69,11 +130,15 @@ struct Scan<'f, F> {
 impl<F: FnMut(&ParsedRecord<'_>)> Scan<'_, F> {
     fn emit(&mut self, text: &[u8], first_len: usize) {
         match self.format.parse(text, first_len) {
-            Some(record) => {
-                self.counters.records += 1;
-                self.counters.tz_aware |= record.tz_aware;
-                (self.on_record)(&record);
-            }
+            Some(record) => match self.time.place(record.timestamp) {
+                Placement::Inside => {
+                    self.counters.records += 1;
+                    self.counters.tz_aware |= record.tz_aware;
+                    (self.on_record)(&record);
+                }
+                Placement::Outside => self.counters.out_of_range += 1,
+                Placement::Untimed => self.counters.untimed += 1,
+            },
             None => self.counters.unparsed += 1,
         }
     }
@@ -90,7 +155,7 @@ pub fn scan_records<R: Read, F: FnMut(&ParsedRecord<'_>)>(
     on_record: F,
     mut tick: impl FnMut(u64) -> bool,
 ) -> std::io::Result<(Counters, ScanOutcome)> {
-    let mut scan = Scan { format, counters: Counters::default(), on_record };
+    let mut scan = Scan { format, time: window.time, counters: Counters::default(), on_record };
     let mut skip_first = window.skip_first_line;
     let mut leading = window.skip_leading_continuations;
     let mut record = Vec::new();

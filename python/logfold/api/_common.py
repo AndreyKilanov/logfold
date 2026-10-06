@@ -130,6 +130,7 @@ def _mine(
     execution: ExecutionConfig,
     progress: Progress | None,
     recount: bool = False,
+    windows: tuple[tuple[int | None, int | None], ...] = (),
 ) -> tuple[MiningResult, Engine]:
     engine = select_engine(execution)
     request = MineRequest(
@@ -141,6 +142,7 @@ def _mine(
         chunk_bytes=execution.chunk_bytes,
         warm_start=execution.warm_start,
         recount=recount,
+        windows=windows,
     )
     return engine.mine(request, progress), engine
 
@@ -155,6 +157,8 @@ def _summary(paths: tuple[str, ...], info: RunInfo) -> RunSummary:
         bytes=info.bytes,
         tz_aware=info.tz_aware,
         overflowed=info.overflowed,
+        out_of_range=info.out_of_range,
+        untimed=info.untimed,
     )
 
 

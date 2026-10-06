@@ -37,6 +37,7 @@ fn write_log(dir: &tempfile::TempDir, name: &str, lines: usize, seed: usize) -> 
 
 fn request(runs: Vec<Vec<PathBuf>>, strategy: Strategy) -> MineRequest {
     MineRequest {
+        windows: Vec::new(),
         runs,
         format: FormatConfig { spec: FormatSpec::Plain { record_start: None }, ts_format: None, multiline: false },
         masks: default_mask_rules(),

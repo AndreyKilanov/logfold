@@ -102,6 +102,8 @@ class RunSummary:
         bytes: Total size of the inputs on disk.
         tz_aware: ``True`` when timestamps carried a time zone; naive timestamps are interpreted as UTC.
         overflowed: ``True`` when ``max_templates`` was reached and some records were pooled into overflow templates.
+        out_of_range: Records parsed but left out because their timestamp is outside the time window.
+        untimed: Records parsed but left out because they have no timestamp and a time window was set.
     """
 
     name: str
@@ -112,6 +114,8 @@ class RunSummary:
     bytes: int
     tz_aware: bool
     overflowed: bool
+    out_of_range: int = 0
+    untimed: int = 0
 
     @property
     def unparsed_ratio(self) -> float:

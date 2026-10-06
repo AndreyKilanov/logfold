@@ -7,6 +7,8 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Added
 
+- Time windows: `--since`/`--until` on `analyze` and `diff`, and `diff LOG --split-at TIME` to compare the part of one log
+  before a time with the part after it (library: `since`, `until`, `split_at`); extension contract version 5.
 - Plugin names: an unknown format, reporter or matcher gets a hint with the catalog's install command or the closest name;
   `formats` and `--help` list the available plugins; `min_logfold` in the catalog and `plugins install` refuses a plugin
   that needs a newer logfold. Library: `unknown_name_hint()`, `write_template()`.

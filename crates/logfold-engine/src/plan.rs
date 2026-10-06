@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use logfold_io::{inspect, SourceInfo};
+use logfold_io::{inspect, SourceInfo, TimeWindow};
 
 use crate::error::EngineError;
 use crate::request::MineRequest;
@@ -8,6 +8,7 @@ use crate::request::MineRequest;
 /// One contiguous piece of work: a byte range of one file belonging to one run.
 pub(crate) struct Unit {
     pub(crate) run: usize,
+    pub(crate) window: TimeWindow,
     pub(crate) path: PathBuf,
     pub(crate) info: SourceInfo,
     pub(crate) start: u64,
@@ -28,6 +29,7 @@ pub(crate) fn plan(request: &MineRequest, chunk_bytes: Option<u64>) -> Result<Pl
     let mut units = Vec::new();
     let mut run_bytes = vec![0u64; request.runs.len()];
     for (run, files) in request.runs.iter().enumerate() {
+        let window = request.windows.get(run).copied().unwrap_or_default();
         for path in files {
             let info = inspect(path)?;
             run_bytes[run] += info.size;
@@ -37,10 +39,10 @@ pub(crate) fn plan(request: &MineRequest, chunk_bytes: Option<u64>) -> Result<Pl
                 let count = info.size.div_ceil(chunk);
                 for index in 0..count {
                     let end = if index + 1 == count { u64::MAX } else { (index + 1) * chunk };
-                    units.push(Unit { run, path: path.clone(), info, start: index * chunk, end });
+                    units.push(Unit { run, window, path: path.clone(), info, start: index * chunk, end });
                 }
             } else if !(info.seekable() && info.size == 0) {
-                units.push(Unit { run, path: path.clone(), info, start: 0, end: u64::MAX });
+                units.push(Unit { run, window, path: path.clone(), info, start: 0, end: u64::MAX });
             }
         }
     }

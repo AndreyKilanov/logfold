@@ -14,7 +14,7 @@ use logfold_engine::{EngineError, MineRequest};
 use observer::PyObserver;
 
 /// Version of the Python <-> Rust data contract; bump on any incompatible change of the request or result layout.
-const CORE_API_VERSION: u32 = 4;
+const CORE_API_VERSION: u32 = 5;
 
 pyo3::create_exception!(_core, CoreConfigError, pyo3::exceptions::PyException, "Invalid configuration.");
 pyo3::create_exception!(_core, CoreFormatError, pyo3::exceptions::PyException, "Invalid or unusable log format.");
