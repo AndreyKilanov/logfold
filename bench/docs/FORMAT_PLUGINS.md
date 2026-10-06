@@ -10,8 +10,7 @@ For every format a log is generated (seeded, realistic lines: addresses, ids, du
 where the format has them), 10, 100 and 1000 MiB. `logfold analyze FILE -f NAME --top 1 -q` runs as a separate process
 (`run.py` records wall time and peak working set) with the format and with `-f plain`, which treats every line as a message and
 parses nothing: the difference is the price of the format. Defaults otherwise (masks on, strategy `auto`, all threads). Median of
-three runs for 10 and 100 MiB, one run for 1000 MiB. Only the native (Rust) engine is measured; the pure-Python reference
-engine is slow by design and its speed is not a goal.
+three runs for 10 and 100 MiB, one run for 1000 MiB. The figures are those of the native (Rust) engine.
 
 Every generated log is read in full: 0 unparsed lines and 0 records without a time for all six formats (checked on the 10 MiB
 file in the same script).
@@ -40,11 +39,13 @@ Machine: Windows 11, 8 cores / 16 threads, Python 3.13, native engine, warm page
 - The slowest is `postgresql` (0.27 of `plain`): its prefix is matched by a bounded lazy scan (`.{0,120}?`) up to the level word,
   because `log_line_prefix` differs from site to site. Still 279 MB/s, 1 GB in about 3.7 seconds.
 
-## Hostile lines
+## Against the pure-Python engine
 
-Log text is untrusted. On the pure-Python engine (`re`, which backtracks) lines of about 20,000 characters built to stress each
-pattern (a long run of `haproxy[`, of `[ ] `, of `""",`, of `##[`, of repeated levels, an unterminated JSON string) take 0.01 to
-0.02 s for the whole file, and none of them parses. The Rust engine uses `regex`, which has no backtracking blowup.
+One run of the same script per format on 10 MiB with the pure-Python reference engine (before the script was limited to
+the native one) gave 1.8 to 3.6 MB/s, with and without
+the format. The native engine on large logs is therefore about 100 to 200 times faster (112 to 204 for the six formats,
+comparing the 1000 MiB column with that run). The figure is approximate: one probe each, and the Python engine is not tuned
+for speed.
 
 ## Verdict: Rust or Python
 
