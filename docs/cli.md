@@ -168,6 +168,11 @@ width. `--debug` shows the traceback instead.
 - On a terminal the result is printed as tables. When standard output is not a terminal, the plain-text report is
   written instead, so the output can be piped. `--json` always prints JSON.
 - Progress is shown on standard error only on a terminal and never with `--quiet`.
+- `logfold analyze --help` and `logfold diff --help` group the options into the panels Input, Output, Diff (`diff` only),
+  Mining, Execution and General, and end with usage examples.
+- `--warm-start` and `--chunk-mb` only matter for the chunked strategy. When the run turned out sequential (a small input
+  with `--strategy auto`, `--high-cardinality`, or the python engine) a `warning:` line on standard error says the flag was
+  ignored; `--quiet` hides it and the exit code does not change.
 - `LOGFOLD_ENGINE=auto|native|python` selects the engine when `--engine` is not given. `python` forces the slow
   reference engine.
 - `LOGFOLD_OFFLINE=1` forbids the network access of `logfold plugins check|install --online` and `--catalog URL`.

@@ -7,10 +7,29 @@ from typing import Annotated, Any
 
 import typer
 
-Format = Annotated[str, typer.Option("--format", "-f", help="auto, a name from 'logfold formats', or regex:<pattern>.")]
+PANEL_INPUT = "Input"
+PANEL_OUTPUT = "Output"
+PANEL_DIFF = "Diff"
+PANEL_MINING = "Mining"
+PANEL_EXECUTION = "Execution"
+PANEL_GENERAL = "General"
+
+Format = Annotated[
+    str,
+    typer.Option(
+        "--format",
+        "-f",
+        help="auto, a name from 'logfold formats', or regex:<pattern>.",
+        rich_help_panel=PANEL_INPUT,
+    ),
+]
 Multiline = Annotated[
     bool | None,
-    typer.Option("--multiline/--no-multiline", help="Join continuation lines to the previous record."),
+    typer.Option(
+        "--multiline/--no-multiline",
+        help="Join continuation lines to the previous record.",
+        rich_help_panel=PANEL_INPUT,
+    ),
 ]
 Out = Annotated[
     Path | None,
@@ -18,6 +37,7 @@ Out = Annotated[
         "--out",
         "-o",
         help="Write a report; the suffix selects the format: .html, .json, .txt, .md or .csv (see --report).",
+        rich_help_panel=PANEL_OUTPUT,
     ),
 ]
 Report = Annotated[
@@ -26,37 +46,93 @@ Report = Annotated[
         "--report",
         help="Reporter by name ('logfold plugins list'): it writes the --out file instead of the suffix's reporter, "
         "and without --out it is printed instead of the tables.",
+        rich_help_panel=PANEL_OUTPUT,
     ),
 ]
-Top = Annotated[int, typer.Option("--top", "-n", min=1, help="Rows to print per table.")]
-SimTh = Annotated[float | None, typer.Option("--sim-th", min=0.0, max=1.0, help="Similarity threshold (default 0.4).")]
-Depth = Annotated[int | None, typer.Option("--depth", min=3, help="Template tree depth (default 4).")]
-MaxChildren = Annotated[int | None, typer.Option("--max-children", min=1, help="Children per tree node (default 100).")]
-MaxTemplates = Annotated[
-    int | None, typer.Option("--max-templates", min=1, help="Template cap before pooling (default 100000).")
-]
-Threads = Annotated[int | None, typer.Option("--threads", min=1, help="Worker threads (default: all cores).")]
-Engine = Annotated[str | None, typer.Option("--engine", help="auto, native or python (slow reference engine).")]
-ChunkMb = Annotated[int | None, typer.Option("--chunk-mb", min=1, help="Chunk size in MiB for parallel runs.")]
-Strategy = Annotated[str | None, typer.Option("--strategy", help="auto, sequential (one tree) or chunked (parallel).")]
-WarmStart = Annotated[
-    bool,
+Top = Annotated[int, typer.Option("--top", "-n", min=1, help="Rows to print per table.", rich_help_panel=PANEL_OUTPUT)]
+Examples = Annotated[
+    str,
     typer.Option(
-        "--warm-start", help="Chunked: start chunks from the tree of the first one (fewer stray templates, slower)."
+        "--examples",
+        help="raw, masked or none: how example messages are kept.",
+        rich_help_panel=PANEL_OUTPUT,
     ),
 ]
-NoMasks = Annotated[bool, typer.Option("--no-masks", help="Do not mask numbers, IPs, UUIDs and other values.")]
+AsJson = Annotated[
+    bool, typer.Option("--json", help="Print JSON to stdout instead of tables.", rich_help_panel=PANEL_OUTPUT)
+]
+SimTh = Annotated[
+    float | None,
+    typer.Option(
+        "--sim-th", min=0.0, max=1.0, help="Similarity threshold (default 0.4).", rich_help_panel=PANEL_MINING
+    ),
+]
+Depth = Annotated[
+    int | None, typer.Option("--depth", min=3, help="Template tree depth (default 4).", rich_help_panel=PANEL_MINING)
+]
+MaxChildren = Annotated[
+    int | None,
+    typer.Option("--max-children", min=1, help="Children per tree node (default 100).", rich_help_panel=PANEL_MINING),
+]
+MaxTemplates = Annotated[
+    int | None,
+    typer.Option(
+        "--max-templates",
+        min=1,
+        help="Template cap before pooling (default 100000).",
+        rich_help_panel=PANEL_MINING,
+    ),
+]
+NoMasks = Annotated[
+    bool,
+    typer.Option("--no-masks", help="Do not mask numbers, IPs, UUIDs and other values.", rich_help_panel=PANEL_MINING),
+]
 HighCardinality = Annotated[
     bool,
     typer.Option(
         "--high-cardinality",
         help="Fast mode for data with a huge number of distinct messages: at most 5000 templates, runs sequentially.",
+        rich_help_panel=PANEL_MINING,
     ),
 ]
-Examples = Annotated[str, typer.Option("--examples", help="raw, masked or none: how example messages are kept.")]
-AsJson = Annotated[bool, typer.Option("--json", help="Print JSON to stdout instead of tables.")]
-Quiet = Annotated[bool, typer.Option("--quiet", "-q", help="No progress and no status messages on stderr.")]
-Debug = Annotated[bool, typer.Option("--debug", help="Show tracebacks.")]
+Threads = Annotated[
+    int | None,
+    typer.Option("--threads", min=1, help="Worker threads (default: all cores).", rich_help_panel=PANEL_EXECUTION),
+]
+Engine = Annotated[
+    str | None,
+    typer.Option("--engine", help="auto, native or python (slow reference engine).", rich_help_panel=PANEL_EXECUTION),
+]
+Strategy = Annotated[
+    str | None,
+    typer.Option(
+        "--strategy",
+        help="auto, sequential (one tree) or chunked (parallel).",
+        rich_help_panel=PANEL_EXECUTION,
+    ),
+]
+ChunkMb = Annotated[
+    int | None,
+    typer.Option(
+        "--chunk-mb",
+        min=1,
+        help="Chunk size in MiB for the chunked strategy.",
+        rich_help_panel=PANEL_EXECUTION,
+    ),
+]
+WarmStart = Annotated[
+    bool,
+    typer.Option(
+        "--warm-start",
+        help="Chunked: start chunks from the tree of the first one (fewer stray templates, slower).",
+        rich_help_panel=PANEL_EXECUTION,
+    ),
+]
+Quiet = Annotated[
+    bool,
+    typer.Option("--quiet", "-q", help="No progress and no status messages on stderr.", rich_help_panel=PANEL_GENERAL),
+]
+Debug = Annotated[bool, typer.Option("--debug", help="Show tracebacks.", rich_help_panel=PANEL_GENERAL)]
 
 
 def mining_options(

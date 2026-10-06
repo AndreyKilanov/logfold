@@ -10,6 +10,7 @@ import typer
 
 import logfold
 from logfold.cli.options import (
+    PANEL_OUTPUT,
     AsJson,
     ChunkMb,
     Debug,
@@ -33,8 +34,18 @@ from logfold.cli.options import (
     mining_options,
 )
 from logfold.cli.output import resolve_outputs
-from logfold.cli.runtime import emit, fail, progress_reporter, write_report
+from logfold.cli.runtime import emit, fail, progress_reporter, warn_ignored, write_report
 from logfold.errors import LogfoldError
+
+EXAMPLES = """Examples:
+
+  logfold analyze app.log
+
+  logfold analyze app.log.1.gz app.log -o report.html
+
+  logfold analyze app.log -f nginx --top 50 --json > result.json
+
+  cat app.log | logfold analyze - -f plain"""
 
 
 def analyze(
@@ -48,6 +59,7 @@ def analyze(
             "--min-count",
             min=1,
             help="Hide templates with fewer records; a .json file from --out stays complete.",
+            rich_help_panel=PANEL_OUTPUT,
         ),
     ] = 1,
     out: Out = None,
@@ -92,6 +104,7 @@ def analyze(
                     warm_start,
                 ),
             )
+        warn_ignored(result.metrics, warm_start, chunk_mb, quiet)
         shown = result
         if min_count > 1:
             shown = dataclasses.replace(result, templates=tuple(t for t in result.templates if t.count >= min_count))

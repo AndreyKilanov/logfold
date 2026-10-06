@@ -12,6 +12,7 @@ import typer
 import logfold
 from logfold.cli import exit_codes
 from logfold.cli.options import (
+    PANEL_DIFF,
     AsJson,
     ChunkMb,
     Debug,
@@ -35,7 +36,7 @@ from logfold.cli.options import (
     mining_options,
 )
 from logfold.cli.output import resolve_outputs
-from logfold.cli.runtime import emit, fail, progress_reporter, write_report
+from logfold.cli.runtime import emit, fail, progress_reporter, warn_ignored, write_report
 from logfold.errors import LogfoldError
 from logfold.model import DiffResult
 
@@ -65,6 +66,17 @@ def _diff_saved(before: Path, after: Path, **options: Any) -> DiffResult:
     return logfold.diff(logfold.load_analysis(before), logfold.load_analysis(after), **options)
 
 
+EXAMPLES = """Examples:
+
+  logfold diff before.log after.log
+
+  logfold diff before.log after.log -o diff.html
+
+  logfold diff before.log after.log --fail-on-new-alerts -q
+
+  logfold diff before.json after.json"""
+
+
 def diff(
     before: Annotated[
         Path, typer.Argument(help="Log file of the first run, for example before a deploy, or a saved report.")
@@ -74,23 +86,64 @@ def diff(
     multiline: Multiline = None,
     top: Top = 20,
     threshold_ratio: Annotated[
-        float, typer.Option("--threshold-ratio", min=1.0, help="Share change factor reported as 'changed'.")
+        float,
+        typer.Option(
+            "--threshold-ratio",
+            min=1.0,
+            help="Share change factor reported as 'changed'.",
+            rich_help_panel=PANEL_DIFF,
+        ),
     ] = 2.0,
-    min_count: Annotated[int, typer.Option("--min-count", min=0, help="Records needed to report 'changed'.")] = 10,
+    min_count: Annotated[
+        int,
+        typer.Option(
+            "--min-count",
+            min=0,
+            help="Records, in either run, needed to report 'changed' (it does not hide anything, unlike analyze).",
+            rich_help_panel=PANEL_DIFF,
+        ),
+    ] = 10,
     min_new_count: Annotated[
-        int, typer.Option("--min-new-count", min=0, help="Records needed to report new or disappeared.")
+        int,
+        typer.Option(
+            "--min-new-count",
+            min=0,
+            help="Records needed to report new or disappeared.",
+            rich_help_panel=PANEL_DIFF,
+        ),
     ] = 1,
     matcher: Annotated[
-        str, typer.Option("--matcher", help="Diff matcher: jaccard, token_subset or exact.")
+        str,
+        typer.Option(
+            "--matcher",
+            help="How a template found in one run only is paired with a similar one in the other: "
+            "jaccard, token_subset or exact (no pairing).",
+            rich_help_panel=PANEL_DIFF,
+        ),
     ] = "jaccard",
     recount: Annotated[
-        bool, typer.Option("--recount/--no-recount", help="Assign records to the finished tree (slower, consistent).")
+        bool,
+        typer.Option(
+            "--recount/--no-recount",
+            help="Assign records to the finished tree (slower, consistent).",
+            rich_help_panel=PANEL_DIFF,
+        ),
     ] = True,
     fail_on_new: Annotated[
-        bool, typer.Option("--fail-on-new", help="Exit with code 2 when new templates are found.")
+        bool,
+        typer.Option(
+            "--fail-on-new",
+            help="Exit with code 2 when new templates are found.",
+            rich_help_panel=PANEL_DIFF,
+        ),
     ] = False,
     fail_on_new_alerts: Annotated[
-        bool, typer.Option("--fail-on-new-alerts", help="Exit with code 2 when new WARN/ERROR/FATAL templates exist.")
+        bool,
+        typer.Option(
+            "--fail-on-new-alerts",
+            help="Exit with code 2 when new WARN/ERROR/FATAL templates exist.",
+            rich_help_panel=PANEL_DIFF,
+        ),
     ] = False,
     out: Out = None,
     report: Report = None,
@@ -178,6 +231,7 @@ def diff(
                         warm_start,
                     ),
                 )
+            warn_ignored(result.metrics, warm_start, chunk_mb, quiet)
         emit(result, top, outputs.stdout)
         if out is not None and outputs.file is not None:
             write_report(result, out, outputs.file, quiet)
