@@ -1,7 +1,8 @@
 """Speed and memory of logfold, and of the other tools on the same work: one script, the flags choose what is measured.
 
 Every command runs as a separate process; the script records wall time, CPU time and the peak working set of the process
-tree (``psutil``), repeats it ``--repeat`` times and prints one Markdown table with the medians. Nothing is stored.
+tree (``psutil``), repeats it ``--repeat`` times and prints one Markdown table with the medians. The raw numbers of the run are also saved to ``bench/results/`` (a folder that is
+git-ignored and created on demand); ``--out FILE`` chooses another file and ``--no-save`` skips it.
 
 ``analyze`` folds each file into templates with every chosen variant of logfold and, if installed, the competitors::
 
@@ -24,15 +25,18 @@ Inputs come from ``bench/data.py``. The speed of the pure-Python reference engin
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import os
+import platform
 import random
 import shutil
 import statistics
 import subprocess
 import sys
 import time
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from datetime import datetime
 from pathlib import Path
 
 import psutil
@@ -156,7 +160,7 @@ def diff_variants(before: Path, after: Path, args: argparse.Namespace) -> dict[s
     return variants
 
 
-def run_variants(variants: dict[str, list[str]], size: int, args: argparse.Namespace) -> None:
+def run_variants(variants: dict[str, list[str]], source: str, size: int, args: argparse.Namespace) -> None:
     """Measure every command ``--repeat`` times and print its row."""
     for label, command in variants.items():
         samples = []
@@ -168,10 +172,22 @@ def run_variants(variants: dict[str, list[str]], size: int, args: argparse.Names
                 break
         ok = (0, 1) if label.startswith("logdelta diff") else (0,)  # logdelta exits with 1 when the logs differ
         good = [s for s in samples if s.returncode in ok]
+        row: dict[str, object] = {
+            "input": source,
+            "variant": label,
+            "size_bytes": size,
+            "runs": [asdict(s) for s in samples],
+        }
+        args.rows.append(row)
         if not good:
             print(f"| {label} | failed (exit code {samples[-1].returncode}) | | | |", flush=True)
             continue
         wall = statistics.median(s.wall_s for s in good)
+        row |= {
+            "wall_median_s": wall,
+            "cpu_median_s": statistics.median(s.cpu_s for s in good),
+            "peak_mb_max": max(s.peak_mb for s in good),
+        }
         print(
             f"| {label} | {wall:.2f} s | {size / 1e6 / wall:,.0f} MB/s | {statistics.median(s.cpu_s for s in good):.1f} s | "
             f"{max(s.peak_mb for s in good):,.0f} MB |",
@@ -193,14 +209,19 @@ def analyze(args: argparse.Namespace) -> None:
         sys.exit("no input: pass files, or generate some with `python bench/data.py make`")
     for path in files:
         header(f"{path.name} ({path.stat().st_size / 1e6:,.0f} MB, {'masks' if args.masks else 'no masks'})")
-        run_variants(analyze_variants(path, args), path.stat().st_size, args)
+        run_variants(analyze_variants(path, args), path.name, path.stat().st_size, args)
 
 
 def diff(args: argparse.Namespace) -> None:
     """``diff``: two logs with each variant."""
     before, after = args.before, args.after
     header(f"diff {before.name} {after.name}")
-    run_variants(diff_variants(before, after, args), before.stat().st_size + after.stat().st_size, args)
+    run_variants(
+        diff_variants(before, after, args),
+        f"{before.name} {after.name}",
+        before.stat().st_size + after.stat().st_size,
+        args,
+    )
 
 
 def templates(rng: random.Random, count: int, vocabulary: int) -> list[str]:
@@ -236,6 +257,7 @@ def matchers(args: argparse.Namespace) -> None:
                     native.match_templates(kind, before, after, threshold, rules if kind == "rules" else None)
                     best = min(best, time.perf_counter() - started)
                 series.setdefault((shape, name), []).append(best)
+                args.rows.append({"shape": shape, "size": size, "matcher": name, "seconds": best})
                 cells.append(f"{best:.3f} s")
             print(f"| {shape} | {size:,} | " + " | ".join(cells) + " |", flush=True)
     if len(args.sizes) > 1:
@@ -271,7 +293,14 @@ def parser() -> argparse.ArgumentParser:
     main = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = main.add_subparsers(dest="what", required=True)
 
+    def saving(command: argparse.ArgumentParser) -> None:
+        command.add_argument(
+            "--out", type=Path, help="write the raw numbers here (default: a new file in bench/results/)"
+        )
+        command.add_argument("--no-save", action="store_true", help="do not write the raw numbers")
+
     def common(command: argparse.ArgumentParser) -> None:
+        saving(command)
         command.add_argument("--repeat", type=int, default=3, help="runs per variant; the median is shown (default 3)")
         command.add_argument("--timeout", type=float, default=1800, help="seconds before a run is stopped")
         command.add_argument("--format", default="plain", help="logfold --format (default plain)")
@@ -305,19 +334,52 @@ def parser() -> argparse.ArgumentParser:
         "--shape", nargs="+", default=list(SHAPES), choices=list(SHAPES), help="sparse: few shared words; dense: many"
     )
     third.add_argument("--repeat", type=int, default=3, help="runs per cell; the best is shown")
+    saving(third)
     third.set_defaults(run=matchers)
 
     hidden = sub.add_parser("drain3")
     hidden.add_argument("path")
     hidden.add_argument("--masks", choices=("none", "default"), default="none")
-    hidden.set_defaults(run=drain3)
+    hidden.set_defaults(run=drain3, no_save=True)
     return main
 
 
 def main() -> None:
     """Run the chosen measurement."""
     args = parser().parse_args()
+    args.rows = []
     args.run(args)
+    if args.what != "drain3" and not args.no_save and args.rows:
+        save(args)
+
+
+def save(args: argparse.Namespace) -> None:
+    """Write the raw numbers of the run to ``--out`` (default: a new file in ``bench/results/``)."""
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    out = args.out or ROOT / "bench" / "results" / f"speed-{args.what}-{stamp}.json"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    settings = {
+        key: str(value) if isinstance(value, Path) else value
+        for key, value in vars(args).items()
+        if key not in ("run", "rows")
+    }
+    settings["files"] = [str(path) for path in settings.get("files", [])]
+    machine = {
+        "os": platform.platform(),
+        "cores_logical": CORES,
+        "cores_physical": psutil.cpu_count(logical=False),
+        "ram_gb": round(psutil.virtual_memory().total / 1e9, 1),
+        "python": platform.python_version(),
+    }
+    payload = {
+        "what": args.what,
+        "date": datetime.now().isoformat(timespec="seconds"),
+        "machine": machine,
+        "args": settings,
+        "rows": args.rows,
+    }
+    out.write_text(json.dumps(payload, indent=2, default=str) + "\n", encoding="utf-8")
+    print(f"\nsaved {out}")
 
 
 if __name__ == "__main__":

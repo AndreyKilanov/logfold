@@ -1,6 +1,6 @@
 # Benchmarks
 
-Three scripts; the flags choose what is measured. They print Markdown tables and store nothing.
+Three scripts; the flags choose what is measured. They print Markdown tables and save the raw numbers of every run to `bench/results/`.
 
 | script | what it does |
 |---|---|
@@ -14,7 +14,7 @@ Three scripts; the flags choose what is measured. They print Markdown tables and
 | [`RESULTS.md`](RESULTS.md) | the speed results against the competitors, as they were measured |
 | [`docs/`](docs) | the evaluations: [`LOGHUB2.md`](docs/LOGHUB2.md) (large real logs), [`DIFF_MATCHERS.md`](docs/DIFF_MATCHERS.md) (the matchers), [`ADAPTIVE.md`](docs/ADAPTIVE.md) (`--strategy auto`), [`WARM_START.md`](docs/WARM_START.md) (`--warm-start`) |
 | `data/` | generated and downloaded inputs, git-ignored |
-| `results/` | raw numbers of earlier runs, kept on the machine that made them, git-ignored |
+| `results/` | the raw numbers of every run, one JSON file per run; created by the scripts, git-ignored |
 
 Quality of the grouping (accuracy against ground truth) is measured separately by `eval/quality.py`.
 

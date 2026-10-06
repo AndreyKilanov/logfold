@@ -19,7 +19,8 @@ For every log the script builds three kinds of pairs from windows of its first l
 Every pair is run twice: ``live`` (``diff`` of the two files: one shared tree and a recount) and ``saved``
 (each file analyzed on its own and the two results compared, like ``logfold diff before.json after.json``).
 
-The tables are printed (``--json FILE`` also writes the raw numbers); the discussion is in ``bench/docs/DIFF_MATCHERS.md``.
+The tables are printed and the raw numbers are saved to ``bench/results/`` (git-ignored; ``--out FILE`` chooses another file,
+``--no-save`` skips it); the discussion is in ``bench/docs/DIFF_MATCHERS.md``.
 
 Usage::
 
@@ -36,6 +37,7 @@ import re
 import tempfile
 import time
 from collections import Counter
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -317,7 +319,8 @@ def main() -> None:
     parser.add_argument("--block", type=int, default=1000, help="block size of the stationary split")
     parser.add_argument("--words", type=int, default=3, help="reworded words per log")
     parser.add_argument("--logs", nargs="+", default=list(LOGS), choices=LOGS)
-    parser.add_argument("--json", type=Path, help="also write the raw numbers to this file")
+    parser.add_argument("--out", type=Path, help="write the raw numbers here (default: a new file in bench/results/)")
+    parser.add_argument("--no-save", action="store_true", help="do not write the raw numbers")
     args = parser.parse_args()
     report: dict[str, Any] = {
         "logfold": logfold.__version__,
@@ -337,9 +340,11 @@ def main() -> None:
             entry["reworded"] = reworded(name, lines, window, args.block, args.words, tmp)
             report["logs"][name] = entry
     summarize(report)
-    if args.json:
-        args.json.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-        print(f"\nwrote {args.json}")
+    if not args.no_save:
+        out = args.out or ROOT / "bench" / "results" / f"accuracy-{datetime.now().strftime('%Y%m%d-%H%M%S')}.json"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"\nsaved {out}")
 
 
 if __name__ == "__main__":

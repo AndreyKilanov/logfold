@@ -81,5 +81,5 @@ python bench/data.py loghub2           # HDFS, Spark, Thunderbird, BGL into benc
 python bench/speed.py analyze bench/data/loghub2/bgl.txt bench/data/loghub2/hdfs.txt --chunk-mb 64 --repeat 2
 ```
 
-The script prints a Markdown table and stores nothing. Drain3 needs minutes per gigabyte: leave it out of `--tools`, and
+The script prints a Markdown table and saves the raw numbers to `bench/results/` (git-ignored). Drain3 needs minutes per gigabyte: leave it out of `--tools`, and
 `--timeout` bounds every run. `diff` needs a pair of files, the generated pairs have the `_b` suffix.
