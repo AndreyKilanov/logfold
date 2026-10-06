@@ -1,8 +1,7 @@
 # Large real logs: Loghub-2.0
 
 How logfold behaves on four multi-gigabyte real logs, measured with the benchmark protocol ([`PROTOCOL.md`](../PROTOCOL.md)).
-Only logfold is measured here; the competitors are not (Drain3 needs minutes per gigabyte). Raw data:
-[`results/loghub2/`](../results/loghub2).
+Only logfold is measured here; the competitors are not (Drain3 needs minutes per gigabyte).
 
 ## Source (pinned)
 
@@ -10,8 +9,8 @@ Only logfold is measured here; the competitors are not (Drain3 needs minutes per
 - **Copy used**: the Hugging Face dataset `bolu61/loghub_2` (an unofficial upload of the same files: plain text, one log line
   per line, **no ground truth**) at the pinned revision **`4a98d3eb30522891b340609d17fa34709a1d44d2`**.
 - **Pinned in code**: `REVISION` and `PINNED_FILES` (size and SHA-256 of every file) in
-  [`download_loghub2.py`](../tools/download_loghub2.py). Downloads come from that revision and are checked against the pinned values;
-  `python bench/tools/download_loghub2.py --verify` checks the files you already have.
+  [`data.py`](../data.py). Downloads come from that revision and are checked against the pinned values;
+  `python bench/data.py loghub2 --verify` checks the files you already have.
 - **Verified on 2026-10-04**: size and SHA-256 of the four local files equal the pinned values.
 - **To cite**: Z. Jiang et al., *A Large-scale Evaluation for Log Parsing Techniques: How Far are We?*, ISSTA 2024
   ([arXiv:2308.10828](https://arxiv.org/abs/2308.10828)); J. Zhu et al., *Loghub: A Large Collection of System Log Datasets
@@ -41,7 +40,7 @@ All four are read with `-f plain` (no built-in format matches them), whole file,
 
 - Command (16 threads, no masks): `python.exe -m logfold analyze bgl.txt -f plain --top 1 -q --engine native --no-masks --strategy chunked --threads 16 --chunk-mb 8`; with masks the `--no-masks` flag is dropped; the 1-thread runs use
   `--strategy sequential` (`python.exe -m logfold analyze bgl.txt -f plain --top 1 -q --engine native --strategy sequential`).
-- Harness: `python bench/tools/run.py --files bench/data/loghub2/{bgl,hdfs,spark,thunderbird}.txt --label-prefix loghub2: --scenario analyze-bare analyze-masked --skip drain3 logdrain logdelta --repeat 3`.
+- Harness: `python bench/speed.py analyze bench/data/loghub2/{bgl,hdfs,spark,thunderbird}.txt` (add `--no-masks` for the runs without masks).
 - Each command runs as a separate process, three repeats, the median is reported (wall time, CPU time, peak working set of
   the process tree). Tree depth 4, similarity threshold 0.4 (defaults), chunk size 8 MiB, native engine, standard output
   discarded.
@@ -107,7 +106,8 @@ result); the parallel mode builds one tree per 8 MiB chunk and merges them.
 ## Reproduce
 
 ```
-python bench/tools/download_loghub2.py hdfs spark thunderbird bgl
-python bench/tools/download_loghub2.py --verify
-python bench/tools/run.py --files bench/data/loghub2/bgl.txt bench/data/loghub2/hdfs.txt bench/data/loghub2/spark.txt bench/data/loghub2/thunderbird.txt --label-prefix loghub2: --scenario analyze-bare analyze-masked --skip drain3 logdrain logdelta --repeat 3 --out bench/results/loghub2
+python bench/data.py loghub2 hdfs spark thunderbird bgl
+python bench/data.py loghub2 --verify
+python bench/speed.py analyze bench/data/loghub2/bgl.txt bench/data/loghub2/hdfs.txt bench/data/loghub2/spark.txt bench/data/loghub2/thunderbird.txt
+python bench/speed.py analyze --no-masks bench/data/loghub2/bgl.txt bench/data/loghub2/hdfs.txt bench/data/loghub2/spark.txt bench/data/loghub2/thunderbird.txt
 ```

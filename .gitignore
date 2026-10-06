@@ -20,7 +20,6 @@ python/logfold/*.so
 
 # Benchmark data and raw results (large, reproducible by scripts)
 /bench/data/
-/bench/results/raw/
 /eval/data/
 
 # Editors and OS

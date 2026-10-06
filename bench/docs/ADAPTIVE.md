@@ -7,8 +7,8 @@ records it holds more than 0.3 templates per record, the chunked run is abandone
 anything is merged) and the whole input is mined with one tree. The result is then the sequential one. Explicit `chunked` and
 `sequential` are never changed. The rule is in `docs/ALGORITHM.md` §8.
 
-Measured with [`adaptive.py`](../tools/adaptive.py) (`python bench/tools/adaptive.py --repeat 3`); raw data
-[`results/adaptive.json`](../results/adaptive.json). `analyze --top 1 -q -f plain --engine native`, masks on, 16 threads, each
+Measured with `python bench/speed.py analyze FILE --strategy chunked auto sequential --chunk-mb 8` (the `auto` choice and the
+tables of the threshold below came from an earlier script, `adaptive.py`, no longer in the repository). `analyze --top 1 -q -f plain --engine native`, masks on, 16 threads, each
 command in its own process, median of three runs, peak working set of the process tree. The 0.3.0 development code (its version string was still 0.2.1),
 Windows 11, 8 cores / 16 threads, warm page cache. "Chunked" is what `auto` did before.
 
@@ -33,7 +33,7 @@ Windows 11, 8 cores / 16 threads, warm page cache. "Chunked" is what `auto` did 
 
 ## Where the threshold comes from
 
-`python bench/tools/adaptive.py --extras-only` stores both tables in `results/adaptive.json`.
+Both tables came from the earlier script.
 
 Templates per record after the first 10,000 records (sequential, masks on / off):
 

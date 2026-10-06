@@ -1,12 +1,11 @@
 # Diff matchers on real before/after pairs
 
 Which matcher should `logfold diff` use? Measured on pairs cut from the four large real logs ([`LOGHUB2.md`](LOGHUB2.md))
-with [`diff_matchers.py`](../tools/diff_matchers.py). The 0.3.0 evaluation compared `exact`, `token_subset` and `jaccard`, and
+with [`accuracy.py`](../accuracy.py). The 0.3.0 evaluation compared `exact`, `token_subset` and `jaccard`, and
 `jaccard` has been the default since. 0.4.0 added `jaccard-idf`, `overlap` and `rules`, computed by the Rust core with the
 pure-Python implementation as the reference the tests compare against; they were measured the same way, on smaller windows
-(see [the 0.4.0 matchers](#the-040-matchers-accuracy)). Raw data of the 0.3.0 run: [`diff-matchers.json`](../results/diff-matchers.json). The 0.4.0 numbers come from
-[`diff_matchers.py`](../tools/diff_matchers.py) with `--window 200000` (accuracy) and from
-[`matcher_scale.py`](../tools/matcher_scale.py) (speed of the matcher alone); both write their JSON to `bench/results/`.
+(see [the 0.4.0 matchers](#the-040-matchers-accuracy)). The 0.4.0 accuracy numbers come from `python bench/accuracy.py --window 200000`, the speed of the
+matcher alone from `python bench/speed.py matchers`.
 
 The matchers added in 0.4.0:
 
@@ -117,7 +116,7 @@ two saved results, where only the matcher differs, takes 0.2 ms (HDFS), 1 ms (BG
 ### Growth with the number of one-sided templates
 
 The cost grows with the number of templates that occur on one side only. The worst case is a log in which almost every template is
-one-sided. Whole `diff` of two saved results, one thread, native engine (`python bench/tools/diff_scale.py --stage NAME --sizes 5000 10000 20000 40000 80000`, best of three):
+one-sided. Whole `diff` of two saved results, one thread, native engine (an earlier script, `diff_scale.py`, no longer in the repository; best of three):
 
 | templates per run | exact | token_subset | jaccard |
 |---:|---:|---:|---:|
@@ -226,5 +225,5 @@ The 0.4.0 matchers are alternatives, not replacements: neither `jaccard-idf` nor
   test; none is available.
 - At 16 threads a `diff` of these windows takes 1.0-1.7 s; the 5-10 s runs are the one-thread ones.
 
-Reproduce: `python bench/tools/download_loghub2.py`, then `python bench/tools/diff_matchers.py` (about 20 minutes: the timed runs
-repeat three times, with 16 threads and with one).
+Reproduce: `python bench/data.py loghub2`, then `python bench/accuracy.py` for the accuracy; `python bench/speed.py diff` and
+`python bench/speed.py matchers` for the speed.
