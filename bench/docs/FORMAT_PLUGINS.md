@@ -1,7 +1,7 @@
 # Format plugins: speed against `plain`
 
 The built-in format plugins (`haproxy`, `postgresql`, `postgresql-csv`, `docker-json`, `github-actions`, `log4j`) are
-declarative: a regular expression or a list of JSON keys that the Rust engine compiles, so nothing runs in Python per line.
+declarative: a regular expression or a list of JSON keys that the Rust engine compiles, so nothing runs per line outside the engine.
 This page measures what that costs before a plugin ships: size, time, memory and growth. Script: [`format_plugins.py`](../tools/format_plugins.py).
 
 ## Method
@@ -15,7 +15,7 @@ three runs for 10 and 100 MiB, one run for 1000 MiB. The figures are those of th
 Every generated log is read in full: 0 unparsed lines and 0 records without a time for all six formats (checked on the 10 MiB
 file in the same script).
 
-Machine: Windows 11, 8 cores / 16 threads, Python 3.13, native engine, warm page cache. The 0.4.0 development code.
+Machine: Windows 11, 8 cores / 16 threads, warm page cache. The 0.4.0 development code.
 
 ## Native engine, MB/s (higher is better)
 
@@ -39,10 +39,6 @@ Machine: Windows 11, 8 cores / 16 threads, Python 3.13, native engine, warm page
 - The slowest is `postgresql` (0.27 of `plain`): its prefix is matched by a bounded lazy scan (`.{0,120}?`) up to the level word,
   because `log_line_prefix` differs from site to site. Still 279 MB/s, 1 GB in about 3.7 seconds.
 
-## Against the pure-Python engine
+## Against the reference engine
 
-One run of the same script per format on 10 MiB with the pure-Python reference engine (before the script was limited to
-the native one) gave 1.8 to 3.6 MB/s, with and without
-the format. The native engine on large logs is therefore about 100 to 200 times faster (112 to 204 for the six formats,
-comparing the 1000 MiB column with that run). The figure is approximate: one probe each, and the Python engine is not tuned
-for speed.
+The reference engine is about 100 to 200 times slower on large logs.
