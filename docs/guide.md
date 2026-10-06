@@ -132,6 +132,18 @@ what counts as the same template: `--matcher NAME` on the command line, `matcher
 | accuracy | the best: 16-71 percent fewer false alarms on saved results; finds 89 percent of the reworded messages in the tests | 2-62 percent fewer false alarms on saved results; finds no reworded message | no pairing, every reword is a new and a disappeared template |
 | risk | may join two similar templates that are different messages (1 pair of 206 in the tests) | only safe merges (one template generalizes the other) | none |
 
+Three more matchers ship as default plugins, all computed by the Rust core:
+
+| | `jaccard-idf` | `overlap` | `rules:FILE` |
+|---|---|---|---|
+| what it pairs | Jaccard similarity where a word weighs `1 / (templates that contain it)`, at least 0.5: shared rare words count, shared common words hardly | `shared words / words of the shorter template`, at least 0.8, for templates of three words or more: an extended or shortened message | the pairs you list, one `TEMPLATE <=> TEMPLATE` per line, `<*>` matches any token |
+| use it when | `jaccard` joins siblings that differ in a rare word | a message got longer and `jaccard` falls below its threshold | you know the rewording and no similarity rule gets it |
+| risk | one shared rare word (a host, an id) can outweigh many different common ones | joins a short template with a long one that merely contains its words (4 of about 280 pairs in the reworded-all test) | none beyond your rules |
+
+None of them beats `jaccard` on the measurements in [`bench/docs/MATCHER_PLUGINS.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/docs/MATCHER_PLUGINS.md):
+`jaccard-idf` pairs about half as many unrelated templates and never merged two different messages there, `overlap` merged some,
+so `jaccard` stays the default.
+
 In a `diff` of two logs (the shared tree and the recount) `token_subset` and `exact` give the same result, because the recount
 already merges generalizations; `jaccard` differs only where templates keep host names or other literals. For saved results the
 three differ most. The exit-code gates (`--fail-on-new`, `--fail-on-new-alerts`) count new templates only, and a paired template is

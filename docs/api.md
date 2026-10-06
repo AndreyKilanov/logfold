@@ -56,7 +56,7 @@ template; shares are normalized by the number of records in each run. `before` a
 | `min_baselines` | all | with `baselines`, the number of baselines a template must occur in to be reported as disappeared or changed; a template in fewer baselines is unstable and is not reported; more than 10 baselines give a warning (every baseline is read in full) |
 | `significance` | 0.01 | highest p-value of a `changed` template that is still reported, in (0, 1]; 1 keeps every template that passes the ratio and count thresholds |
 | `recount` | `True` | assign every record to the finished tree for consistent counts (costs a second pass) |
-| `matcher` | `"jaccard"` | registered diff matcher name: `jaccard`, `token_subset`, `exact` or a plugin's (see [Choosing a matcher](guide.md#choosing-a-matcher)) |
+| `matcher` | `"jaccard"` | registered diff matcher name: `jaccard`, `jaccard-idf`, `overlap`, `token_subset`, `exact`, `"rules:FILE"` (pairs from a file) or a plugin's (see [Choosing a matcher](guide.md#choosing-a-matcher)) |
 | `diff_config` | | a full `DiffConfig`; the keyword arguments override its fields |
 
 ### Comparing saved results

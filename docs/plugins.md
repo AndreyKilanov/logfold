@@ -30,6 +30,9 @@ They are part of `pip install logfold`; nothing else has to be installed.
 | reporter | `markdown` | Markdown tables for an analysis or a diff |
 | reporter | `csv` | one template per row, for spreadsheets and scripts |
 | matcher | `jaccard` | the default matcher of `diff`: pairs templates whose words overlap by at least 60%, so a reworded message is one template |
+| matcher | `jaccard-idf` | like `jaccard`, but a word weighs `1 / (templates that contain it)`, so shared rare words count more (threshold 0.5) |
+| matcher | `overlap` | `shared words / words of the shorter template` (threshold 0.8, templates of three words or more): catches an extended message |
+| matcher | `rules` | the pairs you list in a file, `--matcher rules:FILE` (see below) |
 
 ```
 logfold analyze app.logfmt --format logfmt
@@ -71,6 +74,22 @@ Reporters are used from Python with `result.render(...)`, which raises `ConfigEr
 result kind the reporter does not support, and from the command line with `--report NAME` on `analyze` and `diff`:
 with `--out` the named reporter writes the file, without it its text is printed instead of the tables. `--out` alone
 chooses by file suffix (`.html`, `.json`, `.txt`, `.md`, `.csv`). A typo in the name fails before any log is read.
+
+### Your own pairs: the rules matcher
+
+`--matcher rules:FILE` (library: `matcher="rules:FILE"`) pairs the templates you declare to be the same event. One rule per
+line, two template texts as the reports show them, separated by ` <=> `; blank lines and lines that start with `#` are
+ignored; the file is UTF-8 and at most 16 MiB.
+
+```
+# the retry message was reworded in 4.2
+retry failed after <NUM> attempts <=> retry gave up after <NUM> attempts
+user <*> logged in from <IP> <=> login of user <*> from <IP>
+```
+
+A rule works in both directions, so it does not matter which run is the old one. A token `<*>` agrees with any token, on either
+side, so a rule also matches the template that the miner has generalized. Rules are tried in file order; a template is paired
+at most once. A bad file fails before any log is read, with the file name and the line.
 
 With the `exact` matcher (`--matcher exact`) a reworded message (`retry failed after 3 attempts` -> `retry gave up after 3
 attempts`) is one *new* and one *disappeared* template. A matcher pairs them, and `diff` compares the pair as one

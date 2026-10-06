@@ -100,7 +100,7 @@ see below), plus:
 | `--baseline FILE` | none | another baseline log besides `BEFORE`; repeat it for more |
 | `--min-baselines N` | all | with `--baseline`, the number of baselines a template must occur in to be reported as disappeared or changed |
 | `--significance` | 0.01 | highest p-value of a `changed` template that is still reported (0 < P <= 1); `1` keeps every template that passes the ratio and count thresholds |
-| `--matcher` | `jaccard` | `jaccard`, `token_subset` or `exact`; plugins add more ([how to choose](guide.md#choosing-a-matcher)) |
+| `--matcher` | `jaccard` | `jaccard`, `jaccard-idf`, `overlap`, `token_subset`, `exact` or `rules:FILE` (your own pairs); plugins add more ([how to choose](guide.md#choosing-a-matcher)) |
 | `--recount` / `--no-recount` | on | assign every record to the finished template tree; `--no-recount` is faster but can show spurious differences |
 | `--fail-on-new` | off | exit with code 2 when new templates are found |
 | `--fail-on-new-alerts` | off | exit with code 2 when new templates with level WARN, ERROR or FATAL are found |
