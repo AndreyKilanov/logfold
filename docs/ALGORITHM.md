@@ -201,11 +201,11 @@ After recount (§9) or, for saved results, after joining templates by id, templa
 paired by a *matcher* so that a reworded message is compared as one template. The built-in matchers are part of the
 contract: the native implementation (`logfold-core`, `compare`) and the pure-Python one (`logfold.comparison.matchers`,
 `logfold.plugins.matchers`) must return **identical** pairs, in the same order. Matching does not change mined
-templates or counts, so it does not affect `ALGO_VERSION`. It is the one place that uses floating point (`jaccard`).
+templates or counts, so it does not affect `ALGO_VERSION`. It is the one place that uses floating point (`jaccard`, `jaccard-idf`, `overlap`).
 
 A template text is split into tokens: `token_subset` splits on the single space character (an empty text has no tokens),
-`jaccard` on whitespace as Python's `str.split()` sees it (Unicode `White_Space` plus U+001C to U+001F) and keeps the
-set of distinct words.
+`jaccard`, `jaccard-idf` and `overlap` on whitespace as Python's `str.split()` sees it (Unicode `White_Space` plus U+001C
+to U+001F) and keep the set of distinct words; `rules` splits on the single space character like `token_subset`.
 
 **`token_subset`.** Templates `x` and `y` with the same token count are compatible when, at every position, `x` has `<*>`
 or the same token as `y`, or when `y` has `<*>` or the same token as `x` at every position (one generalizes the other).
@@ -224,6 +224,35 @@ by an epsilon on the safe side). Prefix filtering is exact: with the words
 ordered from the least to the most frequent in both runs (ties by code point order), two sets with score at least `t`
 share a word among the first `n - ceil(t * n) + 1` words of each (`n` is the size of the set; the ceiling uses an epsilon
 of 1e-9 on the safe side). A threshold of zero or less scores every pair.
+
+**`jaccard-idf`** with a threshold `t` (default 0.5). The words are ranked over the templates handed to the matcher, both
+lists together: a word with a smaller number `n` of templates that contain it comes first, ties by code point order. A word
+weighs `1 / n` (a correctly rounded division). The score of two templates is `S / U`, where `S` is the sum of the weights of
+the words in both sets and `U` the sum of the weights of the words in either set, each summed in rank order starting from
+`0.0` with ordinary double additions (0 when `U` is 0). Pairs with a score of at least `t` are ordered by score, highest
+first, then by index in the first run, then by index in the second run, and taken greedily as for `jaccard`; the result is
+sorted by index in the first run. Skipping is allowed only where it is exact: two sets with a score of at least `t` share
+their heaviest common word `x`, and the words of each set from `x` on weigh at least `t` times the weight `W` of the set, so
+a set needs to probe only the leading words (heaviest first) whose suffix still weighs at least `t * W * (1 - 1e-9)`; a pair
+whose weights `a <= b` give `a < b * t * (1 - 1e-9)` cannot reach `t`. A threshold above 1 or `nan` pairs nothing; zero or
+less scores every pair.
+
+**`overlap`** with a threshold `t` (default 0.8). The score of two templates is `|A ∩ B| / min(|A|, |B|)` over their sets of
+words. A template with fewer than 3 distinct words is never paired. Pairs with a score of at least `t` are ordered and taken
+as for `jaccard`. A pair needs `ceil(t * min(|A|, |B|))` shared words (the bound is lowered by 1e-9 on the safe side), so
+it shares a word among the first `n - ceil(t * n) + 1` words (rarest first, ranked as for `jaccard`) of its smaller set,
+whichever side that is; implementations may find candidates that way. A threshold above 1 or `nan` pairs nothing; zero or
+less scores every pair of eligible templates.
+
+**`rules`** with a list of rules `(left, right)` of template texts (`--matcher rules:FILE`: one rule per line,
+`TEMPLATE <=> TEMPLATE`, empty lines and lines starting with `#` ignored, UTF-8, at most 16 MiB). A text is split on the
+single space character (an empty text has no tokens); a template and a rule side agree when they have the same token count
+and, at every position, equal tokens or `<*>` on either side. Rules are applied in file order, and each rule in two
+directions, first with `left` against the first run and `right` against the second, then `right` against the first run and
+`left` against the second. For one direction the unused templates of the first run that agree with the first side and the
+unused templates of the second run that agree with the second side are each listed in ascending index order and paired
+position by position, as many pairs as the shorter list has. Each template is used at most once. The result is sorted by
+index in the first run. The `rules` matcher is not selected by name alone, because it needs a file.
 
 The default matcher of `diff` is `jaccard` with the threshold 0.6 (`DiffConfig.matcher`, `--matcher`); `exact` and `token_subset` are
 selected by name. Changing the default is a change of the public result, not of the mining algorithm, so `ALGO_VERSION` stays.

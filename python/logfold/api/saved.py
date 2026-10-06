@@ -15,13 +15,12 @@ import time
 from typing import Any
 
 from logfold.api.comparing import classify_native, result_side
-from logfold.api.matching import accelerated, native_spec
+from logfold.api.matching import accelerated, native_spec, resolve_matcher
 from logfold.comparison import classify
 from logfold.config import DiffConfig, ExamplesMode
 from logfold.engines import native
 from logfold.engines.base import RunStatsData, TemplateStats
 from logfold.errors import ConfigError, SourceError
-from logfold.ext import registry
 from logfold.levels import LEVEL_NAMES
 from logfold.model import (
     AnalysisResult,
@@ -194,7 +193,7 @@ def diff_saved(before: AnalysisResult, after: AnalysisResult, config: DiffConfig
             f"{after.meta.algo_version}) and cannot be compared; analyze both logs again"
         )
     config = dataclasses.replace(config, recount=False)
-    matcher = registry.get_matcher(config.matcher)
+    matcher = resolve_matcher(config.matcher)
     spec = native_spec(matcher) if native.supports_comparison() else None
     classification = None
     if spec is not None:

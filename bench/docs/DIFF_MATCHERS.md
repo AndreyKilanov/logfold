@@ -1,8 +1,19 @@
 # Diff matchers on real before/after pairs
 
-Which matcher should `logfold diff` use: `exact`, `token_subset` or `jaccard`? Measured on pairs cut from the four large real
-logs ([`LOGHUB2.md`](LOGHUB2.md)) with [`diff_matchers.py`](../tools/diff_matchers.py). Raw data:
-[`results/diff-matchers.json`](../results/diff-matchers.json). The result: `jaccard` is the default since this evaluation.
+Which matcher should `logfold diff` use? Measured on pairs cut from the four large real logs ([`LOGHUB2.md`](LOGHUB2.md))
+with [`accuracy.py`](../accuracy.py). The 0.3.0 evaluation compared `exact`, `token_subset` and `jaccard`, and
+`jaccard` has been the default since. 0.4.0 added `jaccard-idf`, `overlap` and `rules`, computed by the Rust core with the
+pure-Python implementation as the reference the tests compare against; they were measured the same way, on smaller windows
+(see [the 0.4.0 matchers](#the-040-matchers-accuracy)). The 0.4.0 accuracy numbers come from `python bench/accuracy.py --window 200000`, the speed of the
+matcher alone from `python bench/speed.py matchers`.
+
+The matchers added in 0.4.0:
+
+| matcher | score | default threshold |
+|---|---|---|
+| `jaccard-idf` | Jaccard similarity of the sets of words where a word weighs `1 / n`, `n` the number of one-sided templates (of both runs) that contain it | 0.5 |
+| `overlap` | `shared words / words of the shorter template`; templates of fewer than three words are never paired | 0.8 |
+| `rules` | the pairs of a user file, `<*>` agrees with any token | none |
 
 A matcher only sees the templates that occur in one run. It may pair a template of *before* with one of *after*, so that a
 reworded message is compared as one template instead of being reported as one `new` and one `disappeared`. A pair that joins
@@ -11,7 +22,8 @@ two different messages hides a real change, which is the worst failure of a diff
 ## Method
 
 The real logs come without ground truth, so the pairs are built to have one. Windows are the first lines of each log, as many as
-fit up to 3 million lines per side (BGL and Thunderbird are shorter: 2.3 and 2.7 million).
+fit up to 3 million lines per side (BGL and Thunderbird are shorter: 2.3 and 2.7 million); the 0.4.0 run used 200,000 lines per
+side to keep it short.
 
 | pair | built how | truth | what is counted |
 |---|---|---|---|
@@ -85,6 +97,8 @@ These are the noise of host-specific templates, not different messages. The samp
 
 ## Speed
 
+### Whole `diff`
+
 Whole live `diff` of the adjacent pair (read, mine, recount, compare), median of three, with 16 threads (the default) and with one
 thread (`--strategy sequential`, like a small machine):
 
@@ -99,14 +113,107 @@ The three matchers take the same time. The spread (up to 0.5 s at one thread) is
 two saved results, where only the matcher differs, takes 0.2 ms (HDFS), 1 ms (BGL, Spark) and `exact` 10 ms, `token_subset` 13 ms,
 `jaccard` 30 ms (Thunderbird, 200-300 one-sided templates per side).
 
+### Growth with the number of one-sided templates
+
 The cost grows with the number of templates that occur on one side only. The worst case is a log in which almost every template is
-one-sided. Whole `diff` of two saved results, one thread, native engine (`python bench/tools/diff_scale.py --stage NAME --sizes 5000 10000 20000 40000 80000`, best of three):
+one-sided. Whole `diff` of two saved results, one thread, native engine (an earlier script, `diff_scale.py`, no longer in the repository; best of three):
 
 | templates per run | exact | token_subset | jaccard |
 |---:|---:|---:|---:|
 | 18,209 | 0.19 s | 0.22 s | 0.26 s |
 | 36,320 | 0.38 s | 0.45 s | 0.61 s |
 | 72,615 | 0.88 s | 1.09 s | 1.64 s |
+
+### The matcher alone (0.4.0)
+
+A matcher sees only the templates that occur in one run, so the input is two lists. Two seeded shapes: `sparse` (a vocabulary of
+3000 words, a few templates share a word) and `dense` (300 words, many candidate pairs, a stress case). `n` templates per
+side, 3-8 words and a service name per template, best of three runs, native engine, Windows 11, 8 cores / 16 threads;
+`rules` has `n / 50` rules (2000 at 100 thousand), each naming one template of each side.
+
+| shape | templates per side | `jaccard` | `jaccard-idf` | `overlap` | `rules` |
+|---|---:|---:|---:|---:|---:|
+| sparse | 5,000 | 0.014 s | 0.016 s | 0.015 s | 0.027 s |
+| sparse | 20,000 | 0.094 s | 0.054 s | 0.087 s | 0.090 s |
+| sparse | 100,000 | 1.37 s | 0.33 s | 1.22 s | 0.41 s |
+| dense | 5,000 | 0.033 s | 0.012 s | 0.020 s | 0.015 s |
+| dense | 20,000 | 0.46 s | 0.053 s | 0.32 s | 0.065 s |
+| dense | 100,000 | 10.7 s | 0.28 s | 8.2 s | 0.30 s |
+
+Growth `t ~ n^k` between 5,000 and 100,000 templates: `jaccard-idf` 1.0 (sparse) and 1.0 (dense), `rules` 0.9 and 1.0, `overlap` 1.5 and 2.0, `jaccard` 1.5 and 1.9. A real diff hands a matcher a few hundred to a few thousand one-sided templates; the table is
+about the worst case. `jaccard-idf` is the fastest, presumably because its heaviest word, a rare one, leaves few candidates; `overlap`
+cannot prune by size (a short template is contained in a long one), so it costs about as much as `jaccard`.
+
+#### Variants tried for speed
+
+| algorithm | variant | 100,000 templates, sparse / dense | kept |
+|---|---|---:|---|
+| `rules` | every rule scans all templates with the same token count | 7.1 s / 7.0 s (growth 1.3) | no |
+| `rules` | index by token count, position and token, shortest candidate list per rule | 0.41 s / 0.30 s (growth 0.9-1.0) | yes |
+| `overlap` | candidates from the prefix of each side against all words of the other | 1.45 s / 10.7 s | no |
+| `overlap` | the same with lists kept longest first, so a probe stops where the sizes stop fitting | 1.22 s / 8.2 s | yes |
+
+Both kept variants return exactly the pairs of the plain definition (tests against a quadratic search on random templates).
+
+## The 0.4.0 matchers: accuracy
+
+The method above on the same four real logs (HDFS, BGL, Spark, Thunderbird), with windows of 200,000 lines per side instead of
+3,000,000, so there are few *reachable* twins and the rewording counts below are small. Reported templates on saved results (a matcher that pairs more removes more false
+alarms; lower is better when nothing real changed):
+
+| log | pair | `exact` | `jaccard` | `jaccard-idf` | `overlap` |
+|---|---|---:|---:|---:|---:|
+| hdfs | stationary | 15 | 6 | 6 | 6 |
+| bgl | stationary | 24 | 18 | 20 | 17 |
+| spark | stationary | 54 | 22 | 22 | 22 |
+| thunderbird | stationary | 397 | 138 | 310 | 304 |
+| hdfs | adjacent | 17 | 7 | 7 | 5 |
+| bgl | adjacent | 40 | 29 | 35 | 31 |
+| spark | adjacent | 131 | 82 | 85 | 80 |
+| thunderbird | adjacent | 515 | 383 | 505 | 489 |
+
+On live diffs (shared tree and recount) the three give the same counts as `jaccard` within a few templates, except on
+Thunderbird (99 for `jaccard`, 123 and 121 for the new ones, stationary pair).
+
+Rewording on saved results, sums over three words and four logs:
+
+| mode | reachable twins | `jaccard`: twin / pairs | `jaccard-idf`: twin / pairs | `overlap`: twin / pairs, mixed up, joined with a non-twin |
+|---|---:|---:|---:|---:|
+| swap | 5 | 5 / 528 | 5 / 252 | 3 / 277, 2, 2 |
+| extend | 5 | 4 / 531 | 3 / 253 | 3 / 283, 2, 2 |
+| novel (a different message: any twin pair is a false merge) | 5 | 0 / 526 | 0 / 248 | 0 / 283, 4, 4 |
+
+What it says, with the caveat of five reachable twins per mode:
+
+- `jaccard-idf` finds as many twins as `jaccard` (one fewer in `extend`) and pairs about half as many unrelated templates. It
+  never joined two different messages in `novel` mode, but on Thunderbird it leaves many more false alarms than `jaccard`
+  (310 against 138 on the stationary pair; the host names that stay in those templates are rare words, which probably
+  keeps templates apart that `jaccard` joins).
+- `overlap` found fewer twins than `jaccard` (3 of 5 in `swap`; a template of four words with one reworded word scores 0.75,
+  below 0.8) and made false merges in `novel` mode (4 of 283 pairs), so it is the riskiest of the three.
+- Neither beats `jaccard`, which stays the default. They are alternatives for logs where `jaccard` joins siblings
+  (`jaccard-idf`) or where messages get longer (`overlap`), and `rules` covers the rest by hand.
+
+### The BGL log with the full window
+
+The mix-ups of `jaccard` in the 0.3.0 evaluation were mostly in the BGL `FATAL` family of 45-55 near-identical templates, which
+is the case `jaccard-idf` and `overlap` were meant for. The same log with the full window (2.3 million lines, 1.15 million per
+side, three reworded words), the matchers of 0.4.0 next to `jaccard`:
+
+| source | mode | reachable twins | `jaccard`: twins / pairs, mixed up, joined with a non-twin | `jaccard-idf` | `overlap` |
+|---|---|---:|---:|---:|---:|
+| saved | swap | 60 | 54 / 114, 5, 1 | 52 / 86, 5, 0 | 53 / 117, 7, 1 |
+| saved | extend | 59 | 49 / 111, 6, 0 | 49 / 83, 5, 0 | 49 / 113, 8, 0 |
+| saved | novel (a different message) | 60 | 0 / 56, 0, 0 | 0 / 29, 0, 0 | 0 / 57, 1, 1 |
+| live | extend | 50 | 44 / 53, 4, 0 | 44 / 47, 3, 0 | 46 / 55, 4, 0 |
+| live | novel | 48 | 0 / 3, 0, 0 | 0 / 0, 0, 0 | 0 / 5, 0, 0 |
+
+Reported templates on saved results (the pair with no change): 95 with `exact`, 60 with `jaccard`, 75 with `jaccard-idf`, 64
+with `overlap` for the stationary pair; 174, 144, 152 and 137 for the adjacent pair.
+
+`jaccard-idf` mixes up one sibling less in `extend` and none less in `swap` (5 and 5), finds two twins fewer in `swap`, and makes
+no false merge in `novel`. `overlap` mixes up more siblings than `jaccard` and joined different messages once in `novel`. Neither
+solves the sibling mix-ups: the siblings of this family differ in the number of `<*>` or in a host name, not in a rare word.
 
 ## Which one to choose
 
@@ -122,9 +229,14 @@ one-sided. Whole `diff` of two saved results, one thread, native engine (`python
 comparison (a template either has the same text or it does not), and `token_subset` when you want only the safe merges (one
 template generalizes the other) and nothing else.
 
+The 0.4.0 matchers are alternatives, not replacements: neither `jaccard-idf` nor `overlap` beats `jaccard` on these pairs.
+`jaccard-idf` is the one to try where `jaccard` joins siblings that differ in a rare word, `overlap` where messages get longer
+(it joined different messages in the reworded-all test, so it is the riskiest), and `rules:FILE` where you know the rewording.
+
 ## Limits of this evidence
 
-- Four logs, one machine, the first million lines or so of each. Only Thunderbird has enough one-sided templates to move the live
+- Four logs, one machine, the first million lines or so of each (200,000 for the 0.4.0 matchers, with five reachable twins per
+  mode: their rewording counts show a direction, not a rate). Only Thunderbird has enough one-sided templates to move the live
   counts; the rewording tests have 57-73 reachable twins per cell, mostly from BGL and Thunderbird.
 - `novel` keeps the numbers and addresses and replaces all words; a real new message that shares most of its words with an old one
   is harder, and only the adjacent pairs probe that. The 1 pair out of 206 that joined a template with a non-rewording shows
@@ -134,5 +246,5 @@ template generalizes the other) and nothing else.
   test; none is available.
 - At 16 threads a `diff` of these windows takes 1.0-1.7 s; the 5-10 s runs are the one-thread ones.
 
-Reproduce: `python bench/tools/download_loghub2.py`, then `python bench/tools/diff_matchers.py` (about 20 minutes: the timed runs
-repeat three times, with 16 threads and with one).
+Reproduce: `python bench/data.py loghub2`, then `python bench/accuracy.py` for the accuracy; `python bench/speed.py diff` and
+`python bench/speed.py matchers` for the speed.

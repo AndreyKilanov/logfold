@@ -1,66 +1,8 @@
 //! The `jaccard` matcher: pairs templates whose sets of words overlap by at least a threshold.
 
 use std::cmp::Ordering;
-use std::collections::HashMap;
 
-use ahash::RandomState;
-
-/// Whitespace as Python's `str.split()` sees it: the Unicode `White_Space` set plus the separators U+001C to U+001F.
-fn is_space(c: char) -> bool {
-    c.is_whitespace() || ('\u{1c}'..='\u{1f}').contains(&c)
-}
-
-/// The distinct words of a template.
-fn words(text: &str) -> Vec<&str> {
-    let mut words: Vec<&str> = text.split(is_space).filter(|word| !word.is_empty()).collect();
-    words.sort_unstable();
-    words.dedup();
-    words
-}
-
-/// Sets of word ranks stored back to back, which keeps the verification of a candidate pair inside one cache line or two.
-struct Sets {
-    ranks: Vec<u32>,
-    start: Vec<u32>,
-}
-
-impl Sets {
-    fn len(&self) -> usize {
-        self.start.len() - 1
-    }
-
-    fn get(&self, index: usize) -> &[u32] {
-        &self.ranks[self.start[index] as usize..self.start[index + 1] as usize]
-    }
-}
-
-/// Sets of words as sorted lists of ranks: rank 0 is the rarest word of both runs, ties go to the code point order.
-///
-/// Comparing integers instead of strings makes the verification of a candidate pair a merge of two short integer lists,
-/// and the sorted order is also the order in which the prefixes are taken.
-fn intern(before: &[Vec<&str>], after: &[Vec<&str>]) -> (Sets, Sets, usize) {
-    let mut frequency: HashMap<&str, u32, RandomState> = HashMap::default();
-    for set in before.iter().chain(after) {
-        for word in set {
-            *frequency.entry(word).or_default() += 1;
-        }
-    }
-    let mut by_frequency: Vec<(&str, u32)> = frequency.into_iter().collect();
-    by_frequency.sort_unstable_by(|a, b| a.1.cmp(&b.1).then(a.0.cmp(b.0)));
-    let rank: HashMap<&str, u32, RandomState> =
-        by_frequency.iter().enumerate().map(|(position, (word, _))| (*word, position as u32)).collect();
-    let convert = |sets: &[Vec<&str>]| -> Sets {
-        let mut flat = Sets { ranks: Vec::new(), start: vec![0] };
-        for set in sets {
-            let first = flat.ranks.len();
-            flat.ranks.extend(set.iter().map(|word| rank[word]));
-            flat.ranks[first..].sort_unstable();
-            flat.start.push(flat.ranks.len() as u32);
-        }
-        flat
-    };
-    (convert(before), convert(after), by_frequency.len())
-}
+use super::sets::{Sets, intern, take_best};
 
 fn similarity(left: &[u32], right: &[u32]) -> f64 {
     let (mut a, mut b, mut shared) = (0, 0, 0usize);
@@ -176,21 +118,7 @@ fn scored(before: &Sets, after: &Sets, vocabulary: usize, threshold: f64) -> Vec
 /// taken from the highest score, then the lowest before index, then the lowest after index. Returns the pairs sorted by
 /// before index.
 pub fn jaccard_pairs(before: &[&str], after: &[&str], threshold: f64) -> Vec<(usize, usize)> {
-    let before_words: Vec<Vec<&str>> = before.iter().map(|text| words(text)).collect();
-    let after_words: Vec<Vec<&str>> = after.iter().map(|text| words(text)).collect();
-    let (before_ranks, after_ranks, vocabulary) = intern(&before_words, &after_words);
-    let mut candidates = scored(&before_ranks, &after_ranks, vocabulary, threshold);
-    candidates.sort_by(|a, b| b.0.total_cmp(&a.0).then(a.1.cmp(&b.1)).then(a.2.cmp(&b.2)));
-    let mut used_before = vec![false; before.len()];
-    let mut used_after = vec![false; after.len()];
-    let mut pairs = Vec::new();
-    for (_, i, j) in candidates {
-        if !used_before[i as usize] && !used_after[j as usize] {
-            used_before[i as usize] = true;
-            used_after[j as usize] = true;
-            pairs.push((i as usize, j as usize));
-        }
-    }
-    pairs.sort_unstable();
-    pairs
+    let interned = intern(before, after);
+    let candidates = scored(&interned.before, &interned.after, interned.frequency.len(), threshold);
+    take_best(candidates, before.len(), after.len())
 }

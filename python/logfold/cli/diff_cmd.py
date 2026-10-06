@@ -157,7 +157,7 @@ def diff(
         typer.Option(
             "--matcher",
             help="How a template found in one run only is paired with a similar one in the other: "
-            "jaccard, token_subset or exact (no pairing).",
+            "jaccard, jaccard-idf, overlap, token_subset, rules:FILE (your own pairs) or exact (no pairing).",
             rich_help_panel=PANEL_DIFF,
         ),
     ] = "jaccard",

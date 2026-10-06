@@ -4,17 +4,23 @@ use std::collections::HashMap;
 
 use ahash::RandomState;
 
-use super::{jaccard_pairs, token_subset_pairs};
+use super::{jaccard_idf_pairs, jaccard_pairs, overlap_pairs, rules_pairs, token_subset_pairs};
 
 /// The matcher that pairs the templates that exist in one run only.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Matcher {
+pub enum Matcher<'a> {
     /// Pairs nothing: a template is the same only when its text is the same.
     Exact,
     /// See [`token_subset_pairs`].
     TokenSubset,
     /// See [`jaccard_pairs`], with this threshold.
     Jaccard(f64),
+    /// See [`jaccard_idf_pairs`], with this threshold.
+    JaccardIdf(f64),
+    /// See [`overlap_pairs`], with this threshold.
+    Overlap(f64),
+    /// See [`rules_pairs`], with these rules.
+    Rules(&'a [(&'a str, &'a str)]),
 }
 
 /// When a template is reported.
@@ -87,7 +93,7 @@ fn change_factor(ratio: Option<f64>) -> f64 {
 /// of its counts reaches `min_count` and its share moved by at least `ratio` (up or down). New and disappeared
 /// templates need `min_new_count` records. Each list is sorted most significant first, ties by the template text of the
 /// second run (of the first run for disappeared ones).
-pub fn compare_runs(before: &Side<'_>, after: &Side<'_>, thresholds: &Thresholds, matcher: Matcher) -> Comparison {
+pub fn compare_runs(before: &Side<'_>, after: &Side<'_>, thresholds: &Thresholds, matcher: Matcher<'_>) -> Comparison {
     let live = |side: &Side<'_>| -> Vec<usize> { (0..side.texts.len()).filter(|&i| side.counts[i] > 0).collect() };
     let before_live = live(before);
     let after_live = live(after);
@@ -116,6 +122,9 @@ pub fn compare_runs(before: &Side<'_>, after: &Side<'_>, thresholds: &Thresholds
             Matcher::Exact => Vec::new(),
             Matcher::TokenSubset => token_subset_pairs(&before_texts, &after_texts),
             Matcher::Jaccard(threshold) => jaccard_pairs(&before_texts, &after_texts, threshold),
+            Matcher::JaccardIdf(threshold) => jaccard_idf_pairs(&before_texts, &after_texts, threshold),
+            Matcher::Overlap(threshold) => overlap_pairs(&before_texts, &after_texts, threshold),
+            Matcher::Rules(rules) => rules_pairs(&before_texts, &after_texts, rules),
         };
         for (bi, aj) in pairs {
             let (i, j) = (before_only[bi], after_only[aj]);

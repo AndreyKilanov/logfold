@@ -1,6 +1,6 @@
 # Benchmark results
 
-Protocol: [`PROTOCOL.md`](PROTOCOL.md). Raw data: [`results/`](results).
+Protocol: [`PROTOCOL.md`](PROTOCOL.md). The tables are kept as they were measured; `python bench/speed.py --help` measures again.
 
 Machine: Windows-11-10.0.26200-SP0, 8 physical / 16 logical cores, 34.2 GB RAM, Python 3.13.0.
 
@@ -40,7 +40,7 @@ Wall time of the median of the repeats in seconds, with throughput in MB/s in br
 
 ## `diff` and result building: growth with the number of templates
 
-Measured by `tools/diff_scale.py`: three to five small sizes (4.6 to 73 thousand templates per run), best of three repeats for the fast measurements, one thread, native engine. `diff` compares two saved results; `analyze` is the whole call, the engine part is the time inside the engine. The growth exponent `k` of `t ~ n^k` is fitted between the first and the last size, the last two rows extrapolate with it.
+Measured by an earlier script (`diff_scale.py`, no longer in the repository): three to five small sizes (4.6 to 73 thousand templates per run), best of three repeats for the fast measurements, one thread, native engine. `diff` compares two saved results; `analyze` is the whole call, the engine part is the time inside the engine. The growth exponent `k` of `t ~ n^k` is fitted between the first and the last size, the last two rows extrapolate with it.
 
 ### Before: the matchers compared every pair of templates
 
@@ -108,7 +108,7 @@ The specification's hypothesis was 20–50×. It holds for masked analysis and f
 one thread the gain is 8–19×, because Drain3 itself is cheap when it does no regex work.
 `app_100mb` has 1.27 M lines: 0.41 s with 16 threads is about 3.1 M lines/s (target: 1 M lines/s on 8 cores).
 
-**Equivalence of work** (`results/templates.json`, template counts):
+**Equivalence of work** (template counts):
 
 | dataset | logfold | Drain3 | logdrain | logdelta |
 |---|---:|---:|---:|---:|
@@ -182,7 +182,7 @@ kept apart (counts stay exact, and a warning says so).
 - One machine (Windows 11, i7-10700K, 8 cores / 16 threads), warm page cache, generated data (nginx, app, Loghub-2k
   derived loghub, highcard). The large real Loghub-2.0 files are measured separately for logfold only, see
   [`LOGHUB2.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/docs/LOGHUB2.md).
-- Rows come from several runs on the same machine (marked per row by `measured_in` in the files in `results/`);
+- Rows come from several runs on the same machine (a row is one run);
   repeated measurements agreed within about 5%. The logfold rows are from run 5 (logfold 0.2.0 plus the performance
   changes of `main` made after it, measured in a clean environment with no plugin packages installed); the Drain3,
   logdrain and logdelta rows are from earlier runs on the same machine.

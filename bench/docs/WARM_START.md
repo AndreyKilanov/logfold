@@ -6,8 +6,9 @@ chunk and cannot be merged back (`docs/ALGORITHM.md` §6). The parallel result t
 sequential one, while the large templates are the same. `--warm-start` (`warm_start=True`) trains the first chunk alone and
 starts every other chunk from a copy of its tree. It is off by default; the default result of the chunked strategy is unchanged.
 
-Measured with [`warm_start.py`](../tools/warm_start.py) (`python bench/tools/warm_start.py --repeat 3`); raw data
-[`results/warm-start.json`](../results/warm-start.json). `analyze --top 1 -q -f plain --engine native --strategy chunked`, 16
+Measured with `python bench/speed.py analyze FILE --strategy chunked --warm-start --chunk-mb 8` (the cold start and the warm
+start are separate rows; the counts of stray templates came from an earlier script, `warm_start.py`, no longer in the
+repository). `analyze --top 1 -q -f plain --engine native --strategy chunked`, 16
 threads, each command in its own process (the times include about 0.35 s of start-up), median of three runs, peak working set of
 the process tree; the numbers of templates are one run each. The 0.3.0 development code (its version string was still 0.2.1), Windows 11, 8 cores / 16 threads, warm
 page cache.

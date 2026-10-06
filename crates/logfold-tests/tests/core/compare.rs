@@ -206,3 +206,149 @@ mod classification {
         assert_eq!(result.new, vec![3, 4]);
     }
 }
+
+mod word_matchers {
+    use std::collections::{BTreeMap, BTreeSet};
+
+    use logfold_core::{Matcher, Side, Thresholds, compare_runs, jaccard_idf_pairs, overlap_pairs, rules_pairs};
+
+    use super::{random_templates, word_set};
+
+    fn greedy(mut scored: Vec<(f64, usize, usize)>, before: usize, after: usize) -> Vec<(usize, usize)> {
+        scored.sort_by(|x, y| y.0.total_cmp(&x.0).then(x.1.cmp(&y.1)).then(x.2.cmp(&y.2)));
+        let (mut used_before, mut used_after) = (vec![false; before], vec![false; after]);
+        let mut pairs = Vec::new();
+        for (_, i, j) in scored {
+            if !used_before[i] && !used_after[j] {
+                used_before[i] = true;
+                used_after[j] = true;
+                pairs.push((i, j));
+            }
+        }
+        pairs.sort_unstable();
+        pairs
+    }
+
+    /// Every pair of templates of three words or more is scored.
+    fn quadratic_overlap(before: &[&str], after: &[&str], threshold: f64) -> Vec<(usize, usize)> {
+        let left: Vec<_> = before.iter().map(|t| word_set(t)).collect();
+        let right: Vec<_> = after.iter().map(|t| word_set(t)).collect();
+        let mut scored = Vec::new();
+        for (i, a) in left.iter().enumerate().filter(|(_, a)| a.len() >= 3) {
+            for (j, b) in right.iter().enumerate().filter(|(_, b)| b.len() >= 3) {
+                let score = a.intersection(b).count() as f64 / a.len().min(b.len()) as f64;
+                if score >= threshold {
+                    scored.push((score, i, j));
+                }
+            }
+        }
+        greedy(scored, before.len(), after.len())
+    }
+
+    /// Every pair is scored, the weights `1 / frequency` summed from the rarest word to the most common.
+    fn quadratic_jaccard_idf(before: &[&str], after: &[&str], threshold: f64) -> Vec<(usize, usize)> {
+        let left: Vec<_> = before.iter().map(|t| word_set(t)).collect();
+        let right: Vec<_> = after.iter().map(|t| word_set(t)).collect();
+        let mut frequency: BTreeMap<&str, u32> = BTreeMap::new();
+        for set in left.iter().chain(&right) {
+            for word in set {
+                *frequency.entry(word).or_default() += 1;
+            }
+        }
+        let mut scored = Vec::new();
+        for (i, a) in left.iter().enumerate() {
+            for (j, b) in right.iter().enumerate() {
+                let union: BTreeSet<&str> = a.union(b).copied().collect();
+                let mut ordered: Vec<&str> = union.into_iter().collect();
+                ordered.sort_by(|x, y| frequency[x].cmp(&frequency[y]).then(x.cmp(y)));
+                let (mut shared, mut total) = (0.0f64, 0.0f64);
+                for word in ordered {
+                    let weight = 1.0 / f64::from(frequency[word]);
+                    total += weight;
+                    if a.contains(word) && b.contains(word) {
+                        shared += weight;
+                    }
+                }
+                let score = if total > 0.0 { shared / total } else { 0.0 };
+                if score >= threshold {
+                    scored.push((score, i, j));
+                }
+            }
+        }
+        greedy(scored, before.len(), after.len())
+    }
+
+    fn refs(texts: &[String]) -> Vec<&str> {
+        texts.iter().map(String::as_str).collect()
+    }
+
+    #[test]
+    fn indexed_search_equals_the_quadratic_search() {
+        let mut state = 29;
+        for round in 0..300 {
+            let (before, after) =
+                (random_templates(&mut state, 1 + round % 40), random_templates(&mut state, 1 + round % 37));
+            let (b, a) = (refs(&before), refs(&after));
+            for threshold in [0.0, 0.2, 0.5, 0.6, 2.0 / 3.0, 0.8, 0.9, 1.0, 1.5] {
+                assert_eq!(
+                    overlap_pairs(&b, &a, threshold),
+                    quadratic_overlap(&b, &a, threshold),
+                    "overlap, round {round}, {threshold}"
+                );
+                assert_eq!(
+                    jaccard_idf_pairs(&b, &a, threshold),
+                    quadratic_jaccard_idf(&b, &a, threshold),
+                    "jaccard_idf, round {round}, {threshold}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn overlap_catches_an_extended_message_and_ignores_short_templates() {
+        let before = ["cache cleared for tenant <NUM>", "cache cleared"];
+        let after = ["cache cleared for tenant <NUM> after a restart of the node", "cache cleared now for the tenant"];
+        assert_eq!(overlap_pairs(&before, &after, 0.8), vec![(0, 0)]);
+        assert!(overlap_pairs(&["a b"], &["a b c d"], 0.5).is_empty());
+    }
+
+    #[test]
+    fn jaccard_idf_separates_siblings_that_differ_in_their_rare_word() {
+        let before = ["connection to db1 lost after <NUM> retries", "connection to db2 lost after <NUM> retries"];
+        let after = ["connection to db2 closed after <NUM> retries", "connection to db1 closed after <NUM> retries"];
+        assert_eq!(jaccard_idf_pairs(&before, &after, 0.5), vec![(0, 1), (1, 0)]);
+    }
+
+    #[test]
+    fn rules_pair_in_both_directions_with_wildcards_and_use_each_template_once() {
+        let rules = [("retry failed after <NUM> attempts", "retry gave up after <NUM> attempts")];
+        let before = ["retry failed after <NUM> attempts", "disk full"];
+        let after = ["disk full now", "retry gave up after <NUM> attempts"];
+        assert_eq!(rules_pairs(&before, &after, &rules), vec![(0, 1)]);
+        let swapped = [("retry gave up after <NUM> attempts", "retry failed after <NUM> attempts")];
+        assert_eq!(rules_pairs(&before, &after, &swapped), vec![(0, 1)]);
+        let wild = [("retry <*> after <NUM> attempts", "gave up")];
+        assert_eq!(rules_pairs(&["retry failed after <NUM> attempts"], &["gave up"], &wild), vec![(0, 0)]);
+        assert!(rules_pairs(&["retry failed after <NUM> attempts"], &["gave"], &wild).is_empty());
+        let twice = [("a b", "c d"), ("a b", "e f")];
+        assert_eq!(rules_pairs(&["a b"], &["c d", "e f"], &twice), vec![(0, 0)]);
+        assert!(rules_pairs(&["a"], &["b"], &[]).is_empty());
+    }
+
+    #[test]
+    fn compare_runs_uses_the_new_matchers() {
+        let thresholds = Thresholds { ratio: 2.0, min_count: 1, min_new_count: 1 };
+        let (before_texts, after_texts) =
+            (["cache cleared for tenant <NUM>"], ["cache cleared for tenant <NUM> again now"]);
+        let before = Side { texts: &before_texts, counts: &[5], total: 5 };
+        let after = Side { texts: &after_texts, counts: &[5], total: 5 };
+        let rules = [("cache cleared for tenant <NUM>", "cache cleared for tenant <NUM> again now")];
+        for matcher in [Matcher::Overlap(0.8), Matcher::JaccardIdf(0.4), Matcher::Rules(&rules)] {
+            let result = compare_runs(&before, &after, &thresholds, matcher);
+            assert!(result.new.is_empty() && result.disappeared.is_empty(), "{matcher:?}");
+            assert_eq!(result.unchanged, 1, "{matcher:?}");
+        }
+        let exact = compare_runs(&before, &after, &thresholds, Matcher::Exact);
+        assert_eq!((exact.new.len(), exact.disappeared.len()), (1, 1));
+    }
+}
