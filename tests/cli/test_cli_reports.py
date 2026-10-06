@@ -12,9 +12,8 @@ import logfold
 from corpora import synthetic_pair
 from logfold.cli import exit_codes
 from logfold.cli.app import app
-from logfold.cli.output import printable
 from logfold.cli.runtime import emit
-from logfold.ext import registry
+from logfold.ext import printable, registry
 
 runner = CliRunner()
 

@@ -4,9 +4,11 @@ from __future__ import annotations
 
 from logfold.errors import (
     FormatDetectionError,
+    NoLevelsError,
     UnknownFormatError,
     UnknownMatcherError,
     UnknownReporterError,
+    UnknownSuffixError,
 )
 
 
@@ -37,5 +39,12 @@ def hint_for(error: Exception) -> str | None:
         return _closest_and_listing(error, "logfold formats")
     if isinstance(error, UnknownReporterError | UnknownMatcherError):
         return _closest_and_listing(error, "logfold plugins list")
+    if isinstance(error, UnknownSuffixError):
+        return (
+            f"end the name with one of {', '.join(error.suffixes)}, or name the reporter with --report NAME "
+            "('logfold plugins list' shows them)"
+        )
+    if isinstance(error, NoLevelsError):
+        return "use a format with levels, or -f regex:<pattern> with a (?P<level>...) group"
     hint = getattr(error, "hint", None)
     return hint if isinstance(hint, str) else None

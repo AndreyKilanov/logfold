@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import dataclasses
 from pathlib import Path
 from typing import Annotated
 
 import typer
 
 import logfold
-from logfold.cli.levels import analysis_note, filter_analysis, resolve_level
+from logfold.cli.levels import analysis_note, resolve_level
 from logfold.cli.options import (
     PANEL_OUTPUT,
     AsJson,
@@ -37,7 +36,7 @@ from logfold.cli.options import (
     mining_options,
 )
 from logfold.cli.output import resolve_outputs
-from logfold.cli.runtime import emit, fail, note, progress_reporter, warn_ignored, write_report
+from logfold.cli.runtime import emit, fail, note, progress_reporter, write_report
 from logfold.errors import LogfoldError
 
 EXAMPLES = """Examples:
@@ -110,13 +109,12 @@ def analyze(
                     warm_start,
                 ),
             )
-        warn_ignored(result.metrics, warm_start, chunk_mb, quiet)
         shown = result
         if threshold is not None:
-            shown = filter_analysis(result, threshold)
+            shown = result.filter(min_level=threshold)
             note(analysis_note(result, shown, threshold), quiet)
         if min_count > 1:
-            shown = dataclasses.replace(shown, templates=tuple(t for t in shown.templates if t.count >= min_count))
+            shown = shown.filter(min_count=min_count)
         emit(shown, top, outputs.stdout)
         if out is not None and outputs.file is not None:
             write_report(result if outputs.file == "json" else shown, out, outputs.file, quiet)

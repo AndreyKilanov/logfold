@@ -10,6 +10,7 @@ from __future__ import annotations
 import csv
 import io
 
+from logfold.ext.text import printable
 from logfold.model import AnalysisResult, DiffEntry, DiffResult
 
 __all__ = ["CsvReporter", "MarkdownReporter"]
@@ -23,7 +24,7 @@ def _top(options: dict[str, object], default: int | None) -> int | None:
 
 
 def _md(text: str) -> str:
-    return text.replace("|", "/").replace("`", "'").replace("\n", " ").replace("\r", " ")
+    return printable(text).replace("|", "/").replace("`", "'").replace("\n", " ")
 
 
 def _csv(text: str) -> str:

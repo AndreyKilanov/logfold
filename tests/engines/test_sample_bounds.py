@@ -5,8 +5,8 @@ import tracemalloc
 from pathlib import Path
 
 from logfold.api.inspecting import inspect_file
-from logfold.cli.levels import _keeps
 from logfold.formats.auto import MAX_SAMPLE_BYTES, MAX_SAMPLE_LINE_BYTES, read_sample
+from logfold.levels import at_least
 
 MIB = 1 << 20
 
@@ -63,8 +63,8 @@ def test_a_gzip_bomb_line_is_bounded_too(tmp_path: Path) -> None:
     assert peak < 32 * MIB
 
 
-def test_an_unknown_level_name_is_not_kept_by_the_filter() -> None:
-    assert _keeps("ERROR", "WARN") is True
-    assert _keeps("INFO", "WARN") is False
-    assert _keeps("BANANA", "TRACE") is False
-    assert _keeps(None, "TRACE") is False
+def test_an_unknown_level_name_is_not_at_least_any_level() -> None:
+    assert at_least("ERROR", "WARN") is True
+    assert at_least("INFO", "WARN") is False
+    assert at_least("BANANA", "TRACE") is False
+    assert at_least(None, "TRACE") is False

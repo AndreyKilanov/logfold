@@ -109,6 +109,7 @@ result = analyze("app.log")  # формат определяется сам
 for template in result.top(10):
     print(template.count, template.level, template.text)
 result.to_html("report.html")
+result.filter(min_level="WARN").save("alerts.md")  # отчёт выбирается по суффиксу
 
 comparison = diff("before.log", "after.log")
 comparison.new_templates

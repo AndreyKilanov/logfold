@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import difflib
 from collections.abc import Iterable
+from pathlib import Path
 
 
 class LogfoldError(Exception):
@@ -146,12 +147,81 @@ class UnknownMatcherError(_UnknownNameError, ConfigError):
         super().__init__("diff matcher", "matchers", name, known)
 
 
+class UnknownSuffixError(ConfigError):
+    """A report file name has no suffix, or one that no reporter claims.
+
+    Attributes:
+        path: The file name.
+        suffixes: The suffixes that select a reporter, sorted.
+    """
+
+    def __init__(self, path: str, suffixes: Iterable[str]) -> None:
+        """Create the error.
+
+        Args:
+            path: The file name.
+            suffixes: The suffixes that select a reporter.
+        """
+        self.path = path
+        self.suffixes = tuple(sorted(suffixes))
+        suffix = Path(path).suffix
+        reason = f"the suffix {suffix!r} is not known" if suffix else "it has no suffix"
+        super().__init__(
+            f"cannot choose a report format for '{path}': {reason}",
+            hint=f"end the file name with one of {', '.join(self.suffixes)}, or name the reporter explicitly",
+        )
+
+
+class NoLevelsError(ConfigError):
+    """A result cannot be filtered by level because its format gives no levels.
+
+    Attributes:
+        format: The name of the format of the result.
+    """
+
+    def __init__(self, format: str) -> None:
+        """Create the error.
+
+        Args:
+            format: The name of the format of the result.
+        """
+        self.format = format
+        super().__init__(
+            f"cannot filter by level: the {format} format gives no levels",
+            hint="use a format that extracts levels, for example a regex format with a (?P<level>...) group",
+        )
+
+
 _READ_REASONS: tuple[tuple[type[OSError], str], ...] = (
     (FileNotFoundError, "no such file"),
     (PermissionError, "permission denied"),
     (IsADirectoryError, "is a directory"),
     (NotADirectoryError, "not a directory"),
 )
+
+
+_WRITE_REASONS: tuple[tuple[type[OSError], str], ...] = (
+    (FileNotFoundError, "the folder does not exist"),
+    (PermissionError, "permission denied"),
+    (IsADirectoryError, "is a directory"),
+    (NotADirectoryError, "a folder in the path is a file"),
+)
+
+
+def write_error(path: str, error: OSError) -> SourceError:
+    """Build the error for a file that could not be written; the reason is fixed English for the usual failures.
+
+    Args:
+        path: The file that was to be written.
+        error: The failure.
+
+    Returns:
+        The error to raise.
+    """
+    for kind, reason in _WRITE_REASONS:
+        if isinstance(error, kind):
+            return SourceError(f"cannot write '{path}': {reason}")
+    return SourceError(f"cannot write '{path}': {error.strerror or error}")
 
 
 def read_error(path: str, error: OSError) -> SourceError:

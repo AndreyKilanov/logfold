@@ -99,5 +99,7 @@ def analyze(
         run=summary,
         metrics=mined.metrics,
         meta=_meta(spec, mining_config, used),
-        warnings=tuple(_warnings([summary], used, exec_config, resolved, mining_config, high_cardinality)),
+        warnings=tuple(
+            _warnings([summary], used, exec_config, resolved, mining_config, high_cardinality, mined.metrics.strategy)
+        ),
     )

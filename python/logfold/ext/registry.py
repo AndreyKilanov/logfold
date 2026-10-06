@@ -16,7 +16,13 @@ from importlib import metadata
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from logfold.errors import ConfigError, UnknownFormatError, UnknownMatcherError, UnknownReporterError
+from logfold.errors import (
+    ConfigError,
+    UnknownFormatError,
+    UnknownMatcherError,
+    UnknownReporterError,
+    UnknownSuffixError,
+)
 from logfold.ext.formats import Format, FormatSpec, JsonFormat, PlainFormat, RegexFormat
 from logfold.ext.matchers import DiffMatcher
 from logfold.ext.reporters import Reporter
@@ -29,6 +35,16 @@ logger = logging.getLogger("logfold")
 GROUP_FORMATS = "logfold.formats"
 GROUP_REPORTERS = "logfold.reporters"
 GROUP_MATCHERS = "logfold.matchers"
+SUFFIX_REPORTERS = {
+    ".html": "html",
+    ".htm": "html",
+    ".json": "json",
+    ".txt": "text",
+    ".md": "markdown",
+    ".csv": "csv",
+}
+"""Report file suffixes and the built-in reporter each one selects."""
+
 ENV_PLUGIN_PATH = "LOGFOLD_PLUGIN_PATH"
 ENV_NO_USER_PLUGINS = "LOGFOLD_NO_USER_PLUGINS"
 
@@ -338,6 +354,30 @@ def get_matcher(name: str) -> DiffMatcher:
         return _matchers[name]
     except KeyError:
         raise UnknownMatcherError(name, _matchers) from None
+
+
+def matcher_names() -> list[str]:
+    """Return the sorted names of all registered diff matchers."""
+    load_plugins()
+    return sorted(_matchers)
+
+
+def reporter_for_suffix(path: str | os.PathLike[str]) -> str:
+    """Return the name of the reporter that a report file name selects, from its suffix.
+
+    Args:
+        path: The report file name; the suffix is compared in lower case (see :data:`SUFFIX_REPORTERS`).
+
+    Returns:
+        The reporter name.
+
+    Raises:
+        UnknownSuffixError: If the name has no suffix or an unknown one.
+    """
+    try:
+        return SUFFIX_REPORTERS[Path(path).suffix.lower()]
+    except KeyError:
+        raise UnknownSuffixError(os.fspath(path), SUFFIX_REPORTERS) from None
 
 
 def render(result: AnalysisResult | DiffResult, reporter: str, **options: object) -> str:

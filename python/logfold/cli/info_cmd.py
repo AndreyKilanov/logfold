@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-import sys
-
 from rich.markup import escape
 from rich.table import Table
 
 import logfold
 from logfold.cli.runtime import stdout_console
-from logfold.engines import native
 from logfold.ext import registry
 from logfold.ext.formats import JsonFormat, PlainFormat, RegexFormat
 
@@ -42,15 +39,16 @@ def formats() -> None:
 def info() -> None:
     """Show versions and engine availability (useful in bug reports)."""
     console = stdout_console()
-    console.print(f"logfold {logfold.__version__}")
-    console.print(f"python {sys.version.split()[0]}")
-    versions = native.core_versions()
-    if native.is_available() and versions is not None:
+    facts = logfold.info()
+    console.print(f"logfold {facts.version}")
+    console.print(f"python {facts.python}")
+    if facts.native_available:
         console.print(
-            f"native engine: available (core {versions['core']}, contract {versions['contract']}, "
-            f"algo {versions['algo']})"
+            f"native engine: available (core {facts.core_version}, contract {facts.contract_version}, "
+            f"algo {facts.algo_version})"
         )
     else:
         console.print("native engine: [yellow]not available[/yellow] (the slow pure-Python engine will be used)")
-    console.print(f"formats: {', '.join(registry.format_names())}")
-    console.print(f"reporters: {', '.join(registry.reporter_names())}")
+    console.print(f"formats: {', '.join(facts.formats)}")
+    console.print(f"reporters: {', '.join(facts.reporters)}")
+    console.print(f"matchers: {', '.join(facts.matchers)}")

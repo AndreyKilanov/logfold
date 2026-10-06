@@ -83,6 +83,36 @@ every template (not be written with `limit`). The file must be UTF-8 (a BOM is a
 template id must equal `sha256(text)[:16]` and be unique; otherwise, or when the file is not an analysis report of
 schema version 1, `SourceError` is raised.
 
+`is_saved_analysis(path) -> bool` tells whether a file is such a report rather than a log: it reads the first 4096 bytes and
+looks for the header `{"schema_version": N, "kind": "analysis"`. It is `False` for a log and for a file that cannot be read.
+A UTF-16 file (a PowerShell 5 `>` redirect) counts as a report, so that `load_analysis` can explain what is wrong with it.
+
+## `inspect_file`
+
+```python
+inspect_file(path, *, format="auto", multiline=None, limit=10, sample_lines=1000) -> Inspection
+```
+
+Shows how a file is read without mining it: the format that was detected or applied, the first `limit` records as parsed
+and, from the first `sample_lines` non-blank lines, the level counts, the time range and the number of lines that did not
+parse. Only a bounded part of the file is read (a line longer than 1 MiB is cut, and reading stops after 8 MiB), so it is
+quick on any size. It is the function behind `logfold inspect`. Standard input is not supported (`SourceError`).
+
+`Inspection` fields: `path`, `size`, `compressed` (gzip), `spec` (the format specification that was applied), `confidence`
+(`None` unless the format was auto-detected), `multiline_auto`, `lines`, `records`, `unparsed`, `truncated` (the file has
+more lines than the sample), `shown` (a tuple of `InspectedRecord`: `message`, `time`, `level`, `lines`), `levels` (records
+per level in the sample), `no_level`, `first_time`, `last_time`.
+
+## `info`
+
+```python
+info() -> Info
+```
+
+The facts that a bug report needs, as a frozen dataclass: `version`, `python`, `native_available`, `core_version`,
+`contract_version`, `algo_version` (the last three are `None` without the native extension), and the sorted names of the
+registered `formats`, `reporters` and `matchers`. It is what `logfold info` prints.
+
 ## Results
 
 ### `AnalysisResult`
@@ -93,10 +123,13 @@ schema version 1, `SourceError` is raised.
 | `run` | `RunSummary` counters |
 | `metrics` | `RunMetrics` execution facts |
 | `meta` | `ResultMeta` provenance |
-| `warnings` | tuple of human readable warnings |
+| `warnings` | tuple of human readable warnings; they also say when `warm_start` or `chunk_bytes` was ignored because the run was sequential |
 | `top(n=20)` | the `n` most frequent templates |
+| `levels` | records per level name over all templates (only levels that occurred, least severe first) |
+| `filter(min_level=None, min_count=None)` | a new result with only the templates whose most severe level is at least `min_level` (`TRACE` to `FATAL`, any case; `warning` is accepted) and that have at least `min_count` records; the run counters, metrics and meta stay as they were |
 | `render(reporter, **options)` | render with a registered reporter, returns text |
 | `to_json(path=None, **options)`, `to_html(path=None, **options)` | render, write to `path` when given, return the text |
+| `save(path, reporter=None, **options)` | render and write to `path`, returns the text; without `reporter` the suffix selects it (`.html`/`.htm`, `.json`, `.txt`, `.md`, `.csv`) |
 
 ### `Template`
 
@@ -122,7 +155,8 @@ schema version 1, `SourceError` is raised.
 | `before`, `after` | `RunSummary` of each run |
 | `config` | the `DiffConfig` used |
 | `metrics`, `meta`, `warnings` | as in `AnalysisResult` |
-| `render`, `to_json`, `to_html` | as in `AnalysisResult` |
+| `filter(min_level=None)` | a new result whose `new_templates`, `disappeared` and `changed` hold only the entries at or above `min_level`; `unchanged` and the run counters stay, and `new_alerts` then follows the filtered list |
+| `render`, `to_json`, `to_html`, `save` | as in `AnalysisResult` |
 
 `DiffEntry` fields: `id`, `text` (from the second run when the template is present there), `before_count`,
 `after_count`, `before_share`, `after_share`, `ratio` (`after_share / before_share`, `None` when either count is zero),
@@ -166,8 +200,10 @@ with `masks=(*DEFAULT_MASKS, MaskRule(...))`.
 All errors raised on purpose derive from `LogfoldError`. Its `hint` attribute is a short suggestion for the next step, or
 `None`; `str(error)` stays one sentence about what went wrong. The errors for a name that is not registered
 (`UnknownFormatError`, `UnknownReporterError`, `UnknownMatcherError`, importable from `logfold.errors`) carry `name` and
-`known` and suggest the closest name in `hint`; `FormatDetectionError` carries `path` and `guesses`. They are subclasses of
-`FormatError` and `ConfigError`, so existing handlers keep working.
+`known` and suggest the closest name in `hint`; `FormatDetectionError` carries `path` and `guesses`; `UnknownSuffixError`
+(a report file name that selects no reporter) carries `path` and `suffixes`; `NoLevelsError` (a level filter on a result whose
+format gives no levels) carries `format`. They are subclasses of `FormatError` and `ConfigError`, so existing handlers keep
+working.
 
 | Error | Also a | Raised when |
 |---|---|---|
@@ -190,6 +226,11 @@ All errors raised on purpose derive from `LogfoldError`. Its `hint` attribute is
 
 `reporter_names()` in `logfold.ext` lists the registered ones, plugins included.
 
+Log content is untrusted, so the `text` and `markdown` reporters pass every value that comes from a log through
+`logfold.ext.printable`: control characters (escape sequences, bell, C1 codes) are shown as `\xNN` instead of reaching your
+terminal, and tabs and line feeds are kept. `csv` keeps the raw values (only formula-safe), and `json` and `html` escape
+them in their own way.
+
 ## Extension points (`logfold.ext`)
 
 | Name | Purpose |
@@ -201,7 +242,9 @@ All errors raised on purpose derive from `LogfoldError`. Its `hint` attribute is
 | `register_format`, `register_reporter`, `register_matcher` | register at runtime |
 | `add_plugin_directory(path)`, `plugin_directories()`, `default_plugin_dir()` | load the plugins of a folder; the folders that are searched without being asked; the user plugin folder |
 | `plugin_sources()` | every registered format, reporter and matcher as `(kind, name, source)`, where `source` is `built-in` or the providing package |
-| `get_format`, `get_reporter`, `get_matcher`, `format_names`, `reporter_names` | look up registered extensions |
+| `get_format`, `get_reporter`, `get_matcher`, `format_names`, `reporter_names`, `matcher_names` | look up registered extensions |
+| `reporter_for_suffix(path)` | the reporter that a report file name selects by its suffix (`UnknownSuffixError` otherwise) |
+| `printable(text)` | show control characters as `\xNN`; use it on every value of a log that your reporter writes as text for people |
 
 Plugins are discovered through the entry-point groups `logfold.formats`, `logfold.reporters` and `logfold.matchers`;
 see the [plugins guide](plugins.md).

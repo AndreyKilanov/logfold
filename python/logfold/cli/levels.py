@@ -1,16 +1,12 @@
-"""The ``--level`` and ``--only-alerts`` filter: keep templates by their most severe level."""
+"""The ``--level`` and ``--only-alerts`` options: which level to keep, and the note about what was hidden."""
 
 from __future__ import annotations
 
-import dataclasses
-import difflib
-from collections.abc import Sequence
-
 from logfold.errors import ConfigError
-from logfold.model import LEVEL_NAMES, AnalysisResult, DiffEntry, DiffResult
+from logfold.levels import normalize_level
+from logfold.model import AnalysisResult, DiffResult
 
 ALERT_LEVEL = "WARN"
-_ALIASES = {"WARNING": "WARN"}
 
 
 def resolve_level(level: str | None, only_alerts: bool) -> str | None:
@@ -32,74 +28,7 @@ def resolve_level(level: str | None, only_alerts: bool) -> str | None:
         )
     if only_alerts:
         return ALERT_LEVEL
-    if level is None:
-        return None
-    name = _ALIASES.get(level.upper(), level.upper())
-    if name not in LEVEL_NAMES:
-        close = difflib.get_close_matches(name, LEVEL_NAMES, n=1)
-        raise ConfigError(
-            f"unknown level {level!r}; use {', '.join(LEVEL_NAMES)}",
-            hint=f"did you mean {close[0]!r}?" if close else None,
-        )
-    return name
-
-
-def _keeps(entry_level: str | None, level: str) -> bool:
-    return entry_level in LEVEL_NAMES and LEVEL_NAMES.index(entry_level) >= LEVEL_NAMES.index(level)
-
-
-def _no_levels(format_name: str) -> ConfigError:
-    return ConfigError(
-        f"cannot filter by level: the {format_name} format gives no levels",
-        hint="use a format with levels, or -f regex:<pattern> with a (?P<level>...) group",
-    )
-
-
-def filter_analysis(result: AnalysisResult, level: str) -> AnalysisResult:
-    """Keep the templates whose most severe level is at least ``level``.
-
-    Args:
-        result: The analysis.
-        level: The lowest level to keep.
-
-    Returns:
-        The analysis with the other templates dropped; the run counters are unchanged.
-
-    Raises:
-        ConfigError: If no template has a level, which means the format has none.
-    """
-    if result.templates and all(template.level is None for template in result.templates):
-        raise _no_levels(result.meta.format)
-    kept = tuple(template for template in result.templates if _keeps(template.level, level))
-    return dataclasses.replace(result, templates=kept)
-
-
-def _filter_entries(entries: Sequence[DiffEntry], level: str) -> tuple[DiffEntry, ...]:
-    return tuple(entry for entry in entries if _keeps(entry.level, level))
-
-
-def filter_diff(result: DiffResult, level: str) -> DiffResult:
-    """Keep the new, disappeared and changed templates whose most severe level is at least ``level``.
-
-    Args:
-        result: The comparison.
-        level: The lowest level to keep.
-
-    Returns:
-        The comparison with the other entries dropped; ``unchanged`` and the run counters stay as they were.
-
-    Raises:
-        ConfigError: If there are entries and none has a level, which means the format has none.
-    """
-    listed = (*result.new_templates, *result.disappeared, *result.changed)
-    if listed and all(entry.level is None for entry in listed):
-        raise _no_levels(result.meta.format)
-    return dataclasses.replace(
-        result,
-        new_templates=_filter_entries(result.new_templates, level),
-        disappeared=_filter_entries(result.disappeared, level),
-        changed=_filter_entries(result.changed, level),
-    )
+    return None if level is None else normalize_level(level)
 
 
 def analysis_note(before: AnalysisResult, after: AnalysisResult, level: str) -> str:

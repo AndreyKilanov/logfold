@@ -21,7 +21,8 @@ from logfold.api.matching import native_spec
 from logfold.api.saved import _join_saved
 from logfold.comparison import ExactMatcher, TokenSubsetMatcher, classify
 from logfold.engines.base import RunStatsData, TemplateStats, TemplateTable
-from logfold.model import AnalysisResult, ResultMeta, RunMetrics, RunSummary, Template, summarize_levels
+from logfold.levels import summarize_levels
+from logfold.model import AnalysisResult, ResultMeta, RunMetrics, RunSummary, Template
 from logfold.plugins.matchers import JaccardMatcher
 
 pytestmark = requires_native

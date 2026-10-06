@@ -18,7 +18,17 @@ from logfold import formats as _formats  # noqa: F401 - registers the built-in f
 from logfold import plugins as _plugins  # noqa: F401 - registers the default plugins
 from logfold import reporters as _reporters  # noqa: F401 - registers the built-in reporters
 from logfold._version import get_version
-from logfold.api import analyze, diff, load_analysis
+from logfold.api import (
+    Info,
+    InspectedRecord,
+    Inspection,
+    analyze,
+    diff,
+    info,
+    inspect_file,
+    is_saved_analysis,
+    load_analysis,
+)
 from logfold.config import DiffConfig, ExecutionConfig, MaskRule, MiningConfig
 from logfold.errors import ConfigError, EngineError, FormatError, LogfoldError, SourceError
 from logfold.model import AnalysisResult, DiffEntry, DiffResult, ResultMeta, RunMetrics, RunSummary, Template
@@ -34,6 +44,9 @@ __all__ = [
     "EngineError",
     "ExecutionConfig",
     "FormatError",
+    "Info",
+    "InspectedRecord",
+    "Inspection",
     "LogfoldError",
     "MaskRule",
     "MiningConfig",
@@ -45,5 +58,8 @@ __all__ = [
     "__version__",
     "analyze",
     "diff",
+    "info",
+    "inspect_file",
+    "is_saved_analysis",
     "load_analysis",
 ]

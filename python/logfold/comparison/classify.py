@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING
 
 from logfold.config import DiffConfig
 from logfold.ext.matchers import DiffMatcher
-from logfold.model import DiffEntry, RunSummary, micros_to_datetime, summarize_levels
+from logfold.levels import summarize_levels
+from logfold.model import DiffEntry, RunSummary, micros_to_datetime
 
 if TYPE_CHECKING:
     from collections.abc import Sequence

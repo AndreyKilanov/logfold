@@ -213,3 +213,23 @@ def test_diff_console_summary_shows_engine_and_seconds(tmp_path: Path) -> None:
     buffer = io.StringIO()
     print_diff(Console(file=buffer, width=2000), result, 5)
     assert f"{result.metrics.engine} engine, {result.metrics.wall_total_s:.2f}s" in buffer.getvalue()
+
+
+def test_info_lists_versions_engine_and_registered_names() -> None:
+    result = runner.invoke(app, ["info"], env={"COLUMNS": "200"})
+    assert result.exit_code == exit_codes.OK
+    facts = logfold.info()
+    assert f"logfold {facts.version}" in result.stdout
+    assert f"python {facts.python}" in result.stdout
+    assert ("native engine: available" in result.stdout) == facts.native_available
+    assert "matchers: " in result.stdout
+    assert "jaccard" in result.stdout
+
+
+def test_an_unwritable_report_is_a_clean_error(corpus_dir: Path, tmp_path: Path) -> None:
+    target = tmp_path / "missing-folder" / "report.html"
+    result = runner.invoke(app, ["analyze", str(corpus_dir / "app.log"), "-f", "app", "-o", str(target)])
+    assert result.exit_code == exit_codes.ERROR
+    assert "cannot write" in result.stderr
+    assert "the folder does not exist" in result.stderr
+    assert "Traceback" not in result.stderr

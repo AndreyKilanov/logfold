@@ -7,6 +7,14 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Added
 
+- The library gets what only the command line had. `AnalysisResult.filter(min_level=, min_count=)` and
+  `DiffResult.filter(min_level=)` keep the templates at or above a level (the `--level` and `--only-alerts` filter, with the
+  same rules: a format without levels raises `NoLevelsError`), `AnalysisResult.levels` sums the records per level,
+  `result.save(path, reporter=None)` writes a report and picks the reporter from the suffix,
+  `logfold.is_saved_analysis(path)` tells a saved report from a log, `logfold.inspect_file()` (the function behind
+  `inspect`) with `Inspection` and `InspectedRecord`, and `logfold.info()` with `Info` (what `logfold info` prints).
+  `logfold.ext` gains `printable()`, `reporter_for_suffix()` and `matcher_names()`, and `logfold.errors` gains
+  `UnknownSuffixError` and `NoLevelsError`. Level names and helpers live in `logfold.levels`.
 - `logfold inspect FILE` shows how a file is read without mining it: the detected format and its confidence, the first records
   as parsed (time, level, message), and from a sample of the start of the file the level counts, the time range and the
   number of unparsed lines, with hints for a format that does not fit. `--records`, `--sample-lines`, `--json`.
@@ -19,8 +27,10 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 - `logfold analyze --help` and `logfold diff --help` group the options into panels (Input, Output, Diff, Mining, Execution,
   General) and end with examples; `--min-count` and `--matcher` say what they do in the command. The flags and their defaults
   are unchanged.
-- A warning on standard error when `--warm-start` or `--chunk-mb` was given but the run was sequential, instead of ignoring the
-  flag silently. `--quiet` hides it; the exit code does not change.
+- `result.warnings` says when `warm_start` (`--warm-start`) was given but the run was sequential, and the same for
+  `chunk_bytes` (`--chunk-mb`) when something other than a small input with `strategy="auto"` made it sequential (the python
+  engine, `high_cardinality`, `strategy="sequential"`), instead of ignoring the option silently; the command line prints it with the other warnings. The warning for
+  `warm_start` on the python engine moved from the `logging` output to `result.warnings`.
 - Errors carry a next step: `LogfoldError.hint`, and in the CLI a `hint:` line under `error:`. A misspelled format, reporter
   or diff matcher suggests the closest name (`did you mean 'nginx'?`) and the command that lists them, an undetected format
   names `-f plain` and `-f regex:<pattern>`, and `--out` without a known suffix lists the suffixes. New subclasses
@@ -29,6 +39,11 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Changed
 
+- The `text` and `markdown` reporters pass every value taken from a log through `logfold.ext.printable`: escape sequences,
+  bell and other control characters are shown as \xNN instead of being returned raw, so printing a report on a terminal
+  cannot be driven by the log. Only text that contained control characters changes; `csv` keeps the raw values and `json` and
+  `html` escape them in their own way. The command line reports an unwritable `--out` file as an error instead of a traceback,
+  and `logfold info` also lists the diff matchers.
 - Format detection (and `inspect`) reads a bounded sample: a line longer than 1 MiB is cut there and reading stops after
   8 MiB, so a file that is one huge line, or a gzip bomb, no longer makes `--format auto` allocate memory in proportion to
   the file (a 300 MiB single line took 600 MiB before).

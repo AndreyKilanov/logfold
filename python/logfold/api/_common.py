@@ -10,6 +10,7 @@ from typing import Any
 
 from logfold._version import get_version
 from logfold.config import (
+    DEFAULT_CHUNK_BYTES,
     HIGH_CARDINALITY_MAX_TEMPLATES,
     ExamplesMode,
     ExecutionConfig,
@@ -116,8 +117,6 @@ def _resolve_strategy(engine: Engine, execution: ExecutionConfig, runs: tuple[tu
     if engine.name == "python":
         if execution.strategy == "chunked":
             logger.warning("the pure-Python engine is always sequential; ignoring strategy='chunked'")
-        if execution.warm_start:
-            logger.warning("the pure-Python engine is always sequential; ignoring warm_start")
         return "sequential"
     if execution.strategy != "auto":
         return execution.strategy
@@ -192,8 +191,11 @@ def _warnings(
     resolved: ResolvedFormat,
     mining: MiningConfig,
     high_cardinality: bool,
+    strategy: str,
 ) -> list[str]:
     warnings: list[str] = []
+    if strategy == "sequential":
+        warnings.extend(_ignored_chunk_options(engine, execution, high_cardinality))
     if engine.name == "python" and not native.is_available():
         warnings.append("the native extension is unavailable; the slow pure-Python engine was used")
     for summary in summaries:
@@ -222,6 +224,33 @@ def _warnings(
             "unmatched lines may be continuations (try multiline=True)"
         )
     return warnings
+
+
+def _ignored_chunk_options(engine: Engine, execution: ExecutionConfig, high_cardinality: bool) -> list[str]:
+    """Name the options that only matter for the chunked strategy when the run was sequential.
+
+    ``warm_start`` is always reported. ``chunk_bytes`` is reported only when something other than the input size made
+    the run sequential, because with ``strategy="auto"`` it is also the size above which the input is chunked.
+    """
+    forced = True
+    if engine.name == "python":
+        reason = "the python engine is always sequential"
+    elif high_cardinality:
+        reason = "high_cardinality runs sequentially"
+    elif execution.strategy == "sequential":
+        reason = "strategy='sequential' was asked for"
+    else:
+        forced = False
+        reason = "the input was small enough for one tree; strategy='chunked' forces chunks"
+    ignored = []
+    if execution.warm_start:
+        ignored.append("warm_start")
+    if forced and execution.chunk_bytes != DEFAULT_CHUNK_BYTES:
+        ignored.append("chunk_bytes")
+    return [
+        f"{name} was ignored: it applies to the chunked strategy, but the run was sequential ({reason})"
+        for name in ignored
+    ]
 
 
 def _meta(spec: FormatSpec, mining: MiningConfig, engine: Engine) -> ResultMeta:

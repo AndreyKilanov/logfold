@@ -196,6 +196,14 @@ def diff(
         metrics=mined.metrics,
         meta=_meta(spec, mining_config, used),
         warnings=tuple(
-            _warnings([before_summary, after_summary], used, exec_config, resolved, mining_config, high_cardinality)
+            _warnings(
+                [before_summary, after_summary],
+                used,
+                exec_config,
+                resolved,
+                mining_config,
+                high_cardinality,
+                mined.metrics.strategy,
+            )
         ),
     )
