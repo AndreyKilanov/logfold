@@ -212,7 +212,8 @@ guesses instead of guessing wrong silently.
 | `regex:<pattern>` | your own pattern; named groups `message`/`msg`, `timestamp`/`time`/`ts`, `level`/`lvl` are used |
 
 Multi-line records (stack traces): `--multiline` joins lines that do not start a record to the previous one. With
-`--format auto` indented continuation lines enable it automatically.
+`--format auto` indented continuation lines enable it automatically. A record takes lines only while it is smaller than
+1 MiB (the rest of its lines are counted but not kept), and a line keeps its first 16 MiB.
 
 ## Parameters
 
