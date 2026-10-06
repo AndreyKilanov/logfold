@@ -25,6 +25,10 @@ from logfold.model import RunMetrics
 
 _ASCII_WS = b" \t\n\x0c\r"
 _TICK_BYTES = 1 << 20
+MAX_LINE_BYTES = 16 << 20
+"""Longest line content in bytes; a longer line keeps its first bytes and the rest is dropped (``ALGORITHM.md`` 1.1)."""
+MAX_RECORD_BYTES = 1 << 20
+"""A multi-line record takes continuation lines only while it is smaller than this (``ALGORITHM.md`` 1.1)."""
 
 ParsedRecord = tuple[str, "int | None", bool, "int | None"]
 
@@ -172,9 +176,15 @@ def _open(path: str) -> tuple[IO[bytes], int]:
 
 
 def _lines(stream: IO[bytes]) -> Iterator[bytes]:
-    for raw in stream:
-        line = raw[:-1] if raw.endswith(b"\n") else raw
-        yield line[:-1] if line.endswith(b"\r") else line
+    window = MAX_LINE_BYTES + 2
+    while raw := stream.readline(window):
+        if raw.endswith(b"\n"):
+            line = raw[:-1]
+        else:
+            line = raw
+            while len(raw) == window and not raw.endswith(b"\n"):
+                raw = stream.readline(window)
+        yield (line[:-1] if line.endswith(b"\r") else line)[:MAX_LINE_BYTES]
 
 
 def _scan(
@@ -190,6 +200,7 @@ def _scan(
     stream, size = _open(path)
     record_first = ""
     record_rest = ""
+    record_size = 0
     open_record = False
     consumed = 0
     last_tick = 0
@@ -223,10 +234,12 @@ def _scan(
                     if open_record:
                         emit(record_first, record_rest)
                     counters.lines += 1
-                    record_first, record_rest, open_record = text, "", True
+                    record_first, record_rest, record_size, open_record = text, "", len(line), True
                 elif open_record:
                     counters.lines += 1
-                    record_rest += "\n" + text
+                    if record_size < MAX_RECORD_BYTES:
+                        record_rest += "\n" + text
+                        record_size += 1 + len(line)
                 else:
                     counters.lines += 1
                     counters.unparsed += 1

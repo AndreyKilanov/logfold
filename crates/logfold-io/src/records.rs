@@ -6,6 +6,11 @@ use crate::lines::LineReader;
 /// Number of consumed bytes between two progress callbacks.
 pub const TICK_BYTES: u64 = 1 << 20;
 
+/// Size in bytes after which a multi-line record takes no more lines. A continuation line is appended while the record
+/// is smaller than this, so the line that crosses the limit is appended whole; the lines after it are read and counted
+/// but not kept (`docs/ALGORITHM.md` §1.1).
+pub const MAX_RECORD_BYTES: usize = 1 << 20;
+
 /// Where a record falls relative to a [`TimeWindow`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Placement {
@@ -186,8 +191,10 @@ pub fn scan_records<R: Read, F: FnMut(&ParsedRecord<'_>)>(
                 scan.counters.lines += 1;
                 if !is_blank(bytes) {
                     if open {
-                        record.push(b'\n');
-                        record.extend_from_slice(bytes);
+                        if record.len() < MAX_RECORD_BYTES {
+                            record.push(b'\n');
+                            record.extend_from_slice(bytes);
+                        }
                     } else {
                         scan.counters.unparsed += 1;
                     }

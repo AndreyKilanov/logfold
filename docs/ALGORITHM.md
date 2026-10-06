@@ -15,6 +15,13 @@ and optional `level`.
 ### 1.1 Framing
 
 - Lines are split on `\n`; one trailing `\r` is removed from each line. A final line without `\n` is a line.
+- **Size limits.** The content of a line (after the line feed and one trailing `\r` are removed) is at most 16 MiB
+  (`MAX_LINE_BYTES`): a longer line keeps its first 16 MiB, and the rest of it is read and dropped. The lines of the
+  stream and their offsets are the same as without the limit. A multi-line record takes a continuation line only while
+  the record, counting its first line and the `"\n"` before each appended line, is smaller than 1 MiB
+  (`MAX_RECORD_BYTES`); the line that crosses the limit is appended whole, the lines after it are counted in `lines` and
+  not kept. Both limits are in bytes, so memory depends on the number of templates and threads, not on the size of the
+  input, and every engine and strategy cuts at the same byte.
 - A line made only of ASCII whitespace is skipped (counted in `lines` only).
 - Every non-skipped line counts in `lines`; every line that does not become part of a record counts in `unparsed`.
 - Multiline (`multiline = true`): a line *starts a record* if it matches the format's start pattern (the regex format's

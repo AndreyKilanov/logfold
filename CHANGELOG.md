@@ -61,6 +61,9 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   escapes (`json` uses unicode escapes). Values on the result objects stay raw.
 - Format detection reads a bounded sample (lines cut at 1 MiB, 8 MiB in total), so a huge single-line file or a gzip bomb
   no longer allocates memory in proportion to its size.
+- Memory no longer grows with the size of one line or one record: a line keeps at most its first 16 MiB and a multi-line
+  record takes lines only while it is smaller than 1 MiB (`docs/ALGORITHM.md` section 1.1). A 400 MB record took 2.6 GB
+  and 11 s, it now takes 45 MB and under a second; a file of one line without a line feed took 4 to 5 times its size.
 
 ## [0.3.0] - 2026-10-05
 
