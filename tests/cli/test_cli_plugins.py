@@ -41,7 +41,7 @@ def catalog_file(tmp_path: Path) -> str:
     path = tmp_path / "catalog.json"
     document = {
         "schema_version": 1,
-        "plugins": [plugin("haproxy", "logfold-haproxy"), plugin("pytest-plugin", "pytest", kinds=["reporter"])],
+        "plugins": [plugin("traefik", "logfold-traefik"), plugin("pytest-plugin", "pytest", kinds=["reporter"])],
     }
     path.write_text(json.dumps(document), encoding="utf-8")
     return str(path)
@@ -87,7 +87,7 @@ def test_check_with_the_bundled_catalog_is_offline_and_has_nothing_new(monkeypat
 def test_check_lists_only_plugins_that_are_not_installed(catalog_file: str) -> None:
     result = runner.invoke(app, ["plugins", "check", "--catalog", catalog_file])
     assert result.exit_code == 0
-    assert "haproxy" in result.stdout
+    assert "traefik" in result.stdout
     assert "pytest-plugin" not in result.stdout
     assert "logfold plugins install NAME" in result.stdout
 
@@ -95,8 +95,8 @@ def test_check_lists_only_plugins_that_are_not_installed(catalog_file: str) -> N
 def test_check_json(catalog_file: str) -> None:
     payload = json.loads(runner.invoke(app, ["plugins", "check", "--catalog", catalog_file, "--json"]).stdout)
     assert payload["catalog"] == catalog_file
-    assert [p["name"] for p in payload["new"]] == ["haproxy"]
-    assert payload["new"][0]["requirement"] == "logfold-haproxy>=1"
+    assert [p["name"] for p in payload["new"]] == ["traefik"]
+    assert payload["new"][0]["requirement"] == "logfold-traefik>=1"
 
 
 def test_check_online_is_blocked_by_the_offline_variable(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -117,16 +117,16 @@ def test_a_broken_catalog_is_a_clean_error(tmp_path: Path) -> None:
 def test_install_asks_for_confirmation_and_runs_pip(catalog_file: str, monkeypatch: pytest.MonkeyPatch) -> None:
     installed: list[str] = []
     monkeypatch.setattr(catalog, "install", lambda entry: installed.append(entry.requirement) or 0)
-    result = runner.invoke(app, ["plugins", "install", "haproxy", "--catalog", catalog_file], input="y\n")
+    result = runner.invoke(app, ["plugins", "install", "traefik", "--catalog", catalog_file], input="y\n")
     assert result.exit_code == 0, result.output
-    assert installed == ["logfold-haproxy>=1"]
-    assert "logfold-haproxy>=1" in result.stdout
+    assert installed == ["logfold-traefik>=1"]
+    assert "logfold-traefik>=1" in result.stdout
     assert "Installed" in result.stdout
 
 
 def test_install_declined_does_nothing(catalog_file: str, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(catalog, "install", lambda _entry: pytest.fail("pip must not run"))
-    result = runner.invoke(app, ["plugins", "install", "haproxy", "--catalog", catalog_file], input="n\n")
+    result = runner.invoke(app, ["plugins", "install", "traefik", "--catalog", catalog_file], input="n\n")
     assert result.exit_code == exit_codes.ERROR
     assert "cancelled" in result.output
 
@@ -134,14 +134,14 @@ def test_install_declined_does_nothing(catalog_file: str, monkeypatch: pytest.Mo
 def test_install_yes_skips_the_question(catalog_file: str, monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[str] = []
     monkeypatch.setattr(catalog, "install", lambda entry: calls.append(entry.name) or 0)
-    result = runner.invoke(app, ["plugins", "install", "haproxy", "--yes", "--catalog", catalog_file])
+    result = runner.invoke(app, ["plugins", "install", "traefik", "--yes", "--catalog", catalog_file])
     assert result.exit_code == 0
-    assert calls == ["haproxy"]
+    assert calls == ["traefik"]
 
 
 def test_install_only_accepts_names_from_the_catalog(catalog_file: str, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(catalog, "install", lambda _entry: pytest.fail("pip must not run"))
-    for name in ("evil-package", "https://evil.example/x.whl", "logfold-haproxy>=1"):
+    for name in ("evil-package", "https://evil.example/x.whl", "logfold-traefik>=1"):
         result = runner.invoke(app, ["plugins", "install", name, "--yes", "--catalog", catalog_file])
         assert result.exit_code == exit_codes.ERROR
         assert "unknown plugin" in result.output
@@ -156,7 +156,7 @@ def test_install_skips_a_package_that_is_already_installed(catalog_file: str, mo
 
 def test_install_reports_a_pip_failure(catalog_file: str, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(catalog, "install", lambda _entry: 3)
-    result = runner.invoke(app, ["plugins", "install", "haproxy", "--yes", "--catalog", catalog_file])
+    result = runner.invoke(app, ["plugins", "install", "traefik", "--yes", "--catalog", catalog_file])
     assert result.exit_code == exit_codes.ERROR
     assert "exit code 3" in result.output
 
@@ -178,22 +178,22 @@ def test_the_plugins_group_is_listed_in_the_help() -> None:
 def test_list_includes_available_plugins_with_status(catalog_file: str) -> None:
     result = runner.invoke(app, ["plugins", "list", "--catalog", catalog_file])
     assert result.exit_code == 0
-    line = next(line for line in result.stdout.splitlines() if "haproxy" in line)
+    line = next(line for line in result.stdout.splitlines() if "traefik" in line)
     assert "available" in line
-    assert "logfold-haproxy" in line
+    assert "logfold-traefik" in line
     assert "logfold plugins install NAME" in result.stdout
 
 
 def test_list_installed_hides_available_ones(catalog_file: str) -> None:
     result = runner.invoke(app, ["plugins", "list", "--installed", "--catalog", catalog_file])
     assert result.exit_code == 0
-    assert "haproxy" not in result.stdout
+    assert "traefik" not in result.stdout
     assert "jaccard" in result.stdout
 
 
 def test_list_available_shows_only_available_ones(catalog_file: str) -> None:
     result = runner.invoke(app, ["plugins", "list", "--available", "--catalog", catalog_file, "--json"])
-    assert [(row["name"], row["status"]) for row in json.loads(result.stdout)] == [("haproxy", "available")]
+    assert [(row["name"], row["status"]) for row in json.loads(result.stdout)] == [("traefik", "available")]
 
 
 def test_list_kind_filter(catalog_file: str) -> None:
@@ -217,11 +217,11 @@ def test_list_rejects_both_status_filters_and_unknown_kind() -> None:
 
 
 def test_info_for_an_available_plugin_shows_how_to_install_it(catalog_file: str) -> None:
-    result = runner.invoke(app, ["plugins", "info", "haproxy", "--catalog", catalog_file])
+    result = runner.invoke(app, ["plugins", "info", "traefik", "--catalog", catalog_file])
     assert result.exit_code == 0
     assert "available" in result.stdout
-    assert "logfold plugins install haproxy" in result.stdout
-    assert "logfold-haproxy>=1" in result.stdout
+    assert "logfold plugins install traefik" in result.stdout
+    assert "logfold-traefik>=1" in result.stdout
 
 
 def test_info_for_a_built_in_plugin_shows_how_to_use_it() -> None:
@@ -232,15 +232,15 @@ def test_info_for_a_built_in_plugin_shows_how_to_use_it() -> None:
 
 
 def test_info_json(catalog_file: str) -> None:
-    rows = json.loads(runner.invoke(app, ["plugins", "info", "haproxy", "--catalog", catalog_file, "--json"]).stdout)
-    assert rows[0]["install"] == "logfold plugins install haproxy"
+    rows = json.loads(runner.invoke(app, ["plugins", "info", "traefik", "--catalog", catalog_file, "--json"]).stdout)
+    assert rows[0]["install"] == "logfold plugins install traefik"
 
 
 def test_info_for_an_unknown_name_suggests_a_close_one(catalog_file: str) -> None:
-    result = runner.invoke(app, ["plugins", "info", "haproxi", "--catalog", catalog_file])
+    result = runner.invoke(app, ["plugins", "info", "traefic", "--catalog", catalog_file])
     assert result.exit_code == exit_codes.ERROR
-    assert "unknown plugin 'haproxi'" in result.stderr
-    assert "did you mean 'haproxy'?" in result.stderr
+    assert "unknown plugin 'traefic'" in result.stderr
+    assert "did you mean 'traefik'?" in result.stderr
 
 
 def test_list_shows_where_a_folder_plugin_comes_from(monkeypatch: pytest.MonkeyPatch) -> None:

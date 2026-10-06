@@ -30,7 +30,7 @@ def test_catalog() -> catalog.Catalog:
     document = {
         "schema_version": 1,
         "plugins": [
-            entry("haproxy", "logfold-haproxy"),
+            entry("traefik", "logfold-traefik"),
             entry("sentry", "logfold-sentry", kinds=["format", "reporter"]),
             entry("from-pytest", "pytest", kinds=["reporter"]),
             entry("csv", "logfold-csv", kinds=["reporter"]),
@@ -70,17 +70,17 @@ def test_the_bundled_catalog_is_the_default_and_needs_no_network(monkeypatch: py
 def test_catalog_plugins_that_are_not_installed_are_available(test_catalog: catalog.Catalog) -> None:
     rows = list_plugins(status="available", catalog=test_catalog)
     assert [(row.kind, row.name) for row in rows] == [
-        ("format", "haproxy"),
         ("format", "sentry"),
+        ("format", "traefik"),
         ("reporter", "sentry"),
     ]
-    haproxy = rows[0]
-    assert haproxy.package == "logfold-haproxy"
-    assert haproxy.version is None
-    assert haproxy.requirement == "logfold-haproxy>=1"
-    assert haproxy.install == "logfold plugins install haproxy"
-    assert haproxy.homepage == "https://example.org/haproxy"
-    assert haproxy.source == "test-catalog"
+    traefik = rows[1]
+    assert traefik.package == "logfold-traefik"
+    assert traefik.version is None
+    assert traefik.requirement == "logfold-traefik>=1"
+    assert traefik.install == "logfold plugins install traefik"
+    assert traefik.homepage == "https://example.org/traefik"
+    assert traefik.source == "test-catalog"
 
 
 def test_a_catalog_name_that_is_already_registered_is_not_offered_again(test_catalog: catalog.Catalog) -> None:
@@ -110,7 +110,7 @@ def test_filters_by_kind_and_status(installed_plugin: None, test_catalog: catalo
     assert {row.status for row in list_plugins(status="installed", catalog=test_catalog)} == {"installed"}
     assert {row.kind for row in list_plugins(kind="matcher", catalog=test_catalog)} == {"matcher"}
     both = list_plugins(kind="format", status="available", catalog=test_catalog)
-    assert [row.name for row in both] == ["haproxy", "sentry"]
+    assert [row.name for row in both] == ["sentry", "traefik"]
 
 
 def test_statuses_are_ordered(installed_plugin: None, test_catalog: catalog.Catalog) -> None:
@@ -137,12 +137,12 @@ def test_plugin_info_returns_every_kind_of_the_name(test_catalog: catalog.Catalo
 
 def test_unknown_plugin_suggests_a_close_name(test_catalog: catalog.Catalog) -> None:
     with pytest.raises(UnknownPluginError) as caught:
-        plugin_info("haproxi", catalog=test_catalog)
-    assert caught.value.hint == "did you mean 'haproxy'?"
-    assert "haproxy" in caught.value.known
+        plugin_info("traefic", catalog=test_catalog)
+    assert caught.value.hint == "did you mean 'traefik'?"
+    assert "traefik" in caught.value.known
 
 
 def test_closest_searches_installed_and_catalog_names(test_catalog: catalog.Catalog) -> None:
-    assert closest("haproxi", catalog=test_catalog)[0] == "haproxy"
+    assert closest("traefic", catalog=test_catalog)[0] == "traefik"
     assert closest("jacard", kind="matcher", catalog=test_catalog) == ["jaccard"]
     assert closest("zzzzzz", catalog=test_catalog) == []

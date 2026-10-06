@@ -39,7 +39,7 @@ def bundled(monkeypatch: pytest.MonkeyPatch) -> catalog.Catalog:
     document = {
         "schema_version": 1,
         "plugins": [
-            entry("haproxy"),
+            entry("traefik"),
             entry("newer", min_logfold="99.0.0"),
             entry("shipper", kinds=["reporter"]),
             entry("pairing", kinds=["matcher"]),
@@ -58,10 +58,10 @@ def log_file(tmp_path: Path) -> Path:
 
 
 def test_unknown_format_names_the_install_command(bundled: catalog.Catalog, log_file: Path) -> None:
-    result = runner.invoke(app, ["analyze", str(log_file), "-f", "haproxy"])
+    result = runner.invoke(app, ["analyze", str(log_file), "-f", "traefik"])
     assert result.exit_code == exit_codes.ERROR
     assert "hint:" in result.stderr
-    assert "the plugin 'haproxy' is available: logfold plugins install haproxy" in squeezed(result.stderr)
+    assert "the plugin 'traefik' is available: logfold plugins install traefik" in squeezed(result.stderr)
     assert "logfold formats" in result.stderr
 
 
@@ -70,14 +70,14 @@ def test_unknown_reporter_and_matcher_use_their_own_kind(bundled: catalog.Catalo
     assert "logfold plugins install shipper" in squeezed(reporter.stderr)
     matcher = runner.invoke(app, ["diff", str(log_file), str(log_file), "--matcher", "pairing"])
     assert "logfold plugins install pairing" in squeezed(matcher.stderr)
-    wrong_kind = runner.invoke(app, ["diff", str(log_file), str(log_file), "--matcher", "haproxy"])
+    wrong_kind = runner.invoke(app, ["diff", str(log_file), str(log_file), "--matcher", "traefik"])
     assert "logfold plugins install" not in wrong_kind.stderr
 
 
 def test_a_typo_of_an_available_name_suggests_it(bundled: catalog.Catalog, log_file: Path) -> None:
-    result = runner.invoke(app, ["analyze", str(log_file), "-f", "haproxi"])
-    assert "did you mean 'haproxy'?" in result.stderr
-    assert "logfold plugins install haproxy" in squeezed(result.stderr)
+    result = runner.invoke(app, ["analyze", str(log_file), "-f", "traefic"])
+    assert "did you mean 'traefik'?" in result.stderr
+    assert "logfold plugins install traefik" in squeezed(result.stderr)
 
 
 def test_an_incompatible_plugin_is_not_offered_for_install(bundled: catalog.Catalog, log_file: Path) -> None:
@@ -102,8 +102,8 @@ def test_formats_lists_available_plugins_and_what_is_installed(bundled: catalog.
     assert result.exit_code == 0
     assert "nginx" in result.stdout
     assert "Available from the plugin catalog" in result.stdout
-    line = next(line for line in result.stdout.splitlines() if "haproxy" in line)
-    assert "logfold plugins install haproxy" in line
+    line = next(line for line in result.stdout.splitlines() if "traefik" in line)
+    assert "logfold plugins install traefik" in line
     newer = next(line for line in result.stdout.splitlines() if line.lstrip().startswith("newer"))
     assert "needs logfold 99.0.0 or newer" in newer
     assert "shipper" not in result.stdout
@@ -129,7 +129,7 @@ def test_help_names_the_available_plugins_of_the_right_kind(bundled: catalog.Cat
     for command in (["analyze", "--help"], ["diff", "--help"], ["inspect", "--help"]):
         result = runner.invoke(app, command)
         assert result.exit_code == 0
-        assert "Available to install: haproxy" in squeezed(result.stdout)
+        assert "Available to install: traefik" in squeezed(result.stdout)
     diff_help = squeezed(runner.invoke(app, ["diff", "--help"]).stdout)
     assert "Available to install: shipper" in diff_help
     assert "Available to install: pairing" in diff_help
@@ -177,7 +177,7 @@ def test_check_json_has_the_compatibility_fields(bundled: catalog.Catalog) -> No
     payload = json.loads(runner.invoke(app, ["plugins", "check", "--json"]).stdout)
     by_name = {plugin["name"]: plugin for plugin in payload["new"]}
     assert (by_name["newer"]["compatible"], by_name["newer"]["min_logfold"]) == (False, "99.0.0")
-    assert by_name["haproxy"]["compatible"] is True
+    assert by_name["traefik"]["compatible"] is True
 
 
 def test_new_reports_an_existing_file_with_a_hint(tmp_path: Path) -> None:

@@ -17,7 +17,7 @@ PLUGIN_MODULE = """
 from logfold.ext import RegexFormat
 
 HAPROXY = RegexFormat(
-    name="haproxy",
+    name="traefik",
     pattern=r"^(?P<ts>\\d{2}/\\w{3}/\\d{4}:[\\d:.]+) (?P<lvl>\\w+) (?P<msg>.*)$",
     message_group="msg",
     time_group="ts",
@@ -55,8 +55,8 @@ def make_format():
 
 ENTRY_POINTS = """
 [logfold.formats]
-haproxy = logfold_sample_plugin:HAPROXY
-factory-haproxy = logfold_sample_plugin:make_format
+traefik = logfold_sample_plugin:HAPROXY
+factory-traefik = logfold_sample_plugin:make_format
 
 [logfold.reporters]
 shout = logfold_sample_plugin:Shout
@@ -85,16 +85,16 @@ def installed_plugin(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterato
 
 
 def test_plugin_format_reporter_and_matcher_are_discovered(installed_plugin: None, tmp_path: Path) -> None:
-    assert "haproxy" in registry.format_names()
-    assert isinstance(registry.get_format("haproxy"), RegexFormat)
-    assert isinstance(registry.get_format("factory-haproxy"), RegexFormat)
+    assert "traefik" in registry.format_names()
+    assert isinstance(registry.get_format("traefik"), RegexFormat)
+    assert isinstance(registry.get_format("factory-traefik"), RegexFormat)
     path = tmp_path / "ha.log"
     path.write_text(
         "04/Oct/2026:12:00:00.123 ERROR backend app1 is down\n04/Oct/2026:12:00:01.456 ERROR backend app2 is down\n",
         encoding="utf-8",
     )
     for engine in ("python", "auto"):
-        result = logfold.analyze(str(path), format="haproxy", engine=engine)
+        result = logfold.analyze(str(path), format="traefik", engine=engine)
         assert [(t.text, t.count, t.level) for t in result.templates] == [("backend app<NUM> is down", 2, "ERROR")] or [
             (t.count, t.level) for t in result.templates
         ] == [(2, "ERROR")]
