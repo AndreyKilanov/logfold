@@ -101,6 +101,13 @@ logfold diff before.json after.json
 
 A JSON file written with `--out` holds every template, so it is suitable for this kind of comparison.
 
+See which formats, reports and matchers you have, and which plugins you can still install:
+
+```
+logfold plugins list                      # built-in, installed and available from the catalog
+logfold plugins info NAME                 # what a plugin does and how to install or use it
+```
+
 ## From Python
 
 ```python
@@ -134,7 +141,7 @@ diff(load_analysis("before.json"), load_analysis("after.json"))
 | Logs with almost unique lines | `--high-cardinality`: at most 5000 templates, the rest go into catch-all templates, runs sequentially. On a 10 MB file with 84 thousand distinct lines 2.0 s becomes 0.14 s. |
 | Reports | HTML, JSON, text, Markdown, CSV; the `--out` suffix picks the format, `--report NAME` picks the report explicitly, including one from a plugin. |
 | Matchers for `diff` | `jaccard` (default), `token_subset`, `exact`: they link a reworded message to its earlier version so it is not counted as both new and gone. |
-| Plugins | `logfold plugins list`, `info`, `check`, `install`, `new`. |
+| Plugins | `logfold plugins list` (built-in, installed, available), `info NAME`, `check`, `install NAME`, `new`; an unknown format, report or matcher name gets a hint with the closest name or the install command. In Python: `logfold.plugins.list_plugins()`. |
 | Scripting | `--json` prints JSON to stdout, exit codes are stable, the JSON format is described by a schema in `docs/schema`. |
 
 ## Speed

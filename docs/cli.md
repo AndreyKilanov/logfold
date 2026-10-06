@@ -169,7 +169,7 @@ logfold plugins new KIND NAME [--dir FOLDER] [--force]
 | `list` | every format, reporter and diff matcher with its status: `built-in`, `installed` (a package or a file in your plugin folder) or `available` (in the catalog, not installed), and the package that provides it |
 | `info NAME` | one plugin: what it does, where it comes from, how to install it (available) or use it (installed), for every kind that has this name |
 | `check` | the plugins of the catalog whose package is not installed yet, with an install hint |
-| `install NAME` | shows the package, version constraint and catalog, asks for confirmation and runs `python -m pip install` (or `uv pip install` when the environment has no pip) for a plugin of the catalog |
+| `install NAME` | shows the package, version constraint and catalog, asks for confirmation and runs `python -m pip install` (or `uv pip install` when the environment has no pip) for a plugin of the catalog; a plugin that needs a newer logfold (`min_logfold`) is refused before the question |
 | `dir` | where logfold looks for your own plugin files, and whether that folder exists |
 | `new KIND NAME` | writes a working plugin template (`format`, `reporter` or `matcher`) into the plugin folder; `--dir` chooses another folder, `--force` overwrites |
 

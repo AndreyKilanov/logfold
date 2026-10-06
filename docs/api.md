@@ -199,8 +199,8 @@ with `masks=(*DEFAULT_MASKS, MaskRule(...))`.
 
 All errors raised on purpose derive from `LogfoldError`. Its `hint` attribute is a short suggestion for the next step, or
 `None`; `str(error)` stays one sentence about what went wrong. The errors for a name that is not registered
-(`UnknownFormatError`, `UnknownReporterError`, `UnknownMatcherError`, importable from `logfold.errors`) carry `name` and
-`known` and suggest the closest name in `hint`; `FormatDetectionError` carries `path` and `guesses`; `UnknownSuffixError`
+(`UnknownFormatError`, `UnknownReporterError`, `UnknownMatcherError`, and `UnknownPluginError` for `plugin_info()`,
+importable from `logfold.errors`) carry `name` and `known` and suggest the closest name in `hint`; `FormatDetectionError` carries `path` and `guesses`; `UnknownSuffixError`
 (a report file name that selects no reporter) carries `path` and `suffixes`; `NoLevelsError` (a level filter on a result whose
 format gives no levels) carries `format`. They are subclasses of `FormatError` and `ConfigError`, so existing handlers keep
 working.

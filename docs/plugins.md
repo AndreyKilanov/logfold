@@ -399,7 +399,8 @@ Build and upload like any Python package (`python -m build`, then `twine upload 
 | `FormatError: pattern has no named group` | `message_group`, `time_group` or `level_group` names a group that the pattern does not define |
 | the timestamp column is empty | the `time_group` text does not match `ts_format`; try the pattern and the format on one line first |
 | my file in the plugin folder is not listed | `logfold plugins dir` shows the folder; the file must end in `.py`, must not start with `_` or `.`, and `FORMATS`, `REPORTERS` or `MATCHERS` must be lists; warnings explain the rest (a world-writable file is skipped, `LOGFOLD_NO_USER_PLUGINS` is set) |
-| `logfold plugins install` says that pip is not available | the environment has no pip (a `uv` environment, for example); install the printed package with your installer |
+| `logfold plugins install` says that neither pip nor uv is available | the environment has no installer on the path; install the printed package with the one you use |
+| `logfold plugins install` says that the plugin needs logfold X.Y.Z or newer | the catalog entry sets `min_logfold`; upgrade logfold (`pip install -U logfold`) and try again |
 | `reporter 'x' does not support diff results` | add `"diff"` to the reporter's `kinds` and handle `DiffResult` |
 
 ## Security
