@@ -29,14 +29,15 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 - `diff`: a template is `changed` only if a G-test finds the change unlikely to be noise (`--significance`, default 0.01;
   `--significance 1` restores the previous result); `changed` is sorted by the new `score`, and `score` and `p_value` are
   in the JSON, CSV and terminal output. New and disappeared templates and the gates are not affected.
-- HTML report: the summary cards of `diff` are grouped in two rows, the counts of new, WARN+, disappeared and changed templates
-  have their own colors, and the columns of all tables line up.
+- HTML report: the summary cards of `analyze` and `diff` are two rows of five, the counts of new, WARN+, disappeared and
+  changed templates and of unparsed lines have their own colors, and the columns of all tables line up.
 - Error messages are shorter: the system's localized text is not repeated and markup in a path is printed literally.
 - Terminal output: a `levels:` line, "N more templates (X% of records)", a hint to open a written HTML report, and the
   transfer speed in progress.
 
 ### Fixed
 
+- HTML report: the share bars of `analyze` were blocked by the Content-Security-Policy and never shown.
 - An unwritable `--out` file is an error, not a traceback; paths in errors are not wrapped or shown with doubled
   backslashes on Windows.
 
