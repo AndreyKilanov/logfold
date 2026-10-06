@@ -4,7 +4,7 @@ A matcher only sees the templates that occur in one run, so the input is two lis
 generated, both seeded: ``sparse`` (a vocabulary of 3000 words, few templates share a word) and ``dense`` (300 words,
 many candidate pairs). Every matcher runs in the Rust core through ``native.match_templates``; the best of ``--repeat``
 runs is reported, with the number of pairs found and the growth exponent ``t ~ n^k`` between the smallest and the
-largest size. Results go to ``bench/results/matcher-scale.json``; the discussion is in ``bench/docs/diff/DIFF_MATCHERS.md``.
+largest size. Results go to ``bench/results/matcher-scale.json``; the discussion is in ``bench/docs/DIFF_MATCHERS.md``.
 Usage::
 
     python bench/tools/matcher_scale.py --sizes 5000 20000 100000

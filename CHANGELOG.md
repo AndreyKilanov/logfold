@@ -83,7 +83,7 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   template that exists in one run only with its closest counterpart, such as a reworded message or one that differs in a
   host name, so `diff` reports 16-71 percent fewer false new and gone templates on saved results of real logs, at the
   same speed. A paired template is `changed`, not new, so `--fail-on-new` and `--fail-on-new-alerts` no longer fail on a
-  reworded message; use `--matcher exact` for a gate that must fail on every new text. See `bench/docs/diff/DIFF_MATCHERS.md`.
+  reworded message; use `--matcher exact` for a gate that must fail on every new text. See `bench/docs/DIFF_MATCHERS.md`.
 - `--strategy auto` (the default) mines sequentially when the first chunk shows that almost every record is a new template
   (more than 0.3 templates per record after 10,000 records; real logs stay below 0.03). A 100 MB log of unique messages takes
   4.2 s and 553 MB instead of 7.2 s and 1.9 GB; other logs are mined as before. An explicit `chunked` or `sequential` is never

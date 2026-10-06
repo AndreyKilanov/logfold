@@ -15,10 +15,10 @@ Quality of the grouping (accuracy against ground truth) is measured separately b
 
 | topic | what is measured | script | text | raw data |
 |---|---|---|---|---|
-| data | the seeded datasets and the four large real logs | `gen.py`, `download_loghub2.py` | [`docs/data/LOGHUB2.md`](docs/data/LOGHUB2.md) | `results/loghub2/` |
+| data | the seeded datasets and the four large real logs | `gen.py`, `download_loghub2.py` | [`docs/LOGHUB2.md`](docs/LOGHUB2.md) | `results/loghub2/` |
 | analyze | speed and memory of logfold and the competitors (`analyze`, `diff` of two 100 MB runs); the number of templates each tool finds | `run.py`, `equivalence.py`, `report.py` | [`RESULTS.md`](RESULTS.md), [`docs/NOTES.md`](docs/NOTES.md) (appended to it) | `results/analyze-*.json`, `diff.json`, `templates.json` |
 | engine | `--strategy auto` against `chunked` and `sequential`; `--warm-start` of the chunked strategy | `adaptive.py`, `warm_start.py` | [`docs/engine/ADAPTIVE.md`](docs/engine/ADAPTIVE.md), [`docs/engine/WARM_START.md`](docs/engine/WARM_START.md) | `results/adaptive.json`, `warm-start.json` |
-| diff | growth of `analyze` result building and of `diff` with the number of templates; which `diff` matcher is best (false alarms, rewording, false merges); the speed of each matcher alone | `diff_scale.py`, `diff_matchers.py`, `matcher_scale.py` | [`docs/diff/DIFF_MATCHERS.md`](docs/diff/DIFF_MATCHERS.md) | `results/diff-scale.json`, `diff-matchers.json`, `diff-matchers-window-200k.json`, `matcher-scale.json` |
+| diff | growth of `analyze` result building and of `diff` with the number of templates; which `diff` matcher is best (false alarms, rewording, false merges); the speed of each matcher alone | `diff_scale.py`, `diff_matchers.py`, `matcher_scale.py` | [`docs/DIFF_MATCHERS.md`](docs/DIFF_MATCHERS.md) | `results/diff-scale.json`, `diff-matchers.json`, `diff-matchers-window-200k.json`, `matcher-scale.json` |
 
 ## Scripts (`tools/`)
 

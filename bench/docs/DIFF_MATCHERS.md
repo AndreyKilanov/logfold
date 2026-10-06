@@ -1,13 +1,13 @@
 # Diff matchers on real before/after pairs
 
-Which matcher should `logfold diff` use? Measured on pairs cut from the four large real logs ([`LOGHUB2.md`](../data/LOGHUB2.md))
-with [`diff_matchers.py`](../../tools/diff_matchers.py). The 0.3.0 evaluation compared `exact`, `token_subset` and `jaccard`, and
+Which matcher should `logfold diff` use? Measured on pairs cut from the four large real logs ([`LOGHUB2.md`](LOGHUB2.md))
+with [`diff_matchers.py`](../tools/diff_matchers.py). The 0.3.0 evaluation compared `exact`, `token_subset` and `jaccard`, and
 `jaccard` has been the default since. 0.4.0 added `jaccard-idf`, `overlap` and `rules`, computed by the Rust core with the
 pure-Python implementation as the reference the tests compare against; they were measured the same way, on smaller windows
-(see [the 0.4.0 matchers](#the-040-matchers-accuracy)). Raw data: [`diff-matchers.json`](../../results/diff-matchers.json)
-(0.3.0), [`diff-matchers-window-200k.json`](../../results/diff-matchers-window-200k.json) (0.4.0, accuracy) and
-[`matcher-scale.json`](../../results/matcher-scale.json) (0.4.0, speed of the matcher alone, script
-[`matcher_scale.py`](../../tools/matcher_scale.py)).
+(see [the 0.4.0 matchers](#the-040-matchers-accuracy)). Raw data: [`diff-matchers.json`](../results/diff-matchers.json)
+(0.3.0), [`diff-matchers-window-200k.json`](../results/diff-matchers-window-200k.json) (0.4.0, accuracy) and
+[`matcher-scale.json`](../results/matcher-scale.json) (0.4.0, speed of the matcher alone, script
+[`matcher_scale.py`](../tools/matcher_scale.py)).
 
 The matchers added in 0.4.0:
 
