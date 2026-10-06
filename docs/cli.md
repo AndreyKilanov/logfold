@@ -30,7 +30,7 @@ journalctl -o json | logfold analyze - --format journald --json > result.json
 
 | Option | Default | Meaning |
 |---|---|---|
-| `--format`, `-f` | `auto` | `auto`, a name from `logfold formats`, or `regex:<pattern>` |
+| `--format`, `-f` | `auto` | `auto`, a name from `logfold formats`, `regex:<pattern>`, or `log4j:<pattern>` |
 | `--multiline` / `--no-multiline` | format default | join continuation lines (stack traces) to the previous record |
 | `--since` TIME, `--until` TIME | | only records at or after / before this time (ISO 8601, for example `2026-10-06T12:00`; a trailing `Z` or an offset is a zone). A time without a zone is compared with the times of the log as written. Records without a time are left out and counted; needs a format with a time |
 | `--top`, `-n` | 20 | rows printed per table |

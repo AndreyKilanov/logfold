@@ -143,7 +143,7 @@ diff(load_analysis("before.json"), load_analysis("after.json"))
 
 | | |
 |---|---|
-| Formats | `nginx`, `apache`, `nginx-error`, `syslog`, `journald`, `k8s` (CRI/containerd), `jsonl`, `app` (`<time> LEVEL message`), `logfmt`, `serilog-clef`, `plain`, your own `regex:<pattern>`. List: `logfold formats`. |
+| Formats | `nginx`, `apache`, `nginx-error`, `syslog`, `journald`, `k8s` (CRI/containerd), `jsonl`, `app` (`<time> LEVEL message`), `logfmt`, `serilog-clef`, `haproxy`, `postgresql`, `postgresql-csv`, `docker-json`, `github-actions`, `log4j` (or your own `log4j:<pattern>`), `plain`, your own `regex:<pattern>`. List: `logfold formats`. |
 | Multi-line records | `--multiline`; with `--format auto` it turns on by itself when indented lines are found. |
 | Folding | `--depth` (4), `--sim-th` (0.4), `--max-children` (100), `--max-templates` (100000). The defaults are the same as in Drain3. |
 | Execution | `--strategy auto` (default; parallel chunks, sequential for logs of unique messages), `sequential`, `chunked`; `--threads`, `--chunk-mb`; `--warm-start` (opt-in, chunked only). |

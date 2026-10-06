@@ -135,7 +135,7 @@ diff(load_analysis("before.json"), load_analysis("after.json"))
 
 | | |
 |---|---|
-| Форматы | `nginx`, `apache`, `nginx-error`, `syslog`, `journald`, `k8s` (CRI/containerd), `jsonl`, `app` (`<время> УРОВЕНЬ сообщение`), `logfmt`, `serilog-clef`, `plain`, свой `regex:<шаблон>`. Список: `logfold formats`. |
+| Форматы | `nginx`, `apache`, `nginx-error`, `syslog`, `journald`, `k8s` (CRI/containerd), `jsonl`, `app` (`<время> УРОВЕНЬ сообщение`), `logfmt`, `serilog-clef`, `haproxy`, `postgresql`, `postgresql-csv`, `docker-json`, `github-actions`, `log4j` (или свой `log4j:<шаблон>`), `plain`, свой `regex:<шаблон>`. Список: `logfold formats`. |
 | Многострочные записи | `--multiline`; при `--format auto` включается сам, если найдены строки с отступом. |
 | Схлопывание | `--depth` (4), `--sim-th` (0,4), `--max-children` (100), `--max-templates` (100000). Значения по умолчанию те же, что у Drain3. |
 | Выполнение | `--strategy auto` (по умолчанию; параллельные куски, последовательно для логов из уникальных сообщений), `sequential`, `chunked`; `--threads`, `--chunk-mb`; `--warm-start` (по желанию, только для chunked). |
