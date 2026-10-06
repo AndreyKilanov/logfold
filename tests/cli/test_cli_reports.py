@@ -11,8 +11,9 @@ from typer.testing import CliRunner
 import logfold
 from corpora import synthetic_pair
 from logfold.cli import exit_codes
-from logfold.cli.app import _emit, app
+from logfold.cli.app import app
 from logfold.cli.output import printable
+from logfold.cli.runtime import emit
 from logfold.ext import registry
 
 runner = CliRunner()
@@ -175,7 +176,7 @@ def test_terminal_output_never_carries_escape_sequences(
 ) -> None:
     terminal = FakeTerminal()
     monkeypatch.setattr(sys, "stdout", terminal)
-    _emit(hostile_result(tmp_path), 20, reporter)
+    emit(hostile_result(tmp_path), 20, reporter)
     output = terminal.getvalue()
     assert "\x1b" not in output
     assert "\x07" not in output
@@ -184,7 +185,7 @@ def test_terminal_output_never_carries_escape_sequences(
 def test_default_tables_never_carry_escape_sequences(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     terminal = FakeTerminal()
     monkeypatch.setattr(sys, "stdout", terminal)
-    _emit(hostile_result(tmp_path), 20, None)
+    emit(hostile_result(tmp_path), 20, None)
     assert "\x1b]" not in terminal.getvalue()
     assert r"\x1b]" in terminal.getvalue()
     assert r";pwned\x07\x1b[31m" in terminal.getvalue()
@@ -193,5 +194,5 @@ def test_default_tables_never_carry_escape_sequences(tmp_path: Path, monkeypatch
 def test_redirected_output_keeps_the_raw_text(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     pipe = io.StringIO()
     monkeypatch.setattr(sys, "stdout", pipe)
-    _emit(hostile_result(tmp_path), 20, "csv")
+    emit(hostile_result(tmp_path), 20, "csv")
     assert "\x1b]" in pipe.getvalue()

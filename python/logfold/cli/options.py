@@ -1,0 +1,105 @@
+"""Option definitions shared by the ``analyze`` and ``diff`` commands."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Annotated, Any
+
+import typer
+
+Format = Annotated[str, typer.Option("--format", "-f", help="auto, a name from 'logfold formats', or regex:<pattern>.")]
+Multiline = Annotated[
+    bool | None,
+    typer.Option("--multiline/--no-multiline", help="Join continuation lines to the previous record."),
+]
+Out = Annotated[
+    Path | None,
+    typer.Option(
+        "--out",
+        "-o",
+        help="Write a report; the suffix selects the format: .html, .json, .txt, .md or .csv (see --report).",
+    ),
+]
+Report = Annotated[
+    str | None,
+    typer.Option(
+        "--report",
+        help="Reporter by name ('logfold plugins list'): it writes the --out file instead of the suffix's reporter, "
+        "and without --out it is printed instead of the tables.",
+    ),
+]
+Top = Annotated[int, typer.Option("--top", "-n", min=1, help="Rows to print per table.")]
+SimTh = Annotated[float | None, typer.Option("--sim-th", min=0.0, max=1.0, help="Similarity threshold (default 0.4).")]
+Depth = Annotated[int | None, typer.Option("--depth", min=3, help="Template tree depth (default 4).")]
+MaxChildren = Annotated[int | None, typer.Option("--max-children", min=1, help="Children per tree node (default 100).")]
+MaxTemplates = Annotated[
+    int | None, typer.Option("--max-templates", min=1, help="Template cap before pooling (default 100000).")
+]
+Threads = Annotated[int | None, typer.Option("--threads", min=1, help="Worker threads (default: all cores).")]
+Engine = Annotated[str | None, typer.Option("--engine", help="auto, native or python (slow reference engine).")]
+ChunkMb = Annotated[int | None, typer.Option("--chunk-mb", min=1, help="Chunk size in MiB for parallel runs.")]
+Strategy = Annotated[str | None, typer.Option("--strategy", help="auto, sequential (one tree) or chunked (parallel).")]
+WarmStart = Annotated[
+    bool,
+    typer.Option(
+        "--warm-start", help="Chunked: start chunks from the tree of the first one (fewer stray templates, slower)."
+    ),
+]
+NoMasks = Annotated[bool, typer.Option("--no-masks", help="Do not mask numbers, IPs, UUIDs and other values.")]
+HighCardinality = Annotated[
+    bool,
+    typer.Option(
+        "--high-cardinality",
+        help="Fast mode for data with a huge number of distinct messages: at most 5000 templates, runs sequentially.",
+    ),
+]
+Examples = Annotated[str, typer.Option("--examples", help="raw, masked or none: how example messages are kept.")]
+AsJson = Annotated[bool, typer.Option("--json", help="Print JSON to stdout instead of tables.")]
+Quiet = Annotated[bool, typer.Option("--quiet", "-q", help="No progress and no status messages on stderr.")]
+Debug = Annotated[bool, typer.Option("--debug", help="Show tracebacks.")]
+
+
+def mining_options(
+    sim_th: float | None,
+    depth: int | None,
+    max_children: int | None,
+    max_templates: int | None,
+    threads: int | None,
+    engine: str | None,
+    chunk_mb: int | None,
+    strategy: str | None,
+    no_masks: bool,
+    high_cardinality: bool,
+    warm_start: bool,
+) -> dict[str, Any]:
+    """Turn the mining flags of a command into keyword arguments of ``logfold.analyze`` and ``logfold.diff``.
+
+    Args:
+        sim_th: ``--sim-th``.
+        depth: ``--depth``.
+        max_children: ``--max-children``.
+        max_templates: ``--max-templates``.
+        threads: ``--threads``.
+        engine: ``--engine``.
+        chunk_mb: ``--chunk-mb``.
+        strategy: ``--strategy``.
+        no_masks: ``--no-masks``.
+        high_cardinality: ``--high-cardinality``.
+        warm_start: ``--warm-start``.
+
+    Returns:
+        The keyword arguments, with ``None`` for every option left at its default.
+    """
+    return {
+        "sim_th": sim_th,
+        "depth": depth,
+        "max_children": max_children,
+        "max_templates": max_templates,
+        "threads": threads,
+        "engine": engine,
+        "chunk_bytes": chunk_mb << 20 if chunk_mb else None,
+        "strategy": strategy,
+        "masks": [] if no_masks else None,
+        "high_cardinality": high_cardinality,
+        "warm_start": True if warm_start else None,
+    }
