@@ -10,7 +10,8 @@ For every format a log is generated (seeded, realistic lines: addresses, ids, du
 where the format has them), 10, 100 and 1000 MiB. `logfold analyze FILE -f NAME --top 1 -q` runs as a separate process
 (`run.py` records wall time and peak working set) with the format and with `-f plain`, which treats every line as a message and
 parses nothing: the difference is the price of the format. Defaults otherwise (masks on, strategy `auto`, all threads). Median of
-three runs for 10 and 100 MiB, one run for 1000 MiB. The pure-Python engine ran once per format on 10 MiB.
+three runs for 10 and 100 MiB, one run for 1000 MiB. Only the native (Rust) engine is measured; the pure-Python reference
+engine is slow by design and its speed is not a goal.
 
 Every generated log is read in full: 0 unparsed lines and 0 records without a time for all six formats (checked on the 10 MiB
 file in the same script).
@@ -38,20 +39,6 @@ Machine: Windows 11, 8 cores / 16 threads, Python 3.13, native engine, warm page
 - Memory is bounded: about 44 MB at 10 MiB and 108-116 MB at 1000 MiB, within 9 MB of `plain`.
 - The slowest is `postgresql` (0.27 of `plain`): its prefix is matched by a bounded lazy scan (`.{0,120}?`) up to the level word,
   because `log_line_prefix` differs from site to site. Still 279 MB/s, 1 GB in about 3.7 seconds.
-
-## Pure-Python engine (the reference), 10 MiB
-
-| format | MB/s with the format | MB/s `plain` |
-|---|---:|---:|
-| `haproxy` | 2.6 | 2.5 |
-| `postgresql` | 2.5 | 3.6 |
-| `postgresql-csv` | 3.6 | 3.9 |
-| `docker-json` | 2.5 | 3.8 |
-| `github-actions` | 1.8 | 3.5 |
-| `log4j` | 2.8 | 3.1 |
-
-The reference engine is orders of magnitude slower than the native one on large inputs (the miner dominates), and the format
-changes its speed by at most a factor of two; one probe each, so differences of this size are within the noise.
 
 ## Hostile lines
 

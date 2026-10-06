@@ -2,11 +2,12 @@
 
 For every format a log of the given size is generated (seeded, realistic lines with ids, addresses and durations), then
 ``logfold analyze`` runs on it as a separate process with the format and with ``-f plain`` (every line is a message, no
-format parsing). The runner of ``run.py`` records wall time and peak working set. The pure-Python engine runs only on
-the smallest size. Results go to ``bench/results/format-plugins.json``; the discussion is in
+format parsing). The runner of ``run.py`` records wall time and peak working set. Only the native (Rust) engine is
+measured; the speed of the pure-Python reference engine is not a goal. Use small sizes and compare the ratio to ``plain``
+instead of generating gigabytes. Results go to ``bench/results/format-plugins.json``; the discussion is in
 ``bench/docs/FORMAT_PLUGINS.md``. Usage::
 
-    python bench/tools/format_plugins.py --sizes 10 100 1000 --repeat 3
+    python bench/tools/format_plugins.py --sizes 10 100 --repeat 3
 """
 
 from __future__ import annotations
@@ -185,8 +186,8 @@ def generate(name: str, size_mb: int, path: Path) -> None:
                 break
 
 
-def command(path: Path, fmt: str, engine: str) -> list[str]:
-    return logfold_command("analyze", str(path), "-f", fmt, "--top", "1", "-q", "--engine", engine)
+def command(path: Path, fmt: str) -> list[str]:
+    return logfold_command("analyze", str(path), "-f", fmt, "--top", "1", "-q", "--engine", "native")
 
 
 def parsed(path: Path, name: str) -> dict[str, int]:
@@ -201,18 +202,17 @@ def parsed(path: Path, name: str) -> dict[str, int]:
     }
 
 
-def row(name: str, size_mb: int, fmt: str, engine: str, samples: list[Sample]) -> dict[str, object]:
+def row(name: str, size_mb: int, fmt: str, samples: list[Sample]) -> dict[str, object]:
     summary = summarize(samples)
     median = summary.get("wall_median_s")
     mb_s = round(size_mb / float(median), 1) if isinstance(median, float) else None
-    return {"format": name, "mode": fmt, "engine": engine, "size_mb": size_mb, "mb_per_s": mb_s, **summary}
+    return {"format": name, "mode": fmt, "size_mb": size_mb, "mb_per_s": mb_s, **summary}
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--formats", nargs="*", default=list(GENERATORS))
-    parser.add_argument("--sizes", nargs="*", type=int, default=[10, 100, 1000])
-    parser.add_argument("--python-size", type=int, default=10, help="size of the pure-Python engine run (0: skip)")
+    parser.add_argument("--sizes", nargs="*", type=int, default=[10, 100])
     parser.add_argument("--repeat", type=int, default=3)
     parser.add_argument("--timeout", type=float, default=3600)
     parser.add_argument("--data", type=Path, default=ROOT / "bench" / "data" / "formats")
@@ -222,21 +222,17 @@ def main() -> None:
     rows: list[dict[str, object]] = []
     checks: dict[str, dict[str, int]] = {}
     for name in args.formats:
-        for size in sorted({*args.sizes, args.python_size} - {0}):
+        for size in sorted(args.sizes):
             path = args.data / f"{name}_{size}mb.log"
             generate(name, size, path)
             repeat = 1 if size >= 1000 else args.repeat
             if size == min(args.sizes):
                 checks[name] = parsed(path, name)
                 print(name, checks[name], flush=True)
-            engines = ["native"] if size in args.sizes else []
-            if size == args.python_size:
-                engines.append("python")
-            for engine in engines:
-                for fmt in (name, "plain"):
-                    samples = [measure(command(path, fmt, engine), args.timeout) for _ in range(repeat)]
-                    rows.append(row(name, size, fmt, engine, samples))
-                    print(name, size, fmt, engine, rows[-1].get("mb_per_s"), rows[-1].get("peak_mb_max"), flush=True)
+            for fmt in (name, "plain"):
+                samples = [measure(command(path, fmt), args.timeout) for _ in range(repeat)]
+                rows.append(row(name, size, fmt, samples))
+                print(name, size, fmt, rows[-1].get("mb_per_s"), rows[-1].get("peak_mb_max"), flush=True)
             path.unlink()
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(json.dumps({"checks": checks, "runs": rows}, indent=2), encoding="utf-8")
