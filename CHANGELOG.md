@@ -7,6 +7,9 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Added
 
+- `logfold plugins list` shows built-in, installed and catalog plugins with a status (`--installed`, `--available`, `--kind`),
+  `plugins info NAME` describes one; library: `list_plugins()`, `plugin_info()`, `closest()`. `plugins install` falls back to
+  `uv pip install`; `plugins list --json` rows gained fields.
 - `logfold inspect FILE`: the detected format, the first records as parsed, and the levels, time range and unparsed lines
   of a sample of the file.
 - `--level` and `--only-alerts` on `analyze` and `diff`; in `diff` the filter also applies to the `--fail-on-new*` gates.

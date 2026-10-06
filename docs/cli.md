@@ -151,7 +151,8 @@ versions), and the registered formats and reporters. Include its output in bug r
 List, check and install plugins (formats, reporters, diff matchers). See the [plugins guide](plugins.md).
 
 ```
-logfold plugins list [--json]
+logfold plugins list [--installed | --available] [--kind KIND] [--online] [--catalog SOURCE] [--json]
+logfold plugins info NAME [--kind KIND] [--online] [--catalog SOURCE] [--json]
 logfold plugins check [--online] [--catalog SOURCE] [--json]
 logfold plugins install NAME [--online] [--catalog SOURCE] [--yes]
 logfold plugins dir
@@ -160,9 +161,10 @@ logfold plugins new KIND NAME [--dir FOLDER] [--force]
 
 | Command | What it does |
 |---|---|
-| `list` | every format, reporter and diff matcher with its source: `built-in` or the package that provides it |
+| `list` | every format, reporter and diff matcher with its status: `built-in`, `installed` (a package or a file in your plugin folder) or `available` (in the catalog, not installed), and the package that provides it |
+| `info NAME` | one plugin: what it does, where it comes from, how to install it (available) or use it (installed), for every kind that has this name |
 | `check` | the plugins of the catalog whose package is not installed yet, with an install hint |
-| `install NAME` | shows the package, version constraint and catalog, asks for confirmation and runs `python -m pip install` for a plugin of the catalog |
+| `install NAME` | shows the package, version constraint and catalog, asks for confirmation and runs `python -m pip install` (or `uv pip install` when the environment has no pip) for a plugin of the catalog |
 | `dir` | where logfold looks for your own plugin files, and whether that folder exists |
 | `new KIND NAME` | writes a working plugin template (`format`, `reporter` or `matcher`) into the plugin folder; `--dir` chooses another folder, `--force` overwrites |
 
@@ -170,7 +172,10 @@ logfold plugins new KIND NAME [--dir FOLDER] [--force]
 |---|---|---|
 | `--online` | off | fetch the latest catalog over HTTPS instead of using the one bundled with logfold |
 | `--catalog` | | a catalog file or an HTTPS URL; overrides `--online` |
-| `--json` | off | print JSON instead of a table (`list`, `check`) |
+| `--installed` | off | `list`: only what is built in or installed |
+| `--available` | off | `list`: only the catalog plugins that are not installed |
+| `--kind`, `-k` | | `list`, `info`: only `format`, `reporter` or `matcher` |
+| `--json` | off | print JSON instead of a table (`list`, `info`, `check`) |
 | `--yes`, `-y` | off | do not ask for confirmation (`install`) |
 
 `logfold --plugins-dir FOLDER ...` (an option of `logfold` itself, repeatable) also loads the plugins of a folder; see

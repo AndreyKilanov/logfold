@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import urllib.error
@@ -269,22 +270,28 @@ def new_plugins(catalog: Catalog, installed: Callable[[str], bool] = is_installe
 
 
 def install(entry: CatalogEntry, runner: Callable[..., Any] = subprocess.run) -> int:
-    """Install a plugin package with pip into the environment that runs logfold.
+    """Install a plugin package into the environment that runs logfold.
+
+    Uses ``pip`` when it is available, otherwise ``uv pip install`` (environments made by ``uv`` have no pip).
 
     Args:
         entry: A validated catalog entry.
         runner: ``subprocess.run`` compatible callable; replaced in tests.
 
     Returns:
-        The exit code of pip.
+        The exit code of the installer.
 
     Raises:
-        ConfigError: If pip is not available in this environment.
+        ConfigError: If neither pip nor uv is available in this environment.
     """
-    if util.find_spec("pip") is None:
+    if util.find_spec("pip") is not None:
+        command = [sys.executable, "-m", "pip", "install", entry.requirement]
+    elif (uv := shutil.which("uv")) is not None:
+        command = [uv, "pip", "install", "--python", sys.executable, entry.requirement]
+    else:
         raise ConfigError(
-            f"pip is not available in this environment; install {entry.requirement!r} with its package installer, "
-            f"for example: uv pip install '{entry.requirement}'"
+            f"neither pip nor uv is available in this environment; install {entry.requirement!r} with its package "
+            "installer",
+            hint=f"for example: uv pip install '{entry.requirement}'",
         )
-    command = [sys.executable, "-m", "pip", "install", entry.requirement]
     return int(runner(command, check=False).returncode)

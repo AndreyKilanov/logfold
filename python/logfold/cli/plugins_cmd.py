@@ -13,17 +13,19 @@ from rich.console import Console
 from rich.markup import escape
 from rich.table import Table
 
-from logfold.cli import exit_codes
+from logfold.cli import runtime
 from logfold.errors import LogfoldError
-from logfold.ext import registry
+from logfold.ext import printable, registry
+from logfold.plugins import listing as plugin_listing
 from logfold.plugins import templates
 
 if TYPE_CHECKING:
     from logfold.plugins.catalog import Catalog
+    from logfold.plugins.listing import PluginInfo
 
 plugins_app = typer.Typer(
     name="plugins",
-    help="List, check and install logfold plugins (formats, reporters, diff matchers).",
+    help="List, inspect, check and install logfold plugins (formats, reporters, diff matchers).",
     no_args_is_help=True,
     add_completion=False,
 )
@@ -43,13 +45,8 @@ def _stdout() -> Console:
     return Console(file=sys.stdout, highlight=False)
 
 
-def _stderr() -> Console:
-    return Console(file=sys.stderr, highlight=False)
-
-
 def _fail(error: Exception) -> typer.Exit:
-    _stderr().print(f"[red]error:[/red] {escape(str(error))}", highlight=False, soft_wrap=True)
-    return typer.Exit(exit_codes.ERROR)
+    return runtime.fail(error, debug=False)
 
 
 def _load(online: bool, catalog: str | None) -> Catalog:
@@ -61,20 +58,108 @@ def _load(online: bool, catalog: str | None) -> Catalog:
         raise _fail(error) from None
 
 
+Kind = Annotated[str | None, typer.Option("--kind", "-k", help="Only this kind: format, reporter or matcher.")]
+_USAGE = {"format": "--format {name}", "reporter": "--report {name}", "matcher": "--matcher {name}"}
+
+
+def _safe(text: str) -> str:
+    return escape(printable(text))
+
+
+def _row(info: PluginInfo) -> dict[str, object]:
+    return {
+        "kind": info.kind,
+        "name": info.name,
+        "status": info.status,
+        "source": info.source,
+        "package": info.package,
+        "version": info.version,
+        "description": info.description,
+        "requirement": info.requirement,
+        "install": info.install,
+        "homepage": info.homepage,
+    }
+
+
 @plugins_app.command("list")
-def list_plugins(as_json: AsJson = False) -> None:
-    """List the formats, reporters and diff matchers that are available, and where each one comes from."""
-    rows = registry.plugin_sources()
+def list_command(
+    installed: Annotated[bool, typer.Option("--installed", help="Only what is built in or installed.")] = False,
+    available: Annotated[
+        bool, typer.Option("--available", help="Only plugins of the catalog not installed yet.")
+    ] = False,
+    kind: Kind = None,
+    online: Online = False,
+    catalog: CatalogSource = None,
+    as_json: AsJson = False,
+) -> None:
+    """List formats, reporters and diff matchers: built in, installed, and available from the catalog.
+
+    The catalog bundled with this version of logfold is used and nothing is downloaded; --online fetches the latest one.
+    """
+    if installed and available:
+        raise _fail(LogfoldError("--installed and --available exclude each other; leave both out to see everything"))
+    loaded = _load(online, catalog)
+    status = ("built-in", "installed") if installed else ("available",) if available else None
+    try:
+        rows = plugin_listing.list_plugins(kind=kind, status=status, catalog=loaded)
+    except LogfoldError as error:
+        raise _fail(error) from None
     if as_json:
-        payload = [{"kind": kind, "name": name, "source": source} for kind, name, source in rows]
-        sys.stdout.write(json.dumps(payload, indent=2) + "\n")
+        sys.stdout.write(json.dumps([_row(row) for row in rows], indent=2) + "\n")
+        return
+    console = _stdout()
+    if not rows:
+        console.print("No plugins match.")
         return
     table = Table(show_header=True, header_style="bold", box=None, pad_edge=False)
-    for column in ("kind", "name", "source"):
+    for column in ("kind", "name", "status", "source", "description"):
         table.add_column(column, overflow="fold")
-    for kind, name, source in rows:
-        table.add_row(kind, escape(name), escape(source))
-    _stdout().print(table)
+    for row in rows:
+        origin = row.requirement or ("" if row.status == "built-in" else row.source)
+        table.add_row(row.kind, _safe(row.name), row.status, _safe(origin), _safe(row.description))
+    console.print(table)
+    if any(row.status == "available" for row in rows):
+        console.print(
+            "\nInstall one with: [bold]logfold plugins install NAME[/bold]; "
+            "details: [bold]logfold plugins info NAME[/bold]"
+        )
+
+
+@plugins_app.command("info")
+def info_command(
+    name: Annotated[str, typer.Argument(help="Plugin name from 'logfold plugins list'.")],
+    kind: Kind = None,
+    online: Online = False,
+    catalog: CatalogSource = None,
+    as_json: AsJson = False,
+) -> None:
+    """Show what a plugin is, where it comes from, how to install it and how to use it."""
+    loaded = _load(online, catalog)
+    try:
+        rows = plugin_listing.plugin_info(name, kind=kind, catalog=loaded)
+    except LogfoldError as error:
+        raise _fail(error) from None
+    if as_json:
+        sys.stdout.write(json.dumps([_row(row) for row in rows], indent=2) + "\n")
+        return
+    console = _stdout()
+    for number, row in enumerate(rows):
+        if number:
+            console.print()
+        console.print(f"[bold]{_safe(row.name)}[/bold] ({row.kind}, {row.status})")
+        if row.description:
+            console.print(f"about:    {_safe(row.description)}")
+        console.print(f"source:   {_safe(row.source)}", soft_wrap=True)
+        if row.package:
+            console.print(f"package:  {_safe(row.package)}{' ' + row.version if row.version else ''}", soft_wrap=True)
+        if row.homepage:
+            console.print(f"homepage: {_safe(row.homepage)}", soft_wrap=True)
+        if row.install:
+            console.print(
+                f"install:  [bold]{_safe(row.install)}[/bold]  (pip requirement: {_safe(row.requirement or '')})"
+            )
+        elif row.status != "available":
+            console.print(f"use:      [bold]{_safe(_USAGE[row.kind].format(name=row.name))}[/bold]")
 
 
 @plugins_app.command("dir")
@@ -202,5 +287,5 @@ def install(
     except LogfoldError as error:
         raise _fail(error) from None
     if code != 0:
-        raise _fail(LogfoldError(f"pip failed with exit code {code}"))
+        raise _fail(LogfoldError(f"the installer failed with exit code {code}"))
     console.print(f"Installed {escape(entry.package)}. Run 'logfold plugins list' to see what it adds.")

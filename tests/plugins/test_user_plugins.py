@@ -323,7 +323,8 @@ def test_cli_new_in_a_chosen_folder_and_plugins_dir_option(home: Path, tmp_path:
     assert (chosen / "pairing.py").is_file()
     listed = runner.invoke(app, ["--plugins-dir", str(chosen), "plugins", "list", "--json"])
     rows = json.loads(listed.stdout)
-    assert {"kind": "matcher", "name": "pairing", "source": str(chosen / "pairing.py")} in rows
+    pairing = next(row for row in rows if row["kind"] == "matcher" and row["name"] == "pairing")
+    assert (pairing["source"], pairing["status"]) == (str(chosen / "pairing.py"), "installed")
 
 
 def test_the_off_switch_is_reported_by_the_dir_command(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:

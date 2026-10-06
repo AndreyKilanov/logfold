@@ -219,8 +219,30 @@ def test_install_runs_pip_with_the_validated_requirement(monkeypatch: pytest.Mon
     assert kwargs == {"check": False}
 
 
-def test_install_without_pip_is_a_clear_error(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_install_without_pip_falls_back_to_uv(monkeypatch: pytest.MonkeyPatch) -> None:
+    plugin = catalog.parse_catalog(document(entry()), "test").entries[0]
+    calls: list[list[str]] = []
+
+    class Done:
+        returncode = 0
+
+    def runner(command: list[str], **_kwargs: Any) -> Done:
+        calls.append(command)
+        return Done()
+
+    monkeypatch.setattr("importlib.util.find_spec", lambda _name: None)
+    monkeypatch.setattr("shutil.which", lambda _name: "/bin/uv")
+    assert catalog.install(plugin, runner=runner) == 0
+    assert calls[0][:3] == ["/bin/uv", "pip", "install"]
+    assert calls[0][-1] == "logfold-haproxy>=0.2,<1"
+    assert "--python" in calls[0]
+
+
+def test_install_without_pip_and_uv_is_a_clear_error(monkeypatch: pytest.MonkeyPatch) -> None:
     plugin = catalog.parse_catalog(document(entry()), "test").entries[0]
     monkeypatch.setattr("importlib.util.find_spec", lambda _name: None)
-    with pytest.raises(ConfigError, match="pip is not available"):
-        catalog.install(plugin, runner=lambda *_a, **_k: pytest.fail("pip must not run"))
+    monkeypatch.setattr("shutil.which", lambda _name: None)
+    with pytest.raises(ConfigError, match="neither pip nor uv") as caught:
+        catalog.install(plugin, runner=lambda *_a, **_k: pytest.fail("the installer must not run"))
+    assert caught.value.hint is not None
+    assert "uv pip install" in caught.value.hint

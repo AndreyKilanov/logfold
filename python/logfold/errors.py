@@ -147,6 +147,24 @@ class UnknownMatcherError(_UnknownNameError, ConfigError):
         super().__init__("diff matcher", "matchers", name, known)
 
 
+class UnknownPluginError(_UnknownNameError, ConfigError):
+    """A plugin name is neither registered nor in the catalog.
+
+    Attributes:
+        name: The name that was asked for.
+        known: The names of the installed and available plugins, sorted.
+    """
+
+    def __init__(self, name: str, known: Iterable[str]) -> None:
+        """Create the error.
+
+        Args:
+            name: The unknown name.
+            known: The installed and available plugin names.
+        """
+        super().__init__("plugin", "plugins", name, known)
+
+
 class UnknownSuffixError(ConfigError):
     """A report file name has no suffix, or one that no reporter claims.
 

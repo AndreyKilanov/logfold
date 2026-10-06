@@ -11,9 +11,17 @@ from typer.testing import CliRunner
 
 from logfold.cli import exit_codes
 from logfold.cli.app import app
+from logfold.ext import registry
 from logfold.plugins import catalog
 
 runner = CliRunner()
+
+
+class Pairing:
+    name = "pairing"
+
+    def match(self, *_args: Any, **_kwargs: Any) -> None:
+        return None
 
 
 def plugin(name: str, package: str, **changes: Any) -> dict[str, Any]:
@@ -49,7 +57,21 @@ def test_list_shows_built_in_plugins() -> None:
 
 def test_list_json() -> None:
     rows = json.loads(runner.invoke(app, ["plugins", "list", "--json"]).stdout)
-    assert {"kind": "matcher", "name": "jaccard", "source": "built-in"} in rows
+    jaccard = next(row for row in rows if row["kind"] == "matcher" and row["name"] == "jaccard")
+    assert jaccard["source"] == "built-in"
+    assert jaccard["status"] == "built-in"
+    assert set(jaccard) == {
+        "kind",
+        "name",
+        "status",
+        "source",
+        "package",
+        "version",
+        "description",
+        "requirement",
+        "install",
+        "homepage",
+    }
 
 
 def test_check_with_the_bundled_catalog_is_offline_and_has_nothing_new(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -149,3 +171,95 @@ def test_the_plugins_group_is_listed_in_the_help() -> None:
     result = runner.invoke(app, ["--help"])
     assert "plugins" in result.stdout
     assert runner.invoke(app, ["plugins", "--help"]).exit_code == 0
+
+
+def test_list_includes_available_plugins_with_status(catalog_file: str) -> None:
+    result = runner.invoke(app, ["plugins", "list", "--catalog", catalog_file])
+    assert result.exit_code == 0
+    line = next(line for line in result.stdout.splitlines() if "haproxy" in line)
+    assert "available" in line
+    assert "logfold-haproxy" in line
+    assert "logfold plugins install NAME" in result.stdout
+
+
+def test_list_installed_hides_available_ones(catalog_file: str) -> None:
+    result = runner.invoke(app, ["plugins", "list", "--installed", "--catalog", catalog_file])
+    assert result.exit_code == 0
+    assert "haproxy" not in result.stdout
+    assert "jaccard" in result.stdout
+
+
+def test_list_available_shows_only_available_ones(catalog_file: str) -> None:
+    result = runner.invoke(app, ["plugins", "list", "--available", "--catalog", catalog_file, "--json"])
+    assert [(row["name"], row["status"]) for row in json.loads(result.stdout)] == [("haproxy", "available")]
+
+
+def test_list_kind_filter(catalog_file: str) -> None:
+    rows = json.loads(runner.invoke(app, ["plugins", "list", "--kind", "matcher", "--json"]).stdout)
+    assert {row["kind"] for row in rows} == {"matcher"}
+
+
+def test_list_with_an_empty_result_says_so() -> None:
+    result = runner.invoke(app, ["plugins", "list", "--available"])
+    assert result.exit_code == 0
+    assert "No plugins match" in result.stdout
+
+
+def test_list_rejects_both_status_filters_and_unknown_kind() -> None:
+    both = runner.invoke(app, ["plugins", "list", "--installed", "--available"])
+    assert both.exit_code == exit_codes.ERROR
+    assert "exclude each other" in both.stderr
+    kind = runner.invoke(app, ["plugins", "list", "--kind", "formatter"])
+    assert kind.exit_code == exit_codes.ERROR
+    assert "unknown plugin kind" in kind.stderr
+
+
+def test_info_for_an_available_plugin_shows_how_to_install_it(catalog_file: str) -> None:
+    result = runner.invoke(app, ["plugins", "info", "haproxy", "--catalog", catalog_file])
+    assert result.exit_code == 0
+    assert "available" in result.stdout
+    assert "logfold plugins install haproxy" in result.stdout
+    assert "logfold-haproxy>=1" in result.stdout
+
+
+def test_info_for_a_built_in_plugin_shows_how_to_use_it() -> None:
+    result = runner.invoke(app, ["plugins", "info", "jaccard"])
+    assert result.exit_code == 0
+    assert "built-in" in result.stdout
+    assert "--matcher jaccard" in result.stdout
+
+
+def test_info_json(catalog_file: str) -> None:
+    rows = json.loads(runner.invoke(app, ["plugins", "info", "haproxy", "--catalog", catalog_file, "--json"]).stdout)
+    assert rows[0]["install"] == "logfold plugins install haproxy"
+
+
+def test_info_for_an_unknown_name_suggests_a_close_one(catalog_file: str) -> None:
+    result = runner.invoke(app, ["plugins", "info", "haproxi", "--catalog", catalog_file])
+    assert result.exit_code == exit_codes.ERROR
+    assert "unknown plugin 'haproxi'" in result.stderr
+    assert "did you mean 'haproxy'?" in result.stderr
+
+
+def test_list_shows_where_a_folder_plugin_comes_from(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(registry, "_matchers", dict(registry._matchers))
+    monkeypatch.setattr(registry, "_origins", dict(registry._origins))
+    registry.register_matcher(Pairing())
+    registry._origins[("matcher", "pairing")] = registry.PluginOrigin("/home/me/plugins/pairing.py")
+    result = runner.invoke(app, ["plugins", "list", "--kind", "matcher"], env={"COLUMNS": "200"})
+    line = next(line for line in result.stdout.splitlines() if "pairing" in line)
+    assert "installed" in line
+    assert "/home/me/plugins/pairing.py" in line
+
+
+def test_control_characters_from_package_metadata_do_not_reach_the_terminal(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(registry, "_matchers", dict(registry._matchers))
+    monkeypatch.setattr(registry, "_origins", dict(registry._origins))
+    monkeypatch.setattr("logfold.plugins.listing._summary", lambda _package: "evil\x1b]0;owned\x07 text")
+    registry.register_matcher(Pairing())
+    registry._origins[("matcher", "pairing")] = registry.PluginOrigin("evil-pkg 1", "evil-pkg", "1")
+    for command in (["plugins", "list", "--kind", "matcher"], ["plugins", "info", "pairing"]):
+        result = runner.invoke(app, command)
+        assert "\x1b" not in result.stdout
+        assert "\x07" not in result.stdout
+        assert "evil" in result.stdout
