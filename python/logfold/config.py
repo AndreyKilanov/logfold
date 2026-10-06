@@ -112,9 +112,9 @@ class ExecutionConfig:
             ConfigError: If a value is out of range.
         """
         if self.engine not in ("auto", "native", "python"):
-            raise ConfigError(f"unknown engine {self.engine!r}")
+            raise ConfigError(f"unknown engine {self.engine!r}; use auto, native or python")
         if self.strategy not in ("auto", "sequential", "chunked"):
-            raise ConfigError(f"unknown strategy {self.strategy!r}")
+            raise ConfigError(f"unknown strategy {self.strategy!r}; use auto, sequential or chunked")
         if self.threads is not None and self.threads < 1:
             raise ConfigError("threads must be at least 1")
         if self.chunk_bytes < 1:

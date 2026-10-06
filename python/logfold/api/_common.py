@@ -20,7 +20,7 @@ from logfold.config import (
 from logfold.engines import native
 from logfold.engines.base import Engine, MineRequest, MiningResult, RunInfo, TemplateTable
 from logfold.engines.select import select_engine
-from logfold.errors import ConfigError, SourceError
+from logfold.errors import ConfigError, read_error
 from logfold.ext.formats import FormatSpec
 from logfold.ext.masks import Masker, validate_masks
 from logfold.formats import ResolvedFormat
@@ -108,7 +108,7 @@ def _total_size(runs: tuple[tuple[str, ...], ...]) -> int:
                 try:
                     total += os.stat(path).st_size
                 except OSError as error:
-                    raise SourceError(f"cannot read {path!r}: {error}") from error
+                    raise read_error(path, error) from error
     return total
 
 

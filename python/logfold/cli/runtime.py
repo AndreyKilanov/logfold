@@ -9,9 +9,11 @@ from pathlib import Path
 
 import typer
 from rich.console import Console
+from rich.markup import escape
 from rich.progress import DownloadColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 from logfold.cli import exit_codes
+from logfold.cli.hints import hint_for
 from logfold.cli.output import printable, render_report
 from logfold.cli.render import print_analysis, print_diff
 from logfold.model import AnalysisResult, DiffResult
@@ -54,7 +56,10 @@ def progress_reporter(quiet: bool) -> Iterator[Callable[[int], None] | None]:
 
 
 def fail(error: Exception, debug: bool) -> typer.Exit:
-    """Print an error and build the exit that ends the command, or re-raise it with ``--debug``.
+    """Print an error with the next step, if any, and build the exit that ends the command.
+
+    With ``--debug`` the error is re-raised instead, to show the traceback. Paths are not wrapped at the terminal
+    width, and markup or control characters in the text are shown literally.
 
     Args:
         error: The error to report.
@@ -68,7 +73,11 @@ def fail(error: Exception, debug: bool) -> typer.Exit:
     """
     if debug:
         raise error
-    stderr_console().print(f"[red]error:[/red] {error}", highlight=False, markup=True)
+    console = stderr_console()
+    console.print(f"[red]error:[/red] {escape(printable(str(error)))}", soft_wrap=True)
+    hint = hint_for(error)
+    if hint:
+        console.print(f"[cyan]hint:[/cyan] {escape(printable(hint))}", soft_wrap=True)
     return typer.Exit(exit_codes.ERROR)
 
 

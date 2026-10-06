@@ -74,9 +74,11 @@ def resolve_outputs(kind: str, out: Path | None, report: str | None, as_json: bo
         mapped = SUFFIX_REPORTERS.get(suffix)
         if mapped is None:
             known = ", ".join(sorted(SUFFIX_REPORTERS))
+            reason = f"the suffix {out.suffix!r} is not known" if out.suffix else "it has no suffix"
             raise ConfigError(
-                f"cannot choose a report format from the suffix {out.suffix!r}; use one of: {known}, "
-                "or name the reporter with --report"
+                f"cannot choose a report format for '{out}': {reason}",
+                hint=f"end the name with one of {known}, or name the reporter with --report NAME "
+                "('logfold plugins list' shows them)",
             )
         file = _checked(mapped, kind)
     return Outputs(file=file, stdout=stdout)

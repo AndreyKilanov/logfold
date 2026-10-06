@@ -5,6 +5,22 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ## [Unreleased]
 
+### Added
+
+- Errors carry a next step: `LogfoldError.hint`, and in the CLI a `hint:` line under `error:`. A misspelled format, reporter
+  or diff matcher suggests the closest name (`did you mean 'nginx'?`) and the command that lists them, an undetected format
+  names `-f plain` and `-f regex:<pattern>`, and `--out` without a known suffix lists the suffixes. New subclasses
+  `UnknownFormatError`, `UnknownReporterError`, `UnknownMatcherError` and `FormatDetectionError` (in `logfold.errors`) hold the
+  details; they derive from `FormatError` and `ConfigError`, so existing `except` clauses keep working.
+
+### Changed
+
+- Error messages are shorter and read the same on every system: a path is shown as is (no doubled backslashes on Windows) and
+  is not wrapped at the terminal width, a missing file says `no such file` instead of repeating the path with the system's
+  localized text, and text such as `[red]` in a path is printed literally instead of being read as markup.
+  `--engine` and `--strategy` errors list the valid values. The advice that ended the undetected-format message ("pass a
+  format explicitly...") is now `error.hint`, so `str(error)` no longer contains it.
+
 ## [0.3.0] - 2026-10-05
 
 ### Added

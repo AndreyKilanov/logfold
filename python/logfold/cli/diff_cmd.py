@@ -118,7 +118,7 @@ def diff(
         outputs = resolve_outputs("diff", out, report, as_json)
         for path in (before, after):
             if not path.is_file():
-                raise logfold.SourceError(f"cannot read {str(path)!r}: no such file")
+                raise logfold.SourceError(f"cannot read '{path}': no such file")
         saved = (_is_saved_result(before), _is_saved_result(after))
         if saved[0] != saved[1]:
             raise logfold.ConfigError("diff compares two log files or two saved analysis reports, not one of each")
