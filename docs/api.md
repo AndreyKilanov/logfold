@@ -36,7 +36,8 @@ Raises `ConfigError`, `FormatError`, `SourceError` or `EngineError` (see [Errors
 
 ```python
 diff(before, after=None, *, format="auto", multiline=None, threshold_ratio=None, min_count=None, min_new_count=None,
-     recount=None, matcher=None, significance=None, diff_config=None, since=None, until=None, split_at=None,
+     recount=None, matcher=None, significance=None, baselines=None, min_baselines=None, diff_config=None, since=None,
+     until=None, split_at=None,
      <all mining and execution arguments of analyze>) -> DiffResult
 ```
 
@@ -51,6 +52,8 @@ template; shares are normalized by the number of records in each run. `before` a
 | `min_new_count` | 1 | minimum records for a template to be reported as new or disappeared |
 | `split_at` | `None` | compare two parts of **one** input: give `before` only; the records before this time are the first run, the records from this time on are the second (needs a format with a time; not for saved results) |
 | `since`, `until` | `None` | as in `analyze`, for both runs; with `split_at`, `since` starts the first run and `until` ends the second |
+| `baselines` | `None` | more baseline runs besides `before`, each an input or a sequence of inputs; pooled into the first side, so a template is new only if no baseline has it (logs only; not with saved results or `split_at`) |
+| `min_baselines` | all | with `baselines`, the number of baselines a template must occur in to be reported as disappeared or changed; a template in fewer baselines is unstable and is not reported; more than 10 baselines give a warning (every baseline is read in full) |
 | `significance` | 0.01 | highest p-value of a `changed` template that is still reported, in (0, 1]; 1 keeps every template that passes the ratio and count thresholds |
 | `recount` | `True` | assign every record to the finished tree for consistent counts (costs a second pass) |
 | `matcher` | `"jaccard"` | registered diff matcher name: `jaccard`, `token_subset`, `exact` or a plugin's (see [Choosing a matcher](guide.md#choosing-a-matcher)) |
@@ -195,7 +198,7 @@ result = analyze("app.log", mining=mining, execution=ExecutionConfig(threads=4))
 |---|---|
 | `MiningConfig` | `depth=4` (at least 3), `sim_th=0.4` (`[0, 1]`), `max_children=100`, `max_templates=100000`, `delimiters=" \t\n\r"` (ASCII), `masks` (the default rules) |
 | `ExecutionConfig` | `engine="auto"` (`auto`, `native`, `python`), `strategy="auto"` (`auto`, `sequential`, `chunked`), `threads=None` (all cores), `chunk_bytes=64 MiB`, `warm_start=False` |
-| `DiffConfig` | `threshold_ratio=2.0`, `min_count=10`, `min_new_count=1`, `recount=True`, `matcher="jaccard"`, `significance=0.01` |
+| `DiffConfig` | `threshold_ratio=2.0`, `min_count=10`, `min_new_count=1`, `recount=True`, `matcher="jaccard"`, `significance=0.01`, `min_baselines=None` |
 | `MaskRule` | `name`, `pattern` (must not match the empty string), `token`, `ascii=False` |
 
 `masks` replaces the default rules, which are applied in this order: `uuid` -> `<UUID>`, `ts` -> `<TS>`, `ip` -> `<IP>`,

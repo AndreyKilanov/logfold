@@ -43,6 +43,9 @@ New templates (2)
   sizes do not matter. A template counts as changed when its share grew or fell by at least a factor of 2, it has at
   least 10 records in either run (both thresholds are configurable) and a G-test finds the change unlikely to be noise
   (`--significance`, default 0.01); the most significant changes come first. Identical inputs give an empty result.
+- **One log, several baselines.** `diff app.log --split-at TIME` compares the part of one log before a time with the part
+  after it (`--since` and `--until` bound any command to a time range). `--baseline` (repeatable) pools several good runs
+  so that a template counts as new only if none of them has it, which removes the noise of rare messages.
 - **Exit code for CI.** `--fail-on-new` exits with code 2 when there are new templates, `--fail-on-new-alerts` when any
   of them is WARN, ERROR or FATAL. A reworded message that the default matcher pairs with an old one counts as changed,
   not new; `--matcher exact` makes the gate strict.
@@ -89,6 +92,7 @@ Compare two runs:
 ```
 logfold diff before.log after.log --out diff.html --fail-on-new-alerts
 logfold diff app.log --split-at 2026-10-06T12:00    # the part of one log before a time against the part after it
+logfold diff good1.log after.log --baseline good2.log --baseline good3.log   # new = in none of the good runs
 ```
 
 Exit codes: `0` success, `1` error, `2` something requested by a `--fail-on-*` flag was found.

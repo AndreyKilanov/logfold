@@ -71,10 +71,18 @@ value. Gates and exit codes look at new templates only, so they do not depend on
 ```
 logfold diff BEFORE AFTER [options]
 logfold diff LOG --split-at TIME [options]
+logfold diff BEFORE AFTER --baseline MORE.log [--baseline ...] [options]
 ```
 
 `BEFORE` and `AFTER` are single log files (for example before and after a deploy, or a passing and a failing CI job)
 or two saved reports of `logfold analyze --out result.json`; both must be of one kind.
+
+With `--baseline FILE` (repeatable) the first argument is the first baseline and each option adds one: the baselines
+are pooled, so a template is `new` only if none of them has it, and `disappeared` or `changed` only if it occurs in at
+least `--min-baselines` of them (default all). A template seen in some baselines but fewer than that is unstable and is
+reported as nothing. It works with log files only, not with saved reports or `--split-at`. Every baseline is read in
+full, so time and memory grow with their number; 3 to 5 recent good runs are usually enough, and more than 10 give a
+warning.
 
 With `--split-at TIME` give **one** log: the records before `TIME` are the first run and the records from `TIME` on are
 the second, for example the hour before an incident against the hour after it. `--since` and `--until` bound the whole
@@ -88,6 +96,8 @@ see below), plus:
 | `--threshold-ratio` | 2.0 | factor by which a template's share must change to be reported as `changed` (at least 1) |
 | `--min-count` | 10 | records, in either run, needed to report `changed` |
 | `--min-new-count` | 1 | records needed to report a template as new or disappeared |
+| `--baseline FILE` | none | another baseline log besides `BEFORE`; repeat it for more |
+| `--min-baselines N` | all | with `--baseline`, the number of baselines a template must occur in to be reported as disappeared or changed |
 | `--significance` | 0.01 | highest p-value of a `changed` template that is still reported (0 < P <= 1); `1` keeps every template that passes the ratio and count thresholds |
 | `--matcher` | `jaccard` | `jaccard`, `token_subset` or `exact`; plugins add more ([how to choose](guide.md#choosing-a-matcher)) |
 | `--recount` / `--no-recount` | on | assign every record to the finished template tree; `--no-recount` is faster but can show spurious differences |
