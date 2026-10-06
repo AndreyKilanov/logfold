@@ -29,10 +29,22 @@ _TICK_BYTES = 1 << 20
 ParsedRecord = tuple[str, "int | None", bool, "int | None"]
 
 
-class _Parser:
-    """Parses records of a :class:`~logfold.ext.formats.FormatSpec` (``docs/ALGORITHM.md`` §1.2)."""
+class RecordParser:
+    """Parses records of a :class:`~logfold.ext.formats.FormatSpec` (``docs/ALGORITHM.md`` §1.2).
+
+    Attributes:
+        multiline: Whether lines that do not start a record continue the previous one.
+    """
 
     def __init__(self, spec: FormatSpec) -> None:
+        """Compile the patterns of ``spec``.
+
+        Args:
+            spec: The format specification.
+
+        Raises:
+            FormatError: If the timestamp format is invalid.
+        """
         self.multiline = spec.multiline
         self._spec = spec
         self._ts: tp.TsFormat | None = None
@@ -50,6 +62,7 @@ class _Parser:
             self._record_start = re.compile(spec.record_start)
 
     def starts_record(self, line: str) -> bool:
+        """Tell whether ``line`` is the first line of a record (used for multiline formats)."""
         if isinstance(self._spec, RegexFormat):
             assert self._regex is not None
             return self._regex.search(line) is not None
@@ -61,6 +74,7 @@ class _Parser:
         return self._ts.parse(text) if self._ts is not None else tp.parse_iso(text)
 
     def parse(self, first: str, continuation: str) -> ParsedRecord | None:
+        """Parse one record; ``None`` when the first line does not match the format."""
         spec = self._spec
         if isinstance(spec, PlainFormat):
             return first + continuation, None, False, None
@@ -163,7 +177,7 @@ def _lines(stream: IO[bytes]) -> Iterator[bytes]:
 
 def _scan(
     path: str,
-    parser: _Parser,
+    parser: RecordParser,
     counters: _Counters,
     on_record: Callable[[str, int | None, int | None], None],
     tick: Callable[[int], None],
@@ -243,7 +257,7 @@ class PythonEngine:
             Templates with per-run statistics.
         """
         started = time.perf_counter()
-        parser = _Parser(request.format)
+        parser = RecordParser(request.format)
         masker = Masker(request.mining.masks)
         splitter = re.compile("[^" + re.escape(request.mining.delimiters) + "]+")
         n_runs = len(request.runs)

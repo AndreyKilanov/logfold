@@ -61,6 +61,18 @@ Examples = Annotated[
 AsJson = Annotated[
     bool, typer.Option("--json", help="Print JSON to stdout instead of tables.", rich_help_panel=PANEL_OUTPUT)
 ]
+Level = Annotated[
+    str | None,
+    typer.Option(
+        "--level",
+        help="Keep templates whose most severe level is at least this: TRACE, DEBUG, INFO, WARN, ERROR or FATAL.",
+        rich_help_panel=PANEL_OUTPUT,
+    ),
+]
+OnlyAlerts = Annotated[
+    bool,
+    typer.Option("--only-alerts", help="Same as --level WARN.", rich_help_panel=PANEL_OUTPUT),
+]
 SimTh = Annotated[
     float | None,
     typer.Option(

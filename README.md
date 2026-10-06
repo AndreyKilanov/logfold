@@ -75,6 +75,8 @@ Analyze a log:
 
 ```
 logfold analyze app.log --top 30 --out report.html
+logfold analyze app.log --only-alerts     # only WARN, ERROR and FATAL templates
+logfold inspect app.log                   # how the file is read: format, first records, levels
 ```
 
 The format is detected from a sample of the file (nginx, apache, syslog, journald, Kubernetes, JSON lines, logfmt and

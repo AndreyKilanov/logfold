@@ -11,6 +11,7 @@ import typer
 
 import logfold
 from logfold.cli import exit_codes
+from logfold.cli.levels import diff_note, filter_diff, resolve_level
 from logfold.cli.options import (
     PANEL_DIFF,
     AsJson,
@@ -21,10 +22,12 @@ from logfold.cli.options import (
     Examples,
     Format,
     HighCardinality,
+    Level,
     MaxChildren,
     MaxTemplates,
     Multiline,
     NoMasks,
+    OnlyAlerts,
     Out,
     Quiet,
     Report,
@@ -36,7 +39,7 @@ from logfold.cli.options import (
     mining_options,
 )
 from logfold.cli.output import resolve_outputs
-from logfold.cli.runtime import emit, fail, progress_reporter, warn_ignored, write_report
+from logfold.cli.runtime import emit, fail, note, progress_reporter, warn_ignored, write_report
 from logfold.errors import LogfoldError
 from logfold.model import DiffResult
 
@@ -145,6 +148,8 @@ def diff(
             rich_help_panel=PANEL_DIFF,
         ),
     ] = False,
+    level: Level = None,
+    only_alerts: OnlyAlerts = False,
     out: Out = None,
     report: Report = None,
     sim_th: SimTh = None,
@@ -169,6 +174,7 @@ def diff(
     """
     try:
         outputs = resolve_outputs("diff", out, report, as_json)
+        threshold = resolve_level(level, only_alerts)
         for path in (before, after):
             if not path.is_file():
                 raise logfold.SourceError(f"cannot read '{path}': no such file")
@@ -232,6 +238,10 @@ def diff(
                     ),
                 )
             warn_ignored(result.metrics, warm_start, chunk_mb, quiet)
+        if threshold is not None:
+            filtered = filter_diff(result, threshold)
+            note(diff_note(result, filtered, threshold), quiet)
+            result = filtered
         emit(result, top, outputs.stdout)
         if out is not None and outputs.file is not None:
             write_report(result, out, outputs.file, quiet)

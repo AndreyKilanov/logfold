@@ -74,6 +74,8 @@ pip install "logfold[cli]"
 
 ```
 logfold analyze app.log --top 30 --out report.html
+logfold analyze app.log --only-alerts     # только шаблоны WARN, ERROR и FATAL
+logfold inspect app.log                   # как читается файл: формат, первые записи, уровни
 ```
 
 Формат определяется по образцу файла (nginx, apache, syslog, journald, Kubernetes, JSON-строки, logfmt и другие). Если
