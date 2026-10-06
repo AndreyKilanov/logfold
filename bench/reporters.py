@@ -1,14 +1,18 @@
-"""Time and memory of the reporters on results with many templates, built in memory.
+"""Time and memory of the reporters on results with many templates, built in memory, in Python and in the Rust core.
 
 The reporters only read the public result model, so the results are made from a tiny real diff by replacing its template
-lists with ``--sizes`` synthetic ones: most templates are new, a fifth changed or gone, a fifth of the new ones WARN or
-ERROR. Each reporter runs with its default options and with every template asked for (``all``); the best of
-``--repeat`` runs is the time, ``tracemalloc`` gives the peak of the Python allocations of one more run::
+lists with ``--sizes`` synthetic ones: most templates are new, a fifth changed or gone, about 18 percent of the new ones
+WARN or ERROR. Each reporter runs with its default options (``default``) and with every template asked for (``all``).
+The four pipeline reporters run twice: ``python`` is ``render_reference``, the pure-Python implementation, and ``rust`` is
+``render``, which hands the columns of the result to the Rust core (the script switches off the rule that sends short
+listings to Python), so its time includes building the columns. The best of
+``--repeat`` runs is the time; ``tracemalloc`` gives the peak of the Python allocations of one more run (the memory of the
+Rust side is not in it)::
 
     python bench/reporters.py --sizes 5000 20000 100000
     python bench/reporters.py --reporter junit prometheus --repeat 5
 
-``csv``, ``json`` and ``markdown`` are in the default list for scale: they are the reporters that already write every
+``csv``, ``json`` and ``markdown`` are in the default list for scale: they are Python reporters that already write every
 template.
 """
 
@@ -17,17 +21,21 @@ from __future__ import annotations
 import argparse
 import math
 import random
+import sys
 import tempfile
 import time
 import tracemalloc
+from collections.abc import Callable
 from dataclasses import replace
 from datetime import datetime
+from functools import partial
 from hashlib import sha256
 from pathlib import Path
 
 import logfold
-from logfold.ext import registry
+from logfold.ext import native_reports, registry
 from logfold.model import AnalysisResult, DiffEntry, DiffResult, Template
+from logfold.plugins import report_data
 
 DEFAULT_REPORTERS = ["csv", "json", "markdown", "github-summary", "junit", "chat-message", "prometheus"]
 UNLIMITED = 1 << 40
@@ -89,17 +97,15 @@ def synthetic_results(size: int) -> tuple[AnalysisResult, DiffResult]:
     return replace(analysis_base, templates=templates), diff
 
 
-def measure(
-    result: AnalysisResult | DiffResult, name: str, options: dict[str, object], repeat: int
-) -> tuple[float, int, int]:
+def measure(render: Callable[[], str], repeat: int) -> tuple[float, int, int]:
     """Return the best time, the peak Python memory and the length of one rendering."""
     best, text = math.inf, ""
     for _ in range(repeat):
         started = time.perf_counter()
-        text = result.render(name, **options)
+        text = render()
         best = min(best, time.perf_counter() - started)
     tracemalloc.start()
-    result.render(name, **options)
+    render()
     peak = tracemalloc.get_traced_memory()[1]
     tracemalloc.stop()
     return best, peak, len(text.encode("utf-8"))
@@ -112,22 +118,31 @@ def main() -> None:
     parser.add_argument("--reporter", nargs="+", default=DEFAULT_REPORTERS, help="reporters to time")
     parser.add_argument("--repeat", type=int, default=3, help="runs per cell; the best is shown")
     args = parser.parse_args()
-    print("| templates | result | reporter | rows | time | Python memory | output |")
-    print("|---:|---|---|---|---:|---:|---:|")
+    if native_reports.get_renderer() is None:
+        sys.exit("the native extension is not built: run `maturin develop --release`")
+    report_data.MIN_LISTED = 0  # measure the Rust path itself, not the choice between the two
+    report_data.LISTED_FRACTION = 10**9
+    print("| templates | result | reporter | engine | rows | time | Python memory | output |")
+    print("|---:|---|---|---|---|---:|---:|---:|")
     for size in args.sizes:
         analysis, diff = synthetic_results(size)
         for kind, result in (("analysis", analysis), ("diff", diff)):
             for name in args.reporter:
-                if kind not in registry.get_reporter(name).kinds:
+                reporter = registry.get_reporter(name)
+                if kind not in reporter.kinds:
                     continue
+                engines = {"python": getattr(reporter, "render_reference", reporter.render)}
+                if hasattr(reporter, "render_reference"):
+                    engines["rust"] = reporter.render
                 for rows in ("default", "all"):
                     options = {} if rows == "default" else {"top": size, "max_bytes": UNLIMITED, "max_chars": UNLIMITED}
-                    seconds, peak, length = measure(result, name, options, args.repeat)
-                    print(
-                        f"| {size:,} | {kind} | {name} | {rows} | {seconds * 1000:,.0f} ms | {peak / 1e6:,.1f} MB "
-                        f"| {length / 1e6:,.2f} MB |",
-                        flush=True,
-                    )
+                    for engine, render in engines.items():
+                        seconds, peak, length = measure(partial(render, result, **options), args.repeat)
+                        print(
+                            f"| {size:,} | {kind} | {name} | {engine} | {rows} | {seconds * 1000:,.0f} ms "
+                            f"| {peak / 1e6:,.1f} MB | {length / 1e6:,.2f} MB |",
+                            flush=True,
+                        )
 
 
 if __name__ == "__main__":
