@@ -13,6 +13,7 @@ mod freeze;
 mod level;
 mod masker;
 mod miner;
+pub mod report;
 mod stats;
 mod tokenizer;
 
