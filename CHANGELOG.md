@@ -20,14 +20,21 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Changed
 
-- No built-in reporter returns a raw control character from a log: escape sequences are shown as hex escapes (`json` uses
-  unicode escapes), so a report is safe to print on a terminal. Values on the result objects stay raw.
-- Format detection reads a bounded sample (lines cut at 1 MiB, 8 MiB in total), so a huge single-line file no longer
-  allocates memory in proportion to its size.
-- Error messages are shorter: paths are not wrapped or doubled, the system's localized text is not repeated, and markup in
-  a path is printed literally. An unwritable `--out` file is an error, not a traceback.
+- Error messages are shorter: the system's localized text is not repeated and markup in a path is printed literally.
 - Terminal output: a `levels:` line, "N more templates (X% of records)", a hint to open a written HTML report, and the
   transfer speed in progress.
+
+### Fixed
+
+- An unwritable `--out` file is an error, not a traceback; paths in errors are not wrapped or shown with doubled
+  backslashes on Windows.
+
+### Security
+
+- No built-in reporter returns a raw control character from a log (terminal escape sequences): they are shown as hex
+  escapes (`json` uses unicode escapes). Values on the result objects stay raw.
+- Format detection reads a bounded sample (lines cut at 1 MiB, 8 MiB in total), so a huge single-line file or a gzip bomb
+  no longer allocates memory in proportion to its size.
 
 ## [0.3.0] - 2026-10-05
 
