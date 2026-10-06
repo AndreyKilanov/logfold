@@ -194,6 +194,27 @@ What it says, with the caveat of five reachable twins per mode:
 - Neither beats `jaccard`, which stays the default. They are alternatives for logs where `jaccard` joins siblings
   (`jaccard-idf`) or where messages get longer (`overlap`), and `rules` covers the rest by hand.
 
+### The BGL log with the full window
+
+The mix-ups of `jaccard` in the 0.3.0 evaluation were mostly in the BGL `FATAL` family of 45-55 near-identical templates, which
+is the case `jaccard-idf` and `overlap` were meant for. The same log with the full window (2.3 million lines, 1.15 million per
+side, three reworded words), the matchers of 0.4.0 next to `jaccard`:
+
+| source | mode | reachable twins | `jaccard`: twins / pairs, mixed up, joined with a non-twin | `jaccard-idf` | `overlap` |
+|---|---|---:|---:|---:|---:|
+| saved | swap | 60 | 54 / 114, 5, 1 | 52 / 86, 5, 0 | 53 / 117, 7, 1 |
+| saved | extend | 59 | 49 / 111, 6, 0 | 49 / 83, 5, 0 | 49 / 113, 8, 0 |
+| saved | novel (a different message) | 60 | 0 / 56, 0, 0 | 0 / 29, 0, 0 | 0 / 57, 1, 1 |
+| live | extend | 50 | 44 / 53, 4, 0 | 44 / 47, 3, 0 | 46 / 55, 4, 0 |
+| live | novel | 48 | 0 / 3, 0, 0 | 0 / 0, 0, 0 | 0 / 5, 0, 0 |
+
+Reported templates on saved results (the pair with no change): 95 with `exact`, 60 with `jaccard`, 75 with `jaccard-idf`, 64
+with `overlap` for the stationary pair; 174, 144, 152 and 137 for the adjacent pair.
+
+`jaccard-idf` mixes up one sibling less in `extend` and none less in `swap` (5 and 5), finds two twins fewer in `swap`, and makes
+no false merge in `novel`. `overlap` mixes up more siblings than `jaccard` and joined different messages once in `novel`. Neither
+solves the sibling mix-ups: the siblings of this family differ in the number of `<*>` or in a host name, not in a rare word.
+
 ## Which one to choose
 
 | | exact | token_subset | jaccard (default) |
