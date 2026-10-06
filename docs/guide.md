@@ -140,7 +140,7 @@ Three more matchers ship as default plugins, all computed by the Rust core:
 | use it when | `jaccard` joins siblings that differ in a rare word | a message got longer and `jaccard` falls below its threshold | you know the rewording and no similarity rule gets it |
 | risk | one shared rare word (a host, an id) can outweigh many different common ones | joins a short template with a long one that merely contains its words (4 of about 280 pairs in the reworded-all test) | none beyond your rules |
 
-None of them beats `jaccard` on the measurements in [`bench/docs/MATCHER_PLUGINS.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/docs/MATCHER_PLUGINS.md):
+None of them beats `jaccard` on the measurements in [`bench/docs/diff/DIFF_MATCHERS.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/docs/diff/DIFF_MATCHERS.md#the-040-matchers-accuracy):
 `jaccard-idf` pairs about half as many unrelated templates and never merged two different messages there, `overlap` merged some,
 so `jaccard` stays the default.
 
@@ -148,7 +148,7 @@ In a `diff` of two logs (the shared tree and the recount) `token_subset` and `ex
 already merges generalizations; `jaccard` differs only where templates keep host names or other literals. For saved results the
 three differ most. The exit-code gates (`--fail-on-new`, `--fail-on-new-alerts`) count new templates only, and a paired template is
 `changed`, so use `--matcher exact` for a gate that must fail on every new text. Measurements on four large real logs, and how they were made, are in
-[`bench/docs/DIFF_MATCHERS.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/docs/DIFF_MATCHERS.md).
+[`bench/docs/diff/DIFF_MATCHERS.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/docs/diff/DIFF_MATCHERS.md).
 
 ## Reports
 
@@ -209,7 +209,7 @@ templates that result cannot be merged back: the parallel result holds more rare
 masks: 341 against 43; the large templates are the same). `--warm-start` (`warm_start=True`) trains the first chunk alone and
 starts every other chunk from a copy of its tree, which removes most of the strays. The price is a serial prefix of one chunk (a
 smaller `--chunk-mb` makes it cheaper) and a copy of the tree per chunk; it does not apply to the sequential strategy, and
-it is off by default. Numbers: [`bench/docs/WARM_START.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/docs/WARM_START.md).
+it is off by default. Numbers: [`bench/docs/engine/WARM_START.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/docs/engine/WARM_START.md).
 
 ### High-cardinality data
 

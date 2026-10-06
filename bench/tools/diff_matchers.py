@@ -19,7 +19,7 @@ For every log the script builds three kinds of pairs from windows of its first l
 Every pair is run twice: ``live`` (``diff`` of the two files: one shared tree and a recount) and ``saved``
 (each file analyzed on its own and the two results compared, like ``logfold diff before.json after.json``).
 
-Raw results go to ``bench/results/diff-matchers.json``; the discussion is in ``bench/docs/DIFF_MATCHERS.md``.
+Raw results go to ``bench/results/diff-matchers.json``; the discussion is in ``bench/docs/diff/DIFF_MATCHERS.md``.
 
 Usage::
 

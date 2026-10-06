@@ -1,8 +1,8 @@
 # Large real logs: Loghub-2.0
 
-How logfold behaves on four multi-gigabyte real logs, measured with the benchmark protocol ([`PROTOCOL.md`](../PROTOCOL.md)).
+How logfold behaves on four multi-gigabyte real logs, measured with the benchmark protocol ([`PROTOCOL.md`](../../PROTOCOL.md)).
 Only logfold is measured here; the competitors are not (Drain3 needs minutes per gigabyte). Raw data:
-[`results/loghub2/`](../results/loghub2).
+[`results/loghub2/`](../../results/loghub2).
 
 ## Source (pinned)
 
@@ -10,7 +10,7 @@ Only logfold is measured here; the competitors are not (Drain3 needs minutes per
 - **Copy used**: the Hugging Face dataset `bolu61/loghub_2` (an unofficial upload of the same files: plain text, one log line
   per line, **no ground truth**) at the pinned revision **`4a98d3eb30522891b340609d17fa34709a1d44d2`**.
 - **Pinned in code**: `REVISION` and `PINNED_FILES` (size and SHA-256 of every file) in
-  [`download_loghub2.py`](../tools/download_loghub2.py). Downloads come from that revision and are checked against the pinned values;
+  [`download_loghub2.py`](../../tools/download_loghub2.py). Downloads come from that revision and are checked against the pinned values;
   `python bench/tools/download_loghub2.py --verify` checks the files you already have.
 - **Verified on 2026-10-04**: size and SHA-256 of the four local files equal the pinned values.
 - **To cite**: Z. Jiang et al., *A Large-scale Evaluation for Log Parsing Techniques: How Far are We?*, ISSTA 2024
