@@ -16,12 +16,12 @@ from logfold.plugins import catalog
 
 def entry(**changes: Any) -> dict[str, Any]:
     base: dict[str, Any] = {
-        "name": "haproxy",
+        "name": "traefik",
         "kinds": ["format"],
-        "package": "logfold-haproxy",
+        "package": "logfold-traefik",
         "specifier": ">=0.2, <1",
         "description": "HAProxy HTTP logs",
-        "homepage": "https://example.org/logfold-haproxy",
+        "homepage": "https://example.org/logfold-traefik",
     }
     base.update(changes)
     return base
@@ -52,9 +52,9 @@ class FakeResponse:
 def test_valid_catalog_is_parsed_and_the_specifier_is_normalized() -> None:
     parsed = catalog.parse_catalog(document(entry()), "test")
     plugin = parsed.entries[0]
-    assert plugin.requirement == "logfold-haproxy>=0.2,<1"
+    assert plugin.requirement == "logfold-traefik>=0.2,<1"
     assert plugin.kinds == ("format",)
-    assert parsed.find("haproxy") is plugin
+    assert parsed.find("traefik") is plugin
     assert parsed.find("nope") is None
 
 
@@ -95,7 +95,7 @@ def test_unsafe_entries_are_rejected(bad: dict[str, Any]) -> None:
         {"schema_version": 2, "plugins": []},
         {"schema_version": 1},
         {"schema_version": 1, "plugins": {}},
-        {"schema_version": 1, "plugins": ["haproxy"]},
+        {"schema_version": 1, "plugins": ["traefik"]},
         {"schema_version": 1, "plugins": [entry() for _ in range(2)]},
         {"schema_version": 1, "plugins": [entry(name=f"p{i}", package=f"p{i}") for i in range(501)]},
     ],
@@ -108,7 +108,7 @@ def test_malformed_documents_are_rejected(bad: Any) -> None:
 def test_load_from_a_file(tmp_path: Path) -> None:
     path = tmp_path / "catalog.json"
     path.write_text(json.dumps(document(entry())), encoding="utf-8")
-    assert catalog.load(str(path)).entries[0].name == "haproxy"
+    assert catalog.load(str(path)).entries[0].name == "traefik"
 
 
 def test_load_reports_missing_and_broken_files(tmp_path: Path) -> None:
@@ -144,7 +144,7 @@ def test_online_fetch_validates_and_labels_the_source(monkeypatch: pytest.Monkey
     monkeypatch.setattr("urllib.request.urlopen", urlopen)
     fetched = catalog.load(online=True)
     assert fetched.source == catalog.DEFAULT_CATALOG_URL
-    assert fetched.entries[0].package == "logfold-haproxy"
+    assert fetched.entries[0].package == "logfold-traefik"
     url, agent, timeout = requested[0]
     assert url.startswith("https://")
     assert agent.startswith("logfold/")
@@ -189,7 +189,7 @@ def test_new_plugins_are_the_ones_that_are_not_installed() -> None:
     parsed = catalog.parse_catalog(
         document(entry(), entry(name="other", package="logfold-other", kinds=["reporter", "matcher"])), "test"
     )
-    assert [e.name for e in catalog.new_plugins(parsed, installed=lambda package: package == "logfold-haproxy")] == [
+    assert [e.name for e in catalog.new_plugins(parsed, installed=lambda package: package == "logfold-traefik")] == [
         "other"
     ]
     assert len(catalog.new_plugins(parsed, installed=lambda _package: False)) == 2
@@ -215,7 +215,7 @@ def test_install_runs_pip_with_the_validated_requirement(monkeypatch: pytest.Mon
     monkeypatch.setattr("importlib.util.find_spec", lambda _name: object())
     assert catalog.install(plugin, runner=runner) == 0
     command, kwargs = calls[0]
-    assert command[1:] == ["-m", "pip", "install", "logfold-haproxy>=0.2,<1"]
+    assert command[1:] == ["-m", "pip", "install", "logfold-traefik>=0.2,<1"]
     assert kwargs == {"check": False}
 
 
@@ -234,7 +234,7 @@ def test_install_without_pip_falls_back_to_uv(monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr("shutil.which", lambda _name: "/bin/uv")
     assert catalog.install(plugin, runner=runner) == 0
     assert calls[0][:3] == ["/bin/uv", "pip", "install"]
-    assert calls[0][-1] == "logfold-haproxy>=0.2,<1"
+    assert calls[0][-1] == "logfold-traefik>=0.2,<1"
     assert "--python" in calls[0]
 
 

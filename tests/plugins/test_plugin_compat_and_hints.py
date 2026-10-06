@@ -28,7 +28,7 @@ def test_catalog() -> catalog.Catalog:
     document = {
         "schema_version": 1,
         "plugins": [
-            entry("haproxy", min_logfold="0.1.0"),
+            entry("traefik", min_logfold="0.1.0"),
             entry("newer", min_logfold="99.0.0"),
             entry("shipper", kinds=["reporter"]),
         ],
@@ -91,13 +91,13 @@ def test_install_refuses_an_incompatible_plugin_without_running_anything(test_ca
 def test_listing_marks_an_incompatible_plugin(test_catalog: catalog.Catalog) -> None:
     rows = {row.name: row for row in list_plugins(status="available", catalog=test_catalog)}
     assert (rows["newer"].compatible, rows["newer"].min_logfold) == (False, "99.0.0")
-    assert (rows["haproxy"].compatible, rows["haproxy"].min_logfold) == (True, "0.1.0")
+    assert (rows["traefik"].compatible, rows["traefik"].min_logfold) == (True, "0.1.0")
     assert plugin_info("shipper", catalog=test_catalog)[0].min_logfold is None
 
 
 def test_hint_offers_the_install_command_for_an_exact_catalog_name(test_catalog: catalog.Catalog) -> None:
-    hint = unknown_name_hint("format", "haproxy", test_catalog)
-    assert hint == "the plugin 'haproxy' is available: logfold plugins install haproxy"
+    hint = unknown_name_hint("format", "traefik", test_catalog)
+    assert hint == "the plugin 'traefik' is available: logfold plugins install traefik"
 
 
 def test_hint_for_an_incompatible_plugin_says_what_it_needs(test_catalog: catalog.Catalog) -> None:
@@ -105,13 +105,13 @@ def test_hint_for_an_incompatible_plugin_says_what_it_needs(test_catalog: catalo
 
 
 def test_hint_looks_only_at_the_kind_that_was_asked_for(test_catalog: catalog.Catalog) -> None:
-    assert unknown_name_hint("matcher", "haproxy", test_catalog) is None
+    assert unknown_name_hint("matcher", "traefik", test_catalog) is None
     assert unknown_name_hint("reporter", "shipper", test_catalog) is not None
 
 
 def test_hint_corrects_a_typo_among_catalog_and_installed_names(test_catalog: catalog.Catalog) -> None:
-    assert unknown_name_hint("format", "haproxi", test_catalog) == (
-        "did you mean 'haproxy'? the plugin 'haproxy' is available: logfold plugins install haproxy"
+    assert unknown_name_hint("format", "traefic", test_catalog) == (
+        "did you mean 'traefik'? the plugin 'traefik' is available: logfold plugins install traefik"
     )
     assert unknown_name_hint("matcher", "jacard", test_catalog) == "did you mean 'jaccard'?"
 

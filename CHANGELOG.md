@@ -7,6 +7,8 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Added
 
+- Default format plugins `haproxy`, `postgresql`, `postgresql-csv`, `docker-json`, `github-actions` and `log4j`, and
+  `--format "log4j:<pattern>"` (library: `log4j_format()` in `logfold.ext`) for any log4j or logback pattern.
 - `--append` for `--out` on `analyze` and `diff` (and `save(append=True)`) adds a text or Markdown report to a file, for
   `$GITHUB_STEP_SUMMARY`; new page `docs/ci.md` with GitHub Actions and GitLab CI recipes.
 - `diff` with several baselines: `--baseline FILE` (repeatable) and `--min-baselines N`; a template is new only if no

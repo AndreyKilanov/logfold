@@ -21,6 +21,12 @@ They are part of `pip install logfold`; nothing else has to be installed.
 |---|---|---|
 | format | `logfmt` | `key=value` lines such as `ts=2026-10-04T10:00:01Z level=warn msg="slow query" took=412ms` |
 | format | `serilog-clef` | Serilog compact JSON (`@t`, `@m` / `@mt`, `@l`) |
+| format | `haproxy` | HAProxy HTTP and TCP logs (`option httplog`, `option tcplog`), with or without the syslog prefix; the message runs from the frontend to the end of the line, so the termination state (`----`, `sH--`) is part of the template |
+| format | `postgresql` | the `stderr` log; any `log_line_prefix` that starts with a timestamp; `DETAIL`, `HINT` and `STATEMENT` lines are records of their own, indented continuation lines of a statement join the record |
+| format | `postgresql-csv` | `csvlog`: severity is the 12th column, the message the 14th |
+| format | `docker-json` | Docker `json-file` driver: `{"log": "...", "stream": "stdout", "time": "..."}` |
+| format | `github-actions` | job logs with 7-digit timestamps and a leading byte-order mark; `##[error]`, `##[warning]`, `##[notice]` and `##[debug]` are the level, other `##[...]` commands stay in the message |
+| format | `log4j` | the pattern `%d{ISO8601} %-5p [%t] %c - %m%n`; stack traces join their record; any other pattern: `log4j:<pattern>` |
 | reporter | `markdown` | Markdown tables for an analysis or a diff |
 | reporter | `csv` | one template per row, for spreadsheets and scripts |
 | matcher | `jaccard` | the default matcher of `diff`: pairs templates whose words overlap by at least 60%, so a reworded message is one template |
@@ -29,6 +35,31 @@ They are part of `pip install logfold`; nothing else has to be installed.
 logfold analyze app.logfmt --format logfmt
 logfold diff before.logfmt after.logfmt --format logfmt --matcher jaccard
 ```
+
+None of the format plugins is picked by `--format auto`: name the one you need (`--format haproxy`).
+
+### log4j and logback patterns
+
+`--format "log4j:<pattern>"` (library: `format="log4j:<pattern>"`) turns the conversion pattern of your appender into a
+format, so the layout is written once, where it is already known:
+
+```
+logfold analyze app.log --format "log4j:%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+```
+
+```python
+from logfold.ext import log4j_format
+
+spec = log4j_format("%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%t] %c - %m%n", name="shop")
+result = logfold.analyze("app.log", format=spec)
+```
+
+Understood: `%d` (`ISO8601`, `ABSOLUTE`, `DATE`, or a Java date pattern built from `y M d H m s S` and `X`/`Z` for an
+offset), `%p`/`%level`, `%m`/`%msg`, `%c`/`%logger`, `%t`/`%thread`, the other plain fields (`%C %F %L %M %r %X{key} %x
+%u`), `%ex` and its relatives (the stack trace is printed on the following lines and joins the record), `%%`, a trailing
+`%n`, and width modifiers such as `%-5p`. A converter that is not understood (`%highlight`, `%replace`, `%d{EEE}`)
+fails before any log is read, with a hint to write the format as `regex:<pattern>`. Records are multi-line by default,
+so stack traces join the line that started them; `--no-multiline` turns that off.
 
 ```python
 result = logfold.analyze("app.logfmt", format="logfmt")
@@ -64,7 +95,7 @@ the list. It is the quickest way to see that an installed plugin was found, and 
 install command for an available plugin and an example of use for an installed one. A misspelled name gets a
 "did you mean" from the installed and catalog names. Both take `--online` and `--catalog` like `check`.
 
-The same names help where you type them: `unknown format 'haproxy'` ends with a `hint:` that says the plugin is available
+The same names help where you type them: `unknown format 'traefik'` ends with a `hint:` that says the plugin is available
 and how to install it, `logfold formats` lists the format plugins of the catalog, and `analyze --help` shows the
 available ones next to `--format`, `--report` and `--matcher`. A plugin that needs a newer logfold is marked
 `needs logfold X.Y.Z` in `list`, `info` and `formats`, and `install` refuses it (upgrade logfold first).
@@ -95,12 +126,12 @@ The catalog format:
   "schema_version": 1,
   "plugins": [
     {
-      "name": "haproxy",
+      "name": "traefik",
       "kinds": ["format"],
-      "package": "logfold-haproxy",
+      "package": "logfold-traefik",
       "specifier": ">=0.2,<1",
       "description": "HAProxy HTTP logs",
-      "homepage": "https://example.org/logfold-haproxy",
+      "homepage": "https://example.org/logfold-traefik",
       "min_logfold": "0.4.0"
     }
   ]

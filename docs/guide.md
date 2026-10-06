@@ -162,6 +162,12 @@ guesses instead of guessing wrong silently.
 | `app` | `<ISO timestamp> [thread] LEVEL message`, typical of Python, Java and Go services |
 | `logfmt` | `key=value` pairs (default plugin); `msg`, `time`/`ts` and `level` keys are used |
 | `serilog-clef` | Serilog compact JSON (default plugin); `@m`/`@mt`, `@t`, `@l` |
+| `haproxy` | HAProxy HTTP and TCP logs, with or without the syslog prefix (default plugin) |
+| `postgresql`, `postgresql-csv` | PostgreSQL server log, `stderr` and `csvlog` (default plugins) |
+| `docker-json` | Docker `json-file` driver lines: `log`, `time` (default plugin) |
+| `github-actions` | GitHub Actions job logs; `##[error]`, `##[warning]`, `##[debug]` are levels (default plugin) |
+| `log4j` | log4j and logback output in the pattern `%d{ISO8601} %-5p [%t] %c - %m%n` (default plugin) |
+| `log4j:<pattern>` | log4j or logback output in your own conversion pattern, for example `log4j:%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n` |
 | `regex:<pattern>` | your own pattern; named groups `message`/`msg`, `timestamp`/`time`/`ts`, `level`/`lvl` are used |
 
 Multi-line records (stack traces): `--multiline` joins lines that do not start a record to the previous one. With
@@ -212,7 +218,7 @@ installable example is in [`examples/logfold-example-plugin`](../examples/logfol
 
 ```toml
 [project.entry-points."logfold.formats"]
-haproxy = "my_plugin:HAPROXY"
+myapp = "my_plugin:MYAPP"
 
 [project.entry-points."logfold.reporters"]
 markdown = "my_plugin:MarkdownReporter"
@@ -224,8 +230,8 @@ first_word = "my_plugin:FirstWordMatcher"
 ```python
 from logfold.ext import RegexFormat
 
-HAPROXY = RegexFormat(
-    name="haproxy",
+MYAPP = RegexFormat(
+    name="myapp",
     pattern=r"^(?P<ts>\d{2}/\w{3}/\d{4}:[\d:.]+) (?P<lvl>\w+) (?P<msg>.*)$",
     message_group="msg",
     time_group="ts",

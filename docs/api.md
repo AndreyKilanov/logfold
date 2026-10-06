@@ -20,7 +20,7 @@ Folds one run into templates.
 | Argument | Meaning |
 |---|---|
 | `path` | one file or a sequence of files forming a single run (`str` or `PathLike`); `"-"` is standard input; gzip is detected by content |
-| `format` | `"auto"`, a registered name, `"regex:<pattern>"`, a format specification or a `Format` object |
+| `format` | `"auto"`, a registered name, `"regex:<pattern>"`, `"log4j:<pattern>"`, a format specification or a `Format` object |
 | `multiline` | join continuation lines to the previous record; `None` keeps the format's default |
 | `depth`, `sim_th`, `max_children`, `max_templates`, `masks` | mining parameters, see [`MiningConfig`](#mining-and-execution-configuration) |
 | `high_cardinality` | fast bounded mode for data with a huge number of distinct messages |
