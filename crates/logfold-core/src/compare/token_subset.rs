@@ -7,11 +7,7 @@ use ahash::RandomState;
 const WILDCARD: &str = "<*>";
 
 fn tokens(text: &str) -> Vec<&str> {
-    if text.is_empty() {
-        Vec::new()
-    } else {
-        text.split(' ').collect()
-    }
+    if text.is_empty() { Vec::new() } else { text.split(' ').collect() }
 }
 
 fn wildcards(tokens: &[&str]) -> usize {

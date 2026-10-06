@@ -11,7 +11,7 @@ use logfold_core::DrainMiner;
 use logfold_io::Counters;
 
 use crate::error::EngineError;
-use crate::pipeline::{scan_unit, Context};
+use crate::pipeline::{Context, scan_unit};
 use crate::plan::Unit;
 use crate::request::Observer;
 

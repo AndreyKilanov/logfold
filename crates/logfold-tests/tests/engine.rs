@@ -4,7 +4,7 @@ use std::io::Write;
 use std::path::PathBuf;
 
 use logfold_core::default_mask_rules;
-use logfold_engine::{mine, MineRequest, MiningParams, NoObserver, Strategy};
+use logfold_engine::{MineRequest, MiningParams, NoObserver, Strategy, mine};
 use logfold_io::{FormatConfig, FormatSpec};
 
 fn write_log(dir: &tempfile::TempDir, name: &str, lines: usize, seed: usize) -> PathBuf {

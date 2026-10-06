@@ -2,7 +2,7 @@ use logfold_core::{DrainMiner, MinerConfig, Recount};
 use logfold_io::Counters;
 
 use crate::error::EngineError;
-use crate::pipeline::{recount_unit, train_unit, Context};
+use crate::pipeline::{Context, recount_unit, train_unit};
 use crate::plan::Plan;
 use crate::request::Observer;
 

@@ -1,5 +1,5 @@
 [workspace]
-resolver = "2"
+resolver = "3"
 members = [
     "crates/logfold-core",
     "crates/logfold-io",
@@ -11,8 +11,8 @@ members = [
 
 [workspace.package]
 version = "0.3.0"
-edition = "2021"
-rust-version = "1.80"
+edition = "2024"
+rust-version = "1.99"
 license = "MIT"
 authors = ["Andrey Kilanov"]
 repository = "https://github.com/AndreyKilanov/logfold"

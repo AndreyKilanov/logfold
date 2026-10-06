@@ -6,9 +6,9 @@ use std::time::{Duration, Instant};
 use logfold_core::{DrainMiner, MinerConfig, Recount};
 use logfold_io::Counters;
 
-use crate::adaptive::{probe_unit, Tally};
+use crate::adaptive::{Tally, probe_unit};
 use crate::error::EngineError;
-use crate::pipeline::{recount_unit, train_unit, Context};
+use crate::pipeline::{Context, recount_unit, train_unit};
 use crate::plan::Plan;
 use crate::request::Observer;
 
@@ -42,19 +42,21 @@ fn ordered_reduce<R: Send>(
         for _ in 0..threads {
             let sender = sender.clone();
             let (next, folded, abort) = (&next, &folded, &abort);
-            scope.spawn(move || loop {
-                let index = next.fetch_add(1, Ordering::Relaxed);
-                if index >= total {
-                    break;
-                }
-                while index >= folded.load(Ordering::Acquire) + window && !abort.load(Ordering::Relaxed) {
-                    std::thread::sleep(Duration::from_micros(200));
-                }
-                if abort.load(Ordering::Relaxed) {
-                    break;
-                }
-                if sender.send((index, work(index))).is_err() {
-                    break;
+            scope.spawn(move || {
+                loop {
+                    let index = next.fetch_add(1, Ordering::Relaxed);
+                    if index >= total {
+                        break;
+                    }
+                    while index >= folded.load(Ordering::Acquire) + window && !abort.load(Ordering::Relaxed) {
+                        std::thread::sleep(Duration::from_micros(200));
+                    }
+                    if abort.load(Ordering::Relaxed) {
+                        break;
+                    }
+                    if sender.send((index, work(index))).is_err() {
+                        break;
+                    }
                 }
             });
         }

@@ -16,12 +16,12 @@ mod miner;
 mod stats;
 mod tokenizer;
 
-pub use compare::{compare_runs, jaccard_pairs, token_subset_pairs, Changed, Comparison, Matcher, Side, Thresholds};
+pub use compare::{Changed, Comparison, Matcher, Side, Thresholds, compare_runs, jaccard_pairs, token_subset_pairs};
 pub use error::CoreError;
 pub use freeze::FrozenTemplate;
-pub use level::{Level, LEVEL_COUNT};
-pub use masker::{default_mask_rules, MaskRule, MaskScratch, RuleMasker};
-pub use miner::{Assigned, DrainMiner, MinerConfig, RecordMeta, Recount, MAX_EXAMPLE_BYTES, WILDCARD};
+pub use level::{LEVEL_COUNT, Level};
+pub use masker::{MaskRule, MaskScratch, RuleMasker, default_mask_rules};
+pub use miner::{Assigned, DrainMiner, MAX_EXAMPLE_BYTES, MinerConfig, RecordMeta, Recount, WILDCARD};
 pub use stats::RunStats;
 pub use tokenizer::{TokenView, Tokenizer};
 

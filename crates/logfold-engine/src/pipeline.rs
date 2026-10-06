@@ -1,6 +1,6 @@
 use logfold_core::{DrainMiner, MaskScratch, RecordMeta, Recount, RuleMasker, TokenView, Tokenizer};
 use logfold_io::{
-    open_source, scan_records, CompiledFormat, Counters, IoError, LineReader, ParsedRecord, ScanOutcome, ScanWindow,
+    CompiledFormat, Counters, IoError, LineReader, ParsedRecord, ScanOutcome, ScanWindow, open_source, scan_records,
 };
 
 use crate::error::EngineError;

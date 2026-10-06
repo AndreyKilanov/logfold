@@ -3,11 +3,7 @@ use logfold_core::{jaccard_pairs, token_subset_pairs};
 const WILDCARD: &str = "<*>";
 
 fn tokens(text: &str) -> Vec<&str> {
-    if text.is_empty() {
-        Vec::new()
-    } else {
-        text.split(' ').collect()
-    }
+    if text.is_empty() { Vec::new() } else { text.split(' ').collect() }
 }
 
 fn generalizes(general: &[&str], specific: &[&str]) -> bool {
@@ -135,7 +131,7 @@ fn unicode_separators_split_words_like_python() {
 }
 
 mod classification {
-    use logfold_core::{compare_runs, Changed, Matcher, Side, Thresholds};
+    use logfold_core::{Changed, Matcher, Side, Thresholds, compare_runs};
 
     const DEFAULT: Thresholds = Thresholds { ratio: 2.0, min_count: 10, min_new_count: 1 };
 

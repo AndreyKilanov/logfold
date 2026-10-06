@@ -4,8 +4,8 @@ use std::io::Write;
 use std::path::PathBuf;
 
 use logfold_core::default_mask_rules;
-use logfold_engine::{mine, EngineError, MineOutput, MineRequest, MiningParams, NoObserver, Strategy};
-use logfold_io::{parse_iso, FormatConfig, FormatSpec, TimeWindow};
+use logfold_engine::{EngineError, MineOutput, MineRequest, MiningParams, NoObserver, Strategy, mine};
+use logfold_io::{FormatConfig, FormatSpec, TimeWindow, parse_iso};
 
 const SECOND: i64 = 1_000_000;
 const RECORDS: usize = 4000;
