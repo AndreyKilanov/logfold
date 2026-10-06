@@ -226,10 +226,11 @@ working.
 
 `reporter_names()` in `logfold.ext` lists the registered ones, plugins included.
 
-Log content is untrusted, so the `text` and `markdown` reporters pass every value that comes from a log through
-`logfold.ext.printable`: control characters (escape sequences, bell, C1 codes) are shown as `\xNN` instead of reaching your
-terminal, and tabs and line feeds are kept. `csv` keeps the raw values (only formula-safe), and `json` and `html` escape
-them in their own way.
+Log content is untrusted, so no built-in reporter returns a raw control character. `text`, `markdown`, `csv` and `html` pass
+every value that comes from a log through `logfold.ext.printable`: escape sequences, bell and the other C0, DEL and C1
+control characters are shown as `\xNN` instead of reaching your terminal, and tabs and line feeds are kept. `json` escapes
+them as `\uNNNN`, which parses back to the same text. The values on the result objects (`Template.text`,
+`Template.example`, ...) are data and stay raw: pass them through `printable` before printing them yourself.
 
 ## Extension points (`logfold.ext`)
 

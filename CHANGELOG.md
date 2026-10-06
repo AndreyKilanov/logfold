@@ -39,10 +39,11 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Changed
 
-- The `text` and `markdown` reporters pass every value taken from a log through `logfold.ext.printable`: escape sequences,
-  bell and other control characters are shown as \xNN instead of being returned raw, so printing a report on a terminal
-  cannot be driven by the log. Only text that contained control characters changes; `csv` keeps the raw values and `json` and
-  `html` escape them in their own way. The command line reports an unwritable `--out` file as an error instead of a traceback,
+- No built-in reporter returns a raw control character from a log any more. `text`, `markdown`, `csv` and `html` pass every
+  value taken from a log through `logfold.ext.printable`: escape sequences, bell and other control characters are shown as
+  `\xNN` instead of being returned raw, and `json` also escapes DEL and the C1 codes (`\uNNNN`, which parses back to the same
+  text), so printing or `cat`-ing a report on a terminal cannot be driven by the log. Only reports of logs that contained
+  control characters change. The command line reports an unwritable `--out` file as an error instead of a traceback,
   and `logfold info` also lists the diff matchers.
 - Format detection (and `inspect`) reads a bounded sample: a line longer than 1 MiB is cut there and reading stops after
   8 MiB, so a file that is one huge line, or a gzip bomb, no longer makes `--format auto` allocate memory in proportion to

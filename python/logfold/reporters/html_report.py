@@ -10,8 +10,9 @@ import base64
 import hashlib
 import re
 from collections.abc import Sequence
-from html import escape
+from html import escape as _escape
 
+from logfold.ext.text import printable
 from logfold.model import AnalysisResult, DiffEntry, DiffResult, RunSummary, Template
 
 DEFAULT_LIMIT = 2000
@@ -87,6 +88,11 @@ def _example_html(example: str | None) -> str:
     if not example:
         return ""
     return f"<details><summary>example</summary><pre>{escape(example)}</pre></details>"
+
+
+def escape(text: str, quote: bool = True) -> str:
+    """HTML-escape a value; control characters are shown as visible hex escapes, as in the text reports."""
+    return _escape(printable(text), quote=quote)
 
 
 def _count(value: int) -> str:
