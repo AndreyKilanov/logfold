@@ -7,6 +7,7 @@ import dataclasses
 import io
 import json
 import math
+import re
 from pathlib import Path
 
 import pytest
@@ -24,7 +25,7 @@ from logfold.comparison.classify import Classification
 from logfold.engines.base import RunStatsData, TemplateStats
 from logfold.model import DiffEntry, RunSummary
 
-runner = CliRunner(env={"COLUMNS": "200"})
+runner = CliRunner(env={"COLUMNS": "200", "NO_COLOR": "1"})
 
 
 def stats(count: int) -> RunStatsData:
@@ -37,6 +38,11 @@ def template(text: str, before: int, after: int) -> TemplateStats:
 
 def summary(records: int) -> RunSummary:
     return RunSummary("run", 1, records, records, 0, 0, True, False)
+
+
+def plain(text: str) -> str:
+    """Remove the styling that rich adds when it believes it writes to a terminal (as in CI)."""
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
 
 
 def pearson(a: int, b: int, total_a: int, total_b: int) -> float:
@@ -240,7 +246,7 @@ def test_text_and_html_reports_show_the_p_value(pair: tuple[Path, Path]) -> None
 def test_cli_shows_the_p_column_and_accepts_the_option(pair: tuple[Path, Path]) -> None:
     shown = runner.invoke(app, ["diff", str(pair[0]), str(pair[1]), "--min-count", "1", "--significance", "1", "-q"])
     assert shown.exit_code == 0
-    changed = shown.stdout.split("Changed templates")[1].split("Disappeared templates")[0]
+    changed = plain(shown.stdout).split("Changed templates")[1].split("Disappeared templates")[0]
     assert " p " in changed
     rejected = runner.invoke(app, ["diff", str(pair[0]), str(pair[1]), "--significance", "0"])
     assert rejected.exit_code != 0
@@ -269,4 +275,4 @@ def test_cli_significance_applies_to_saved_results(pair: tuple[Path, Path], tmp_
 
 def test_the_default_significance_is_documented_in_help() -> None:
     result = runner.invoke(app, ["diff", "--help"])
-    assert "--significance" in result.stdout
+    assert "--significance" in plain(result.stdout)
