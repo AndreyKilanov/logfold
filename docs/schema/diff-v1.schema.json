@@ -22,7 +22,8 @@
         "min_new_count": { "type": "integer", "minimum": 0 },
         "recount": { "type": "boolean" },
         "matcher": { "type": "string" },
-        "significance": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
+        "significance": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "min_baselines": { "type": ["integer", "null"], "minimum": 1 }
       },
       "additionalProperties": false
     },

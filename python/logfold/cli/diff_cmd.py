@@ -65,7 +65,9 @@ EXAMPLES = """Examples:
 
   logfold diff before.json after.json
 
-  logfold diff app.log --split-at 2026-10-06T12:00"""
+  logfold diff app.log --split-at 2026-10-06T12:00
+
+  logfold diff before1.log after.log --baseline before2.log --baseline before3.log"""
 
 
 def diff(
@@ -88,6 +90,27 @@ def diff(
             help="Compare two parts of one log: records before TIME are the first run, from TIME on the second "
             "(give one file and no second argument; --since and --until bound the whole range).",
             rich_help_panel=PANEL_INPUT,
+        ),
+    ] = None,
+    baseline: Annotated[
+        list[Path] | None,
+        typer.Option(
+            "--baseline",
+            metavar="FILE",
+            help="Another baseline log, besides the first argument; repeat it for more. The baselines are pooled: "
+            "a template is new only if none of them has it.",
+            rich_help_panel=PANEL_INPUT,
+        ),
+    ] = None,
+    min_baselines: Annotated[
+        int | None,
+        typer.Option(
+            "--min-baselines",
+            min=1,
+            metavar="N",
+            help="With --baseline, the number of baselines a template must occur in to be reported as disappeared "
+            "or changed (default: all).",
+            rich_help_panel=PANEL_DIFF,
         ),
     ] = None,
     top: Top = 20,
@@ -194,9 +217,14 @@ def diff(
         if split_at is not None and after is not None:
             raise logfold.ConfigError("--split-at compares two parts of one file: give one file and no second argument")
         second = after if after is not None else before
-        for path in (before, second):
+        extra = baseline or []
+        for path in (before, second, *extra):
             if not path.is_file():
                 raise logfold.SourceError(f"cannot read '{path}': no such file")
+        if extra and (split_at is not None or any(map(logfold.is_saved_analysis, (before, second, *extra)))):
+            raise logfold.ConfigError("--baseline works with log files only, not with --split-at or saved reports")
+        if min_baselines is not None and not extra:
+            raise logfold.ConfigError("--min-baselines needs --baseline")
         saved = (logfold.is_saved_analysis(before), logfold.is_saved_analysis(second))
         if saved[0] != saved[1]:
             raise logfold.ConfigError("diff compares two log files or two saved analysis reports, not one of each")
@@ -246,6 +274,8 @@ def diff(
                     min_count=min_count,
                     min_new_count=min_new_count,
                     significance=significance,
+                    baselines=[str(path) for path in extra] or None,
+                    min_baselines=min_baselines,
                     matcher=matcher,
                     recount=recount,
                     examples=examples,  # type: ignore[arg-type]

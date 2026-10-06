@@ -18,6 +18,7 @@ from logfold.api._common import (
     _summary,
     _warnings,
 )
+from logfold.api.baselines import empty_baselines, pool_baselines, required_baselines
 from logfold.api.comparing import classify_native, table_side
 from logfold.api.matching import accelerated, native_spec
 from logfold.api.saved import MINING_ONLY_DEFAULTS, diff_saved
@@ -59,6 +60,7 @@ def _diff_config(
     recount: bool | None,
     matcher: str | None,
     significance: float | None,
+    min_baselines: int | None,
 ) -> DiffConfig:
     config = base or DiffConfig()
     changes: dict[str, Any] = {}
@@ -69,18 +71,30 @@ def _diff_config(
         ("recount", recount),
         ("matcher", matcher),
         ("significance", significance),
+        ("min_baselines", min_baselines),
     ):
         if value is not None:
             changes[key] = value
     return dataclasses.replace(config, **changes) if changes else config
 
 
-def _windows(since: TimeBound, until: TimeBound, split_at: TimeBound) -> tuple[Window, ...]:
-    """The windows of the two runs: empty without any bound, otherwise one per run."""
+def _windows(since: TimeBound, until: TimeBound, split_at: TimeBound, runs: int) -> tuple[Window, ...]:
+    """The windows of the runs: empty without any bound, otherwise one per run."""
     if split_at is not None:
         return split_windows(since, until, split_at)
     bounds = window(since, until)
-    return (bounds, bounds) if bounds != OPEN else ()
+    return (bounds,) * runs if bounds != OPEN else ()
+
+
+def _baselines(
+    before: tuple[str, ...], more: Sequence[PathLike | Sequence[PathLike]] | None, split_at: TimeBound
+) -> tuple[tuple[str, ...], ...]:
+    """The runs that form the "before" side: ``before`` and the extra baselines."""
+    if not more:
+        return (before,)
+    if split_at is not None:
+        raise ConfigError("split_at compares two parts of one input, so it cannot be combined with baselines")
+    return (before, *(_paths(item, "diff() baselines") for item in more))
 
 
 def diff(
@@ -95,6 +109,8 @@ def diff(
     recount: bool | None = None,
     matcher: str | None = None,
     significance: float | None = None,
+    baselines: Sequence[PathLike | Sequence[PathLike]] | None = None,
+    min_baselines: int | None = None,
     diff_config: DiffConfig | None = None,
     depth: int | None = None,
     sim_th: float | None = None,
@@ -137,6 +153,11 @@ def diff(
             pass over the inputs).
         matcher: Name of the diff matcher (default ``jaccard``).
         significance: Highest p-value of a changed template that is still reported (default 0.01; 1 keeps all).
+        baselines: More baseline runs, each an input or a sequence of inputs, besides ``before``. All baselines are
+            pooled into the first side (counts and records added up, shares normalized by the pooled records), so a
+            template is new only if it occurs in none of them. Logs only: not for analysis results or ``split_at``.
+        min_baselines: With ``baselines``, the number of baselines a template must occur in to be reported as
+            disappeared or changed (default: all); a template in fewer baselines is unstable and is not reported.
         diff_config: Full comparison configuration; the keyword arguments above override its fields.
         depth: Tree depth.
         sim_th: Similarity threshold.
@@ -169,7 +190,9 @@ def diff(
         SourceError: If an input cannot be read.
         EngineError: If the requested engine is unavailable.
     """
-    config = _diff_config(diff_config, threshold_ratio, min_count, min_new_count, recount, matcher, significance)
+    config = _diff_config(
+        diff_config, threshold_ratio, min_count, min_new_count, recount, matcher, significance, min_baselines
+    )
     if after is None:
         if split_at is None:
             raise ConfigError("diff() needs two inputs, or one input and split_at")
@@ -177,6 +200,10 @@ def diff(
     elif split_at is not None:
         raise ConfigError("split_at compares two parts of one input: give one input and no 'after'")
     if isinstance(before, AnalysisResult) or isinstance(after, AnalysisResult):
+        if baselines:
+            raise ConfigError("baselines can only be used with logs, not with saved analysis results")
+        if config.min_baselines is not None:
+            raise ConfigError("min_baselines can only be used with baselines")
         if not (isinstance(before, AnalysisResult) and isinstance(after, AnalysisResult)):
             raise ConfigError("diff() compares two analysis results or two sets of inputs, not one of each")
         given = locals()
@@ -188,7 +215,8 @@ def diff(
     second = _paths(after, "diff() after")
     resolved = resolve_format(format, first, multiline)
     spec = resolved.spec
-    windows = _windows(since, until, split_at)
+    runs = (*_baselines(first, baselines, split_at), second)
+    windows = _windows(since, until, split_at, len(runs))
     if windows:
         require_time(spec)
     if split_at is not None and "-" in first:
@@ -197,17 +225,20 @@ def diff(
         )
     mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks, high_cardinality)
     exec_config = _execution(execution, engine, strategy, threads, chunk_bytes, high_cardinality, warm_start)
-    mined, used = _mine((first, second), spec, mining_config, exec_config, progress, config.recount, windows)
-    before_summary = labeled(_summary(first, mined.runs[0]), windows[0] if windows else OPEN)
-    after_summary = labeled(_summary(second, mined.runs[1]), windows[1] if windows else OPEN)
+    mined, used = _mine(runs, spec, mining_config, exec_config, progress, config.recount, windows)
+    pooled = pool_baselines(mined, len(runs) - 1, required_baselines(len(runs) - 1, config.min_baselines))
+    table = pooled.table
+    before_names = tuple(name for run in runs[:-1] for name in run)
+    before_summary = labeled(_summary(before_names, pooled.before), windows[0] if windows else OPEN)
+    after_summary = labeled(_summary(second, pooled.after), windows[-1] if windows else OPEN)
     masker = Masker(mining_config.masks)
     resolved_matcher = registry.get_matcher(config.matcher)
     native_matcher = native_spec(resolved_matcher) if used.name == "native" and native.supports_comparison() else None
     classification = None
     if native_matcher is not None:
         classification = classify_native(
-            table_side(mined.templates, 0, before_summary),
-            table_side(mined.templates, 1, after_summary),
+            table_side(table, 0, before_summary),
+            table_side(table, 1, after_summary),
             config,
             native_matcher,
             lambda text: _example(text, examples, masker),
@@ -215,7 +246,7 @@ def diff(
     reported = classification
     if reported is None:
         reported = classify(
-            list(mined.templates),
+            list(table),
             before_summary,
             after_summary,
             config,
@@ -228,12 +259,13 @@ def diff(
         reported = Classification(
             scrub(reported.new), scrub(reported.disappeared), scrub(reported.changed), reported.unchanged
         )
+    unchanged = reported.unchanged + pooled.unstable
 
     return DiffResult(
         new_templates=reported.new,
         disappeared=reported.disappeared,
         changed=reported.changed,
-        unchanged=reported.unchanged,
+        unchanged=unchanged,
         before=before_summary,
         after=after_summary,
         config=config,
@@ -249,6 +281,7 @@ def diff(
                 high_cardinality,
                 mined.metrics.strategy,
             ),
+            *empty_baselines(runs[:-1], mined.runs[:-1]),
             *window_warnings(before_summary),
             *window_warnings(after_summary),
         ),

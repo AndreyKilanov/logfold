@@ -238,6 +238,12 @@ After recount (§9), or for two saved results, the templates of two runs are cla
 IEEE double operations in the same order). It does not change mined templates or counts, so it does not affect
 `ALGO_VERSION`.
 
+With several baselines (`diff(before, after, baselines=...)`) the runs are mined and recounted together, then the
+baselines are pooled into the first run before anything below: counts, level counts and records are added up, the
+first time is the earliest and the last the latest, the example is the first one found. A template that occurs in at
+least `min_baselines` baselines (default all) or in none stays; one in some but fewer baselines is left out and, when
+the second run has it too, counted as *unchanged*. One baseline is mined and classified exactly as before.
+
 Inputs: for each run its templates with a text and a record count (a template with a count of zero is not part of the
 run) and the number of records of the run; the thresholds `threshold_ratio` (at least 1), `min_count` and
 `min_new_count`; a matcher (§10).

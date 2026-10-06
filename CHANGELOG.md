@@ -7,6 +7,8 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Added
 
+- `diff` with several baselines: `--baseline FILE` (repeatable) and `--min-baselines N`; a template is new only if no
+  baseline has it (library: `baselines`, `min_baselines`).
 - Time windows: `--since`/`--until` on `analyze` and `diff`, and `diff LOG --split-at TIME` to compare the part of one log
   before a time with the part after it (library: `since`, `until`, `split_at`); extension contract version 5.
 - Plugin names: an unknown format, reporter or matcher gets a hint with the catalog's install command or the closest name;

@@ -77,6 +77,25 @@ Times are ISO 8601. A time with a zone is converted to UTC; a time without one i
 written. A record without a timestamp cannot be placed, so it is left out and counted (`run.untimed`); records outside
 the window are counted in `run.out_of_range` and do not enter the shares.
 
+### Compare with several baselines
+
+A template missing from one good run may still be normal. Give `diff` more good runs and it reports as `new` only what
+none of them has:
+
+```python
+diff("good1.log", "after.log", baselines=["good2.log", "good3.log"])
+diff("good1.log", "after.log", baselines=["good2.log", "good3.log"], min_baselines=2)
+```
+
+```
+logfold diff good1.log after.log --baseline good2.log --baseline good3.log --min-baselines 2
+```
+
+The baselines are mined with one template tree and pooled: counts and records add up, and shares are normalized by the
+pooled records. By default a template must occur in every baseline to be reported as `disappeared` or `changed`;
+`min_baselines` lowers that bar. A template that occurs in some baselines, but in fewer than the minimum, is unstable:
+it is never reported as new, disappeared or changed. Baselines are logs only, not saved results or `--split-at`.
+
 ### Compare saved results
 
 Analyze each log once, keep the JSON, and compare the reports later without the logs:
