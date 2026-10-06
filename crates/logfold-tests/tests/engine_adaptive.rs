@@ -49,6 +49,7 @@ fn write_repetitive(dir: &tempfile::TempDir, lines: usize) -> PathBuf {
 
 fn request(path: &Path, strategy: Strategy, recount: bool) -> MineRequest {
     MineRequest {
+        windows: Vec::new(),
         runs: vec![vec![path.to_path_buf()]],
         format: FormatConfig { spec: FormatSpec::Plain { record_start: None }, ts_format: None, multiline: false },
         masks: default_mask_rules(),

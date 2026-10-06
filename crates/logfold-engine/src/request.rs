@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use logfold_core::{FrozenTemplate, MaskRule};
-use logfold_io::FormatConfig;
+use logfold_io::{FormatConfig, TimeWindow};
 
 /// Default size of a chunk of the chunked strategy.
 pub const DEFAULT_CHUNK_BYTES: u64 = 64 << 20;
@@ -60,6 +60,9 @@ pub enum Strategy {
 pub struct MineRequest {
     /// Runs, each an ordered list of input paths (`-` is standard input).
     pub runs: Vec<Vec<PathBuf>>,
+    /// One time window per run, or empty for no windows: only records inside the window of their run are mined
+    /// (see `docs/ALGORITHM.md` §8a).
+    pub windows: Vec<TimeWindow>,
     /// Log format.
     pub format: FormatConfig,
     /// Masking rules, applied in order.
@@ -87,6 +90,10 @@ pub struct RunSummary {
     pub records: u64,
     /// Lines that did not become part of a record.
     pub unparsed: u64,
+    /// Records left out because their timestamp is outside the time window.
+    pub out_of_range: u64,
+    /// Records left out because they have no timestamp and the time window has a bound.
+    pub untimed: u64,
     /// Total size of the inputs on disk.
     pub bytes: u64,
     /// True when any timestamp carried a zone.

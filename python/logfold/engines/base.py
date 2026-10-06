@@ -32,6 +32,9 @@ class MineRequest:
         warm_start: ``chunked`` only: start every chunk but the first from a copy of the tree of the first.
         recount: Re-assign every record to the finished tree after training; gives consistent assignments
             across runs at the cost of a second pass.
+        windows: One time window per run, or empty for none. A window is ``(since, until)`` in microseconds since the
+            Unix epoch, each bound ``None`` when open: a record is mined when ``since <= timestamp < until``. A record
+            without a timestamp is left out of a run whose window has a bound.
     """
 
     runs: tuple[tuple[str, ...], ...]
@@ -42,6 +45,7 @@ class MineRequest:
     chunk_bytes: int = 64 << 20
     warm_start: bool = False
     recount: bool = False
+    windows: tuple[tuple[int | None, int | None], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -195,6 +199,8 @@ class RunInfo:
         bytes: Total size of the inputs on disk.
         tz_aware: True when any timestamp carried a zone.
         overflowed: True when records were pooled into overflow templates.
+        out_of_range: Records left out because their timestamp is outside the time window.
+        untimed: Records left out because they have no timestamp and the time window has a bound.
     """
 
     files: int
@@ -204,6 +210,8 @@ class RunInfo:
     bytes: int
     tz_aware: bool
     overflowed: bool
+    out_of_range: int = 0
+    untimed: int = 0
 
 
 @dataclass(frozen=True, slots=True)

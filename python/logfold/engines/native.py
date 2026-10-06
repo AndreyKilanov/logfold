@@ -19,7 +19,7 @@ try:
 except ImportError:
     _core = None  # type: ignore[assignment]
 
-EXPECTED_CORE_API_VERSION = 4
+EXPECTED_CORE_API_VERSION = 5
 
 
 def is_available() -> bool:
@@ -161,6 +161,7 @@ def request_to_dict(request: MineRequest) -> dict[str, Any]:
         execution["threads"] = request.threads
     return {
         "runs": [list(files) for files in request.runs],
+        "windows": [tuple(window) for window in request.windows],
         "format": format_to_dict(request.format),
         "masks": [
             {"name": rule.name, "pattern": rule.pattern, "token": rule.token, "ascii": rule.ascii}

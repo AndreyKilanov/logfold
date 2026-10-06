@@ -30,6 +30,9 @@ pub fn mine(request: &MineRequest, observer: &dyn Observer) -> Result<MineOutput
     if request.runs.is_empty() || request.runs.iter().any(|files| files.is_empty()) {
         return Err(EngineError::Config("every run needs at least one input".into()));
     }
+    if !request.windows.is_empty() && request.windows.len() != request.runs.len() {
+        return Err(EngineError::Config("there must be one time window per run".into()));
+    }
     let context = Context::new(request)?;
     let miner_config = MinerConfig::new(
         request.mining.depth,
@@ -102,6 +105,8 @@ pub fn mine(request: &MineRequest, observer: &dyn Observer) -> Result<MineOutput
             lines: counters[run].lines,
             records: counters[run].records,
             unparsed: counters[run].unparsed,
+            out_of_range: counters[run].out_of_range,
+            untimed: counters[run].untimed,
             bytes: planned.run_bytes[run],
             tz_aware: counters[run].tz_aware,
             overflowed: overflowed[run],

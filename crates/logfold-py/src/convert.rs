@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use logfold_core::{FrozenTemplate, Level, MaskRule};
 use logfold_engine::{MineOutput, MineRequest, MiningParams, Strategy, DEFAULT_CHUNK_BYTES};
-use logfold_io::{FormatConfig, FormatSpec};
+use logfold_io::{FormatConfig, FormatSpec, TimeWindow};
 use pyo3::exceptions::PyKeyError;
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
@@ -104,11 +104,18 @@ fn parse_strategy(dict: &Bound<'_, PyDict>) -> PyResult<Strategy> {
     }
 }
 
+fn parse_windows(dict: &Bound<'_, PyDict>) -> PyResult<Vec<TimeWindow>> {
+    let Some(value) = optional(dict, "windows")? else { return Ok(Vec::new()) };
+    let bounds: Vec<(Option<i64>, Option<i64>)> = value.extract()?;
+    Ok(bounds.into_iter().map(|(since, until)| TimeWindow { since, until }).collect())
+}
+
 /// Converts the plain-data request dict into an engine request.
 pub(crate) fn parse_request(dict: &Bound<'_, PyDict>) -> PyResult<MineRequest> {
     let runs: Vec<Vec<String>> = required(dict, "runs")?.extract()?;
     Ok(MineRequest {
         runs: runs.into_iter().map(|files| files.into_iter().map(PathBuf::from).collect()).collect(),
+        windows: parse_windows(dict)?,
         format: parse_format(&sub_dict(dict, "format")?)?,
         masks: parse_masks(&required(dict, "masks")?)?,
         mining: parse_mining(&sub_dict(dict, "mining")?)?,
@@ -192,6 +199,8 @@ pub(crate) fn build_output<'py>(py: Python<'py>, output: &MineOutput) -> PyResul
         item.set_item("lines", run.lines)?;
         item.set_item("records", run.records)?;
         item.set_item("unparsed", run.unparsed)?;
+        item.set_item("out_of_range", run.out_of_range)?;
+        item.set_item("untimed", run.untimed)?;
         item.set_item("bytes", run.bytes)?;
         item.set_item("tz_aware", run.tz_aware)?;
         item.set_item("overflowed", run.overflowed)?;

@@ -58,6 +58,7 @@ where
         skip_first_line: mid_file,
         skip_leading_continuations: mid_file && context.format.multiline(),
         end: unit.end,
+        time: unit.window,
     };
     let mut feeder = Feeder { context, scratch: MaskScratch::default(), spans: Vec::new() };
     let run = unit.run;

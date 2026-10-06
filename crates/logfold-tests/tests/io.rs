@@ -155,7 +155,12 @@ mod records {
             let bounds = [(0u64, split as u64), (split as u64, u64::MAX)];
             for (start, end) in bounds {
                 let begin = start.saturating_sub(1);
-                let window = ScanWindow { skip_first_line: start > 0, skip_leading_continuations: start > 0, end };
+                let window = ScanWindow {
+                    skip_first_line: start > 0,
+                    skip_leading_continuations: start > 0,
+                    end,
+                    time: TimeWindow::default(),
+                };
                 let (messages, counters) = run(&data[begin as usize..], &format, window, begin);
                 all.extend(messages);
                 total.add(&counters);
@@ -165,6 +170,90 @@ mod records {
         }
         assert_eq!(all.len(), 4);
         assert_eq!(total.records, 4);
+    }
+}
+
+mod time_window {
+    use logfold_io::*;
+
+    const SECOND: i64 = 1_000_000;
+
+    fn timed() -> CompiledFormat {
+        CompiledFormat::new(&FormatConfig {
+            spec: FormatSpec::Regex {
+                pattern: r"^(?P<ts>\S+) (?P<msg>.*)$".into(),
+                message_group: Some("msg".into()),
+                time_group: Some("ts".into()),
+                level_group: None,
+            },
+            ts_format: None,
+            multiline: false,
+        })
+        .unwrap()
+    }
+
+    fn run(data: &[u8], time: TimeWindow) -> (Vec<String>, Counters) {
+        let mut messages = Vec::new();
+        let window = ScanWindow { time, ..ScanWindow::whole() };
+        let (counters, _) = scan_records(
+            LineReader::new(data, 0),
+            &timed(),
+            window,
+            |rec| messages.push(String::from_utf8_lossy(&rec.message).into_owned()),
+            |_| true,
+        )
+        .unwrap();
+        (messages, counters)
+    }
+
+    #[test]
+    fn the_window_is_half_open() {
+        let window = TimeWindow { since: Some(10), until: Some(20) };
+        assert_eq!(window.place(Some(9)), Placement::Outside);
+        assert_eq!(window.place(Some(10)), Placement::Inside);
+        assert_eq!(window.place(Some(19)), Placement::Inside);
+        assert_eq!(window.place(Some(20)), Placement::Outside);
+    }
+
+    #[test]
+    fn one_bound_leaves_the_other_side_open() {
+        let from = TimeWindow { since: Some(10), until: None };
+        assert_eq!((from.place(Some(9)), from.place(Some(i64::MAX))), (Placement::Outside, Placement::Inside));
+        let to = TimeWindow { since: None, until: Some(10) };
+        assert_eq!((to.place(Some(i64::MIN)), to.place(Some(10))), (Placement::Inside, Placement::Outside));
+    }
+
+    #[test]
+    fn an_open_window_admits_everything_even_without_a_time() {
+        let open = TimeWindow::default();
+        assert!(open.is_open());
+        assert_eq!(open.place(None), Placement::Inside);
+        assert_eq!(open.place(Some(-5)), Placement::Inside);
+    }
+
+    #[test]
+    fn a_bounded_window_cannot_place_a_record_without_a_time() {
+        let bounded = TimeWindow { since: Some(0), until: None };
+        assert_eq!(bounded.place(None), Placement::Untimed);
+    }
+
+    #[test]
+    fn records_outside_are_counted_apart_and_not_emitted() {
+        let data = b"1970-01-01T00:00:01Z a\n1970-01-01T00:00:05Z b\nnot-a-time c\n1970-01-01T00:00:09Z d\n";
+        let (all, counters) = run(data, TimeWindow::default());
+        assert_eq!(all, vec!["a", "b", "c", "d"]);
+        assert_eq!((counters.records, counters.out_of_range, counters.untimed), (4, 0, 0));
+        let (inside, counters) = run(data, TimeWindow { since: Some(2 * SECOND), until: Some(9 * SECOND) });
+        assert_eq!(inside, vec!["b"]);
+        assert_eq!((counters.lines, counters.records, counters.out_of_range, counters.untimed), (4, 1, 2, 1));
+    }
+
+    #[test]
+    fn the_counters_add_up_over_chunks() {
+        let mut total = Counters::default();
+        total.add(&Counters { records: 2, out_of_range: 3, untimed: 1, ..Counters::default() });
+        total.add(&Counters { records: 1, out_of_range: 4, untimed: 2, ..Counters::default() });
+        assert_eq!((total.records, total.out_of_range, total.untimed), (3, 7, 3));
     }
 }
 
