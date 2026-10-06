@@ -19,7 +19,7 @@ try:
 except ImportError:
     _core = None  # type: ignore[assignment]
 
-EXPECTED_CORE_API_VERSION = 5
+EXPECTED_CORE_API_VERSION = 6
 
 
 def is_available() -> bool:
@@ -33,15 +33,20 @@ def supports_matching() -> bool:
 
 
 def match_templates(
-    kind: str, before: Sequence[str], after: Sequence[str], threshold: float | None = None
+    kind: str,
+    before: Sequence[str],
+    after: Sequence[str],
+    threshold: float | None = None,
+    rules: Sequence[tuple[str, str]] | None = None,
 ) -> list[tuple[int, int]]:
     """Pair the templates of two runs that occur in one run only, in the extension.
 
     Args:
-        kind: ``token_subset`` or ``jaccard``.
+        kind: ``token_subset``, ``jaccard``, ``jaccard_idf``, ``overlap`` or ``rules``.
         before: Template texts present only in the first run.
         after: Template texts present only in the second run.
-        threshold: Minimum similarity of the ``jaccard`` matcher.
+        threshold: Minimum similarity of the ``jaccard``, ``jaccard_idf`` and ``overlap`` matchers.
+        rules: The ``(left, right)`` template texts of the ``rules`` matcher.
 
     Returns:
         ``(i, j)`` pairs, exactly as the pure-Python matcher of the same name returns them.
@@ -53,9 +58,13 @@ def match_templates(
     if _core is None:
         raise EngineError("the native extension is unavailable")
     try:
-        return list(_core.match_templates(kind, list(before), list(after), threshold))
+        return list(_core.match_templates(kind, list(before), list(after), threshold, _rule_list(rules)))
     except _core.CoreConfigError as error:
         raise ConfigError(str(error)) from error
+
+
+def _rule_list(rules: Sequence[tuple[str, str]] | None) -> list[tuple[str, str]] | None:
+    return None if rules is None else list(rules)
 
 
 def supports_comparison() -> bool:
@@ -69,6 +78,7 @@ def compare_runs(
     thresholds: tuple[float, int, int],
     matcher: str,
     matcher_threshold: float | None = None,
+    rules: Sequence[tuple[str, str]] | None = None,
 ) -> tuple[list[int], list[int], list[tuple[int, int, float, float, float | None]], int]:
     """Split the templates of two runs into new, disappeared, changed and unchanged, in the extension.
 
@@ -76,8 +86,9 @@ def compare_runs(
         before: Texts, counts and total records of the first run.
         after: Texts, counts and total records of the second run.
         thresholds: ``threshold_ratio``, ``min_count`` and ``min_new_count``.
-        matcher: ``exact``, ``token_subset`` or ``jaccard``.
-        matcher_threshold: Minimum similarity of the ``jaccard`` matcher.
+        matcher: ``exact``, ``token_subset``, ``jaccard``, ``jaccard_idf``, ``overlap`` or ``rules``.
+        matcher_threshold: Minimum similarity of the ``jaccard``, ``jaccard_idf`` and ``overlap`` matchers.
+        rules: The ``(left, right)`` template texts of the ``rules`` matcher.
 
     Returns:
         Indices of new and disappeared templates, ``(before, after, before share, after share, ratio)`` of the
@@ -93,7 +104,7 @@ def compare_runs(
     try:
         return _core.compare_runs(
             list(before[0]), list(before[1]), before[2], list(after[0]), list(after[1]), after[2], *thresholds,
-            matcher, matcher_threshold,
+            matcher, matcher_threshold, _rule_list(rules),
         )  # fmt: skip
     except _core.CoreConfigError as error:
         raise ConfigError(str(error)) from error

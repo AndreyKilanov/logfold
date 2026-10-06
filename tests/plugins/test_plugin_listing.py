@@ -144,5 +144,5 @@ def test_unknown_plugin_suggests_a_close_name(test_catalog: catalog.Catalog) -> 
 
 def test_closest_searches_installed_and_catalog_names(test_catalog: catalog.Catalog) -> None:
     assert closest("traefic", catalog=test_catalog)[0] == "traefik"
-    assert closest("jacard", kind="matcher", catalog=test_catalog) == ["jaccard"]
+    assert closest("jacard", kind="matcher", catalog=test_catalog)[0] == "jaccard"
     assert closest("zzzzzz", catalog=test_catalog) == []

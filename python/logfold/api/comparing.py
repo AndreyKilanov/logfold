@@ -9,7 +9,7 @@ is the reference: it gives the same entries (see the differential tests) and han
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -27,7 +27,7 @@ from logfold.model import (
 )
 
 Row = tuple[str, str, int, "datetime | None", "datetime | None", Mapping[str, int], "str | None"]
-Spec = tuple[str, "float | None"]
+Spec = tuple[str, "float | None", "Sequence[tuple[str, str]] | None"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,14 +144,14 @@ def classify_native(
         before: The first run.
         after: The second run.
         config: Comparison parameters.
-        spec: The built-in matcher as ``(name, threshold)``.
+        spec: The built-in matcher as ``(name, threshold, rules)``.
         example: Converts the example of a reported template (keeps, masks or drops it).
 
     Returns:
         The classification, or ``None`` when the extension cannot take the data (a text it cannot pass, a count it
         cannot hold, a template listed twice in one run) and the reference should run.
     """
-    kind, threshold = spec
+    kind, threshold, rules = spec
     if len(set(before.texts)) != len(before.texts) or len(set(after.texts)) != len(after.texts):
         return None
     try:
@@ -161,6 +161,7 @@ def classify_native(
             (config.threshold_ratio, config.min_count, config.min_new_count),
             kind,
             threshold,
+            rules,
         )
     except (UnicodeError, ValueError, OverflowError):
         return None

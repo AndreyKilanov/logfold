@@ -23,7 +23,7 @@ from logfold.comparison import ExactMatcher, TokenSubsetMatcher, classify
 from logfold.engines.base import RunStatsData, TemplateStats, TemplateTable
 from logfold.levels import summarize_levels
 from logfold.model import AnalysisResult, ResultMeta, RunMetrics, RunSummary, Template
-from logfold.plugins.matchers import JaccardMatcher
+from logfold.plugins.matchers import JaccardIdfMatcher, JaccardMatcher, OverlapMatcher, RulesMatcher
 
 pytestmark = requires_native
 
@@ -34,7 +34,22 @@ EPOCH_US = 1_700_000_000_000_000
 def matchers() -> list[object]:
     jaccard = JaccardMatcher()
     jaccard.threshold = 0.5
-    return [ExactMatcher(), TokenSubsetMatcher(), JaccardMatcher(), jaccard]
+    idf = JaccardIdfMatcher()
+    idf.threshold = 0.3
+    overlap = OverlapMatcher()
+    overlap.threshold = 0.6
+    rules = RulesMatcher([("a b", "c d"), ("user <*>", "failed <NUM>"), ("a", "b")])
+    return [
+        ExactMatcher(),
+        TokenSubsetMatcher(),
+        JaccardMatcher(),
+        jaccard,
+        JaccardIdfMatcher(),
+        idf,
+        OverlapMatcher(),
+        overlap,
+        rules,
+    ]
 
 
 def summary(records: int, aware: bool) -> RunSummary:
@@ -135,7 +150,11 @@ def test_the_random_runs_are_not_vacuous() -> None:
         before, after = summary(sums[0], True), summary(sums[1], True)
         config = DiffConfig(threshold_ratio=1.5, min_count=1, min_new_count=1, matcher="token_subset")
         got = classify_native(
-            table_side(table, 0, before), table_side(table, 1, after), config, ("token_subset", None), lambda text: text
+            table_side(table, 0, before),
+            table_side(table, 1, after),
+            config,
+            ("token_subset", None, None),
+            lambda text: text,
         )
         assert got is not None
         known = {t.text for t in templates if t.runs[0].count > 0}
@@ -211,7 +230,10 @@ def test_a_template_listed_twice_in_one_result_runs_the_reference() -> None:
     first, second = to_result(templates, 0, 500, True), to_result(templates, 1, 500, True)
     twice = AnalysisResult((*first.templates, first.templates[0]), first.run, first.metrics, first.meta)
     config = DiffConfig(min_count=0)
-    assert classify_native(result_side(twice), result_side(second), config, ("exact", None), lambda text: text) is None
+    assert (
+        classify_native(result_side(twice), result_side(second), config, ("exact", None, None), lambda text: text)
+        is None
+    )
     expected = classify(_join_saved(twice, second), twice.run, second.run, config, ExactMatcher())
     got = logfold.diff(twice, second, min_count=0)
     assert (got.new_templates, got.disappeared, got.changed, got.unchanged) == (
