@@ -126,3 +126,16 @@ def test_diff_warns_too_and_keeps_its_exit_code(corpus_dir: Path) -> None:
     result = runner.invoke(app, ["diff", str(before), str(after), "-f", "app", "--chunk-mb", "4"])
     assert result.exit_code == exit_codes.OK
     assert "warning: --chunk-mb was ignored" in result.stderr
+
+
+def test_inspect_help_has_panels_and_examples() -> None:
+    result = runner.invoke(app, ["inspect", "--help"], env={"COLUMNS": "120", "NO_COLOR": "1"})
+    assert result.exit_code == exit_codes.OK
+    assert "Examples:" in result.stdout
+    assert "logfold inspect app.log" in result.stdout
+    for param in option_params("inspect"):
+        assert param.rich_help_panel in PANELS, param.opts
+
+
+def test_the_root_help_lists_inspect() -> None:
+    assert "inspect" in runner.invoke(app, ["--help"]).stdout

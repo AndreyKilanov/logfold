@@ -9,6 +9,7 @@ from typing import Annotated
 import typer
 
 import logfold
+from logfold.cli.levels import analysis_note, filter_analysis, resolve_level
 from logfold.cli.options import (
     PANEL_OUTPUT,
     AsJson,
@@ -19,10 +20,12 @@ from logfold.cli.options import (
     Examples,
     Format,
     HighCardinality,
+    Level,
     MaxChildren,
     MaxTemplates,
     Multiline,
     NoMasks,
+    OnlyAlerts,
     Out,
     Quiet,
     Report,
@@ -34,7 +37,7 @@ from logfold.cli.options import (
     mining_options,
 )
 from logfold.cli.output import resolve_outputs
-from logfold.cli.runtime import emit, fail, progress_reporter, warn_ignored, write_report
+from logfold.cli.runtime import emit, fail, note, progress_reporter, warn_ignored, write_report
 from logfold.errors import LogfoldError
 
 EXAMPLES = """Examples:
@@ -62,6 +65,8 @@ def analyze(
             rich_help_panel=PANEL_OUTPUT,
         ),
     ] = 1,
+    level: Level = None,
+    only_alerts: OnlyAlerts = False,
     out: Out = None,
     report: Report = None,
     sim_th: SimTh = None,
@@ -83,6 +88,7 @@ def analyze(
     """Fold FILES into message templates and count them."""
     try:
         outputs = resolve_outputs("analysis", out, report, as_json)
+        threshold = resolve_level(level, only_alerts)
         with progress_reporter(quiet) as progress:
             result = logfold.analyze(
                 [str(f) for f in files],
@@ -106,8 +112,11 @@ def analyze(
             )
         warn_ignored(result.metrics, warm_start, chunk_mb, quiet)
         shown = result
+        if threshold is not None:
+            shown = filter_analysis(result, threshold)
+            note(analysis_note(result, shown, threshold), quiet)
         if min_count > 1:
-            shown = dataclasses.replace(result, templates=tuple(t for t in result.templates if t.count >= min_count))
+            shown = dataclasses.replace(shown, templates=tuple(t for t in shown.templates if t.count >= min_count))
         emit(shown, top, outputs.stdout)
         if out is not None and outputs.file is not None:
             write_report(result if outputs.file == "json" else shown, out, outputs.file, quiet)

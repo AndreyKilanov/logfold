@@ -5,21 +5,48 @@ from __future__ import annotations
 import gzip
 import json
 import re
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Protocol
 
 from logfold.errors import FormatDetectionError, FormatError, read_error
 from logfold.ext.formats import FormatSpec, JsonFormat, RegexFormat
 from logfold.formats.builtin import BUILTIN_FORMATS, DETECTION_ORDER
 
 SAMPLE_LINES = 200
+MAX_SAMPLE_LINE_BYTES = 1 << 20
+MAX_SAMPLE_BYTES = 8 << 20
 CONFIDENCE_THRESHOLD = 0.8
 INDENT_CONTINUATION_SCORE = 0.9
 
 
+class _LineReader(Protocol):
+    def readline(self, size: int = -1, /) -> bytes: ...
+
+
+def _sample_lines(stream: _LineReader) -> Iterator[bytes]:
+    """Yield lines of a stream with bounded memory: a longer line is cut and the whole sample has a byte budget."""
+    total = 0
+    while total < MAX_SAMPLE_BYTES:
+        raw = stream.readline(MAX_SAMPLE_LINE_BYTES + 1)
+        if not raw:
+            return
+        total += len(raw)
+        if len(raw) > MAX_SAMPLE_LINE_BYTES and not raw.endswith(b"\n"):
+            raw = raw[:MAX_SAMPLE_LINE_BYTES]
+            while total < MAX_SAMPLE_BYTES:
+                rest = stream.readline(MAX_SAMPLE_LINE_BYTES)
+                total += len(rest)
+                if not rest or rest.endswith(b"\n"):
+                    break
+        yield raw
+
+
 def read_sample(path: str, limit: int = SAMPLE_LINES) -> list[str]:
     """Read up to ``limit`` non-blank lines from the start of ``path``.
+
+    Memory is bounded whatever the file holds: a line longer than 1 MiB is cut there and reading stops after 8 MiB.
 
     Args:
         path: File path; ``.gz`` files are decompressed transparently.
@@ -42,7 +69,7 @@ def read_sample(path: str, limit: int = SAMPLE_LINES) -> list[str]:
         opener = gzip.open if magic[:2] == b"\x1f\x8b" else open
         lines: list[str] = []
         with opener(path, "rb") as stream:
-            for raw in stream:
+            for raw in _sample_lines(stream):
                 line = raw.rstrip(b"\r\n").decode("utf-8", "replace")
                 if line.strip():
                     lines.append(line)

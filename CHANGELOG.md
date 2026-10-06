@@ -7,6 +7,15 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Added
 
+- `logfold inspect FILE` shows how a file is read without mining it: the detected format and its confidence, the first records
+  as parsed (time, level, message), and from a sample of the start of the file the level counts, the time range and the
+  number of unparsed lines, with hints for a format that does not fit. `--records`, `--sample-lines`, `--json`.
+- `--level LEVEL` and `--only-alerts` on `logfold analyze` and `logfold diff` keep the templates whose most severe level is at
+  least LEVEL (`--only-alerts` is `--level WARN`). In `analyze` the tables and reports are filtered and a `.json` file
+  from `--out` stays complete; in `diff` the lists, the reports and the `--fail-on-new*` gates all use the filtered result. A
+  format without levels is an error with a hint.
+- Terminal output: a `levels:` line in the `analyze` summary, "N more templates (X% of records)" with the option that shows
+  them, `wrote report.html  (open it in a browser)` after an HTML report, and the transfer speed in the progress indicator.
 - `logfold analyze --help` and `logfold diff --help` group the options into panels (Input, Output, Diff, Mining, Execution,
   General) and end with examples; `--min-count` and `--matcher` say what they do in the command. The flags and their defaults
   are unchanged.
@@ -20,6 +29,9 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Changed
 
+- Format detection (and `inspect`) reads a bounded sample: a line longer than 1 MiB is cut there and reading stops after
+  8 MiB, so a file that is one huge line, or a gzip bomb, no longer makes `--format auto` allocate memory in proportion to
+  the file (a 300 MiB single line took 600 MiB before).
 - Error messages are shorter and read the same on every system: a path is shown as is (no doubled backslashes on Windows) and
   is not wrapped at the terminal width, a missing file says `no such file` instead of repeating the path with the system's
   localized text, and text such as `[red]` in a path is printed literally instead of being read as markup.

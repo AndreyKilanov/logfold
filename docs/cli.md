@@ -34,6 +34,8 @@ journalctl -o json | logfold analyze - --format journald --json > result.json
 | `--multiline` / `--no-multiline` | format default | join continuation lines (stack traces) to the previous record |
 | `--top`, `-n` | 20 | rows printed per table |
 | `--min-count` | 1 | hide templates with fewer records |
+| `--level` | | keep templates whose most severe level is at least this (`TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `FATAL`; any case) |
+| `--only-alerts` | off | same as `--level WARN`; not together with `--level` |
 | `--out`, `-o` | | write a report; the suffix selects the format: `.html`/`.htm`, `.json`, `.txt` (plain text), `.md` (Markdown) or `.csv` |
 | `--report` | | reporter by name (`logfold plugins list`, for example a plugin reporter): with `--out` it replaces the suffix's choice, without `--out` its text is printed instead of the tables; not with `--json` |
 | `--json` | off | print JSON to standard output instead of tables |
@@ -104,6 +106,36 @@ redirect saves UTF-16, which is refused. `--min-count` hides rare templates from
 `.json` file written with `--out` always holds every template; `--json` on stdout follows `--min-count`, so do not use
 it for reports you will compare.
 
+`--level` and `--only-alerts` work the same way in both commands. A template's level is the most severe level among its
+records, so `--level ERROR` keeps a template that has even one ERROR record. In `analyze` they filter the tables and the
+reports like `--min-count` does (a `.json` file from `--out` stays complete) and a note on standard error says how many
+templates were hidden. In `diff` they filter the new, disappeared and changed lists, every report and the gates: `--fail-on-new
+--level ERROR` exits with code 2 only when a new template at ERROR or above exists. A format without levels (nginx, apache,
+plain) is an error with a hint, not an empty result.
+
+## `logfold inspect`
+
+```
+logfold inspect FILE [--format F] [--multiline/--no-multiline] [-n N] [--sample-lines N] [--json]
+```
+
+Shows how a file is read, without mining it: the detected (or given) format and its confidence, whether multiline is on, the
+first records as parsed (time, level, message; `(+N lines)` marks a joined stack trace), and from a sample of the start of
+the file the level counts, the time range and the number of lines that did not parse. Use it to check a format before
+`analyze`, and to see why `--level` finds nothing.
+
+| Option | Default | Meaning |
+|---|---|---|
+| `--format`, `-f` | `auto` | as in `analyze` |
+| `--multiline` / `--no-multiline` | format default | as in `analyze` |
+| `--records`, `-n` | 10 | records to show |
+| `--sample-lines` | 1000 | non-blank lines read for the counts and the time range |
+| `--json` | off | print JSON (`kind: inspection`, `schema_version: 1`) instead of text |
+
+Only the start of the file is read, so it is quick on any size; gzip is detected by content. Standard input is not
+supported (save a sample with `head -n 1000`). A hint is printed when more than a tenth of the sampled lines did not parse
+or when the format has no levels.
+
 ## `logfold formats`
 
 Lists the available log formats (built-in and plugins) with their kind and details. See the
@@ -167,7 +199,11 @@ width. `--debug` shows the traceback instead.
 
 - On a terminal the result is printed as tables. When standard output is not a terminal, the plain-text report is
   written instead, so the output can be piped. `--json` always prints JSON.
-- Progress is shown on standard error only on a terminal and never with `--quiet`.
+- Progress is shown on standard error only on a terminal and never with `--quiet`; it shows the bytes read, the speed and the
+  elapsed time.
+- Colors follow the terminal: set `NO_COLOR=1` to switch them off. The `analyze` summary has a `levels:` line, and the line
+  under the table says how many templates it hides, what share of the records they cover and how to see them.
+- A written HTML report is announced as `wrote report.html  (open it in a browser)`.
 - `logfold analyze --help` and `logfold diff --help` group the options into the panels Input, Output, Diff (`diff` only),
   Mining, Execution and General, and end with usage examples.
 - `--warm-start` and `--chunk-mb` only matter for the chunked strategy. When the run turned out sequential (a small input

@@ -10,7 +10,14 @@ from pathlib import Path
 import typer
 from rich.console import Console
 from rich.markup import escape
-from rich.progress import DownloadColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+from rich.progress import (
+    DownloadColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeElapsedColumn,
+    TransferSpeedColumn,
+)
 
 from logfold.cli import exit_codes
 from logfold.cli.hints import hint_for
@@ -48,6 +55,7 @@ def progress_reporter(quiet: bool) -> Iterator[Callable[[int], None] | None]:
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
         DownloadColumn(),
+        TransferSpeedColumn(),
         TimeElapsedColumn(),
         console=stderr_console(),
         transient=True,
@@ -98,6 +106,17 @@ def warn_ignored(metrics: RunMetrics, warm_start: bool, chunk_mb: int | None, qu
         console.print(f"[yellow]warning:[/yellow] {escape(warning)}", soft_wrap=True)
 
 
+def note(message: str, quiet: bool) -> None:
+    """Print a one-line note on standard error unless quiet.
+
+    Args:
+        message: The note.
+        quiet: Whether ``--quiet`` was given.
+    """
+    if not quiet:
+        stderr_console().print(f"[dim]{escape(message)}[/dim]", soft_wrap=True)
+
+
 def write_report(result: AnalysisResult | DiffResult, out: Path, reporter: str, quiet: bool) -> None:
     """Write a report file and say so on standard error unless quiet.
 
@@ -109,7 +128,8 @@ def write_report(result: AnalysisResult | DiffResult, out: Path, reporter: str, 
     """
     out.write_text(render_report(result, reporter), encoding="utf-8")
     if not quiet:
-        stderr_console().print(f"wrote {out}", highlight=False)
+        opener = "  (open it in a browser)" if out.suffix.lower() in (".html", ".htm") else ""
+        stderr_console().print(f"wrote {escape(printable(str(out)))}{opener}", highlight=False, soft_wrap=True)
 
 
 def emit(result: AnalysisResult | DiffResult, top: int, reporter: str | None) -> None:

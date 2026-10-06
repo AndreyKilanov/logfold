@@ -11,7 +11,7 @@ from typing import Annotated
 import typer
 
 import logfold
-from logfold.cli import analyze_cmd, diff_cmd, exit_codes
+from logfold.cli import analyze_cmd, diff_cmd, exit_codes, inspect_cmd
 from logfold.cli.analyze_cmd import analyze
 from logfold.cli.diff_cmd import diff
 from logfold.cli.info_cmd import formats, info
@@ -52,6 +52,7 @@ def root(
 
 app.command(epilog=analyze_cmd.EXAMPLES)(analyze)
 app.command(epilog=diff_cmd.EXAMPLES)(diff)
+app.command(epilog=inspect_cmd.EXAMPLES)(inspect_cmd.inspect)
 app.command()(formats)
 app.command()(info)
 

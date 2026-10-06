@@ -27,7 +27,7 @@ def test_version_and_help() -> None:
     assert logfold.__version__ in result.stdout
     help_result = runner.invoke(app, ["--help"])
     assert help_result.exit_code == 0
-    for command in ("analyze", "diff", "formats", "info"):
+    for command in ("analyze", "diff", "inspect", "formats", "info"):
         assert command in help_result.stdout
 
 
