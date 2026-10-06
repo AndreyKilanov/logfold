@@ -42,6 +42,8 @@ SUFFIX_REPORTERS = {
     ".txt": "text",
     ".md": "markdown",
     ".csv": "csv",
+    ".xml": "junit",
+    ".prom": "prometheus",
 }
 """Report file suffixes and the built-in reporter each one selects."""
 

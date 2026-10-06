@@ -7,7 +7,7 @@ from pathlib import Path
 
 from logfold.errors import ConfigError
 
-NOT_APPENDABLE = frozenset({"html", "json", "csv"})
+NOT_APPENDABLE = frozenset({"html", "json", "csv", "junit", "prometheus"})
 """Reporters whose output is a whole document (or has a header row), so two of them in one file are not valid."""
 
 

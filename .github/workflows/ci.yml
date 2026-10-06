@@ -89,7 +89,7 @@ jobs:
           python-version: "3.12"
       - name: Install sources without compiling
         run: |
-          python -m pip install pytest hypothesis jsonschema typer rich
+          python -m pip install pytest hypothesis jsonschema typer rich prometheus-client
           echo "PYTHONPATH=$PWD/python" >> "$GITHUB_ENV"
       - name: Run the engine-independent tests
         run: python -m pytest -q tests/api/test_api.py tests/engines/test_formats.py tests/api/test_diff.py tests/reporters tests/plugins/test_plugins.py tests/plugins/test_default_plugins.py tests/plugins/test_plugin_catalog.py tests/cli/test_cli_plugins.py tests/plugins/test_user_plugins.py

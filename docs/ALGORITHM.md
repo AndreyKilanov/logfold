@@ -292,3 +292,41 @@ run) and the number of records of the run; the thresholds `threshold_ratio` (at 
 8. An entry carries the id, text, example and timestamps of the second run (of the first run for a disappeared
    template), both counts and shares, the ratio, and the level counts of both runs added up: `levels` lists the levels
    with a positive sum in order of severity and `level` is the most severe of them.
+
+## 12. Pipeline reports
+
+`github-summary`, `junit`, `chat-message` and `prometheus` turn a result into text. The Rust core
+(`logfold-core`, `report`) and the pure-Python reporters (`logfold.plugins.reporters_ci`, `reporters_feeds`, the reference)
+must write **byte-identical** text for the same result and options. They do not change mined templates or counts, so they
+do not affect `ALGO_VERSION`. The extension takes the columns of a result in one call, `render_report(report, data, options)`
+(contract version 7); without the extension, or for a text it cannot take (a lone surrogate), the Python reporter renders.
+The Python reporter also renders when only a small part of a large result is listed, because building the columns passes
+over every template (`report_data.MIN_LISTED`, `LISTED_FRACTION`); the choice never changes the text.
+
+Counts are whole numbers below 2^53 (the shares are computed in double precision from them). A level that is not one of
+`TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `FATAL` is shown as no level. A new template is an *alert* when its level is
+`WARN`, `ERROR` or `FATAL`.
+
+**Text from a log** goes through these steps, in this order, and is never written otherwise:
+
+1. *Flatten*: every character in U+0000-U+0008, U+000B-U+001F and U+007F-U+009F becomes `\xNN` (two lower-case hex
+   digits); whitespace (Unicode `White_Space`) runs become one space and the ends are trimmed.
+2. *Clip* to `width` characters (code points): a longer text keeps `width - 3` characters and ends in `...`, or with *tail*
+   starts with `...` and keeps the last `width - 3`.
+3. Then the rule of the target: a Markdown *code span* replaces `` ` `` by `'` and is wrapped in backticks; *XML text*
+   shows U+FFFE and U+FFFF as `U+XXXX`, and the writer escapes `&`, `<`, `>` (and `"` in an attribute); a Prometheus
+   *label value* escapes `\` as `\\` and `"` as `\"`. For `chat-message` the *mention rule* runs first: U+200B goes after
+   `<` when `!`, `@` or `#` follows, and after `@` when `channel`, `here`, `everyone` or `all` (ASCII, any case) follows and
+   the next character is not an ASCII letter, digit or `_`.
+
+**`github-summary`** with `top` and `max_bytes`: a document of lines; the lists
+hold `rows = top` templates (`top` first cut to the length of the longest list); while the UTF-8 size exceeds `max_bytes` and `rows > 0`, `rows` is halved (integer division)
+and the document written again, with a final note when `rows < top`. New templates are listed alerts first, each group in
+the order of the result. **`junit`**: every alert is a test case that fails, then the first `top` new templates that are not
+alerts pass; with none, one passing case. **`chat-message`** with `top` and `max_chars`: the headline lines, then new
+templates (analysis: the most frequent) alerts first, each line added while `characters so far + line + 1 + 30 <=
+max_chars`, then `... and N more` when some were left out. **`prometheus`**: families in a fixed order, a family with no
+sample is left out; per template series are written for the first `top` templates of each list.
+
+The exact lines are those of the Python reporters; a change of a line is a change of this section, of both
+implementations and of the contract test (`tests/engines/test_native_reports.py`) in one change.

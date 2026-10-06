@@ -34,12 +34,39 @@ jobs:
       - name: Compare with the last good run
         run: |
           logfold diff good/app.log current.log \
-            --report markdown --out "$GITHUB_STEP_SUMMARY" --append \
-            --examples masked --fail-on-new-alerts -q
+            --report github-summary --out "$GITHUB_STEP_SUMMARY" --append \
+            --fail-on-new-alerts -q
 ```
 
-`--out` with `--report markdown` (or a `.md` / `.txt` file) can be appended; `.html`, `.json` and `.csv` cannot, because
-two documents in one file are not valid, and `--append` refuses them before it reads any log.
+`github-summary` is Markdown made for this file: a verdict line, the counts, the new templates with WARN and above first, the
+changed and disappeared ones collapsed. It keeps under the 1 MiB that a step summary may hold and says when it listed fewer
+templates, it shows templates and never example lines, and a log line in it cannot ping anyone or inject markup. (`--report
+markdown` also works and writes plain tables.)
+
+`--out` with `--report github-summary` or `markdown` (or a `.md` / `.txt` file) can be appended; `.html`, `.json`, `.csv`, `.xml` and
+`.prom` cannot, because two documents in one file are not valid, and `--append` refuses them before it reads any log.
+
+### Test results and metrics
+
+A new WARN+ template as a failed test, for every tool that reads JUnit XML (a test report page, a flaky-test tracker):
+
+```yaml
+      - run: logfold diff good/app.log current.log --out logfold.xml --fail-on-new-alerts -q
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: logfold-junit
+          path: logfold.xml
+```
+
+`--out logfold.xml` writes JUnit: each new template is a test case, each new WARN+ template fails. A test report action reads the
+file from the artifact or the workspace. In GitLab CI the same file is `artifacts: reports: junit: logfold.xml`, and the
+merge request shows the new alarming templates as failed tests.
+
+For a chat, `logfold diff ... --report chat-message` prints a short message (the headline and the top new templates in code
+spans, within 3000 characters); put it in the body of your webhook call, logfold sends nothing. For a monitoring system,
+`--out /var/lib/node_exporter/textfile/logfold.prom` writes gauges (records per level, new, disappeared and changed templates)
+for the node exporter textfile collector.
 
 A full HTML report for people to download goes to a separate step, as an artifact:
 

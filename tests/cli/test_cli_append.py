@@ -74,7 +74,7 @@ def test_analyze_appends_too(logs: tuple[Path, Path], tmp_path: Path) -> None:
     assert out.read_text(encoding="utf-8").count("request <NUM> served") == 2
 
 
-@pytest.mark.parametrize("name", ["report.html", "report.json", "report.csv"])
+@pytest.mark.parametrize("name", ["report.html", "report.json", "report.csv", "report.xml", "report.prom"])
 def test_whole_document_reports_refuse_append(logs: tuple[Path, Path], tmp_path: Path, name: str) -> None:
     out = tmp_path / name
     result = runner.invoke(app, diff_args(logs, out, "--append"))

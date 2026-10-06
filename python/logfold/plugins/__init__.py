@@ -1,7 +1,8 @@
 """Plugins that ship with logfold, registered when this package is imported.
 
 Formats: ``logfmt``, ``serilog-clef``, ``haproxy``, ``postgresql``, ``postgresql-csv``, ``log4j``, ``docker-json``,
-``github-actions``. Reporters: ``markdown``, ``csv``. Diff matchers: ``jaccard``, ``jaccard-idf``, ``overlap``,
+``github-actions``. Reporters: ``markdown``, ``csv``, ``github-summary``, ``junit``, ``chat-message``,
+``prometheus``. Diff matchers: ``jaccard``, ``jaccard-idf``, ``overlap``,
 ``rules``.
 
 They use the same extension points as third-party plugins (:mod:`logfold.ext`); a plugin package that registers the same
@@ -17,6 +18,8 @@ from logfold.plugins.formats_infra import DOCKER_JSON, GITHUB_ACTIONS, HAPROXY, 
 from logfold.plugins.listing import PluginInfo, closest, list_plugins, plugin_info, unknown_name_hint
 from logfold.plugins.matchers import JaccardIdfMatcher, JaccardMatcher, OverlapMatcher, RulesMatcher
 from logfold.plugins.reporters import CsvReporter, MarkdownReporter
+from logfold.plugins.reporters_ci import GithubSummaryReporter, JunitReporter
+from logfold.plugins.reporters_feeds import ChatMessageReporter, PrometheusReporter
 from logfold.plugins.templates import write_template
 
 register_format(LOGFMT.name, LOGFMT)
@@ -25,6 +28,8 @@ for _format in (HAPROXY, POSTGRESQL, POSTGRESQL_CSV, LOG4J, DOCKER_JSON, GITHUB_
     register_format(_format.name, _format)
 register_reporter(MarkdownReporter())
 register_reporter(CsvReporter())
+for _reporter in (GithubSummaryReporter(), JunitReporter(), ChatMessageReporter(), PrometheusReporter()):
+    register_reporter(_reporter)
 register_matcher(JaccardMatcher())
 register_matcher(JaccardIdfMatcher())
 register_matcher(OverlapMatcher())
@@ -39,12 +44,16 @@ __all__ = [
     "POSTGRESQL",
     "POSTGRESQL_CSV",
     "SERILOG_CLEF",
+    "ChatMessageReporter",
     "CsvReporter",
+    "GithubSummaryReporter",
     "JaccardIdfMatcher",
     "JaccardMatcher",
+    "JunitReporter",
     "MarkdownReporter",
     "OverlapMatcher",
     "PluginInfo",
+    "PrometheusReporter",
     "RulesMatcher",
     "closest",
     "list_plugins",

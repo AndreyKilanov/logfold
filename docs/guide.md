@@ -181,7 +181,8 @@ three differ most. The exit-code gates (`--fail-on-new`, `--fail-on-new-alerts`)
 ## Reports
 
 `--out FILE` writes a report; the suffix selects the format: `.html`, `.json`, `.txt` (plain text), `.md` (Markdown tables)
-or `.csv`. `--report NAME` picks the reporter by name instead, including one from a plugin: with `--out` it writes the
+`.csv`, `.xml` (JUnit) or `.prom` (Prometheus). `--report NAME` picks the reporter by name instead (also `github-summary`
+and `chat-message`, which have no suffix, and plugins): with `--out` it writes the
 file, without it the text is printed instead of the tables. HTML reports are one self-contained file with a strict
 Content-Security-Policy. JSON files follow the schemas in `docs/schema`.
 
