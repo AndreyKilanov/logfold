@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use logfold_core::{FrozenTemplate, Level, MaskRule};
-use logfold_engine::{MineOutput, MineRequest, MiningParams, Strategy, DEFAULT_CHUNK_BYTES};
+use logfold_engine::{DEFAULT_CHUNK_BYTES, MineOutput, MineRequest, MiningParams, Strategy};
 use logfold_io::{FormatConfig, FormatSpec, TimeWindow};
 use pyo3::exceptions::PyKeyError;
 use pyo3::prelude::*;

@@ -53,11 +53,7 @@ pub struct RuleMasker {
 }
 
 fn scoped(rule: &MaskRule) -> String {
-    if rule.ascii {
-        format!("(?-u:{})", rule.pattern)
-    } else {
-        rule.pattern.clone()
-    }
+    if rule.ascii { format!("(?-u:{})", rule.pattern) } else { rule.pattern.clone() }
 }
 
 impl RuleMasker {

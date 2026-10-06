@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use logfold_core::default_mask_rules;
-use logfold_engine::{mine, EngineError, MineOutput, MineRequest, MiningParams, NoObserver, Observer, Strategy};
+use logfold_engine::{EngineError, MineOutput, MineRequest, MiningParams, NoObserver, Observer, Strategy, mine};
 use logfold_io::{FormatConfig, FormatSpec};
 
 const MIB: u64 = 1024 * 1024;

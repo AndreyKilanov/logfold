@@ -18,7 +18,7 @@ use std::time::Instant;
 
 pub use error::EngineError;
 pub use request::{
-    Metrics, MineOutput, MineRequest, MiningParams, NoObserver, Observer, RunSummary, Strategy, DEFAULT_CHUNK_BYTES,
+    DEFAULT_CHUNK_BYTES, Metrics, MineOutput, MineRequest, MiningParams, NoObserver, Observer, RunSummary, Strategy,
 };
 
 use logfold_core::{DrainMiner, MinerConfig};

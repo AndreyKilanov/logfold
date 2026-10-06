@@ -237,7 +237,7 @@ mod miner {
             let word = match position % 5 {
                 0 => format!("s{position}x{}", next(state) % 2),
                 1 => format!("m{position}x{}", next(state) % 30),
-                _ if (family as usize + position) % 2 == 0 => format!("f{family}p{position}"),
+                _ if (family as usize + position).is_multiple_of(2) => format!("f{family}p{position}"),
                 _ => format!("r{position}x{}", next(state) % 5000),
             };
             words.push(word.into_bytes().into());

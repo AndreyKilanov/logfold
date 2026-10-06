@@ -10,6 +10,6 @@ mod classify;
 mod jaccard;
 mod token_subset;
 
-pub use classify::{compare_runs, Changed, Comparison, Matcher, Side, Thresholds};
+pub use classify::{Changed, Comparison, Matcher, Side, Thresholds, compare_runs};
 pub use jaccard::jaccard_pairs;
 pub use token_subset::token_subset_pairs;

@@ -11,7 +11,7 @@ maturin develop --release --extras dev      # builds the Rust extension and inst
 pytest
 ```
 
-You need a Rust toolchain (stable) and, on Windows, the MSVC build tools.
+You need Rust 1.99 or newer (the minimum supported version, checked by its own CI job) and, on Windows, the MSVC build tools.
 
 ## Architecture rules (enforced in CI)
 

@@ -76,11 +76,7 @@ fn similarity(left: &[u32], right: &[u32]) -> f64 {
         }
     }
     let union = left.len() + right.len() - shared;
-    if union == 0 {
-        0.0
-    } else {
-        shared as f64 / union as f64
-    }
+    if union == 0 { 0.0 } else { shared as f64 / union as f64 }
 }
 
 /// The score of a pair, or `None` as soon as the sets cannot share `needed` words.
@@ -163,10 +159,10 @@ fn scored(before: &Sets, after: &Sets, vocabulary: usize, threshold: f64) -> Vec
                     continue;
                 }
                 let needed = needed_overlap(left.len(), right.len(), threshold);
-                if let Some(score) = similarity_if_reachable(left, right, needed) {
-                    if score >= threshold {
-                        found.push((score, i, j as u32));
-                    }
+                if let Some(score) = similarity_if_reachable(left, right, needed)
+                    && score >= threshold
+                {
+                    found.push((score, i, j as u32));
                 }
             }
         }

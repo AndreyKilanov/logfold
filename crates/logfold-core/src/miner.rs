@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, HashMap};
 use ahash::RandomState;
 
 use crate::error::CoreError;
-use crate::freeze::{freeze_clusters, FrozenTemplate};
+use crate::freeze::{FrozenTemplate, freeze_clusters};
 use crate::level::Level;
 use crate::stats::RunStats;
 use crate::tokenizer::TokenView;
@@ -13,8 +13,8 @@ mod matching;
 mod merging;
 mod recount;
 
-use leaf::{LeafIndex, Node, INDEX_MIN_CLUSTERS, SCRATCH};
-use matching::{has_digit, score_bounded, update_stats, BoxedTokens, Tokens};
+use leaf::{INDEX_MIN_CLUSTERS, LeafIndex, Node, SCRATCH};
+use matching::{BoxedTokens, Tokens, has_digit, score_bounded, update_stats};
 pub use recount::{Assigned, Recount};
 
 /// Token that stands for a variable part of a template.
@@ -52,11 +52,7 @@ impl MinerConfig {
     }
 
     fn token_layers(&self, n: usize) -> usize {
-        if n == 0 {
-            0
-        } else {
-            (self.depth - 3).min(n - 1)
-        }
+        if n == 0 { 0 } else { (self.depth - 3).min(n - 1) }
     }
 }
 

@@ -5,7 +5,7 @@ use regex::bytes::Regex;
 use serde_json::Value;
 
 use crate::error::IoError;
-use crate::timestamp::{epoch_float_to_micros, epoch_int_to_micros, parse_iso, Parsed, TsFormat};
+use crate::timestamp::{Parsed, TsFormat, epoch_float_to_micros, epoch_int_to_micros, parse_iso};
 
 /// Declarative description of a log format (see `docs/ALGORITHM.md` §1.2).
 #[derive(Clone, Debug)]

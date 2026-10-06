@@ -3,7 +3,7 @@
 use crate::stats::RunStats;
 use crate::tokenizer::TokenView;
 
-use super::{RecordMeta, MAX_EXAMPLE_BYTES, WILDCARD};
+use super::{MAX_EXAMPLE_BYTES, RecordMeta, WILDCARD};
 
 pub(super) trait Tokens {
     fn count(&self) -> usize;

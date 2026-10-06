@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use logfold_io::{inspect, SourceInfo, TimeWindow};
+use logfold_io::{SourceInfo, TimeWindow, inspect};
 
 use crate::error::EngineError;
 use crate::request::MineRequest;

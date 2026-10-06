@@ -6,11 +6,11 @@
 use std::fs::File;
 use std::io::Read;
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
+use criterion::{Criterion, Throughput, black_box, criterion_group, criterion_main};
 use logfold_core::{
-    default_mask_rules, DrainMiner, MaskScratch, MinerConfig, RecordMeta, RuleMasker, TokenView, Tokenizer,
+    DrainMiner, MaskScratch, MinerConfig, RecordMeta, RuleMasker, TokenView, Tokenizer, default_mask_rules,
 };
-use logfold_io::{scan_records, CompiledFormat, FormatConfig, FormatSpec, LineReader, ScanWindow};
+use logfold_io::{CompiledFormat, FormatConfig, FormatSpec, LineReader, ScanWindow, scan_records};
 
 fn sample() -> Vec<u8> {
     if let Ok(path) = std::env::var("LOGFOLD_BENCH_FILE") {

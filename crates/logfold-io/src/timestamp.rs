@@ -208,11 +208,7 @@ pub fn parse_iso(text: &[u8]) -> Option<Parsed> {
             fields.offset = Some(cur.zone()?);
         }
     }
-    if cur.done() {
-        fields.finish()
-    } else {
-        None
-    }
+    if cur.done() { fields.finish() } else { None }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -321,11 +317,7 @@ impl TsFormat {
                 Item::MonthFull => fields.month = Some(month_name(&mut cur, false)?),
             }
         }
-        if cur.done() {
-            fields.finish()
-        } else {
-            None
-        }
+        if cur.done() { fields.finish() } else { None }
     }
 }
 

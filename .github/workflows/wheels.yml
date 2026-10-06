@@ -31,6 +31,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
           manylinux: ${{ matrix.manylinux }}
+          rust-toolchain: "1.99.0"
           args: --release --out dist
           sccache: true
       - uses: actions/upload-artifact@v4

@@ -68,11 +68,7 @@ pub struct Comparison {
 }
 
 fn share(count: u64, total: u64) -> f64 {
-    if total == 0 {
-        0.0
-    } else {
-        count as f64 / total as f64
-    }
+    if total == 0 { 0.0 } else { count as f64 / total as f64 }
 }
 
 /// `ratio or 1.0` as the reference implementation spells it: a missing or zero ratio counts as no change.

@@ -41,13 +41,9 @@ impl TimeWindow {
         match timestamp {
             None => Placement::Untimed,
             Some(moment) => {
-                let after_start = self.since.map_or(true, |since| moment >= since);
-                let before_end = self.until.map_or(true, |until| moment < until);
-                if after_start && before_end {
-                    Placement::Inside
-                } else {
-                    Placement::Outside
-                }
+                let after_start = self.since.is_none_or(|since| moment >= since);
+                let before_end = self.until.is_none_or(|until| moment < until);
+                if after_start && before_end { Placement::Inside } else { Placement::Outside }
             }
         }
     }

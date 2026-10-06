@@ -4,7 +4,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use logfold_core::default_mask_rules;
-use logfold_engine::{mine, MineOutput, MineRequest, MiningParams, NoObserver, Strategy};
+use logfold_engine::{MineOutput, MineRequest, MiningParams, NoObserver, Strategy, mine};
 use logfold_io::{FormatConfig, FormatSpec};
 
 const MIB: u64 = 1024 * 1024;
