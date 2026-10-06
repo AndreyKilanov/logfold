@@ -7,6 +7,7 @@ from pathlib import Path
 
 from logfold.errors import ConfigError, LogfoldError
 from logfold.ext import registry
+from logfold.ext.files import check_appendable
 from logfold.model import AnalysisResult, DiffResult
 
 
@@ -30,7 +31,7 @@ def _checked(name: str, kind: str) -> str:
     return name
 
 
-def resolve_outputs(kind: str, out: Path | None, report: str | None, as_json: bool) -> Outputs:
+def resolve_outputs(kind: str, out: Path | None, report: str | None, as_json: bool, append: bool = False) -> Outputs:
     """Decide which reporters a command runs, before any log is read.
 
     ``--report NAME`` names the reporter explicitly: it writes the ``--out`` file when there is one and is printed
@@ -41,14 +42,17 @@ def resolve_outputs(kind: str, out: Path | None, report: str | None, as_json: bo
         out: The ``--out`` file, if any.
         report: The ``--report`` name, if any.
         as_json: Whether ``--json`` was given.
+        append: Whether ``--append`` was given.
 
     Returns:
         The reporters for the file and for standard output.
 
     Raises:
         ConfigError: If the options contradict each other, the suffix is unknown, or the reporter is unknown or does
-            not support ``kind``.
+            not support ``kind``, or ``--append`` has no ``--out`` or names a report that cannot be appended.
     """
+    if append and out is None:
+        raise ConfigError("--append needs --out")
     if as_json and report is not None:
         raise ConfigError("--json and --report cannot be combined; use --report json")
     stdout = "json" if as_json else None
@@ -62,6 +66,8 @@ def resolve_outputs(kind: str, out: Path | None, report: str | None, as_json: bo
     elif out is not None:
         mapped = registry.reporter_for_suffix(out)
         file = _checked(mapped, kind)
+    if append and file is not None:
+        check_appendable(file)
     return Outputs(file=file, stdout=stdout)
 
 

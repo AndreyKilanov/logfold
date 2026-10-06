@@ -208,6 +208,8 @@ ARM, более медленный диск, больше ядер) или на 
 Документация написана на английском.
 
 - [Руководство](https://github.com/AndreyKilanov/logfold/blob/main/docs/guide.md): форматы, параметры, плагины, движки.
+- [logfold в CI](https://github.com/AndreyKilanov/logfold/blob/main/docs/ci.md): GitHub Actions и GitLab CI, сводка
+  задачи, проверки, откуда брать baseline.
 - [Справочник командной строки](https://github.com/AndreyKilanov/logfold/blob/main/docs/cli.md): команды, опции, коды
   выхода.
 - [Плагины](https://github.com/AndreyKilanov/logfold/blob/main/docs/plugins.md): использование и написание форматов,

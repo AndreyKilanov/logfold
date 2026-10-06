@@ -137,7 +137,7 @@ registered `formats`, `reporters` and `matchers`. It is what `logfold info` prin
 | `filter(min_level=None, min_count=None)` | a new result with only the templates whose most severe level is at least `min_level` (`TRACE` to `FATAL`, any case; `warning` is accepted) and that have at least `min_count` records; the run counters, metrics and meta stay as they were |
 | `render(reporter, **options)` | render with a registered reporter, returns text |
 | `to_json(path=None, **options)`, `to_html(path=None, **options)` | render, write to `path` when given, return the text |
-| `save(path, reporter=None, **options)` | render and write to `path`, returns the text; without `reporter` the suffix selects it (`.html`/`.htm`, `.json`, `.txt`, `.md`, `.csv`) |
+| `save(path, reporter=None, *, append=False, **options)` | render and write to `path`, returns the text; without `reporter` the suffix selects it (`.html`/`.htm`, `.json`, `.txt`, `.md`, `.csv`); `append=True` adds a text or Markdown report to the end of the file after a blank line (`ConfigError` for `html`, `json`, `csv`) |
 
 ### `Template`
 

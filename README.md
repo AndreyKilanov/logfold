@@ -212,6 +212,8 @@ Template quality: `python eval/quality.py` (grouping accuracy on the 16 Loghub-2
 ## Documentation
 
 - [Guide](https://github.com/AndreyKilanov/logfold/blob/main/docs/guide.md): formats, parameters, plugins, engines.
+- [Using logfold in CI](https://github.com/AndreyKilanov/logfold/blob/main/docs/ci.md): GitHub Actions and GitLab CI, job
+  summary, gates, where the baseline comes from.
 - [Command-line reference](https://github.com/AndreyKilanov/logfold/blob/main/docs/cli.md): commands, options, exit
   codes.
 - [Plugins](https://github.com/AndreyKilanov/logfold/blob/main/docs/plugins.md): using and writing formats, reports and

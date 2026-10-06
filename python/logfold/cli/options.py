@@ -59,6 +59,15 @@ Out = Annotated[
         rich_help_panel=PANEL_OUTPUT,
     ),
 ]
+Append = Annotated[
+    bool,
+    typer.Option(
+        "--append",
+        help="Add the --out report to the end of the file instead of replacing it (text and Markdown reports; for "
+        "example $GITHUB_STEP_SUMMARY).",
+        rich_help_panel=PANEL_OUTPUT,
+    ),
+]
 Report = Annotated[
     str | None,
     typer.Option(

@@ -8,11 +8,11 @@ from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 
 from logfold.config import DiffConfig
 from logfold.errors import ConfigError, NoLevelsError
 from logfold.ext import registry
+from logfold.ext.files import check_appendable, write_text
 from logfold.levels import LEVEL_NAMES, at_least, normalize_level
 
 SCHEMA_VERSION = 1
@@ -172,17 +172,23 @@ class ResultMeta:
 
 
 def _write(path: str | os.PathLike[str], text: str) -> None:
-    Path(path).write_text(text, encoding="utf-8")
+    write_text(path, text)
 
 
 def _save(
-    result: AnalysisResult | DiffResult, path: str | os.PathLike[str], reporter: str | None, options: dict[str, object]
+    result: AnalysisResult | DiffResult,
+    path: str | os.PathLike[str],
+    reporter: str | None,
+    options: dict[str, object],
+    append: bool,
 ) -> str:
     name = reporter if reporter is not None else registry.reporter_for_suffix(path)
+    if append:
+        check_appendable(name)
     text = result.render(name, **options)
     if not isinstance(text, str):
         raise ConfigError(f"reporter {name!r} returned {type(text).__name__}, expected text")
-    _write(path, text)
+    write_text(path, text, append)
     return text
 
 
@@ -260,13 +266,17 @@ class AnalysisResult:
         """
         return registry.render(self, reporter, **options)
 
-    def save(self, path: str | os.PathLike[str], reporter: str | None = None, **options: object) -> str:
+    def save(
+        self, path: str | os.PathLike[str], reporter: str | None = None, *, append: bool = False, **options: object
+    ) -> str:
         """Render with a reporter and write the text to a file.
 
         Args:
             path: Destination file (UTF-8).
             reporter: Reporter name; when ``None`` the suffix of ``path`` selects it (``.html``, ``.json``, ``.txt``,
                 ``.md`` or ``.csv``, see :data:`logfold.ext.registry.SUFFIX_REPORTERS`).
+            append: Add the text to the end of the file (creating it) after a blank line, instead of replacing the
+                file; for text and Markdown reports, for example to build ``$GITHUB_STEP_SUMMARY`` from several steps.
             **options: Reporter options.
 
         Returns:
@@ -274,10 +284,11 @@ class AnalysisResult:
 
         Raises:
             UnknownSuffixError: If no reporter is named and the suffix selects none.
-            ConfigError: If the reporter is unknown or does not support this kind of result.
+            ConfigError: If the reporter is unknown or does not support this kind of result, or ``append`` is used
+                with a report that is a whole document (``html``, ``json``, ``csv``).
             OSError: If the file cannot be written.
         """
-        return _save(self, path, reporter, options)
+        return _save(self, path, reporter, options, append)
 
     def to_json(self, path: str | os.PathLike[str] | None = None, **options: object) -> str:
         """Render as JSON and optionally write it to a file.
@@ -427,13 +438,17 @@ class DiffResult:
         """
         return registry.render(self, reporter, **options)
 
-    def save(self, path: str | os.PathLike[str], reporter: str | None = None, **options: object) -> str:
+    def save(
+        self, path: str | os.PathLike[str], reporter: str | None = None, *, append: bool = False, **options: object
+    ) -> str:
         """Render with a reporter and write the text to a file.
 
         Args:
             path: Destination file (UTF-8).
             reporter: Reporter name; when ``None`` the suffix of ``path`` selects it (``.html``, ``.json``, ``.txt``,
                 ``.md`` or ``.csv``, see :data:`logfold.ext.registry.SUFFIX_REPORTERS`).
+            append: Add the text to the end of the file (creating it) after a blank line, instead of replacing the
+                file; for text and Markdown reports, for example to build ``$GITHUB_STEP_SUMMARY`` from several steps.
             **options: Reporter options.
 
         Returns:
@@ -441,10 +456,11 @@ class DiffResult:
 
         Raises:
             UnknownSuffixError: If no reporter is named and the suffix selects none.
-            ConfigError: If the reporter is unknown or does not support this kind of result.
+            ConfigError: If the reporter is unknown or does not support this kind of result, or ``append`` is used
+                with a report that is a whole document (``html``, ``json``, ``csv``).
             OSError: If the file cannot be written.
         """
-        return _save(self, path, reporter, options)
+        return _save(self, path, reporter, options, append)
 
     def to_json(self, path: str | os.PathLike[str] | None = None, **options: object) -> str:
         """Render as JSON and optionally write it to a file.

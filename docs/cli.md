@@ -38,6 +38,7 @@ journalctl -o json | logfold analyze - --format journald --json > result.json
 | `--level` | | keep templates whose most severe level is at least this (`TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `FATAL`; any case) |
 | `--only-alerts` | off | same as `--level WARN`; not together with `--level` |
 | `--out`, `-o` | | write a report; the suffix selects the format: `.html`/`.htm`, `.json`, `.txt` (plain text), `.md` (Markdown) or `.csv` |
+| `--append` | off | add the `--out` report to the end of the file instead of replacing it, after a blank line (needs `--out`; text and Markdown reports, not `html`, `json` or `csv`); for `$GITHUB_STEP_SUMMARY` and other files several steps write to, see [CI](ci.md) |
 | `--report` | | reporter by name (`logfold plugins list`, for example a plugin reporter): with `--out` it replaces the suffix's choice, without `--out` its text is printed instead of the tables; not with `--json` |
 | `--json` | off | print JSON to standard output instead of tables |
 | `--examples` | `raw` | `raw`, `masked` or `none`: how example messages are kept (use `masked` or `none` before sharing) |

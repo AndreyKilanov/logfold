@@ -11,6 +11,7 @@ import logfold
 from logfold.cli.levels import analysis_note, resolve_level
 from logfold.cli.options import (
     PANEL_OUTPUT,
+    Append,
     AsJson,
     ChunkMb,
     Debug,
@@ -73,6 +74,7 @@ def analyze(
     level: Level = None,
     only_alerts: OnlyAlerts = False,
     out: Out = None,
+    append: Append = False,
     report: Report = None,
     sim_th: SimTh = None,
     depth: Depth = None,
@@ -92,7 +94,7 @@ def analyze(
 ) -> None:
     """Fold FILES into message templates and count them."""
     try:
-        outputs = resolve_outputs("analysis", out, report, as_json)
+        outputs = resolve_outputs("analysis", out, report, as_json, append)
         threshold = resolve_level(level, only_alerts)
         with progress_reporter(quiet) as progress:
             result = logfold.analyze(
@@ -125,6 +127,6 @@ def analyze(
             shown = shown.filter(min_count=min_count)
         emit(shown, top, outputs.stdout)
         if out is not None and outputs.file is not None:
-            write_report(result if outputs.file == "json" else shown, out, outputs.file, quiet)
+            write_report(result if outputs.file == "json" else shown, out, outputs.file, quiet, append)
     except LogfoldError as error:
         raise fail(error, debug) from None
