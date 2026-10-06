@@ -98,6 +98,16 @@ def diff(
             rich_help_panel=PANEL_DIFF,
         ),
     ] = 1,
+    significance: Annotated[
+        float,
+        typer.Option(
+            "--significance",
+            min=0.0,
+            max=1.0,
+            help="Highest p-value of a 'changed' template that is still reported; 1 keeps all (see the guide).",
+            rich_help_panel=PANEL_DIFF,
+        ),
+    ] = 0.01,
     matcher: Annotated[
         str,
         typer.Option(
@@ -189,6 +199,7 @@ def diff(
                 threshold_ratio=threshold_ratio,
                 min_count=min_count,
                 min_new_count=min_new_count,
+                significance=significance,
                 matcher=matcher,
                 examples=examples,
             )
@@ -202,6 +213,7 @@ def diff(
                     threshold_ratio=threshold_ratio,
                     min_count=min_count,
                     min_new_count=min_new_count,
+                    significance=significance,
                     matcher=matcher,
                     recount=recount,
                     examples=examples,  # type: ignore[arg-type]

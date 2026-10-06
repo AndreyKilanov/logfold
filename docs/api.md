@@ -35,7 +35,7 @@ Raises `ConfigError`, `FormatError`, `SourceError` or `EngineError` (see [Errors
 
 ```python
 diff(before, after, *, format="auto", multiline=None, threshold_ratio=None, min_count=None, min_new_count=None,
-     recount=None, matcher=None, diff_config=None, <all mining and execution arguments of analyze>) -> DiffResult
+     recount=None, matcher=None, significance=None, diff_config=None, <all mining and execution arguments of analyze>) -> DiffResult
 ```
 
 Compares two runs. Both runs are mined into one shared template tree, so a template present in both is the same
@@ -47,6 +47,7 @@ template; shares are normalized by the number of records in each run. `before` a
 | `threshold_ratio` | 2.0 | minimum factor by which a share must change to be `changed` (at least 1) |
 | `min_count` | 10 | minimum records, in either run, for a template to be `changed` |
 | `min_new_count` | 1 | minimum records for a template to be reported as new or disappeared |
+| `significance` | 0.01 | highest p-value of a `changed` template that is still reported, in (0, 1]; 1 keeps every template that passes the ratio and count thresholds |
 | `recount` | `True` | assign every record to the finished tree for consistent counts (costs a second pass) |
 | `matcher` | `"jaccard"` | registered diff matcher name: `jaccard`, `token_subset`, `exact` or a plugin's (see [Choosing a matcher](guide.md#choosing-a-matcher)) |
 | `diff_config` | | a full `DiffConfig`; the keyword arguments override its fields |
@@ -149,8 +150,8 @@ registered `formats`, `reporters` and `matchers`. It is what `logfold info` prin
 |---|---|
 | `new_templates` | present after, absent before; most frequent first |
 | `disappeared` | present before, absent after; most frequent first |
-| `changed` | present in both with a share ratio of at least `threshold_ratio`; largest change first |
-| `unchanged` | number of templates present in both runs without a significant change |
+| `changed` | present in both with a share ratio of at least `threshold_ratio` and a p-value of at most `significance`; largest `score` first |
+| `unchanged` | number of templates present in both runs without a significant change (including the ones the test dropped) |
 | `new_alerts` | the new templates whose most severe level is WARN, ERROR or FATAL |
 | `before`, `after` | `RunSummary` of each run |
 | `config` | the `DiffConfig` used |
@@ -160,7 +161,8 @@ registered `formats`, `reporters` and `matchers`. It is what `logfold info` prin
 
 `DiffEntry` fields: `id`, `text` (from the second run when the template is present there), `before_count`,
 `after_count`, `before_share`, `after_share`, `ratio` (`after_share / before_share`, `None` when either count is zero),
-`level`, `levels` (summed over both runs), `example`, `first_seen`, `last_seen`.
+`level`, `levels` (summed over both runs), `example`, `first_seen`, `last_seen`, and for `changed` entries `score` (the
+G statistic of the change of the share) and `p_value`; both are `None` for new and disappeared templates.
 
 ### `RunSummary`, `RunMetrics`, `ResultMeta`
 
@@ -188,7 +190,7 @@ result = analyze("app.log", mining=mining, execution=ExecutionConfig(threads=4))
 |---|---|
 | `MiningConfig` | `depth=4` (at least 3), `sim_th=0.4` (`[0, 1]`), `max_children=100`, `max_templates=100000`, `delimiters=" \t\n\r"` (ASCII), `masks` (the default rules) |
 | `ExecutionConfig` | `engine="auto"` (`auto`, `native`, `python`), `strategy="auto"` (`auto`, `sequential`, `chunked`), `threads=None` (all cores), `chunk_bytes=64 MiB`, `warm_start=False` |
-| `DiffConfig` | `threshold_ratio=2.0`, `min_count=10`, `min_new_count=1`, `recount=True`, `matcher="jaccard"` |
+| `DiffConfig` | `threshold_ratio=2.0`, `min_count=10`, `min_new_count=1`, `recount=True`, `matcher="jaccard"`, `significance=0.01` |
 | `MaskRule` | `name`, `pattern` (must not match the empty string), `token`, `ascii=False` |
 
 `masks` replaces the default rules, which are applied in this order: `uuid` -> `<UUID>`, `ts` -> `<TS>`, `ip` -> `<IP>`,

@@ -11,6 +11,7 @@ from rich.text import Text
 
 from logfold.ext.text import printable
 from logfold.model import AnalysisResult, DiffEntry, DiffResult
+from logfold.reporters.numbers import format_p_value
 
 _VARIABLE = re.compile(r"(<[A-Z]+>|<\*>)")
 _LEVEL_STYLE = {"WARN": "yellow", "ERROR": "red", "FATAL": "bold red"}
@@ -77,6 +78,9 @@ def _entries_table(title: str, entries: Sequence[DiffEntry], top: int, console: 
     table.add_column("before", justify="right")
     table.add_column("after", justify="right")
     table.add_column("change", justify="right")
+    scored = any(entry.p_value is not None for entry in entries)
+    if scored:
+        table.add_column("p", justify="right")
     table.add_column("level")
     table.add_column("template", overflow="fold")
     for entry in entries[:top]:
@@ -85,6 +89,7 @@ def _entries_table(title: str, entries: Sequence[DiffEntry], top: int, console: 
             f"{entry.before_count:,}",
             f"{entry.after_count:,}",
             change,
+            *((format_p_value(entry.p_value),) if scored else ()),
             level_text(entry.level),
             _template_text(entry.text),
         )

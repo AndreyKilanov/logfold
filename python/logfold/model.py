@@ -323,6 +323,8 @@ class DiffEntry:
         example: Example message (from the second run when present there).
         first_seen: Earliest timestamp in the run used for ``example``.
         last_seen: Latest timestamp in the run used for ``example``.
+        score: G statistic of the change of the share, for ``changed`` entries; ``None`` for new and disappeared ones.
+        p_value: Probability of a change at least this large by chance, for ``changed`` entries.
     """
 
     id: str
@@ -337,6 +339,8 @@ class DiffEntry:
     example: str | None
     first_seen: datetime | None
     last_seen: datetime | None
+    score: float | None = None
+    p_value: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -346,7 +350,8 @@ class DiffResult:
     Attributes:
         new_templates: Present after, absent before; most frequent first.
         disappeared: Present before, absent after; most frequent first.
-        changed: Present in both with a share ratio of at least ``threshold_ratio``; largest change first.
+        changed: Present in both with a share ratio of at least ``threshold_ratio`` and a p-value of at most
+            ``significance``; largest score first.
         unchanged: Number of templates present in both runs without a significant change.
         before: Counters of the first run.
         after: Counters of the second run.

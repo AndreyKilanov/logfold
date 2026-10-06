@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 from pathlib import Path
 
 import pytest
@@ -50,10 +51,11 @@ def test_classify_thresholds_and_min_counts() -> None:
     run = summary(100)
 
     def changed(config: DiffConfig) -> list[str]:
+        config = dataclasses.replace(config, significance=1.0)
         return [e.text for e in classify(templates, run, run, config, ExactMatcher()).changed]
 
     assert changed(DiffConfig(threshold_ratio=4.0, min_count=2)) == ["b <*>"]
-    assert changed(DiffConfig(threshold_ratio=2.0, min_count=2)) == ["b <*>", "a <*>"]
+    assert changed(DiffConfig(threshold_ratio=2.0, min_count=2)) == ["a <*>", "b <*>"]
     assert changed(DiffConfig(threshold_ratio=2.0, min_count=6)) == ["a <*>"]
     assert changed(DiffConfig(threshold_ratio=10.0, min_count=0)) == []
     hidden = classify(templates, run, run, DiffConfig(min_new_count=2), ExactMatcher())

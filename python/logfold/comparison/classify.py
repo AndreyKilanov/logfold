@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from logfold.comparison.significance import apply_significance
 from logfold.config import DiffConfig
 from logfold.ext.matchers import DiffMatcher
 from logfold.levels import summarize_levels
@@ -100,9 +101,10 @@ def classify(
     """Split templates into new, disappeared, changed and unchanged.
 
     A template is *new* when it occurs only in the second run, *disappeared* when only in the first, and *changed*
-    when it occurs in both and its share of records moved by a factor of at least ``threshold_ratio`` (up or down)
-    while either count is at least ``min_count``. The ``matcher`` pairs one-sided templates that describe the same
-    event so they are compared as one template instead of being reported twice.
+    when it occurs in both, its share of records moved by a factor of at least ``threshold_ratio`` (up or down) while
+    either count is at least ``min_count``, and the move is significant (``significance``, see
+    :func:`~logfold.comparison.significance.apply_significance`). The ``matcher`` pairs one-sided templates that
+    describe the same event so they are compared as one template instead of being reported twice.
 
     Args:
         templates: Templates with statistics for exactly two runs.
@@ -112,7 +114,7 @@ def classify(
         matcher: Pairs one-sided templates.
 
     Returns:
-        The classification, each list sorted most significant first.
+        The classification: ``new`` and ``disappeared`` most frequent first, ``changed`` with the largest score first.
     """
     both: list[tuple[TemplateStats | None, TemplateStats | None]] = []
     before_only: list[TemplateStats] = []
@@ -155,4 +157,9 @@ def classify(
     new.sort(key=lambda e: (-e.after_count, e.text))
     gone.sort(key=lambda e: (-e.before_count, e.text))
     changed.sort(key=lambda e: (-_change_factor(e), -max(e.before_count, e.after_count), e.text))
-    return Classification(tuple(new), tuple(gone), tuple(changed), unchanged)
+    return apply_significance(
+        Classification(tuple(new), tuple(gone), tuple(changed), unchanged),
+        before.records,
+        after.records,
+        config.significance,
+    )
