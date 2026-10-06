@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from logfold.errors import FormatError
 from logfold.ext import registry
 from logfold.ext.formats import Format, FormatSpec, RegexFormat, with_multiline
+from logfold.ext.log4j import log4j_format
 from logfold.formats.auto import Detection, detect_format
 from logfold.formats.builtin import BUILTIN_FORMATS, register_builtin_formats
 
@@ -65,7 +66,8 @@ def resolve_format(
     """Turn a user supplied format into a specification.
 
     Args:
-        fmt: A registered name, ``auto``, ``regex:<pattern>``, a specification or a ``Format`` object.
+        fmt: A registered name, ``auto``, ``regex:<pattern>``, ``log4j:<pattern>``, a specification or a ``Format``
+            object.
         paths: Input paths of the first run (used by ``auto``).
         multiline: Override of the multiline flag; ``None`` keeps the format's own setting (and lets auto-detection
             switch multiline on when indented continuation lines are found).
@@ -81,6 +83,8 @@ def resolve_format(
             spec, confidence, hint = detection.spec, detection.confidence, detection.multiline_hint
         elif fmt.startswith("regex:"):
             spec = regex_format_from_pattern(fmt[len("regex:") :])
+        elif fmt.startswith("log4j:"):
+            spec = log4j_format(fmt[len("log4j:") :])
         else:
             spec = registry.get_format(fmt)
     elif isinstance(fmt, Format):

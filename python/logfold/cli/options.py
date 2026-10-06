@@ -19,7 +19,7 @@ Format = Annotated[
     typer.Option(
         "--format",
         "-f",
-        help="auto, a name from 'logfold formats', or regex:<pattern>.",
+        help="auto, a name from 'logfold formats', regex:<pattern>, or log4j:<pattern>.",
         rich_help_panel=PANEL_INPUT,
     ),
 ]

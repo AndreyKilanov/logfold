@@ -55,7 +55,7 @@ def formats() -> None:
     console.print(table)
     _print_available(console)
     console.print(
-        "\nUse [bold]regex:<pattern>[/bold] for a custom format. "
+        "\nUse [bold]regex:<pattern>[/bold] or [bold]log4j:<pattern>[/bold] for a custom format. "
         "Named groups message/msg, timestamp/ts/time and level/lvl are picked up."
     )
 

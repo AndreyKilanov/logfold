@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from logfold.ext.formats import Format, FormatSpec, JsonFormat, PlainFormat, RegexFormat
+from logfold.ext.log4j import log4j_format
 from logfold.ext.masks import DEFAULT_MASKS, MaskRule
 from logfold.ext.matchers import DiffMatcher
 from logfold.ext.registry import (
@@ -40,6 +41,7 @@ __all__ = [
     "get_format",
     "get_matcher",
     "get_reporter",
+    "log4j_format",
     "matcher_names",
     "plugin_directories",
     "plugin_sources",
