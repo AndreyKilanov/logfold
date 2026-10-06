@@ -42,7 +42,7 @@ from logfold import diff
 d = diff("before.log", "after.log")
 d.new_templates  # present after, absent before (most frequent first)
 d.disappeared
-d.changed  # share of the log changed by at least threshold_ratio (default 2.0)
+d.changed  # share changed by at least threshold_ratio (default 2.0) and significantly (p <= 0.01); largest score first
 d.new_alerts  # new templates whose most severe level is WARN or higher
 d.to_html("diff.html")
 ```

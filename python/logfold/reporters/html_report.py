@@ -14,6 +14,7 @@ from html import escape as _escape
 
 from logfold.ext.text import printable
 from logfold.model import AnalysisResult, DiffEntry, DiffResult, RunSummary, Template
+from logfold.reporters.numbers import format_p_value
 
 DEFAULT_LIMIT = 2000
 _VARIABLE = re.compile(r"(<[A-Z]+>|<\*>)")
@@ -173,7 +174,10 @@ def _diff_rows(entries: Sequence[DiffEntry], kind: str) -> str:
             change = "new" if kind == "new" else "gone"
         else:
             css = "up" if entry.ratio > 1 else "down"
-            change = f'<span class="{css}">&times;{entry.ratio:.2f}</span>'
+            tip = ""
+            if entry.score is not None:
+                tip = f' title="{escape(f"score {entry.score:.1f}, p {format_p_value(entry.p_value)}")}"'
+            change = f'<span class="{css}"{tip}>&times;{entry.ratio:.2f}</span>'
         rows.append(
             f'<tr data-text="{escape(needle, quote=True)}"><td class="n">{_count(entry.before_count)}</td>'
             f'<td class="n">{_count(entry.after_count)}</td>'

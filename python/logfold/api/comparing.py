@@ -13,7 +13,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
 
-from logfold.comparison import Classification
+from logfold.comparison import Classification, apply_significance
 from logfold.config import DiffConfig
 from logfold.engines import native
 from logfold.engines.base import TemplateTable
@@ -209,4 +209,9 @@ def classify_native(
                 (example(sample), first, last),
             )
         )
-    return Classification(tuple(new_entries), tuple(gone_entries), tuple(changed_entries), unchanged)
+    return apply_significance(
+        Classification(tuple(new_entries), tuple(gone_entries), tuple(changed_entries), unchanged),
+        before.total,
+        after.total,
+        config.significance,
+    )

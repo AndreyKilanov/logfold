@@ -119,10 +119,12 @@ class CsvReporter:
         buffer = io.StringIO()
         writer = csv.writer(buffer, lineterminator="\n")
         if isinstance(result, DiffResult):
-            writer.writerow(["kind", "before_count", "after_count", "level", "template"])
+            writer.writerow(["kind", "before_count", "after_count", "level", "template", "score", "p_value"])
             for kind, entries in _diff_sections(result):
                 for e in entries[:top]:
-                    writer.writerow([kind, e.before_count, e.after_count, e.level or "", _csv(e.text)])
+                    score = "" if e.score is None else e.score
+                    p_value = "" if e.p_value is None else e.p_value
+                    writer.writerow([kind, e.before_count, e.after_count, e.level or "", _csv(e.text), score, p_value])
         else:
             writer.writerow(["count", "level", "first_seen", "last_seen", "template"])
             for t in result.templates[:top]:

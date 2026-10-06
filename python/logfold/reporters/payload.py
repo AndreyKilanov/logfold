@@ -83,6 +83,8 @@ def entry_payload(entry: DiffEntry) -> dict[str, Any]:
         "example": entry.example,
         "first_seen": _iso(entry.first_seen),
         "last_seen": _iso(entry.last_seen),
+        "score": entry.score,
+        "p_value": entry.p_value,
     }
 
 

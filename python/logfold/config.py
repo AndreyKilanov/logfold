@@ -132,6 +132,8 @@ class DiffConfig:
         recount: Assign every record of both runs to the finished template tree (consistent, needs a second
             pass over the inputs). Disable only to trade accuracy for speed.
         matcher: Name of the registered diff matcher (``jaccard``, ``token_subset`` or ``exact``).
+        significance: Highest p-value of a ``changed`` template that is still reported, in ``(0, 1]``; the default 0.01
+            drops changes that may be noise, 1 keeps every template that passes the ratio and count thresholds.
     """
 
     threshold_ratio: float = 2.0
@@ -139,6 +141,7 @@ class DiffConfig:
     min_new_count: int = 1
     recount: bool = True
     matcher: str = "jaccard"
+    significance: float = 0.01
 
     def __post_init__(self) -> None:
         """Validate values.
@@ -146,6 +149,8 @@ class DiffConfig:
         Raises:
             ConfigError: If a value is out of range.
         """
+        if not 0.0 < self.significance <= 1.0:
+            raise ConfigError("significance must be greater than 0 and at most 1")
         if self.threshold_ratio < 1.0:
             raise ConfigError("threshold_ratio must be at least 1")
         if self.min_count < 0 or self.min_new_count < 0:

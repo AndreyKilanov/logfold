@@ -26,6 +26,9 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Changed
 
+- `diff`: a template is `changed` only if a G-test finds the change unlikely to be noise (`--significance`, default 0.01;
+  `--significance 1` restores the previous result); `changed` is sorted by the new `score`, and `score` and `p_value` are
+  in the JSON, CSV and terminal output. New and disappeared templates and the gates are not affected.
 - Error messages are shorter: the system's localized text is not repeated and markup in a path is printed literally.
 - Terminal output: a `levels:` line, "N more templates (X% of records)", a hint to open a written HTML report, and the
   transfer speed in progress.

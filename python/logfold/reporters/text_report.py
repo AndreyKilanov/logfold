@@ -10,6 +10,7 @@ from collections.abc import Sequence
 
 from logfold.ext.text import printable
 from logfold.model import AnalysisResult, DiffEntry, DiffResult, Template
+from logfold.reporters.numbers import format_p_value
 
 DEFAULT_TOP = 20
 TEXT_WIDTH = 100
@@ -43,11 +44,14 @@ def _entries(title: str, entries: Sequence[DiffEntry], top: int) -> list[str]:
     lines = ["", f"{title} ({len(entries):,})"]
     if not entries:
         return [*lines, "  none"]
-    lines.append(f"{'before':>10}  {'after':>10}  {'change':>8}  {'level':<5}  template")
+    scored = any(entry.p_value is not None for entry in entries)
+    significance = f"{'p':>6}  " if scored else ""
+    lines.append(f"{'before':>10}  {'after':>10}  {'change':>8}  {significance}{'level':<5}  template")
     for entry in entries[:top]:
         change = f"x{entry.ratio:.2f}" if entry.ratio is not None else ("new" if entry.before_count == 0 else "gone")
+        p_column = f"{format_p_value(entry.p_value):>6}  " if scored else ""
         lines.append(
-            f"{entry.before_count:>10,}  {entry.after_count:>10,}  {change:>8}  {entry.level or '':<5}  "
+            f"{entry.before_count:>10,}  {entry.after_count:>10,}  {change:>8}  {p_column}{entry.level or '':<5}  "
             f"{_clip(entry.text)}"
         )
     if len(entries) > top:

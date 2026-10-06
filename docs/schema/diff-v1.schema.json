@@ -21,7 +21,8 @@
         "min_count": { "type": "integer", "minimum": 0 },
         "min_new_count": { "type": "integer", "minimum": 0 },
         "recount": { "type": "boolean" },
-        "matcher": { "type": "string" }
+        "matcher": { "type": "string" },
+        "significance": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
       },
       "additionalProperties": false
     },
@@ -65,7 +66,9 @@
           "levels": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 1 } },
           "example": { "type": ["string", "null"] },
           "first_seen": { "type": ["string", "null"] },
-          "last_seen": { "type": ["string", "null"] }
+          "last_seen": { "type": ["string", "null"] },
+          "score": { "type": ["number", "null"], "minimum": 0 },
+          "p_value": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
         },
         "additionalProperties": false
       }

@@ -62,6 +62,10 @@ Mining and execution options, shared with `diff`:
 ## `logfold diff`
 
 Compare two runs: new, disappeared and changed templates. Shares are normalized by the number of records in each run.
+A template is `changed` when its share moved by `--threshold-ratio`, it has `--min-count` records in either run, and the
+move is statistically significant: a G-test of the template against all other records, before against after, gives
+a p-value of at most `--significance`. The `changed` table is sorted by that score, largest first, and shows the `p`
+value. Gates and exit codes look at new templates only, so they do not depend on this.
 
 ```
 logfold diff BEFORE AFTER [options]
@@ -77,6 +81,7 @@ see below), plus:
 | `--threshold-ratio` | 2.0 | factor by which a template's share must change to be reported as `changed` (at least 1) |
 | `--min-count` | 10 | records, in either run, needed to report `changed` |
 | `--min-new-count` | 1 | records needed to report a template as new or disappeared |
+| `--significance` | 0.01 | highest p-value of a `changed` template that is still reported (0 < P <= 1); `1` keeps every template that passes the ratio and count thresholds |
 | `--matcher` | `jaccard` | `jaccard`, `token_subset` or `exact`; plugins add more ([how to choose](guide.md#choosing-a-matcher)) |
 | `--recount` / `--no-recount` | on | assign every record to the finished template tree; `--no-recount` is faster but can show spurious differences |
 | `--fail-on-new` | off | exit with code 2 when new templates are found |

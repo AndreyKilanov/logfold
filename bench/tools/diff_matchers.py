@@ -140,11 +140,17 @@ class Pair:
                 )
             assert self._saved is not None
             start = time.perf_counter()
-            result = logfold.diff(*self._saved, matcher=matcher)
+            result = logfold.diff(*self._saved, matcher=matcher, significance=1.0)
         else:
             start = time.perf_counter()
             result = logfold.diff(
-                self.before, self.after, format="plain", matcher=matcher, examples="none", strategy=strategy
+                self.before,
+                self.after,
+                format="plain",
+                matcher=matcher,
+                examples="none",
+                strategy=strategy,
+                significance=1.0,
             )
         return result, time.perf_counter() - start
 

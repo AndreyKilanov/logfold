@@ -48,6 +48,7 @@ def _diff_config(
     min_new_count: int | None,
     recount: bool | None,
     matcher: str | None,
+    significance: float | None,
 ) -> DiffConfig:
     config = base or DiffConfig()
     changes: dict[str, Any] = {}
@@ -57,6 +58,7 @@ def _diff_config(
         ("min_new_count", min_new_count),
         ("recount", recount),
         ("matcher", matcher),
+        ("significance", significance),
     ):
         if value is not None:
             changes[key] = value
@@ -74,6 +76,7 @@ def diff(
     min_new_count: int | None = None,
     recount: bool | None = None,
     matcher: str | None = None,
+    significance: float | None = None,
     diff_config: DiffConfig | None = None,
     depth: int | None = None,
     sim_th: float | None = None,
@@ -112,6 +115,7 @@ def diff(
         recount: Assign records to the finished template tree for consistent counts (default True; costs a second
             pass over the inputs).
         matcher: Name of the diff matcher (default ``jaccard``).
+        significance: Highest p-value of a changed template that is still reported (default 0.01; 1 keeps all).
         diff_config: Full comparison configuration; the keyword arguments above override its fields.
         depth: Tree depth.
         sim_th: Similarity threshold.
@@ -138,7 +142,7 @@ def diff(
         SourceError: If an input cannot be read.
         EngineError: If the requested engine is unavailable.
     """
-    config = _diff_config(diff_config, threshold_ratio, min_count, min_new_count, recount, matcher)
+    config = _diff_config(diff_config, threshold_ratio, min_count, min_new_count, recount, matcher, significance)
     if isinstance(before, AnalysisResult) or isinstance(after, AnalysisResult):
         if not (isinstance(before, AnalysisResult) and isinstance(after, AnalysisResult)):
             raise ConfigError("diff() compares two analysis results or two sets of inputs, not one of each")

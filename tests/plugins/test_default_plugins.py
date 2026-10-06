@@ -100,7 +100,7 @@ def test_csv_and_markdown_reporters_render_a_diff_and_honour_top(tmp_path: Path)
     after = write(tmp_path, "a.log", LOGFMT.replace("slow query", "disk full"))
     result = logfold.diff(before, after, format="logfmt", engine="python", min_count=1)
     rows = list(csv.reader(io.StringIO(CsvReporter().render(result))))
-    assert rows[0] == ["kind", "before_count", "after_count", "level", "template"]
+    assert rows[0] == ["kind", "before_count", "after_count", "level", "template", "score", "p_value"]
     assert {row[0] for row in rows[1:]} == {"new", "disappeared"}
     assert len(list(csv.reader(io.StringIO(result.render("csv", top=1))))) == 3
     assert "## New templates" in MarkdownReporter().render(result)
