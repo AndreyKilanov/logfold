@@ -2,7 +2,7 @@
 
 The built-in format plugins (`haproxy`, `postgresql`, `postgresql-csv`, `docker-json`, `github-actions`, `log4j`) are
 declarative: a regular expression or a list of JSON keys that the Rust engine compiles, so nothing runs in Python per line.
-This page measures what that costs before a plugin ships: size, time, memory and growth, and the verdict *Rust or Python*. Script: [`format_plugins.py`](../tools/format_plugins.py).
+This page measures what that costs before a plugin ships: size, time, memory and growth. Script: [`format_plugins.py`](../tools/format_plugins.py).
 
 ## Method
 
@@ -46,9 +46,3 @@ the native one) gave 1.8 to 3.6 MB/s, with and without
 the format. The native engine on large logs is therefore about 100 to 200 times faster (112 to 204 for the six formats,
 comparing the 1000 MiB column with that run). The figure is approximate: one probe each, and the Python engine is not tuned
 for speed.
-
-## Verdict: Rust or Python
-
-Rust, and no new Rust code: the formats are data for the existing regex and JSON parsers, and the pattern converter behind
-`log4j:<pattern>` runs once per command, not per line. The price against `plain` is a factor of 2 to 4 on the native engine, which
-is the cost of the regular expression itself; a hand-written parser per format would not be worth its maintenance.
