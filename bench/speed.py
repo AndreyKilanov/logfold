@@ -15,6 +15,11 @@ git-ignored and created on demand); ``--out FILE`` chooses another file and ``--
 
     python bench/speed.py diff bench/data/app_100mb.log bench/data/app_100mb_b.log
 
+``formats`` times the built-in log formats against ``-f plain`` (every line is a message, nothing is parsed) on generated logs::
+
+    python bench/speed.py formats --sizes 10 100
+    python bench/speed.py formats --format haproxy log4j
+
 ``matchers`` times each native matcher alone on lists of one-sided templates (the cost a plugin matcher adds to a diff)::
 
     python bench/speed.py matchers --sizes 5000 20000 100000
@@ -34,12 +39,14 @@ import shutil
 import statistics
 import subprocess
 import sys
+import tempfile
 import time
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
 
 import psutil
+from data import GENERATORS
 
 ROOT = Path(__file__).resolve().parents[1]
 PYTHON = sys.executable
@@ -267,6 +274,47 @@ def matchers(args: argparse.Namespace) -> None:
             print(f"- {shape} {name}: k = {math.log(times[-1] / times[0]) / ratio:.2f}")
 
 
+def formats(args: argparse.Namespace) -> None:
+    """``formats``: each format against ``plain`` on a generated log; also checks that every line parses."""
+    from data import GENERATORS, write_format_log
+
+    import logfold as library
+
+    print(
+        "\n| format | size | MB/s with the format | MB/s plain | format / plain | peak memory | unparsed lines |\n|---|---:|---:|---:|---:|---:|---:|"
+    )
+    with tempfile.TemporaryDirectory(dir=ROOT / "bench") as folder:
+        for name in args.format:
+            for size in args.sizes:
+                path = Path(folder) / f"{name}_{size}mb.log"
+                write_format_log(name, size, path)
+                speed: dict[str, float] = {}
+                peak = 0.0
+                for fmt in (name, "plain"):
+                    command = logfold("analyze", str(path), "-f", fmt, "--top", "1", "-q", "--engine", "native")
+                    runs = [measure(command, args.timeout) for _ in range(args.repeat)]
+                    speed[fmt] = size / statistics.median(run.wall_s for run in runs)
+                    peak = max(peak, *(run.peak_mb for run in runs)) if fmt == name else peak
+                unparsed = ""
+                if size == min(args.sizes):
+                    unparsed = str(library.analyze(path, format=name, engine="native", examples="none").run.unparsed)
+                path.unlink()
+                row = {
+                    "format": name,
+                    "size_mb": size,
+                    "mb_per_s": speed[name],
+                    "plain_mb_per_s": speed["plain"],
+                    "peak_mb": peak,
+                    "unparsed": unparsed,
+                }
+                args.rows.append(row)
+                print(
+                    f"| {name} | {size} MB | {speed[name]:,.0f} | {speed['plain']:,.0f} | {speed[name] / speed['plain']:.2f} | {peak:,.0f} MB | {unparsed} |",
+                    flush=True,
+                )
+    assert set(args.format) <= set(GENERATORS)
+
+
 def drain3(args: argparse.Namespace) -> None:
     """Hidden mode used by ``analyze``: run Drain3 over a file with parameters aligned with the logfold defaults."""
     from drain3 import TemplateMiner
@@ -326,6 +374,14 @@ def parser() -> argparse.ArgumentParser:
     second.add_argument("after", type=Path)
     common(second)
     second.set_defaults(run=diff)
+
+    fourth = sub.add_parser("formats", help="each built-in format against plain")
+    fourth.add_argument("--format", nargs="+", default=list(GENERATORS), choices=list(GENERATORS))
+    fourth.add_argument("--sizes", nargs="+", type=int, default=[10, 100], help="log sizes in MB (default 10 100)")
+    fourth.add_argument("--repeat", type=int, default=3, help="runs per cell; the median is shown")
+    fourth.add_argument("--timeout", type=float, default=1800, help="seconds before a run is stopped")
+    saving(fourth)
+    fourth.set_defaults(run=formats)
 
     third = sub.add_parser("matchers", help="each native matcher alone on one-sided templates")
     third.add_argument("--sizes", nargs="+", type=int, default=[5000, 20000, 100000], help="templates per side")

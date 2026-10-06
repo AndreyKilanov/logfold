@@ -2,18 +2,18 @@
 
 The built-in format plugins (`haproxy`, `postgresql`, `postgresql-csv`, `docker-json`, `github-actions`, `log4j`) are
 declarative: a regular expression or a list of JSON keys that the Rust engine compiles, so nothing runs per line outside the engine.
-This page measures what that costs before a plugin ships: size, time, memory and growth. Script: [`format_plugins.py`](../tools/format_plugins.py).
+This page measures what that costs before a plugin ships: size, time, memory and growth. Command: `python bench/speed.py formats`.
 
 ## Method
 
 For every format a log is generated (seeded, realistic lines: addresses, ids, durations, stack traces and multi-line statements
 where the format has them), 10, 100 and 1000 MiB. `logfold analyze FILE -f NAME --top 1 -q` runs as a separate process
-(`run.py` records wall time and peak working set) with the format and with `-f plain`, which treats every line as a message and
+(`speed.py` records wall time and peak working set) with the format and with `-f plain`, which treats every line as a message and
 parses nothing: the difference is the price of the format. Defaults otherwise (masks on, strategy `auto`, all threads). Median of
 three runs for 10 and 100 MiB, one run for 1000 MiB. The figures are those of the native (Rust) engine.
 
-Every generated log is read in full: 0 unparsed lines and 0 records without a time for all six formats (checked on the 10 MiB
-file in the same script).
+Every generated log is read in full: 0 unparsed lines and 0 records without a time for all six formats (`speed.py formats` checks it on the smallest
+file).
 
 Machine: Windows 11, 8 cores / 16 threads, warm page cache. The 0.4.0 development code.
 

@@ -1,28 +1,21 @@
-"""Inputs of the benchmarks: seeded generated logs, and the four large real logs.
+"""Inputs of the benchmarks: seeded generated logs, and the four large real logs (examples: ``bench/README.md``).
 
 ``make`` writes deterministic datasets (the same arguments give byte-identical files): ``nginx``, ``app``, ``loghub`` (Loghub-2k
 seed lines with randomised numbers) and ``highcard`` (adversarial: a huge number of distinct templates); ``--variant b`` writes
-the "after" run of a diff pair::
+the "after" run of a diff pair. ``--only haproxy postgresql postgresql-csv docker-json github-actions log4j`` writes a log of
+that format (realistic lines, seeded), which ``speed.py formats`` measures against ``plain``.
 
-    python bench/data.py make --size-mb 100
-    python bench/data.py make --size-mb 100 --variant b --only nginx app
-
-``loghub2`` downloads Loghub-2.0 (an unofficial Hugging Face upload) at a pinned revision and checks size and SHA-256. The official
-copy lives on Zenodo (https://zenodo.org/record/8275861). The data is free for research with attribution to the Loghub authors
-(Jiang et al., ISSTA 2024, arXiv:2308.10828; Zhu et al., ISSRE 2023, arXiv:2008.06448); keep it local and do not redistribute it.
-Downloads resume after an interruption::
-
-    python bench/data.py loghub2 --list
-    python bench/data.py loghub2 hdfs spark thunderbird bgl
-    python bench/data.py loghub2 --verify
-
-Files go to ``bench/data/`` (git-ignored).
+``loghub2`` downloads Loghub-2.0 (an unofficial Hugging Face upload) at a pinned revision and checks size and SHA-256; downloads
+resume after an interruption. The official copy lives on Zenodo (https://zenodo.org/record/8275861). The data is free for
+research with attribution to the Loghub authors (Jiang et al., ISSTA 2024, arXiv:2308.10828; Zhu et al., ISSRE 2023,
+arXiv:2008.06448); keep it local and do not redistribute it. Files go to ``bench/data/`` (git-ignored).
 """
 
 from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import random
 import re
 import sys
@@ -30,6 +23,7 @@ import time
 import urllib.error
 import urllib.request
 from collections.abc import Callable, Iterator
+from datetime import datetime, timedelta
 from pathlib import Path
 
 LOGHUB_RAW = "https://raw.githubusercontent.com/logpai/loghub/master/{name}/{name}_2k.log"
@@ -140,6 +134,168 @@ def highcard_pool(rng: random.Random, size: int = 400_000) -> list[str]:
     return lines
 
 
+START = datetime(2026, 10, 6, 12, 0, 0)
+APPS = ("shop", "auth", "billing", "search", "mail")
+PATHS = (
+    "/index.html",
+    "/api/v1/items/{id}",
+    "/api/v1/users/{id}/orders",
+    "/static/app.{id}.js",
+    "/login",
+    "/cart/{id}",
+    "/health",
+)
+MESSAGES = (
+    "user {id} logged in from {ip}",
+    "order {id} placed, total {n}.{c:02d}",
+    "cache warmed {n} keys in {n} ms",
+    "payment {id} failed: card declined",
+    "retry {n} of 5 for job {id}",
+    "request to {ip} timed out after {n} ms",
+    "session {id} expired",
+    "slow query on table orders took {n} ms",
+    "connection pool at {n} percent",
+    "email to user {id} queued",
+)
+STATEMENTS = (
+    "SELECT * FROM orders WHERE user_id = {id} AND status = 'paid'",
+    "UPDATE stock SET qty = qty - {n} WHERE sku = 'A{id}'",
+    "INSERT INTO events (id, kind) VALUES ({id}, 'view')",
+)
+
+
+def format_ip(rng: random.Random) -> str:
+    return f"10.{rng.randrange(256)}.{rng.randrange(256)}.{rng.randrange(1, 255)}"
+
+
+def format_message(rng: random.Random) -> str:
+    return rng.choice(MESSAGES).format(
+        id=rng.randrange(10**6), ip=format_ip(rng), n=rng.randrange(1, 5000), c=rng.randrange(100)
+    )
+
+
+def format_clock(rng: random.Random) -> Iterator[datetime]:
+    now = START
+    while True:
+        now += timedelta(milliseconds=rng.randrange(1, 40))
+        yield now
+
+
+def haproxy(rng: random.Random) -> Iterator[str]:
+    for now in format_clock(rng):
+        path = rng.choice(PATHS).format(id=rng.randrange(10**5))
+        status = rng.choices((200, 200, 200, 301, 404, 500, 503), k=1)[0]
+        state = "----" if status < 500 else "sH--"
+        yield (
+            f"{now:%b} {now.day:2d} {now:%H:%M:%S} lb1 haproxy[{rng.randrange(1000, 9999)}]: {format_ip(rng)}:{rng.randrange(1024, 65535)} "
+            f"[{now:%d/%b/%Y:%H:%M:%S}.{now.microsecond // 1000:03d}] fe_http be_{rng.choice(APPS)}/srv{rng.randrange(1, 5)} "
+            f"0/0/{rng.randrange(5)}/{rng.randrange(300)}/{rng.randrange(300)} {status} {rng.randrange(100, 90000)} - - {state} "
+            f'{rng.randrange(1, 90)}/{rng.randrange(1, 90)}/0/0/0 0/0 "GET {path} HTTP/1.1"'
+        )
+
+
+def postgresql(rng: random.Random) -> Iterator[str]:
+    for now in format_clock(rng):
+        stamp = f"{now:%Y-%m-%d %H:%M:%S}.{now.microsecond // 1000:03d} UTC [{rng.randrange(1000, 9999)}]"
+        kind = rng.randrange(10)
+        statement = rng.choice(STATEMENTS).format(id=rng.randrange(10**6), n=rng.randrange(1, 50))
+        if kind < 4:
+            yield f"{stamp} app@shop LOG:  duration: {rng.random() * 90:.3f} ms  statement: {statement}"
+        elif kind < 6:
+            yield f"{stamp} LOG:  connection received: host={format_ip(rng)} port={rng.randrange(1024, 65535)}"
+        elif kind < 7:
+            yield f'{stamp} app@shop ERROR:  duplicate key value violates unique constraint "events_pkey"'
+            yield f"{stamp} app@shop DETAIL:  Key (id)=({rng.randrange(10**6)}) already exists."
+            yield f"{stamp} app@shop STATEMENT:  INSERT INTO events (id, kind)"
+            yield f"\tVALUES ({rng.randrange(10**6)}, 'view')"
+        elif kind < 8:
+            yield f"{stamp} WARNING:  there is already a transaction in progress"
+        else:
+            yield f"{stamp} LOG:  checkpoint starting: time"
+
+
+def postgresql_csv(rng: random.Random) -> Iterator[str]:
+    for now in format_clock(rng):
+        stamp = f"{now:%Y-%m-%d %H:%M:%S}.{now.microsecond // 1000:03d} UTC"
+        pid = rng.randrange(1000, 9999)
+        head = f'"app","shop",{pid},"{format_ip(rng)}:{rng.randrange(1024, 65535)}",65a1b2c3.{pid:x},{rng.randrange(1, 99)},"SELECT"'
+        times = f"{stamp[:19]} UTC,{rng.randrange(1, 9)}/{rng.randrange(1, 99)},0"
+        kind = rng.randrange(10)
+        statement = rng.choice(STATEMENTS).format(id=rng.randrange(10**6), n=rng.randrange(1, 50))
+        if kind < 6:
+            yield f'{stamp},{head},{times},LOG,00000,"duration: {rng.random() * 90:.3f} ms  statement: {statement}",,,,,,,,,"psql","client backend"'
+        elif kind < 8:
+            yield f'{stamp},{head},{times},ERROR,23505,"duplicate key value violates unique constraint ""events_pkey""","Key (id)=({rng.randrange(10**6)}) already exists.",,,,,"INSERT INTO events (id, kind)'
+            yield f"""VALUES ({rng.randrange(10**6)}, 'view')",,,"psql","client backend\""""
+        else:
+            yield f'{stamp},{head},{times},WARNING,01000,"there is already a transaction in progress",,,,,,,,,"psql","client backend"'
+
+
+def docker_json(rng: random.Random) -> Iterator[str]:
+    for now in format_clock(rng):
+        stream = "stderr" if rng.randrange(20) == 0 else "stdout"
+        stamp = f"{now:%Y-%m-%dT%H:%M:%S}.{now.microsecond:06d}{rng.randrange(1000):03d}Z"
+        yield json.dumps({"log": format_message(rng) + "\n", "stream": stream, "time": stamp})
+
+
+def github_actions(rng: random.Random) -> Iterator[str]:
+    for now in format_clock(rng):
+        stamp = f"{now:%Y-%m-%dT%H:%M:%S}.{now.microsecond:06d}0Z"
+        kind = rng.randrange(20)
+        if kind == 0:
+            yield f"{stamp} ##[group]Run step {rng.randrange(40)}"
+        elif kind == 1:
+            yield f"{stamp} ##[endgroup]"
+        elif kind == 2:
+            yield f"{stamp} ##[warning]Node {rng.randrange(12, 20)} actions are deprecated"
+        elif kind == 3:
+            yield f"{stamp} ##[error]Process completed with exit code {rng.randrange(1, 3)}."
+        elif kind < 10:
+            yield f"{stamp} tests/test_{rng.choice(APPS)}_{rng.randrange(400)}.py::test_case_{rng.randrange(900)} PASSED [{rng.randrange(100)}%]"
+        else:
+            yield f"{stamp} Downloading package-{rng.randrange(900)}-{rng.randrange(20)}.{rng.randrange(20)}.whl ({rng.randrange(5000)} kB)"
+
+
+def log4j(rng: random.Random) -> Iterator[str]:
+    for now in format_clock(rng):
+        level = rng.choices(("INFO ", "WARN ", "ERROR", "DEBUG"), weights=(70, 15, 5, 10))[0]
+        thread = rng.choice(
+            (
+                "main",
+                f"http-nio-8080-exec-{rng.randrange(1, 20)}",
+                f"pool-{rng.randrange(1, 5)}-thread-{rng.randrange(1, 9)}",
+            )
+        )
+        stamp = f"{now:%Y-%m-%d %H:%M:%S},{now.microsecond // 1000:03d}"
+        yield f"{stamp} {level} [{thread}] com.shop.{rng.choice(APPS).title()}Service - {format_message(rng)}"
+        if level == "ERROR" and rng.randrange(2):
+            yield "java.lang.IllegalStateException: boom"
+            yield f"\tat com.shop.OrderService.place(OrderService.java:{rng.randrange(10, 400)})"
+            yield f"\tat com.shop.Web.handle(Web.java:{rng.randrange(10, 400)})"
+
+
+GENERATORS: dict[str, Callable[[random.Random], Iterator[str]]] = {
+    "haproxy": haproxy,
+    "postgresql": postgresql,
+    "postgresql-csv": postgresql_csv,
+    "docker-json": docker_json,
+    "github-actions": github_actions,
+    "log4j": log4j,
+}
+
+
+def write_format_log(name: str, size_mb: int, path: Path) -> None:
+    """Write about ``size_mb`` megabytes of the log of format ``name``."""
+    target = size_mb << 20
+    written = 0
+    with path.open("w", encoding="utf-8", newline="\n") as out:
+        for line in GENERATORS[name](random.Random(7)):
+            out.write(line + "\n")
+            written += len(line) + 1
+            if written >= target:
+                break
+
+
 def write_dataset(path: Path, pool: list[str], size_bytes: int, rng: random.Random) -> int:
     """Write shuffled passes over ``pool`` until the file reaches ``size_bytes``; return the number of lines."""
     written = 0
@@ -167,7 +323,6 @@ def datasets(cache: Path, variant: str) -> Iterator[tuple[str, Callable[[random.
 
 REPO = "bolu61/loghub_2"
 REVISION = "4a98d3eb30522891b340609d17fa34709a1d44d2"
-ZENODO = "https://zenodo.org/record/8275861"
 RESOLVE = f"https://huggingface.co/datasets/{REPO}/resolve/{REVISION}/{{path}}"
 DEFAULT_NAMES = ("hdfs", "spark", "thunderbird", "bgl")
 CHUNK = 1 << 20
@@ -198,11 +353,6 @@ PINNED_FILES: dict[str, tuple[str, int, str]] = {
         "ac7459a7e4e5744fd8d7793486a8ce9a8c7e5a554bc90c4895ea8a1de213c372",
     ),
 }
-
-
-def remote_files() -> dict[str, tuple[str, int, str | None]]:
-    """Return ``{short name: (repository path, size in bytes, sha256)}`` of the pinned revision."""
-    return dict(PINNED_FILES)
 
 
 def sha256_of(path: Path) -> str:
@@ -263,6 +413,11 @@ def verify(folder: Path, names: list[str], files: dict[str, tuple[str, int, str 
 
 def make(args: argparse.Namespace) -> None:
     args.out.mkdir(parents=True, exist_ok=True)
+    for name in args.only or []:
+        if name in GENERATORS:
+            target = args.out / f"{name}_{args.size_mb}mb.log"
+            write_format_log(name, args.size_mb, target)
+            print(f"{target}: {target.stat().st_size / 1e6:.0f} MB")
     for name, build in datasets(args.out / "seeds", args.variant):
         if args.only and name not in args.only:
             continue
@@ -278,7 +433,7 @@ def make(args: argparse.Namespace) -> None:
 
 
 def loghub2(args: argparse.Namespace) -> int:
-    files = remote_files()
+    files = PINNED_FILES
     if args.list:
         for name, (path, size, _digest) in sorted(files.items(), key=lambda item: -item[1][1]):
             print(f"{name:12} {size / 1e6:9.1f} MB  {path}")
