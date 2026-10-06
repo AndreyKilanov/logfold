@@ -5,6 +5,7 @@
 
 mod convert;
 mod observer;
+mod report;
 
 use pyo3::exceptions::PyKeyboardInterrupt;
 use pyo3::prelude::*;
@@ -14,7 +15,7 @@ use logfold_engine::{EngineError, MineRequest};
 use observer::PyObserver;
 
 /// Version of the Python <-> Rust data contract; bump on any incompatible change of the request or result layout.
-const CORE_API_VERSION: u32 = 6;
+const CORE_API_VERSION: u32 = 7;
 
 pyo3::create_exception!(_core, CoreConfigError, pyo3::exceptions::PyException, "Invalid configuration.");
 pyo3::create_exception!(_core, CoreFormatError, pyo3::exceptions::PyException, "Invalid or unusable log format.");
@@ -149,6 +150,14 @@ fn compare_runs(
     Ok((comparison.new, comparison.disappeared, changed, comparison.unchanged))
 }
 
+/// Renders a pipeline report (`github-summary`, `junit`, `chat-message` or `prometheus`) of a result given as columns
+/// (`docs/ALGORITHM.md` section 12). `options` holds `top` and, for `github-summary` and `chat-message`, the size limit
+/// `max_bytes` or `max_chars`. The text equals the one of the pure-Python reporter of the same name.
+#[pyfunction]
+fn render_report(report: &str, data: &Bound<'_, PyDict>, options: &Bound<'_, PyDict>) -> PyResult<String> {
+    report::render(report, data, options)
+}
+
 /// Returns the version of the Python <-> Rust data contract.
 #[pyfunction]
 fn api_version() -> u32 {
@@ -182,6 +191,7 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(mine, m)?)?;
     m.add_function(wrap_pyfunction!(match_templates, m)?)?;
     m.add_function(wrap_pyfunction!(compare_runs, m)?)?;
+    m.add_function(wrap_pyfunction!(render_report, m)?)?;
     m.add_function(wrap_pyfunction!(api_version, m)?)?;
     m.add_function(wrap_pyfunction!(algo_version, m)?)?;
     m.add_function(wrap_pyfunction!(default_masks, m)?)?;

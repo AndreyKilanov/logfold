@@ -1,33 +1,41 @@
 """Reporters that feed other systems: a chat message and Prometheus metrics. Nothing is sent anywhere.
 
-Both show templates, never example lines (see :mod:`logfold.plugins.reporters_ci`).
+Both show templates, never example lines (see :mod:`logfold.plugins.reporters_ci`). The native engine renders them when
+it is installed; the code here is the reference of the contract in ``docs/ALGORITHM.md`` section 12.
 """
 
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 
-from logfold.levels import LEVEL_NAMES
+from logfold.levels import severity
 from logfold.model import AnalysisResult, DiffEntry, DiffResult, Template
-from logfold.plugins.reporter_text import alert_noun, code_span, defuse_mentions, int_option, label_value, run_names
+from logfold.plugins.report_data import ALERT_LEVELS, level_name, listed_rows, native_text
+from logfold.plugins.reporter_text import (
+    alert_noun,
+    code_span,
+    defuse_mentions,
+    int_option,
+    label_value,
+    run_names,
+)
 
 __all__ = ["ChatMessageReporter", "PrometheusReporter"]
 
-_ALERTS = ("WARN", "ERROR", "FATAL")
 _CHAT_CHARS = 3000
 """The longest text of one Slack section block; Telegram allows 4096 and Mattermost 16383."""
 _NAME_WIDTH = 60
 _TEXT_WIDTH = 200
 _LABEL_WIDTH = 120
+_ID_WIDTH = 64
 _MORE_RESERVE = 30
 """Room kept for the closing ``... and N more`` line."""
 
 
 def _item(entry: Template | DiffEntry) -> str:
     count = entry.count if isinstance(entry, Template) else entry.after_count
-    return (
-        f"- {entry.level + ' ' if entry.level else ''}{count:,} x {code_span(defuse_mentions(entry.text), _TEXT_WIDTH)}"
-    )
+    level = level_name(entry.level)
+    return f"- {level + ' ' if level else ''}{count:,} x {code_span(defuse_mentions(entry.text), _TEXT_WIDTH)}"
 
 
 class ChatMessageReporter:
@@ -46,7 +54,7 @@ class ChatMessageReporter:
     kinds: tuple[str, ...] = ("analysis", "diff")
 
     def render(self, result: AnalysisResult | DiffResult, **options: object) -> str:
-        """Render ``result``.
+        """Render ``result``, in the native engine when it is installed.
 
         Args:
             result: An analysis or a diff result.
@@ -58,6 +66,18 @@ class ChatMessageReporter:
         """
         top = int_option(options, "top", 5, minimum=0)
         limit = int_option(options, "max_chars", _CHAT_CHARS)
+        size = len(result.new_templates) if isinstance(result, DiffResult) else len(result.templates)
+        text = native_text(
+            self.name, result, {"top": top, "max_chars": limit}, ("levels",), rows=(min(top, size), size)
+        )
+        return text if text is not None else self._reference(result, top, limit)
+
+    def render_reference(self, result: AnalysisResult | DiffResult, **options: object) -> str:
+        """Render ``result`` in Python, the reference of the contract; same arguments and result as :meth:`render`."""
+        top = int_option(options, "top", 5, minimum=0)
+        return self._reference(result, top, int_option(options, "max_chars", _CHAT_CHARS))
+
+    def _reference(self, result: AnalysisResult | DiffResult, top: int, limit: int) -> str:
         if isinstance(result, DiffResult):
             head, entries = self._diff(result)
         else:
@@ -95,7 +115,7 @@ class ChatMessageReporter:
         ]
         if new:
             head.append("New templates:")
-        ordered = [e for e in new if e.level in _ALERTS] + [e for e in new if e.level not in _ALERTS]
+        ordered = [e for e in new if e.level in ALERT_LEVELS] + [e for e in new if e.level not in ALERT_LEVELS]
         return head, ordered
 
 
@@ -112,11 +132,16 @@ def _family(name: str, help_text: str, samples: Iterable[str]) -> list[str]:
 
 
 def _template_labels(entry_id: str, level: str | None, text: str) -> list[tuple[str, str]]:
-    labels = [("id", entry_id)]
-    if level:
-        labels.append(("level", level))
+    labels = [("id", label_value(entry_id, _ID_WIDTH))]
+    name = level_name(level)
+    if name:
+        labels.append(("level", label_value(name, _ID_WIDTH)))
     labels.append(("template", label_value(text, _LABEL_WIDTH)))
     return labels
+
+
+def _sorted_levels(result: AnalysisResult) -> list[tuple[str, int]]:
+    return sorted(result.levels.items(), key=lambda item: severity(item[0]))
 
 
 class PrometheusReporter:
@@ -137,7 +162,7 @@ class PrometheusReporter:
     kinds: tuple[str, ...] = ("analysis", "diff")
 
     def render(self, result: AnalysisResult | DiffResult, **options: object) -> str:
-        """Render ``result``.
+        """Render ``result``, in the native engine when it is installed.
 
         Args:
             result: An analysis or a diff result.
@@ -148,12 +173,21 @@ class PrometheusReporter:
             The exposition text with a trailing newline.
         """
         top = int_option(options, "top", 50, minimum=0)
+        levels = _sorted_levels(result) if isinstance(result, AnalysisResult) else []
+        fields = ("ids", "levels", "before")
+        text = native_text(self.name, result, {"top": top}, fields, levels, listed_rows(result, top))
+        return text if text is not None else self._reference(result, top)
+
+    def render_reference(self, result: AnalysisResult | DiffResult, **options: object) -> str:
+        """Render ``result`` in Python, the reference of the contract; same arguments and result as :meth:`render`."""
+        return self._reference(result, int_option(options, "top", 50, minimum=0))
+
+    def _reference(self, result: AnalysisResult | DiffResult, top: int) -> str:
         lines = self._diff(result, top) if isinstance(result, DiffResult) else self._analysis(result, top)
         return "\n".join(lines) + "\n"
 
     def _analysis(self, result: AnalysisResult, top: int) -> list[str]:
         run = result.run
-        levels = sorted(result.levels.items(), key=lambda item: LEVEL_NAMES.index(item[0]))
         lines = _family(
             "logfold_records", "Records parsed from the log.", [_sample("logfold_records", [], run.records)]
         )
@@ -168,7 +202,10 @@ class PrometheusReporter:
         lines += _family(
             "logfold_level_records",
             "Records per log level.",
-            (_sample("logfold_level_records", [("level", name)], count) for name, count in levels),
+            (
+                _sample("logfold_level_records", [("level", label_value(name, _ID_WIDTH))], count)
+                for name, count in _sorted_levels(result)
+            ),
         )
         lines += _family(
             "logfold_template_records",

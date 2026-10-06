@@ -9,11 +9,11 @@ use pyo3::types::{PyDict, PyList};
 
 use crate::CoreConfigError;
 
-fn required<'py>(dict: &Bound<'py, PyDict>, key: &str) -> PyResult<Bound<'py, PyAny>> {
+pub(crate) fn required<'py>(dict: &Bound<'py, PyDict>, key: &str) -> PyResult<Bound<'py, PyAny>> {
     dict.get_item(key)?.ok_or_else(|| PyKeyError::new_err(format!("missing request key '{key}'")))
 }
 
-fn optional<'py>(dict: &Bound<'py, PyDict>, key: &str) -> PyResult<Option<Bound<'py, PyAny>>> {
+pub(crate) fn optional<'py>(dict: &Bound<'py, PyDict>, key: &str) -> PyResult<Option<Bound<'py, PyAny>>> {
     Ok(dict.get_item(key)?.filter(|value| !value.is_none()))
 }
 
@@ -21,7 +21,7 @@ fn optional_string(dict: &Bound<'_, PyDict>, key: &str) -> PyResult<Option<Strin
     optional(dict, key)?.map(|value| value.extract::<String>()).transpose()
 }
 
-fn sub_dict<'py>(dict: &Bound<'py, PyDict>, key: &str) -> PyResult<Bound<'py, PyDict>> {
+pub(crate) fn sub_dict<'py>(dict: &Bound<'py, PyDict>, key: &str) -> PyResult<Bound<'py, PyDict>> {
     Ok(required(dict, key)?.cast_into::<PyDict>()?)
 }
 

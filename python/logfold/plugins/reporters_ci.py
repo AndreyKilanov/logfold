@@ -2,19 +2,21 @@
 
 Both show templates, never example lines: a job summary and a test report are read by everyone who can open the
 repository, while a template has its values replaced by placeholders.
+
+The native engine renders them when it is installed; the code here is the reference of the contract in
+``docs/ALGORITHM.md`` section 12 and renders when there is no extension. The native text equals it byte for byte.
 """
 
 from __future__ import annotations
 
-import xml.etree.ElementTree as ET
 from collections.abc import Sequence
 
 from logfold.model import AnalysisResult, DiffEntry, DiffResult, Template
+from logfold.plugins.report_data import ALERT_LEVELS, level_name, listed_rows, native_text
 from logfold.plugins.reporter_text import alert_noun, code_span, int_option, iso, run_names, xml_text
 
 __all__ = ["GithubSummaryReporter", "JunitReporter"]
 
-_ALERTS = ("WARN", "ERROR", "FATAL")
 _SUMMARY_BYTES = 900_000
 """A step summary may hold 1 MiB; the rest is left for what other steps write to the same file."""
 _NAME_WIDTH = 80
@@ -23,11 +25,12 @@ _TEXT_WIDTH = 300
 
 def _alerts_first(entries: Sequence[DiffEntry]) -> list[DiffEntry]:
     """Put the WARN+ entries before the others without changing the order inside either group."""
-    return [e for e in entries if e.level in _ALERTS] + [e for e in entries if e.level not in _ALERTS]
+    return [e for e in entries if e.level in ALERT_LEVELS] + [e for e in entries if e.level not in ALERT_LEVELS]
 
 
 def _level(level: str | None) -> str:
-    return f"**{level}** " if level else ""
+    name = level_name(level)
+    return f"**{name}** " if name else ""
 
 
 def _entry_line(entry: DiffEntry, kind: str) -> str:
@@ -65,7 +68,7 @@ class GithubSummaryReporter:
     kinds: tuple[str, ...] = ("analysis", "diff")
 
     def render(self, result: AnalysisResult | DiffResult, **options: object) -> str:
-        """Render ``result``.
+        """Render ``result``, in the native engine when it is installed.
 
         Args:
             result: An analysis or a diff result.
@@ -78,6 +81,23 @@ class GithubSummaryReporter:
         """
         top = int_option(options, "top", 20, minimum=0)
         budget = int_option(options, "max_bytes", _SUMMARY_BYTES)
+        levels = list(result.levels.items()) if isinstance(result, AnalysisResult) else []
+        fields = ("levels", "before", "ratios")
+        text = native_text(
+            self.name, result, {"top": top, "max_bytes": budget}, fields, levels, listed_rows(result, top)
+        )
+        return text if text is not None else self._reference(result, top, budget)
+
+    def render_reference(self, result: AnalysisResult | DiffResult, **options: object) -> str:
+        """Render ``result`` in Python, the reference of the contract; same arguments and result as :meth:`render`."""
+        top = int_option(options, "top", 20, minimum=0)
+        return self._reference(result, top, int_option(options, "max_bytes", _SUMMARY_BYTES))
+
+    def _reference(self, result: AnalysisResult | DiffResult, top: int, budget: int) -> str:
+        if isinstance(result, DiffResult):
+            top = min(top, max(len(result.new_templates), len(result.changed), len(result.disappeared)))
+        else:
+            top = min(top, len(result.templates))
         rows = top
         while True:
             text = self._document(result, rows, cut=rows < top)
@@ -137,32 +157,38 @@ class GithubSummaryReporter:
         return lines
 
 
-def _case(parent: ET.Element, entry: DiffEntry, run_records: int) -> ET.Element:
-    level = entry.level or "none"
-    case = ET.SubElement(
-        parent,
-        "testcase",
-        classname=f"logfold.new.{level}",
-        name=f"{xml_text(entry.text, 200)} [{entry.id[:8]}]",
-        time="0",
+def _attribute(value: str) -> str:
+    return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+
+def _content(value: str) -> str:
+    return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def _case(lines: list[str], entry: DiffEntry, run_records: int) -> None:
+    level = level_name(entry.level) or "none"
+    head = (
+        f'<testcase classname="{_attribute(f"logfold.new.{level}")}" '
+        f'name="{_attribute(f"{xml_text(entry.text, 200)} [{entry.id[:8]}]")}" time="0"'
     )
-    if entry.level in _ALERTS:
-        share = f"{entry.after_count / run_records:.2%}" if run_records else "-"
-        failure = ET.SubElement(
-            case,
-            "failure",
-            message=f"new {level} template, {entry.after_count:,} records",
-            type=level,
+    if entry.level not in ALERT_LEVELS:
+        lines.append(f"    {head} />")
+        return
+    share = f"{entry.after_count / run_records:.2%}" if run_records else "-"
+    body = "\n".join(
+        (
+            f"template: {xml_text(entry.text, 500)}",
+            f"records: {entry.after_count:,} ({share} of the run)",
+            f"first seen: {iso(entry.first_seen)}",
+            f"last seen: {iso(entry.last_seen)}",
         )
-        failure.text = "\n".join(
-            (
-                f"template: {xml_text(entry.text, 500)}",
-                f"records: {entry.after_count:,} ({share} of the run)",
-                f"first seen: {iso(entry.first_seen)}",
-                f"last seen: {iso(entry.last_seen)}",
-            )
-        )
-    return case
+    )
+    message = f"new {level} template, {entry.after_count:,} records"
+    lines.append(f"    {head}>")
+    lines.append(
+        f'      <failure message="{_attribute(message)}" type="{_attribute(level)}">{_content(body)}</failure>'
+    )
+    lines.append("    </testcase>")
 
 
 class JunitReporter:
@@ -181,7 +207,7 @@ class JunitReporter:
     kinds: tuple[str, ...] = ("diff",)
 
     def render(self, result: AnalysisResult | DiffResult, **options: object) -> str:
-        """Render ``result``.
+        """Render ``result``, in the native engine when it is installed.
 
         Args:
             result: A diff result.
@@ -197,20 +223,29 @@ class JunitReporter:
         if not isinstance(result, DiffResult):
             raise TypeError("the junit reporter renders diff results")
         top = int_option(options, "top", 100, minimum=0)
-        alerts = [e for e in result.new_templates if e.level in _ALERTS]
-        quiet = [e for e in result.new_templates if e.level not in _ALERTS][:top]
-        root = ET.Element("testsuites")
-        suite = ET.SubElement(
-            root,
-            "testsuite",
-            name="logfold",
-            tests=str(len(alerts) + len(quiet) or 1),
-            failures=str(len(alerts)),
-            errors="0",
-            skipped="0",
-            time="0",
+        alerts = len(result.new_alerts)
+        listed = alerts + min(top, len(result.new_templates) - alerts)
+        text = native_text(
+            self.name, result, {"top": top}, ("ids", "levels", "moments"), rows=(listed, len(result.new_templates))
         )
-        properties = ET.SubElement(suite, "properties")
+        return text if text is not None else self._reference(result, top)
+
+    def render_reference(self, result: AnalysisResult | DiffResult, **options: object) -> str:
+        """Render ``result`` in Python, the reference of the contract; same arguments and result as :meth:`render`."""
+        if not isinstance(result, DiffResult):
+            raise TypeError("the junit reporter renders diff results")
+        return self._reference(result, int_option(options, "top", 100, minimum=0))
+
+    def _reference(self, result: DiffResult, top: int) -> str:
+        alerts = [e for e in result.new_templates if e.level in ALERT_LEVELS]
+        quiet = [e for e in result.new_templates if e.level not in ALERT_LEVELS][:top]
+        lines = [
+            '<?xml version="1.0" encoding="UTF-8"?>',
+            "<testsuites>",
+            f'  <testsuite name="logfold" tests="{len(alerts) + len(quiet) or 1}" failures="{len(alerts)}" '
+            'errors="0" skipped="0" time="0">',
+            "    <properties>",
+        ]
         for key, value in (
             ("before", xml_text(result.before.name, 200, tail=True)),
             ("after", xml_text(result.after.name, 200, tail=True)),
@@ -219,10 +254,11 @@ class JunitReporter:
             ("changed_templates", str(len(result.changed))),
             ("unchanged_templates", str(result.unchanged)),
         ):
-            ET.SubElement(properties, "property", name=key, value=value)
+            lines.append(f'      <property name="{key}" value="{_attribute(value)}" />')
+        lines.append("    </properties>")
         for entry in (*alerts, *quiet):
-            _case(suite, entry, result.after.records)
+            _case(lines, entry, result.after.records)
         if not alerts and not quiet:
-            ET.SubElement(suite, "testcase", classname="logfold.new", name="no new templates", time="0")
-        ET.indent(root)
-        return '<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(root, encoding="unicode") + "\n"
+            lines.append('    <testcase classname="logfold.new" name="no new templates" time="0" />')
+        lines.extend(["  </testsuite>", "</testsuites>"])
+        return "\n".join(lines) + "\n"

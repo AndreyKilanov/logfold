@@ -17,6 +17,7 @@ def match_templates(
     threshold: float | None = None,
     rules: list[tuple[str, str]] | None = None,
 ) -> list[tuple[int, int]]: ...
+def render_report(report: str, data: dict[str, Any], options: dict[str, Any]) -> str: ...
 def compare_runs(
     before_texts: list[str],
     before_counts: list[int],

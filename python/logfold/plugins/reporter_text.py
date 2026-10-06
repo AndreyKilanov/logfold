@@ -25,7 +25,7 @@ __all__ = [
 ]
 
 _BACKSLASH = chr(92)
-_MENTION = re.compile(r"<(?=[!@#])|@(?=(?:channel|here|everyone|all)\b)", re.IGNORECASE)
+_MENTION = re.compile(r"<(?=[!@#])|@(?=(?:channel|here|everyone|all)\b)", re.IGNORECASE | re.ASCII)
 _XML_INVALID = re.compile(
     "[^"
     + chr(9)

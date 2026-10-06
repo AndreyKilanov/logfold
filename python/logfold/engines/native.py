@@ -11,6 +11,7 @@ from typing import Any
 
 from logfold.engines.base import MineRequest, MiningResult, ProgressCallback, RunColumns, RunInfo, TemplateTable
 from logfold.errors import ConfigError, EngineError, FormatError, SourceError
+from logfold.ext import native_reports
 from logfold.ext.formats import FormatSpec, JsonFormat, PlainFormat, RegexFormat
 from logfold.model import RunMetrics
 
@@ -19,7 +20,7 @@ try:
 except ImportError:
     _core = None  # type: ignore[assignment]
 
-EXPECTED_CORE_API_VERSION = 6
+EXPECTED_CORE_API_VERSION = 7
 
 
 def is_available() -> bool:
@@ -108,6 +109,38 @@ def compare_runs(
         )  # fmt: skip
     except _core.CoreConfigError as error:
         raise ConfigError(str(error)) from error
+
+
+def supports_reports() -> bool:
+    """Return True when the extension can render the pipeline reports."""
+    return is_available() and hasattr(_core, "render_report")
+
+
+def render_report(name: str, data: dict[str, Any], options: dict[str, Any]) -> str:
+    """Render a pipeline report of a result given as columns, in the extension.
+
+    Args:
+        name: ``github-summary``, ``junit``, ``chat-message`` or ``prometheus``.
+        data: The columns of the result, see ``docs/ALGORITHM.md`` section 12.
+        options: ``top`` and, for ``github-summary`` and ``chat-message``, ``max_bytes`` or ``max_chars``.
+
+    Returns:
+        The text, exactly as the pure-Python reporter of the same name writes it.
+
+    Raises:
+        ConfigError: If the extension rejects the data.
+        UnicodeError: If a text cannot be passed to the extension (for example a lone surrogate).
+    """
+    if _core is None:
+        raise EngineError("the native extension is unavailable")
+    try:
+        return _core.render_report(name, data, options)
+    except _core.CoreConfigError as error:
+        raise ConfigError(str(error)) from error
+
+
+if supports_reports():
+    native_reports.set_renderer(render_report)
 
 
 def core_versions() -> dict[str, Any] | None:
