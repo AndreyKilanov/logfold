@@ -250,6 +250,17 @@ them as `\uNNNN`, which parses back to the same text. The values on the result o
 Plugins are discovered through the entry-point groups `logfold.formats`, `logfold.reporters` and `logfold.matchers`;
 see the [plugins guide](plugins.md).
 
+## Finding plugins (`logfold.plugins`)
+
+| Name | Purpose |
+|---|---|
+| `list_plugins(kind=None, status=None, catalog=None)` | every format, reporter and diff matcher as a `PluginInfo`: `built-in`, `installed` (a package or a file in a plugin folder) or `available` (in the catalog, not installed); `status` may be one value or several; the catalog is the bundled one unless you pass another from `logfold.plugins.catalog.load()`, so nothing touches the network |
+| `plugin_info(name, kind=None, catalog=None)` | the records of one name, one per kind that has it (`UnknownPluginError` with a "did you mean" hint otherwise) |
+| `closest(name, kind=None, catalog=None)` | the installed and catalog names that look most like `name` |
+
+`PluginInfo` has `kind`, `name`, `status`, `source`, `package`, `version`, `description`, and for available plugins
+`requirement` (what pip installs), `install` (the `logfold plugins install` command) and `homepage`.
+
 ## Compatibility
 
 `logfold.__all__`, the CLI flags, the exit codes and the JSON schemas are stable contracts; changes to them are

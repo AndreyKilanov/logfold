@@ -14,7 +14,7 @@ import sys
 from collections.abc import Callable
 from importlib import metadata
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 from logfold.errors import (
     ConfigError,
@@ -52,9 +52,24 @@ _formats: dict[str, FormatSpec | Format] = {}
 _reporters: dict[str, Reporter] = {}
 _matchers: dict[str, DiffMatcher] = {}
 _plugins_loaded = False
-_origins: dict[tuple[str, str], str] = {}
+_origins: dict[tuple[str, str], PluginOrigin] = {}
 _explicit_dirs: list[Path] = []
 _SPEC_TYPES = (PlainFormat, JsonFormat, RegexFormat)
+BUILT_IN = "built-in"
+
+
+class PluginOrigin(NamedTuple):
+    """Where a registered plugin came from.
+
+    Attributes:
+        label: Text for people: ``<package> <version>``, the path of a file, or the entry point value.
+        package: Distribution name when the plugin comes from an installed package, otherwise ``None``.
+        version: Version of that distribution, otherwise ``None``.
+    """
+
+    label: str
+    package: str | None = None
+    version: str | None = None
 
 
 def register_format(name: str, spec: FormatSpec | Format) -> None:
@@ -148,11 +163,11 @@ def _load_matcher(_name: str, obj: Any) -> str:
     return str(matcher.name)
 
 
-def _origin(entry: metadata.EntryPoint) -> str:
+def _origin(entry: metadata.EntryPoint) -> PluginOrigin:
     dist = getattr(entry, "dist", None)
     if dist is None:
-        return entry.value
-    return f"{dist.name} {dist.version}"
+        return PluginOrigin(entry.value)
+    return PluginOrigin(f"{dist.name} {dist.version}", dist.name, dist.version)
 
 
 def plugin_sources() -> list[tuple[str, str, str]]:
@@ -164,11 +179,21 @@ def plugin_sources() -> list[tuple[str, str, str]]:
     """
     load_plugins()
     rows = [
-        (kind, name, _origins.get((kind, name), "built-in"))
+        (kind, name, _origins.get((kind, name), PluginOrigin(BUILT_IN)).label)
         for kind, names in (("format", _formats), ("reporter", _reporters), ("matcher", _matchers))
         for name in names
     ]
     return sorted(rows)
+
+
+def plugin_origins() -> dict[tuple[str, str], PluginOrigin]:
+    """Return where every plugin that is not built in came from.
+
+    Returns:
+        A copy that maps ``(kind, name)`` to its :class:`PluginOrigin`. Built-in plugins are absent.
+    """
+    load_plugins()
+    return dict(_origins)
 
 
 def default_plugin_dir() -> Path:
@@ -283,7 +308,7 @@ def _load_user_module(path: Path, stem: str, package: bool) -> None:
             except Exception:
                 logger.warning("failed to register a %s from logfold plugin %s", kind, path, exc_info=True)
                 continue
-            _origins[(kind, name)] = str(path)
+            _origins[(kind, name)] = PluginOrigin(str(path))
 
 
 def get_format(name: str) -> FormatSpec:

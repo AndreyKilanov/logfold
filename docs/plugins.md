@@ -51,13 +51,18 @@ A plugin package that registers the same name replaces a default one; pick anoth
 ## Managing plugins
 
 ```
-logfold plugins list                       # every format, reporter and matcher, and where it comes from
+logfold plugins list                       # every format, reporter and matcher: built in, installed, available
+logfold plugins info NAME                  # what one plugin does, where it is from, how to install or use it
 logfold plugins check                      # plugins of the catalog that are not installed yet
 logfold plugins install NAME               # install one of them (asks for confirmation)
 ```
 
-`list` marks the default and built-in ones as `built-in` and the others with the package that provides them. It is the
-quickest way to see that an installed plugin was found (`logfold formats` and `logfold info` show the names too).
+`list` gives each plugin a status: `built-in` (the defaults), `installed` (a package, or a file in your plugin folder) and
+`available` (in the catalog, not installed yet). `--installed`, `--available` and `--kind format|reporter|matcher` narrow
+the list. It is the quickest way to see that an installed plugin was found, and to find the name of one you can install
+(`logfold formats` and `logfold info` show the names too). `info NAME` shows the package and version, the description, the
+install command for an available plugin and an example of use for an installed one. A misspelled name gets a
+"did you mean" from the installed and catalog names. Both take `--online` and `--catalog` like `check`.
 
 The **catalog** is a short list of known plugin packages. By default it is the one bundled with your version of logfold:
 `check` works offline, and new plugins show up after `pip install -U logfold`. To see the newest list without upgrading:
@@ -75,7 +80,8 @@ where the catalog came from, asks for confirmation (`--yes` skips the question) 
 `python -m pip install <package><constraint>` in the environment that runs logfold. A plugin is Python code that runs
 with your privileges, so read what is offered. A catalog is validated strictly (safe names, version constraints,
 printable text, size limits), so an entry cannot smuggle options into pip. If pip is not available in the environment
-(for example a `uv` environment), the command says so and prints the package to install with your installer.
+(for example a `uv` environment), `uv pip install` is used; without both, the command says so and prints the package to
+install with your installer.
 
 The catalog format:
 

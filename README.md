@@ -134,7 +134,7 @@ diff(load_analysis("before.json"), load_analysis("after.json"))
 | Logs with almost unique lines | `--high-cardinality`: at most 5000 templates, the rest go into catch-all templates, runs sequentially. On a 10 MB file with 84 thousand distinct lines 2.0 s becomes 0.14 s. |
 | Reports | HTML, JSON, text, Markdown, CSV; the `--out` suffix picks the format, `--report NAME` picks the report explicitly, including one from a plugin. |
 | Matchers for `diff` | `jaccard` (default), `token_subset`, `exact`: they link a reworded message to its earlier version so it is not counted as both new and gone. |
-| Plugins | `logfold plugins list`, `check`, `install`, `new`. |
+| Plugins | `logfold plugins list`, `info`, `check`, `install`, `new`. |
 | Scripting | `--json` prints JSON to stdout, exit codes are stable, the JSON format is described by a schema in `docs/schema`. |
 
 ## Speed
