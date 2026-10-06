@@ -75,7 +75,7 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 - `--warm-start` (`warm_start=True` in `analyze` and `diff`, `ExecutionConfig.warm_start`) for the chunked strategy: the
   first chunk is mined alone and every other chunk starts from a copy of its tree. The parallel result then has far fewer stray
   templates (HDFS without masks: 45 against 341, the sequential result has 43) at the price of a serial first chunk
-  (+7-50 percent of the time). It is off by default and does not change the default result. See `bench/docs/engine/WARM_START.md`.
+  (+7-50 percent of the time). It is off by default and does not change the default result. See `bench/docs/WARM_START.md`.
 
 ### Changed
 
@@ -88,7 +88,7 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   (more than 0.3 templates per record after 10,000 records; real logs stay below 0.03). A 100 MB log of unique messages takes
   4.2 s and 553 MB instead of 7.2 s and 1.9 GB; other logs are mined as before. An explicit `chunked` or `sequential` is never
   changed, and `metrics.strategy` shows what was used. Progress callbacks come every 1 MiB instead of every 16 MiB.
-  See `bench/docs/engine/ADAPTIVE.md`.
+  See `bench/docs/ADAPTIVE.md`.
 - `diff` and `analyze` are faster on results with many templates: the diff matchers use an index and run in the native
   extension, and the native engine hands over the templates as columns. At 18 thousand templates per run a `diff` of two
   results takes 0.19 s instead of 0.54 s, and the `jaccard` matcher no longer takes minutes (0.26 s). The output is identical.

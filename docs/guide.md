@@ -209,7 +209,7 @@ templates that result cannot be merged back: the parallel result holds more rare
 masks: 341 against 43; the large templates are the same). `--warm-start` (`warm_start=True`) trains the first chunk alone and
 starts every other chunk from a copy of its tree, which removes most of the strays. The price is a serial prefix of one chunk (a
 smaller `--chunk-mb` makes it cheaper) and a copy of the tree per chunk; it does not apply to the sequential strategy, and
-it is off by default. Numbers: [`bench/docs/engine/WARM_START.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/docs/engine/WARM_START.md).
+it is off by default. Numbers: [`bench/docs/WARM_START.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/docs/WARM_START.md).
 
 ### High-cardinality data
 

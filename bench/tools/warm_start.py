@@ -3,7 +3,7 @@
 With ``--warm-start`` the first chunk is trained alone and every other chunk starts from a copy of its tree. The script
 runs every input with the cold start, the warm start and the sequential strategy and stores the number of templates (one
 run each), and the median wall time and the peak working set of three runs of ``logfold analyze`` (see ``run.py``).
-Results go to ``bench/results/warm-start.json``; the discussion is in ``bench/docs/engine/WARM_START.md``. Usage::
+Results go to ``bench/results/warm-start.json``; the discussion is in ``bench/docs/WARM_START.md``. Usage::
 
     python bench/tools/warm_start.py --repeat 3
 """
