@@ -208,3 +208,24 @@ def synthetic_pair(tmp_path: Path, seed: int) -> tuple[Path, Path, dict[str, set
         "changed": {"cache miss for key <NUM>"},
     }
     return before, after, truth
+
+
+def hostile_pair(tmp_path: Path) -> tuple[Path, Path]:
+    """A quiet baseline and a run whose new messages try to break out of every report format."""
+    before = write(
+        tmp_path / "hostile_before.log", [f"2026-10-04T12:00:{i:02d}Z INFO request {i} served" for i in range(20)]
+    )
+    ts = "2026-10-04T12:01:00Z"
+    attacks = [
+        f"{ts} ERROR <script>alert(1)</script> failed for <img src=x onerror=alert(2)>",
+        f"{ts} WARN ping @channel <!here> [click](http://evil.example/x) and `rm -rf` done",
+        f'{ts} ERROR ::error::fake workflow command "quoted" & ampersand ]]> cdata end',
+        f"{ts} ERROR escape \x1b[31mred\x1b[0m bell \x07 soh \x01 noncharacter {chr(0xFFFE)} end",
+        f'{ts} FATAL path C:{chr(92)}tmp{chr(92)}"x" and a pipe | inside',
+        f"{ts} INFO a quiet new line",
+    ]
+    after = write(
+        tmp_path / "hostile_after.log",
+        [f"2026-10-04T12:00:{i:02d}Z INFO request {i} served" for i in range(20)] + attacks,
+    )
+    return before, after

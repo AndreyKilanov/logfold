@@ -55,7 +55,7 @@ Out = Annotated[
     typer.Option(
         "--out",
         "-o",
-        help="Write a report; the suffix selects the format: .html, .json, .txt, .md or .csv (see --report).",
+        help="Write a report; the suffix selects it: .html .json .txt .md .csv .xml (JUnit) .prom (see --report).",
         rich_help_panel=PANEL_OUTPUT,
     ),
 ]
