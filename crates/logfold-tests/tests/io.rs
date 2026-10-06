@@ -287,3 +287,116 @@ mod timestamp {
         assert_eq!(epoch_float_to_micros(1.5), Some(1_500_000));
     }
 }
+
+mod limits {
+    use logfold_io::*;
+
+    fn collect(data: &[u8]) -> Vec<(Vec<u8>, u64)> {
+        let mut reader = LineReader::new(data, 0);
+        let mut out = Vec::new();
+        while let Some(line) = reader.next_line().unwrap() {
+            out.push((line.bytes.to_vec(), line.start));
+        }
+        out
+    }
+
+    fn lengths(data: &[u8]) -> Vec<(usize, u64)> {
+        collect(data).iter().map(|(bytes, start)| (bytes.len(), *start)).collect()
+    }
+
+    #[test]
+    fn a_long_line_keeps_its_first_bytes_and_the_next_line_starts_where_it_should() {
+        let mut data = b"ab\n".to_vec();
+        data.extend(std::iter::repeat_n(b'x', MAX_LINE_BYTES + 5));
+        data.extend_from_slice(b"\ntail\nend");
+        let lines = collect(&data);
+        assert_eq!(lines.len(), 4);
+        assert_eq!(lines[0], (b"ab".to_vec(), 0));
+        assert_eq!((lines[1].0.len(), lines[1].1), (MAX_LINE_BYTES, 3));
+        assert!(lines[1].0.iter().all(|byte| *byte == b'x'));
+        assert_eq!(lines[2], (b"tail".to_vec(), 3 + MAX_LINE_BYTES as u64 + 5 + 1));
+        assert_eq!(lines[3].0, b"end".to_vec());
+    }
+
+    #[test]
+    fn the_limit_is_on_the_content_of_the_line() {
+        for (raw, kept) in [
+            (MAX_LINE_BYTES - 1, MAX_LINE_BYTES - 1),
+            (MAX_LINE_BYTES, MAX_LINE_BYTES),
+            (MAX_LINE_BYTES + 1, MAX_LINE_BYTES),
+            (MAX_LINE_BYTES + 2, MAX_LINE_BYTES),
+        ] {
+            let mut data = vec![b'y'; raw];
+            data.extend_from_slice(b"\nnext\n");
+            assert_eq!(lengths(&data), vec![(kept, 0), (4, raw as u64 + 1)], "raw length {raw}");
+        }
+    }
+
+    #[test]
+    fn a_carriage_return_is_removed_only_at_the_end_of_the_line() {
+        for (raw, kept) in [
+            (MAX_LINE_BYTES - 1, MAX_LINE_BYTES - 2),
+            (MAX_LINE_BYTES, MAX_LINE_BYTES - 1),
+            (MAX_LINE_BYTES + 1, MAX_LINE_BYTES),
+            (MAX_LINE_BYTES + 2, MAX_LINE_BYTES),
+        ] {
+            let mut data = vec![b'y'; raw];
+            data[raw - 1] = b'\r';
+            data.extend_from_slice(b"\nnext\n");
+            assert_eq!(lengths(&data), vec![(kept, 0), (4, raw as u64 + 1)], "raw length {raw}");
+        }
+    }
+
+    #[test]
+    fn a_long_line_without_a_line_feed_ends_the_stream() {
+        let data = vec![b'z'; 2 * MAX_LINE_BYTES + 7];
+        assert_eq!(lengths(&data), vec![(MAX_LINE_BYTES, 0)]);
+        assert!(collect(&data[..0]).is_empty());
+    }
+
+    fn plain() -> CompiledFormat {
+        CompiledFormat::new(&FormatConfig {
+            spec: FormatSpec::Plain { record_start: Some(r"^\d{4}-".to_string()) },
+            ts_format: None,
+            multiline: true,
+        })
+        .unwrap()
+    }
+
+    fn run(data: &[u8]) -> (Vec<usize>, Counters) {
+        let mut sizes = Vec::new();
+        let (counters, _) = scan_records(
+            LineReader::new(data, 0),
+            &plain(),
+            ScanWindow::whole(),
+            |rec| sizes.push(rec.message.len()),
+            |_| true,
+        )
+        .unwrap();
+        (sizes, counters)
+    }
+
+    #[test]
+    fn a_record_stops_taking_lines_at_the_limit_and_the_lines_are_still_counted() {
+        let line = "x".repeat(99);
+        let count = 3 * MAX_RECORD_BYTES / 100;
+        let mut data = String::from("2026-01 first\n");
+        for _ in 0..count {
+            data.push_str(&line);
+            data.push('\n');
+        }
+        data.push_str("2026-02 second\n");
+        let (sizes, counters) = run(data.as_bytes());
+        assert_eq!(sizes.len(), 2);
+        assert!(sizes[0] >= MAX_RECORD_BYTES && sizes[0] < MAX_RECORD_BYTES + 200, "{}", sizes[0]);
+        assert_eq!(sizes[1], "2026-02 second".len());
+        assert_eq!((counters.lines, counters.records, counters.unparsed), (count as u64 + 2, 2, 0));
+    }
+
+    #[test]
+    fn a_record_below_the_limit_is_unchanged() {
+        let (sizes, counters) = run(b"2026-01 a\n  b\n  c\n2026-02 d\n");
+        assert_eq!(sizes, vec!["2026-01 a\n  b\n  c".len(), "2026-02 d".len()]);
+        assert_eq!(counters.lines, 4);
+    }
+}

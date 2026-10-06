@@ -14,7 +14,9 @@ mod timestamp;
 
 pub use error::IoError;
 pub use format::{CompiledFormat, FormatConfig, FormatSpec, ParsedRecord};
-pub use lines::{INITIAL_WINDOW, Line, LineReader};
-pub use records::{Counters, Placement, ScanOutcome, ScanWindow, TICK_BYTES, TimeWindow, scan_records};
+pub use lines::{INITIAL_WINDOW, Line, LineReader, MAX_LINE_BYTES};
+pub use records::{
+    Counters, MAX_RECORD_BYTES, Placement, ScanOutcome, ScanWindow, TICK_BYTES, TimeWindow, scan_records,
+};
 pub use source::{Compression, STDIN_PATH, SourceInfo, inspect, open_source};
 pub use timestamp::{TsFormat, epoch_float_to_micros, epoch_int_to_micros, parse_iso};
