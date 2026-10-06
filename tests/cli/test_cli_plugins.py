@@ -71,6 +71,8 @@ def test_list_json() -> None:
         "requirement",
         "install",
         "homepage",
+        "min_logfold",
+        "compatible",
     }
 
 

@@ -36,6 +36,7 @@ __all__ = [
     "load_bundled",
     "new_plugins",
     "parse_catalog",
+    "require_compatible",
 ]
 
 SCHEMA_VERSION = 1
@@ -48,6 +49,8 @@ TIMEOUT_SECONDS = 10.0
 
 _NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 _ONE_SPECIFIER = r"(?:==|!=|<=|>=|~=|<|>)\s*[0-9][0-9A-Za-z.*+!_-]*"
+_MIN_VERSION = re.compile(r"^[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}$")
+_LEADING_NUMBERS = re.compile(r"[0-9]+(?:\.[0-9]+)*")
 _SPECIFIER = re.compile(rf"^(?:{_ONE_SPECIFIER}(?:\s*,\s*{_ONE_SPECIFIER})*)?$")
 
 
@@ -62,6 +65,7 @@ class CatalogEntry:
         specifier: Version constraint such as ``>=0.2,<1``, or an empty string.
         description: One line for people.
         homepage: ``https`` link to the project, if any.
+        min_logfold: Oldest logfold version the plugin works with, as ``X.Y.Z``, or ``None`` if it does not say.
     """
 
     name: str
@@ -70,11 +74,30 @@ class CatalogEntry:
     specifier: str
     description: str
     homepage: str | None
+    min_logfold: str | None = None
 
     @property
     def requirement(self) -> str:
         """The argument passed to ``pip install``."""
         return self.package + self.specifier
+
+    def fits(self, version: str | None = None) -> bool:
+        """Tell whether the plugin works with a logfold version.
+
+        Args:
+            version: The logfold version to check; the running one by default. A development checkout
+                (``0+unknown``) and a version that cannot be read are treated as fitting.
+
+        Returns:
+            ``False`` only if ``min_logfold`` is set and the version is older.
+        """
+        if self.min_logfold is None:
+            return True
+        current = version if version is not None else get_version()
+        if current.startswith("0+unknown"):
+            return True
+        found = _numbers(current)
+        return not found or found >= _numbers(self.min_logfold)
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,6 +122,14 @@ class Catalog:
             The entry, or ``None``.
         """
         return next((entry for entry in self.entries if entry.name == name), None)
+
+
+def _numbers(version: str) -> tuple[int, ...]:
+    match = _LEADING_NUMBERS.match(version)
+    if match is None:
+        return ()
+    parts = [int(part) for part in match.group().split(".")]
+    return tuple(parts + [0] * (3 - len(parts)))
 
 
 def _fail(source: str, reason: str) -> ConfigError:
@@ -134,7 +165,12 @@ def _entry(raw: object, source: str) -> CatalogEntry:
         homepage = _text(homepage, "homepage", source, 200)
         if not homepage.startswith("https://"):
             raise _fail(source, "homepage must be an https link")
-    return CatalogEntry(name, tuple(kinds), package, "".join(specifier.split()), description, homepage)
+    minimum = raw.get("min_logfold")
+    if minimum is not None:
+        minimum = _text(minimum, "min_logfold", source, 16)
+        if not _MIN_VERSION.match(minimum):
+            raise _fail(source, f"min_logfold of {name!r} must look like 0.4.0")
+    return CatalogEntry(name, tuple(kinds), package, "".join(specifier.split()), description, homepage, minimum)
 
 
 def parse_catalog(data: object, source: str) -> Catalog:
@@ -269,6 +305,24 @@ def new_plugins(catalog: Catalog, installed: Callable[[str], bool] = is_installe
     return tuple(entry for entry in catalog.entries if not installed(entry.package))
 
 
+def require_compatible(entry: CatalogEntry, version: str | None = None) -> None:
+    """Refuse a plugin that needs a newer logfold than the running one.
+
+    Args:
+        entry: A validated catalog entry.
+        version: The logfold version to check; the running one by default.
+
+    Raises:
+        ConfigError: If the plugin needs a newer logfold; ``hint`` says to upgrade.
+    """
+    if not entry.fits(version):
+        raise ConfigError(
+            f"plugin {entry.name!r} needs logfold {entry.min_logfold} or newer; this is "
+            f"{version if version is not None else get_version()}",
+            hint="upgrade logfold first, for example: pip install -U logfold",
+        )
+
+
 def install(entry: CatalogEntry, runner: Callable[..., Any] = subprocess.run) -> int:
     """Install a plugin package into the environment that runs logfold.
 
@@ -282,8 +336,9 @@ def install(entry: CatalogEntry, runner: Callable[..., Any] = subprocess.run) ->
         The exit code of the installer.
 
     Raises:
-        ConfigError: If neither pip nor uv is available in this environment.
+        ConfigError: If the plugin needs a newer logfold, or neither pip nor uv is available in this environment.
     """
+    require_compatible(entry)
     if util.find_spec("pip") is not None:
         command = [sys.executable, "-m", "pip", "install", entry.requirement]
     elif (uv := shutil.which("uv")) is not None:

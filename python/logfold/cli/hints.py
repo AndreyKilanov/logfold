@@ -10,11 +10,15 @@ from logfold.errors import (
     UnknownReporterError,
     UnknownSuffixError,
 )
+from logfold.plugins.listing import unknown_name_hint
 
 
-def _closest_and_listing(error: UnknownFormatError | UnknownReporterError | UnknownMatcherError, listing: str) -> str:
-    if error.hint:
-        return f"{error.hint} (all of them: '{listing}')"
+def _closest_and_listing(
+    error: UnknownFormatError | UnknownReporterError | UnknownMatcherError, kind: str, listing: str
+) -> str:
+    found = unknown_name_hint(kind, error.name) or error.hint
+    if found:
+        return f"{found} (all of them: '{listing}')"
     return f"run '{listing}' to see the available names"
 
 
@@ -36,9 +40,11 @@ def hint_for(error: Exception) -> str | None:
             "'logfold formats' lists the built-in ones"
         )
     if isinstance(error, UnknownFormatError):
-        return _closest_and_listing(error, "logfold formats")
-    if isinstance(error, UnknownReporterError | UnknownMatcherError):
-        return _closest_and_listing(error, "logfold plugins list")
+        return _closest_and_listing(error, "format", "logfold formats")
+    if isinstance(error, UnknownReporterError):
+        return _closest_and_listing(error, "reporter", "logfold plugins list")
+    if isinstance(error, UnknownMatcherError):
+        return _closest_and_listing(error, "matcher", "logfold plugins list")
     if isinstance(error, UnknownSuffixError):
         return (
             f"end the name with one of {', '.join(error.suffixes)}, or name the reporter with --report NAME "

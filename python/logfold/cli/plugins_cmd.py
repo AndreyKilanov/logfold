@@ -78,6 +78,8 @@ def _row(info: PluginInfo) -> dict[str, object]:
         "requirement": info.requirement,
         "install": info.install,
         "homepage": info.homepage,
+        "min_logfold": info.min_logfold,
+        "compatible": info.compatible,
     }
 
 
@@ -116,7 +118,8 @@ def list_command(
         table.add_column(column, overflow="fold")
     for row in rows:
         origin = row.requirement or ("" if row.status == "built-in" else row.source)
-        table.add_row(row.kind, _safe(row.name), row.status, _safe(origin), _safe(row.description))
+        about = row.description if row.compatible else f"{row.description} [needs logfold {row.min_logfold}]".strip()
+        table.add_row(row.kind, _safe(row.name), row.status, _safe(origin), _safe(about))
     console.print(table)
     if any(row.status == "available" for row in rows):
         console.print(
@@ -154,7 +157,10 @@ def info_command(
             console.print(f"package:  {_safe(row.package)}{' ' + row.version if row.version else ''}", soft_wrap=True)
         if row.homepage:
             console.print(f"homepage: {_safe(row.homepage)}", soft_wrap=True)
-        if row.install:
+        if row.min_logfold:
+            note = "" if row.compatible else " (newer than the logfold you run: it cannot be installed)"
+            console.print(f"needs:    logfold {_safe(row.min_logfold)} or newer{note}")
+        if row.install and row.compatible:
             console.print(
                 f"install:  [bold]{_safe(row.install)}[/bold]  (pip requirement: {_safe(row.requirement or '')})"
             )
@@ -189,17 +195,8 @@ def new_plugin(
 ) -> None:
     """Write a working plugin template into your plugin folder, ready to edit."""
     try:
-        source = templates.render_template(kind, name)
+        target = templates.write_template(kind, name, folder, force)
     except LogfoldError as error:
-        raise _fail(error) from None
-    target_dir = folder if folder is not None else registry.default_plugin_dir()
-    target = target_dir / f"{templates.module_stem(name)}.py"
-    if target.exists() and not force:
-        raise _fail(LogfoldError(f"{target} already exists; use --force to overwrite it"))
-    try:
-        target_dir.mkdir(parents=True, exist_ok=True)
-        target.write_text(source, encoding="utf-8")
-    except OSError as error:
         raise _fail(error) from None
     console = _stdout()
     console.print(f"Wrote {escape(str(target))}", soft_wrap=True)
@@ -230,6 +227,8 @@ def check(online: Online = False, catalog: CatalogSource = None, as_json: AsJson
                     "requirement": e.requirement,
                     "description": e.description,
                     "homepage": e.homepage,
+                    "min_logfold": e.min_logfold,
+                    "compatible": e.fits(),
                 }
                 for e in new
             ],
@@ -269,6 +268,10 @@ def install(
     if entry is None:
         known = ", ".join(e.name for e in loaded.entries) or "none"
         raise _fail(LogfoldError(f"unknown plugin {name!r}; the catalog has: {known}"))
+    try:
+        plugin_catalog.require_compatible(entry)
+    except LogfoldError as error:
+        raise _fail(error) from None
     console = _stdout()
     if plugin_catalog.is_installed(entry.package):
         console.print(f"{escape(entry.package)} is already installed.")

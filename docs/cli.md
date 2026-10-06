@@ -138,8 +138,13 @@ or when the format has no levels.
 
 ## `logfold formats`
 
-Lists the available log formats (built-in and plugins) with their kind and details. See the
-[formats table](guide.md#formats).
+Lists the available log formats (built-in and plugins) with their kind and details, then the format plugins of the
+catalog that are not installed yet with their install command. See the [formats table](guide.md#formats).
+
+When a format, reporter or matcher name is not found, the error's `hint:` line names the plugin of the catalog with that
+name (and how to install it) or the closest installed or catalog name. The `--help` of `analyze`, `diff` and `inspect`
+lists the plugins available to install next to `--format`, `--report` and `--matcher`. The catalog is read only for these
+messages and for `--help`; a normal run never touches it.
 
 ## `logfold info`
 

@@ -64,6 +64,11 @@ the list. It is the quickest way to see that an installed plugin was found, and 
 install command for an available plugin and an example of use for an installed one. A misspelled name gets a
 "did you mean" from the installed and catalog names. Both take `--online` and `--catalog` like `check`.
 
+The same names help where you type them: `unknown format 'haproxy'` ends with a `hint:` that says the plugin is available
+and how to install it, `logfold formats` lists the format plugins of the catalog, and `analyze --help` shows the
+available ones next to `--format`, `--report` and `--matcher`. A plugin that needs a newer logfold is marked
+`needs logfold X.Y.Z` in `list`, `info` and `formats`, and `install` refuses it (upgrade logfold first).
+
 The **catalog** is a short list of known plugin packages. By default it is the one bundled with your version of logfold:
 `check` works offline, and new plugins show up after `pip install -U logfold`. To see the newest list without upgrading:
 
@@ -95,13 +100,14 @@ The catalog format:
       "package": "logfold-haproxy",
       "specifier": ">=0.2,<1",
       "description": "HAProxy HTTP logs",
-      "homepage": "https://example.org/logfold-haproxy"
+      "homepage": "https://example.org/logfold-haproxy",
+      "min_logfold": "0.4.0"
     }
   ]
 }
 ```
 
-`kinds` is a non-empty list of `format`, `reporter` and `matcher`; `specifier` and `homepage` are optional. The bundled
+`kinds` is a non-empty list of `format`, `reporter` and `matcher`; `specifier`, `homepage` and `min_logfold` (the oldest logfold the plugin works with, as `X.Y.Z`) are optional. The bundled
 catalog is `python/logfold/plugins/catalog.json` in the repository, and the file on the `main` branch is what
 `--online` reads. To list your plugin there, open a pull request that adds an entry.
 

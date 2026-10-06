@@ -13,13 +13,13 @@ from dataclasses import dataclass
 from importlib import metadata
 from typing import TYPE_CHECKING
 
-from logfold.errors import ConfigError, UnknownPluginError
+from logfold.errors import ConfigError, LogfoldError, UnknownPluginError
 from logfold.ext import registry
 
 if TYPE_CHECKING:
     from logfold.plugins.catalog import Catalog, CatalogEntry
 
-__all__ = ["KINDS", "STATUSES", "PluginInfo", "closest", "list_plugins", "plugin_info"]
+__all__ = ["KINDS", "STATUSES", "PluginInfo", "closest", "list_plugins", "plugin_info", "unknown_name_hint"]
 
 KINDS = ("format", "reporter", "matcher")
 STATUSES = ("built-in", "installed", "available")
@@ -42,6 +42,8 @@ class PluginInfo:
         requirement: What ``pip install`` would get for an available plugin, otherwise ``None``.
         install: The logfold command that installs an available plugin, otherwise ``None``.
         homepage: ``https`` link of an available plugin, if the catalog has one.
+        min_logfold: Oldest logfold version an available plugin works with, if the catalog says.
+        compatible: ``False`` if an available plugin needs a newer logfold than the running one; it cannot be installed.
     """
 
     kind: str
@@ -54,6 +56,8 @@ class PluginInfo:
     requirement: str | None = None
     install: str | None = None
     homepage: str | None = None
+    min_logfold: str | None = None
+    compatible: bool = True
 
 
 def _summary(package: str) -> str:
@@ -91,6 +95,8 @@ def _available(entry: CatalogEntry, source: str) -> list[PluginInfo]:
             entry.requirement,
             f"logfold plugins install {entry.name}",
             entry.homepage,
+            entry.min_logfold,
+            entry.fits(),
         )
         for kind in entry.kinds
     ]
@@ -165,3 +171,38 @@ def plugin_info(name: str, kind: str | None = None, catalog: Catalog | None = No
     if not found:
         raise UnknownPluginError(name, sorted({row.name for row in list_plugins(kind=kind, catalog=catalog)}))
     return found
+
+
+def unknown_name_hint(kind: str, name: str, catalog: Catalog | None = None) -> str | None:
+    """Say what to try after a format, reporter or matcher name was not found.
+
+    An exact name in the catalog gets its install command; otherwise the closest installed or catalog names are offered.
+    Nothing is raised, whatever is wrong with the registry or the catalog, so an error message that uses this hint stays
+    readable.
+
+    Args:
+        kind: ``format``, ``reporter`` or ``matcher``.
+        name: The name that was not found.
+        catalog: Catalog to search; the bundled one by default.
+
+    Returns:
+        One sentence, or ``None`` when nothing looks like ``name``.
+    """
+    try:
+        rows = list_plugins(kind=kind, catalog=catalog)
+    except (LogfoldError, OSError):
+        return None
+    by_name = {row.name: row for row in rows}
+    if name in by_name and by_name[name].status == "available":
+        return _offer(by_name[name])
+    close = difflib.get_close_matches(name, sorted(by_name), n=1)
+    if not close:
+        return None
+    row = by_name[close[0]]
+    return f"did you mean {row.name!r}?" if row.status != "available" else f"did you mean {row.name!r}? {_offer(row)}"
+
+
+def _offer(row: PluginInfo) -> str:
+    if not row.compatible:
+        return f"the plugin {row.name!r} needs logfold {row.min_logfold} or newer"
+    return f"the plugin {row.name!r} is available: {row.install}"

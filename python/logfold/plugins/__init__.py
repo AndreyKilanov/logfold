@@ -11,9 +11,10 @@ from __future__ import annotations
 
 from logfold.ext.registry import register_format, register_matcher, register_reporter
 from logfold.plugins.formats import LOGFMT, SERILOG_CLEF
-from logfold.plugins.listing import PluginInfo, closest, list_plugins, plugin_info
+from logfold.plugins.listing import PluginInfo, closest, list_plugins, plugin_info, unknown_name_hint
 from logfold.plugins.matchers import JaccardMatcher
 from logfold.plugins.reporters import CsvReporter, MarkdownReporter
+from logfold.plugins.templates import write_template
 
 register_format(LOGFMT.name, LOGFMT)
 register_format(SERILOG_CLEF.name, SERILOG_CLEF)
@@ -31,4 +32,6 @@ __all__ = [
     "closest",
     "list_plugins",
     "plugin_info",
+    "unknown_name_hint",
+    "write_template",
 ]
