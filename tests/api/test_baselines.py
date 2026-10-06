@@ -195,3 +195,10 @@ def test_an_empty_baseline_is_warned_about(runs: dict[str, Path], tmp_path: Path
     assert any("empty.log has no records" in warning for warning in pooled.warnings)
     quiet = logfold.diff(runs["b1"], runs["after"], baselines=[runs["b2"]], format="plain", engine="python")
     assert not any("no records" in warning for warning in quiet.warnings)
+
+
+def test_many_baselines_are_warned_about(runs: dict[str, Path]) -> None:
+    ten = logfold.diff(runs["b1"], runs["after"], baselines=[runs["b2"]] * 9, format="plain", engine="python")
+    assert not any("baselines were read" in warning for warning in ten.warnings)
+    eleven = logfold.diff(runs["b1"], runs["after"], baselines=[runs["b2"]] * 10, format="plain", engine="python")
+    assert any("11 baselines were read" in warning for warning in eleven.warnings)

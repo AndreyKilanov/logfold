@@ -53,7 +53,7 @@ template; shares are normalized by the number of records in each run. `before` a
 | `split_at` | `None` | compare two parts of **one** input: give `before` only; the records before this time are the first run, the records from this time on are the second (needs a format with a time; not for saved results) |
 | `since`, `until` | `None` | as in `analyze`, for both runs; with `split_at`, `since` starts the first run and `until` ends the second |
 | `baselines` | `None` | more baseline runs besides `before`, each an input or a sequence of inputs; pooled into the first side, so a template is new only if no baseline has it (logs only; not with saved results or `split_at`) |
-| `min_baselines` | all | with `baselines`, the number of baselines a template must occur in to be reported as disappeared or changed; a template in fewer baselines is unstable and is not reported |
+| `min_baselines` | all | with `baselines`, the number of baselines a template must occur in to be reported as disappeared or changed; a template in fewer baselines is unstable and is not reported; more than 10 baselines give a warning (every baseline is read in full) |
 | `significance` | 0.01 | highest p-value of a `changed` template that is still reported, in (0, 1]; 1 keeps every template that passes the ratio and count thresholds |
 | `recount` | `True` | assign every record to the finished tree for consistent counts (costs a second pass) |
 | `matcher` | `"jaccard"` | registered diff matcher name: `jaccard`, `token_subset`, `exact` or a plugin's (see [Choosing a matcher](guide.md#choosing-a-matcher)) |

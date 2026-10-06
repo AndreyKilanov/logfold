@@ -80,7 +80,9 @@ or two saved reports of `logfold analyze --out result.json`; both must be of one
 With `--baseline FILE` (repeatable) the first argument is the first baseline and each option adds one: the baselines
 are pooled, so a template is `new` only if none of them has it, and `disappeared` or `changed` only if it occurs in at
 least `--min-baselines` of them (default all). A template seen in some baselines but fewer than that is unstable and is
-reported as nothing. It works with log files only, not with saved reports or `--split-at`.
+reported as nothing. It works with log files only, not with saved reports or `--split-at`. Every baseline is read in
+full, so time and memory grow with their number; 3 to 5 recent good runs are usually enough, and more than 10 give a
+warning.
 
 With `--split-at TIME` give **one** log: the records before `TIME` are the first run and the records from `TIME` on are
 the second, for example the hour before an incident against the hour after it. `--since` and `--until` bound the whole

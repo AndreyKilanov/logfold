@@ -15,6 +15,8 @@ from logfold.engines.base import MiningResult, RunColumns, RunInfo, TemplateTabl
 from logfold.errors import ConfigError
 from logfold.levels import LEVEL_NAMES
 
+MANY_BASELINES = 10
+
 
 @dataclass(frozen=True, slots=True)
 class Pooled:
@@ -134,20 +136,27 @@ def pool_baselines(mined: MiningResult, baselines: int, minimum: int) -> Pooled:
     return Pooled(pooled, pool_info(mined.runs[:baselines]), mined.runs[baselines], unstable)
 
 
-def empty_baselines(names: Sequence[Sequence[str]], infos: Sequence[RunInfo]) -> list[str]:
-    """Warn about baselines without records: with the default ``min_baselines`` they leave nothing to compare.
+def baseline_warnings(names: Sequence[Sequence[str]], infos: Sequence[RunInfo]) -> list[str]:
+    """Warn about baselines that do not help: empty ones, and more of them than are useful.
 
     Args:
         names: The inputs of every baseline.
         infos: Counters of every baseline, in the same order.
 
     Returns:
-        One sentence per empty baseline when there are several baselines, otherwise nothing.
+        One sentence per empty baseline when there are several baselines, and one when there are more than
+        :data:`MANY_BASELINES`; otherwise nothing.
     """
     if len(infos) < 2:
         return []
-    return [
+    found = [
         f"baseline {','.join(files)} has no records, so no template can occur in all baselines"
         for files, info in zip(names, infos, strict=True)
         if info.records == 0
     ]
+    if len(infos) > MANY_BASELINES:
+        found.append(
+            f"{len(infos)} baselines were read in full, which costs time and memory in proportion; "
+            f"{MANY_BASELINES} or fewer recent good runs are enough to tell stable templates from noise"
+        )
+    return found

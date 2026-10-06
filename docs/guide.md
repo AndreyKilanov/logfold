@@ -94,7 +94,9 @@ logfold diff good1.log after.log --baseline good2.log --baseline good3.log --min
 The baselines are mined with one template tree and pooled: counts and records add up, and shares are normalized by the
 pooled records. By default a template must occur in every baseline to be reported as `disappeared` or `changed`;
 `min_baselines` lowers that bar. A template that occurs in some baselines, but in fewer than the minimum, is unstable:
-it is never reported as new, disappeared or changed. Baselines are logs only, not saved results or `--split-at`.
+it is never reported as new, disappeared or changed. Baselines are logs only, not saved results or `--split-at`. Each baseline is read in full, so time and memory grow with
+their number. Three to five recent good runs are enough to tell stable templates from noise; more than ten give a
+warning.
 
 ### Compare saved results
 

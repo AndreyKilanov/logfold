@@ -18,7 +18,7 @@ from logfold.api._common import (
     _summary,
     _warnings,
 )
-from logfold.api.baselines import empty_baselines, pool_baselines, required_baselines
+from logfold.api.baselines import baseline_warnings, pool_baselines, required_baselines
 from logfold.api.comparing import classify_native, table_side
 from logfold.api.matching import accelerated, native_spec
 from logfold.api.saved import MINING_ONLY_DEFAULTS, diff_saved
@@ -281,7 +281,7 @@ def diff(
                 high_cardinality,
                 mined.metrics.strategy,
             ),
-            *empty_baselines(runs[:-1], mined.runs[:-1]),
+            *baseline_warnings(runs[:-1], mined.runs[:-1]),
             *window_warnings(before_summary),
             *window_warnings(after_summary),
         ),
