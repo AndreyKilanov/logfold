@@ -49,6 +49,8 @@ New templates (2)
 - **Код выхода для CI.** `--fail-on-new` завершает команду с кодом 2, если появились новые шаблоны,
   `--fail-on-new-alerts` — если среди них есть WARN, ERROR или FATAL. Переформулированное сообщение, которое
   сопоставление по умолчанию связало со старым, считается изменённым, а не новым; `--matcher exact` делает проверку строгой.
+  `--out ФАЙЛ --append` дописывает текстовый или Markdown-отчёт в конец файла, а не заменяет его: так несколько шагов
+  задания пишут одну сводку (`$GITHUB_STEP_SUMMARY`); см. [logfold в CI](https://github.com/AndreyKilanov/logfold/blob/main/docs/ci.md).
 - **Память.** Файл читается потоком, расход памяти не зависит от его размера. Входы: файлы, gzip, стандартный ввод,
   несколько файлов как один запуск.
 - **Параллельность.** Большой файл режется на куски (по умолчанию 64 МиБ), деревья кусков сливаются по порядку. При
@@ -92,6 +94,7 @@ logfold inspect app.log                   # как читается файл: ф
 logfold diff before.log after.log --out diff.html --fail-on-new-alerts
 logfold diff app.log --split-at 2026-10-06T12:00    # часть одного лога до времени против части после него
 logfold diff good1.log after.log --baseline good2.log --baseline good3.log   # новый = нет ни в одном хорошем запуске
+logfold diff before.log after.log --report markdown --out "$GITHUB_STEP_SUMMARY" --append   # в CI: добавить в сводку задания
 ```
 
 Коды выхода: `0` — успех, `1` — ошибка, `2` — найдено то, что запрошено флагами `--fail-on-*`.
@@ -208,6 +211,8 @@ ARM, более медленный диск, больше ядер) или на 
 Документация написана на английском.
 
 - [Руководство](https://github.com/AndreyKilanov/logfold/blob/main/docs/guide.md): форматы, параметры, плагины, движки.
+- [logfold в CI](https://github.com/AndreyKilanov/logfold/blob/main/docs/ci.md): GitHub Actions и GitLab CI, сводка
+  задачи, проверки, откуда брать baseline.
 - [Справочник командной строки](https://github.com/AndreyKilanov/logfold/blob/main/docs/cli.md): команды, опции, коды
   выхода.
 - [Плагины](https://github.com/AndreyKilanov/logfold/blob/main/docs/plugins.md): использование и написание форматов,

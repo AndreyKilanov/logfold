@@ -24,6 +24,7 @@ from logfold.cli.hints import hint_for
 from logfold.cli.output import render_report
 from logfold.cli.render import print_analysis, print_diff
 from logfold.errors import write_error
+from logfold.ext.files import write_text
 from logfold.ext.text import printable
 from logfold.model import AnalysisResult, DiffResult
 
@@ -102,7 +103,9 @@ def note(message: str, quiet: bool) -> None:
         stderr_console().print(f"[dim]{escape(message)}[/dim]", soft_wrap=True)
 
 
-def write_report(result: AnalysisResult | DiffResult, out: Path, reporter: str, quiet: bool) -> None:
+def write_report(
+    result: AnalysisResult | DiffResult, out: Path, reporter: str, quiet: bool, append: bool = False
+) -> None:
     """Write a report file and say so on standard error unless quiet.
 
     Args:
@@ -110,15 +113,17 @@ def write_report(result: AnalysisResult | DiffResult, out: Path, reporter: str, 
         out: Target file.
         reporter: Reporter name.
         quiet: Whether ``--quiet`` was given.
+        append: Add to the end of the file instead of replacing it.
     """
     text = render_report(result, reporter)
     try:
-        out.write_text(text, encoding="utf-8")
+        write_text(out, text, append)
     except OSError as error:
         raise write_error(str(out), error) from error
     if not quiet:
         opener = "  (open it in a browser)" if out.suffix.lower() in (".html", ".htm") else ""
-        stderr_console().print(f"wrote {escape(printable(str(out)))}{opener}", highlight=False, soft_wrap=True)
+        verb = "appended to" if append else "wrote"
+        stderr_console().print(f"{verb} {escape(printable(str(out)))}{opener}", highlight=False, soft_wrap=True)
 
 
 def emit(result: AnalysisResult | DiffResult, top: int, reporter: str | None) -> None:

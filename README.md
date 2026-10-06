@@ -48,7 +48,9 @@ New templates (2)
   so that a template counts as new only if none of them has it, which removes the noise of rare messages.
 - **Exit code for CI.** `--fail-on-new` exits with code 2 when there are new templates, `--fail-on-new-alerts` when any
   of them is WARN, ERROR or FATAL. A reworded message that the default matcher pairs with an old one counts as changed,
-  not new; `--matcher exact` makes the gate strict.
+  not new; `--matcher exact` makes the gate strict. `--out FILE --append` adds a text or Markdown report to the end of a
+  file instead of replacing it, so several steps of a job can write one job summary (`$GITHUB_STEP_SUMMARY`); see
+  [logfold in CI](https://github.com/AndreyKilanov/logfold/blob/main/docs/ci.md).
 - **Memory.** The file is read as a stream, and memory use does not depend on its size. Inputs: files, gzip, standard
   input, several files as one run.
 - **Parallelism.** A large file is cut into chunks (64 MiB by default) and the chunk trees are merged in order. For a
@@ -93,6 +95,7 @@ Compare two runs:
 logfold diff before.log after.log --out diff.html --fail-on-new-alerts
 logfold diff app.log --split-at 2026-10-06T12:00    # the part of one log before a time against the part after it
 logfold diff good1.log after.log --baseline good2.log --baseline good3.log   # new = in none of the good runs
+logfold diff before.log after.log --report markdown --out "$GITHUB_STEP_SUMMARY" --append   # in CI: add to the job summary
 ```
 
 Exit codes: `0` success, `1` error, `2` something requested by a `--fail-on-*` flag was found.
@@ -212,6 +215,8 @@ Template quality: `python eval/quality.py` (grouping accuracy on the 16 Loghub-2
 ## Documentation
 
 - [Guide](https://github.com/AndreyKilanov/logfold/blob/main/docs/guide.md): formats, parameters, plugins, engines.
+- [Using logfold in CI](https://github.com/AndreyKilanov/logfold/blob/main/docs/ci.md): GitHub Actions and GitLab CI, job
+  summary, gates, where the baseline comes from.
 - [Command-line reference](https://github.com/AndreyKilanov/logfold/blob/main/docs/cli.md): commands, options, exit
   codes.
 - [Plugins](https://github.com/AndreyKilanov/logfold/blob/main/docs/plugins.md): using and writing formats, reports and

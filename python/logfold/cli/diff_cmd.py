@@ -13,6 +13,7 @@ from logfold.cli.levels import diff_note, resolve_level
 from logfold.cli.options import (
     PANEL_DIFF,
     PANEL_INPUT,
+    Append,
     AsJson,
     ChunkMb,
     Debug,
@@ -187,6 +188,7 @@ def diff(
     level: Level = None,
     only_alerts: OnlyAlerts = False,
     out: Out = None,
+    append: Append = False,
     report: Report = None,
     sim_th: SimTh = None,
     depth: Depth = None,
@@ -210,7 +212,7 @@ def diff(
     With --split-at TIME, give one log file: the records before TIME are compared with the records from TIME on.
     """
     try:
-        outputs = resolve_outputs("diff", out, report, as_json)
+        outputs = resolve_outputs("diff", out, report, as_json, append)
         threshold = resolve_level(level, only_alerts)
         if split_at is None and after is None:
             raise logfold.ConfigError("diff needs two files, or one file and --split-at TIME")
@@ -300,7 +302,7 @@ def diff(
             result = filtered
         emit(result, top, outputs.stdout)
         if out is not None and outputs.file is not None:
-            write_report(result, out, outputs.file, quiet)
+            write_report(result, out, outputs.file, quiet, append)
     except LogfoldError as error:
         raise fail(error, debug) from None
     if fail_on_new and result.new_templates:
