@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from logfold.errors import FormatError, SourceError
+from logfold.errors import FormatDetectionError, FormatError, read_error
 from logfold.ext.formats import FormatSpec, JsonFormat, RegexFormat
 from logfold.formats.builtin import BUILTIN_FORMATS, DETECTION_ORDER
 
@@ -50,7 +50,7 @@ def read_sample(path: str, limit: int = SAMPLE_LINES) -> list[str]:
                     break
         return lines
     except OSError as error:
-        raise SourceError(f"cannot read {path!r}: {error}") from error
+        raise read_error(path, error) from error
 
 
 @dataclass(frozen=True, slots=True)
@@ -103,7 +103,7 @@ def detect_format(paths: Sequence[str]) -> Detection:
         The chosen specification, its confidence and whether the sample looks multiline.
 
     Raises:
-        FormatError: If no candidate reaches the confidence threshold.
+        FormatDetectionError: If no candidate reaches the confidence threshold.
     """
     lines = read_sample(paths[0])
     if not lines:
@@ -113,9 +113,5 @@ def detect_format(paths: Sequence[str]) -> Detection:
     best_score, hint = scored[best_name]
     if best_score < CONFIDENCE_THRESHOLD:
         ranked = sorted(scored.items(), key=lambda item: -item[1][0])[:3]
-        guesses = ", ".join(f"{name} ({score:.0%})" for name, (score, _hint) in ranked)
-        raise FormatError(
-            f"could not detect the log format of {paths[0]!r} (best guesses: {guesses}); "
-            "pass a format explicitly, for example 'plain' or 'regex:<pattern>'"
-        )
+        raise FormatDetectionError(paths[0], tuple((name, score) for name, (score, _hint) in ranked))
     return Detection(BUILTIN_FORMATS[best_name], best_score, hint)

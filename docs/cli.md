@@ -157,7 +157,11 @@ catalog or a failed pip run exit with code 1.
 | 2 | `diff` with `--fail-on-new` found new templates, or with `--fail-on-new-alerts` found new WARN/ERROR/FATAL templates |
 | 130 | interrupted (Ctrl+C) |
 
-Errors are printed as one line on standard error; `--debug` adds the traceback.
+Errors are printed on standard error as `error: ...`, followed by a `hint: ...` line when there is a next step: the
+closest known name for a misspelled format, reporter or diff matcher (`did you mean 'nginx'?`) with the command that lists
+them, the options to try when the format cannot be detected (`-f plain`, `-f regex:<pattern>`), the accepted suffixes for an
+`--out` file without one, and the valid values of `--engine` and `--strategy`. Long paths are not wrapped at the terminal
+width. `--debug` shows the traceback instead.
 
 ## Output and environment
 

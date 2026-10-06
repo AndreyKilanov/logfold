@@ -16,7 +16,7 @@ from importlib import metadata
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from logfold.errors import ConfigError, FormatError
+from logfold.errors import ConfigError, UnknownFormatError, UnknownMatcherError, UnknownReporterError
 from logfold.ext.formats import Format, FormatSpec, JsonFormat, PlainFormat, RegexFormat
 from logfold.ext.matchers import DiffMatcher
 from logfold.ext.reporters import Reporter
@@ -286,8 +286,7 @@ def get_format(name: str) -> FormatSpec:
     try:
         entry = _formats[name]
     except KeyError:
-        known = ", ".join(sorted(_formats))
-        raise FormatError(f"unknown format {name!r}; known formats: {known}") from None
+        raise UnknownFormatError(name, _formats) from None
     return entry if isinstance(entry, _SPEC_TYPES) else entry.spec()
 
 
@@ -313,8 +312,7 @@ def get_reporter(name: str) -> Reporter:
     try:
         return _reporters[name]
     except KeyError:
-        known = ", ".join(sorted(_reporters))
-        raise ConfigError(f"unknown reporter {name!r}; known reporters: {known}") from None
+        raise UnknownReporterError(name, _reporters) from None
 
 
 def reporter_names() -> list[str]:
@@ -339,8 +337,7 @@ def get_matcher(name: str) -> DiffMatcher:
     try:
         return _matchers[name]
     except KeyError:
-        known = ", ".join(sorted(_matchers))
-        raise ConfigError(f"unknown diff matcher {name!r}; known matchers: {known}") from None
+        raise UnknownMatcherError(name, _matchers) from None
 
 
 def render(result: AnalysisResult | DiffResult, reporter: str, **options: object) -> str:

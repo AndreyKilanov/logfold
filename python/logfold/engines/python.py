@@ -18,7 +18,7 @@ from typing import IO, Any, cast
 from logfold.engines import _timeparse as tp
 from logfold.engines._reference_tree import Miner, Recount
 from logfold.engines.base import MineRequest, MiningResult, ProgressCallback, RunInfo, TemplateTable
-from logfold.errors import FormatError, SourceError
+from logfold.errors import FormatError, SourceError, read_error
 from logfold.ext.formats import FormatSpec, JsonFormat, PlainFormat, RegexFormat
 from logfold.ext.masks import Masker
 from logfold.model import RunMetrics
@@ -152,7 +152,7 @@ def _open(path: str) -> tuple[IO[bytes], int]:
             raise SourceError(f"{path!r} is zstd-compressed; the reference engine cannot read it")
         return file_path.open("rb"), size
     except OSError as error:
-        raise SourceError(f"cannot read {path!r}: {error}") from error
+        raise read_error(path, error) from error
 
 
 def _lines(stream: IO[bytes]) -> Iterator[bytes]:
@@ -214,7 +214,7 @@ def _scan(
         if open_record:
             emit(record_first, record_rest)
     except OSError as error:
-        raise SourceError(f"cannot read {path!r}: {error}") from error
+        raise read_error(path, error) from error
     finally:
         if stream is not sys.stdin.buffer:
             stream.close()
