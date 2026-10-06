@@ -10,7 +10,8 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 - Default format plugins `haproxy`, `postgresql`, `postgresql-csv`, `docker-json`, `github-actions` and `log4j`, and
   `--format "log4j:<pattern>"` (library: `log4j_format()` in `logfold.ext`) for any log4j or logback pattern.
 - Default reporters for pipelines: `github-summary` (job summary Markdown), `junit` (`.xml`, a new WARN+ template fails a
-  test), `chat-message` (Slack, Mattermost, Telegram text) and `prometheus` (`.prom`, textfile collector gauges).
+  test), `chat-message` (Slack, Mattermost, Telegram text) and `prometheus` (`.prom`, textfile collector gauges); written by the Rust core for large listings, extension contract
+  version 7.
 - Diff matchers `jaccard-idf` (rare words count more), `overlap` (an extended message) and `rules:FILE` (pairs from your
   file), computed by the Rust core; extension contract version 6.
 - `--append` for `--out` on `analyze` and `diff` (and `save(append=True)`) adds a text or Markdown report to a file, for

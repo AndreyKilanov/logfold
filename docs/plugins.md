@@ -92,7 +92,8 @@ outside the team. Each keeps to the limit of its target by listing fewer templat
 
 `result.render("junit", top=20)` passes the options from Python. The command line uses the defaults. All four neutralize text
 from a log for their target: control characters become `\xNN`, characters XML forbids become `U+XXXX`, a backtick cannot
-close a code span, and label values are escaped. Speed: under 0.65 s for every one of 100 thousand templates, see
+close a code span, and label values are escaped. The text is written by the Rust core when a large part of a result is listed and by Python otherwise (the same
+text, byte for byte); every one of 100 thousand templates takes under 0.25 s, see
 [`bench/docs/REPORT_PLUGINS.md`](../bench/docs/REPORT_PLUGINS.md).
 
 ### Your own pairs: the rules matcher
