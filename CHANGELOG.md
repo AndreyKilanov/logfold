@@ -7,6 +7,9 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Added
 
+- Plugin names: an unknown format, reporter or matcher gets a hint with the catalog's install command or the closest name;
+  `formats` and `--help` list the available plugins; `min_logfold` in the catalog and `plugins install` refuses a plugin
+  that needs a newer logfold. Library: `unknown_name_hint()`, `write_template()`.
 - `logfold plugins list` shows built-in, installed and catalog plugins with a status (`--installed`, `--available`, `--kind`),
   `plugins info NAME` describes one; library: `list_plugins()`, `plugin_info()`, `closest()`. `plugins install` falls back to
   `uv pip install`; `plugins list --json` rows gained fields.

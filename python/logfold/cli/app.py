@@ -13,6 +13,7 @@ import typer
 import logfold
 from logfold.cli import analyze_cmd, diff_cmd, exit_codes, inspect_cmd
 from logfold.cli.analyze_cmd import analyze
+from logfold.cli.available_help import AvailableHelpCommand
 from logfold.cli.diff_cmd import diff
 from logfold.cli.info_cmd import formats, info
 from logfold.cli.plugins_cmd import plugins_app
@@ -50,9 +51,9 @@ def root(
         registry.add_plugin_directory(folder)
 
 
-app.command(epilog=analyze_cmd.EXAMPLES)(analyze)
-app.command(epilog=diff_cmd.EXAMPLES)(diff)
-app.command(epilog=inspect_cmd.EXAMPLES)(inspect_cmd.inspect)
+app.command(cls=AvailableHelpCommand, epilog=analyze_cmd.EXAMPLES)(analyze)
+app.command(cls=AvailableHelpCommand, epilog=diff_cmd.EXAMPLES)(diff)
+app.command(cls=AvailableHelpCommand, epilog=inspect_cmd.EXAMPLES)(inspect_cmd.inspect)
 app.command()(formats)
 app.command()(info)
 

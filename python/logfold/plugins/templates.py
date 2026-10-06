@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import os
 import re
+from pathlib import Path
 from string import Template
 
-from logfold.errors import ConfigError
+from logfold.errors import ConfigError, SourceError
+from logfold.ext import registry
 
-__all__ = ["KINDS", "module_stem", "render_template"]
+__all__ = ["KINDS", "module_stem", "render_template", "write_template"]
 
 KINDS = ("format", "reporter", "matcher")
 
@@ -125,3 +128,35 @@ def render_template(kind: str, name: str) -> str:
         raise ConfigError(f"invalid plugin name {name!r}: use letters, digits, '-' and '_', starting with a letter")
     class_name = "".join(part.capitalize() for part in re.split(r"[-_]", name) if part) + kind.capitalize()
     return _TEMPLATES[kind].substitute(name=name, cls=class_name)
+
+
+def write_template(kind: str, name: str, folder: str | os.PathLike[str] | None = None, force: bool = False) -> Path:
+    """Write a working plugin template, ready to edit.
+
+    Args:
+        kind: ``format``, ``reporter`` or ``matcher``.
+        name: Plugin name: letters, digits, ``-`` and ``_``.
+        folder: Where to write; the user plugin folder (see :func:`logfold.ext.default_plugin_dir`) by default. The
+            folder is created if needed.
+        force: Overwrite an existing file.
+
+    Returns:
+        The path of the new file.
+
+    Raises:
+        ConfigError: If the kind or name is not valid, or the file exists and ``force`` is not set.
+        SourceError: If the file cannot be written.
+    """
+    source = render_template(kind, name)
+    target_dir = Path(folder) if folder is not None else registry.default_plugin_dir()
+    target = target_dir / f"{module_stem(name)}.py"
+    if target.exists() and not force:
+        raise ConfigError(
+            f"{target} already exists", hint="pass force=True to overwrite it (--force on the command line)"
+        )
+    try:
+        target_dir.mkdir(parents=True, exist_ok=True)
+        target.write_text(source, encoding="utf-8")
+    except OSError as error:
+        raise SourceError(f"cannot write the plugin template {target}: {error}") from error
+    return target
