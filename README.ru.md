@@ -94,7 +94,7 @@ logfold inspect app.log                   # как читается файл: ф
 logfold diff before.log after.log --out diff.html --fail-on-new-alerts
 logfold diff app.log --split-at 2026-10-06T12:00    # часть одного лога до времени против части после него
 logfold diff good1.log after.log --baseline good2.log --baseline good3.log   # новый = нет ни в одном хорошем запуске
-logfold diff before.log after.log --report markdown --out "$GITHUB_STEP_SUMMARY" --append   # в CI: добавить в сводку задания
+logfold diff before.log after.log --report github-summary --out "$GITHUB_STEP_SUMMARY" --append   # в CI: добавить в сводку задания
 ```
 
 Коды выхода: `0` — успех, `1` — ошибка, `2` — найдено то, что запрошено флагами `--fail-on-*`.
@@ -140,7 +140,7 @@ diff(load_analysis("before.json"), load_analysis("after.json"))
 | Схлопывание | `--depth` (4), `--sim-th` (0,4), `--max-children` (100), `--max-templates` (100000). Значения по умолчанию те же, что у Drain3. |
 | Выполнение | `--strategy auto` (по умолчанию; параллельные куски, последовательно для логов из уникальных сообщений), `sequential`, `chunked`; `--threads`, `--chunk-mb`; `--warm-start` (по желанию, только для chunked). |
 | Логи с почти уникальными строками | `--high-cardinality`: не больше 5000 шаблонов, остальное попадает в сводные, выполняется последовательно. На файле в 10 МБ с 84 тысячами разных строк 2,0 с превращаются в 0,14 с. |
-| Отчёты | HTML, JSON, текст, Markdown, CSV; суффикс `--out` выбирает формат, `--report ИМЯ` выбирает отчёт явно, в том числе плагинный. |
+| Отчёты | HTML, JSON, текст, Markdown, CSV; для конвейеров `github-summary`, `junit` (`.xml`), `chat-message` и `prometheus` (`.prom`); суффикс `--out` выбирает формат, `--report ИМЯ` выбирает отчёт явно, в том числе плагинный. |
 | Сопоставление для `diff` | `jaccard` (по умолчанию), `jaccard-idf`, `overlap`, `rules:ФАЙЛ` (свои пары), `token_subset`, `exact`: связывают переформулированное сообщение с его прежней версией, чтобы оно не считалось одновременно новым и пропавшим. |
 | Плагины | `logfold plugins list` (встроенные, установленные, доступные из каталога), `info ИМЯ`, `check`, `install ИМЯ`, `new`; для неизвестного имени подсказка с командой установки. |
 | Скрипты | `--json` печатает JSON в stdout, коды выхода стабильны, формат JSON описан схемой в `docs/schema`. |

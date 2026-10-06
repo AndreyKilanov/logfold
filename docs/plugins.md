@@ -29,6 +29,10 @@ They are part of `pip install logfold`; nothing else has to be installed.
 | format | `log4j` | the pattern `%d{ISO8601} %-5p [%t] %c - %m%n`; stack traces join their record; any other pattern: `log4j:<pattern>` |
 | reporter | `markdown` | Markdown tables for an analysis or a diff |
 | reporter | `csv` | one template per row, for spreadsheets and scripts |
+| reporter | `github-summary` | Markdown for `$GITHUB_STEP_SUMMARY`: a verdict line, the counts, the new templates (WARN and above first), the changed and disappeared ones collapsed; kept under the size limit of a step summary |
+| reporter | `junit` | JUnit XML of a diff: every new template is a test case, a new WARN+ template fails it (suffix `.xml`) |
+| reporter | `chat-message` | a short plain-text message with code spans for Slack, Mattermost or Telegram; only returns the text, sending it is up to you |
+| reporter | `prometheus` | gauges in the text exposition format for the node exporter textfile collector (suffix `.prom`) |
 | matcher | `jaccard` | the default matcher of `diff`: pairs templates whose words overlap by at least 60%, so a reworded message is one template |
 | matcher | `jaccard-idf` | like `jaccard`, but a word weighs `1 / (templates that contain it)`, so shared rare words count more (threshold 0.5) |
 | matcher | `overlap` | `shared words / words of the shorter template` (threshold 0.8, templates of three words or more): catches an extended message |
@@ -73,7 +77,23 @@ open("templates.csv", "w", encoding="utf-8").write(result.render("csv"))
 Reporters are used from Python with `result.render(...)`, which raises `ConfigError` for an unknown reporter, or for a
 result kind the reporter does not support, and from the command line with `--report NAME` on `analyze` and `diff`:
 with `--out` the named reporter writes the file, without it its text is printed instead of the tables. `--out` alone
-chooses by file suffix (`.html`, `.json`, `.txt`, `.md`, `.csv`). A typo in the name fails before any log is read.
+chooses by file suffix (`.html`, `.json`, `.txt`, `.md`, `.csv`, `.xml`, `.prom`). A typo in the name fails before any log is read.
+
+The four reports for pipelines show templates and counts, never example lines, so `--examples` does not matter for them. A template
+still holds every word that never varied in the log (a fixed user name stays in it), so read one before you share a report
+outside the team. Each keeps to the limit of its target by listing fewer templates, and says so:
+
+| Reporter | Results | Options | Notes |
+|---|---|---|---|
+| `github-summary` | analysis, diff | `top` (20 templates per list), `max_bytes` (900000; a step summary may hold 1 MiB) | can be appended with `--append`; the lists of changed and disappeared templates are collapsed |
+| `junit` | diff | `top` (100): passing cases for new templates below WARN | every new WARN+ template is always listed and fails; with no new template one passing case keeps the report from being empty; not appendable |
+| `chat-message` | analysis, diff | `top` (5), `max_chars` (3000, one Slack section; Telegram allows 4096) | templates are in code spans, and the characters that start a mention (`<!here>`, `<@U1>`, `@channel`, `@here`, `@all`, `@everyone`) are separated from what follows by a zero-width space, so a log line cannot ping a channel |
+| `prometheus` | analysis, diff | `top` (50): templates that get a series of their own, per section | gauges: the file describes one run and is replaced by the next, which drops the series of templates that are gone; the template text is a label, so `top` bounds the cardinality; not appendable |
+
+`result.render("junit", top=20)` passes the options from Python. The command line uses the defaults. All four neutralize text
+from a log for their target: control characters become `\xNN`, characters XML forbids become `U+XXXX`, a backtick cannot
+close a code span, and label values are escaped. Speed: under 0.65 s for every one of 100 thousand templates, see
+[`bench/docs/REPORT_PLUGINS.md`](../bench/docs/REPORT_PLUGINS.md).
 
 ### Your own pairs: the rules matcher
 
