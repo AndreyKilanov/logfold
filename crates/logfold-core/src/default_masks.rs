@@ -145,10 +145,10 @@ fn ip_from(buf: &[u8], octet: usize, at: usize) -> Option<usize> {
             if let Some(done) = ip_tail(buf, end) {
                 return Some(done);
             }
-        } else if buf.get(end) == Some(&b'.') {
-            if let Some(done) = ip_from(buf, octet + 1, end + 1) {
-                return Some(done);
-            }
+        } else if buf.get(end) == Some(&b'.')
+            && let Some(done) = ip_from(buf, octet + 1, end + 1)
+        {
+            return Some(done);
         }
     }
     None
@@ -241,32 +241,34 @@ fn matched(buf: &[u8], at: usize) -> Option<(usize, &'static [u8])> {
     if byte == b'+' || byte == b'-' {
         return number(buf, at).map(|end| (end, TOKEN_NUM));
     }
-    if buf.get(at + 8) == Some(&b'-') {
-        if let Some(end) = uuid(buf, at) {
-            return Some((end, TOKEN_UUID));
-        }
+    if buf.get(at + 8) == Some(&b'-')
+        && let Some(end) = uuid(buf, at)
+    {
+        return Some((end, TOKEN_UUID));
     }
     if !byte.is_ascii_digit() {
         return None;
     }
-    if buf.get(at + 4) == Some(&b'-') {
-        if let Some(end) = timestamp(buf, at) {
-            return Some((end, TOKEN_TS));
-        }
+    if buf.get(at + 4) == Some(&b'-')
+        && let Some(end) = timestamp(buf, at)
+    {
+        return Some((end, TOKEN_TS));
     }
     if word_before(buf, at) {
         return None;
     }
     let run_end = digits(buf, at);
-    if run_end - at <= 3 && buf.get(run_end) == Some(&b'.') {
-        if let Some(end) = ip_from(buf, 0, at) {
-            return Some((end, TOKEN_IP));
-        }
+    if run_end - at <= 3
+        && buf.get(run_end) == Some(&b'.')
+        && let Some(end) = ip_from(buf, 0, at)
+    {
+        return Some((end, TOKEN_IP));
     }
-    if byte == b'0' && matches!(buf.get(at + 1), Some(b'x' | b'X')) {
-        if let Some(end) = hex(buf, at) {
-            return Some((end, TOKEN_HEX));
-        }
+    if byte == b'0'
+        && matches!(buf.get(at + 1), Some(b'x' | b'X'))
+        && let Some(end) = hex(buf, at)
+    {
+        return Some((end, TOKEN_HEX));
     }
     number_after(buf, at, run_end).map(|end| (end, TOKEN_NUM))
 }

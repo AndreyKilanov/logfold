@@ -41,7 +41,6 @@ pub(super) struct Node {
 }
 
 /// Per-thread counters reused by indexed matching; a generation stamp avoids clearing between calls.
-#[derive(Default)]
 pub(super) struct Scratch {
     pub(super) stamp: u32,
     pub(super) seen: Vec<u32>,
@@ -54,6 +53,18 @@ pub(super) struct Scratch {
 }
 
 impl Scratch {
+    /// An empty scratch, usable in a `const` thread-local initializer.
+    pub(super) const fn new() -> Self {
+        Scratch {
+            stamp: 0,
+            seen: Vec::new(),
+            total: Vec::new(),
+            touched: Vec::new(),
+            order: Vec::new(),
+            skipped: Vec::new(),
+        }
+    }
+
     pub(super) fn begin(&mut self, clusters: usize) {
         self.stamp = self.stamp.wrapping_add(1);
         if self.stamp == 0 {
@@ -79,5 +90,5 @@ impl Scratch {
 }
 
 thread_local! {
-    pub(super) static SCRATCH: std::cell::RefCell<Scratch> = std::cell::RefCell::new(Scratch::default());
+    pub(super) static SCRATCH: std::cell::RefCell<Scratch> = const { std::cell::RefCell::new(Scratch::new()) };
 }

@@ -92,7 +92,7 @@ pub fn token_subset_pairs(before: &[&str], after: &[&str]) -> Vec<(usize, usize)
             let candidate = &before_tokens[i as usize];
             if generalizes(candidate, &tokens) || generalizes(&tokens, candidate) {
                 let key = (before_wildcards[i as usize].abs_diff(own), i);
-                if best.map_or(true, |current| key < current) {
+                if best.is_none_or(|current| key < current) {
                     best = Some(key);
                 }
             }

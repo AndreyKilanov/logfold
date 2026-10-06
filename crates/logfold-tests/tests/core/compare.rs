@@ -25,7 +25,7 @@ fn quadratic_token_subset(before: &[&str], after: &[&str]) -> Vec<(usize, usize)
             if generalizes(candidate, &own) || generalizes(&own, candidate) {
                 let count = |t: &[&str]| t.iter().filter(|x| **x == WILDCARD).count();
                 let key = (count(candidate).abs_diff(count(&own)), i);
-                if best.map_or(true, |b| key < b) {
+                if best.is_none_or(|b| key < b) {
                     best = Some(key);
                 }
             }

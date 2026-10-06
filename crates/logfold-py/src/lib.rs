@@ -81,7 +81,7 @@ fn match_templates(
 #[pyfunction]
 #[pyo3(signature = (before_texts, before_counts, before_total, after_texts, after_counts, after_total, ratio,
                     min_count, min_new_count, matcher, threshold=None))]
-#[allow(clippy::too_many_arguments, clippy::type_complexity)]
+#[expect(clippy::too_many_arguments, clippy::type_complexity)]
 fn compare_runs(
     py: Python<'_>,
     before_texts: Vec<String>,

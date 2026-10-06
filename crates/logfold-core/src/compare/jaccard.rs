@@ -159,10 +159,10 @@ fn scored(before: &Sets, after: &Sets, vocabulary: usize, threshold: f64) -> Vec
                     continue;
                 }
                 let needed = needed_overlap(left.len(), right.len(), threshold);
-                if let Some(score) = similarity_if_reachable(left, right, needed) {
-                    if score >= threshold {
-                        found.push((score, i, j as u32));
-                    }
+                if let Some(score) = similarity_if_reachable(left, right, needed)
+                    && score >= threshold
+                {
+                    found.push((score, i, j as u32));
                 }
             }
         }
