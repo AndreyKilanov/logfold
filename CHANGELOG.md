@@ -7,6 +7,11 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Added
 
+- `logfold analyze --help` and `logfold diff --help` group the options into panels (Input, Output, Diff, Mining, Execution,
+  General) and end with examples; `--min-count` and `--matcher` say what they do in the command. The flags and their defaults
+  are unchanged.
+- A warning on standard error when `--warm-start` or `--chunk-mb` was given but the run was sequential, instead of ignoring the
+  flag silently. `--quiet` hides it; the exit code does not change.
 - Errors carry a next step: `LogfoldError.hint`, and in the CLI a `hint:` line under `error:`. A misspelled format, reporter
   or diff matcher suggests the closest name (`did you mean 'nginx'?`) and the command that lists them, an undetected format
   names `-f plain` and `-f regex:<pattern>`, and `--out` without a known suffix lists the suffixes. New subclasses

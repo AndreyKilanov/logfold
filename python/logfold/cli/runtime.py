@@ -14,9 +14,10 @@ from rich.progress import DownloadColumn, Progress, SpinnerColumn, TextColumn, T
 
 from logfold.cli import exit_codes
 from logfold.cli.hints import hint_for
+from logfold.cli.ignored import ignored_flag_warnings
 from logfold.cli.output import printable, render_report
 from logfold.cli.render import print_analysis, print_diff
-from logfold.model import AnalysisResult, DiffResult
+from logfold.model import AnalysisResult, DiffResult, RunMetrics
 
 
 def stdout_console() -> Console:
@@ -79,6 +80,22 @@ def fail(error: Exception, debug: bool) -> typer.Exit:
     if hint:
         console.print(f"[cyan]hint:[/cyan] {escape(printable(hint))}", soft_wrap=True)
     return typer.Exit(exit_codes.ERROR)
+
+
+def warn_ignored(metrics: RunMetrics, warm_start: bool, chunk_mb: int | None, quiet: bool) -> None:
+    """Warn on standard error about chunked-only flags that did nothing because the run was sequential.
+
+    Args:
+        metrics: Execution facts of the finished run.
+        warm_start: Whether ``--warm-start`` was given.
+        chunk_mb: The ``--chunk-mb`` value, or ``None``.
+        quiet: Whether ``--quiet`` was given; the warnings are then dropped.
+    """
+    if quiet:
+        return
+    console = stderr_console()
+    for warning in ignored_flag_warnings(metrics, {"--warm-start": warm_start, "--chunk-mb": chunk_mb is not None}):
+        console.print(f"[yellow]warning:[/yellow] {escape(warning)}", soft_wrap=True)
 
 
 def write_report(result: AnalysisResult | DiffResult, out: Path, reporter: str, quiet: bool) -> None:
