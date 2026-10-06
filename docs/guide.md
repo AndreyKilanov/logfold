@@ -59,6 +59,24 @@ mined into one shared template tree, and then **every record of both runs is ass
 `recount` pass), so identical lines always land in the same template. `--no-recount` skips the second pass and is
 faster but can show spurious differences.
 
+### Compare two parts of one log
+
+An incident often sits inside one file. Cut the log at a time and compare what came before with what came after:
+
+```python
+diff("app.log", split_at="2026-10-06T12:00")
+diff("app.log", split_at="2026-10-06T12:00", since="2026-10-06T11:00", until="2026-10-06T13:00")  # an hour each side
+```
+
+```
+logfold diff app.log --split-at 2026-10-06T12:00 --since 2026-10-06T11:00 --until 2026-10-06T13:00
+```
+
+`since` and `until` also work in `analyze` (`logfold analyze app.log --since ... --until ...`) to look at a part of a log.
+Times are ISO 8601. A time with a zone is converted to UTC; a time without one is compared with the times in the log as
+written. A record without a timestamp cannot be placed, so it is left out and counted (`run.untimed`); records outside
+the window are counted in `run.out_of_range` and do not enter the shares.
+
 ### Compare saved results
 
 Analyze each log once, keep the JSON, and compare the reports later without the logs:

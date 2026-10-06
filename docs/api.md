@@ -12,7 +12,7 @@ from logfold import analyze, diff
 ```python
 analyze(path, *, format="auto", multiline=None, depth=None, sim_th=None, max_children=None, max_templates=None,
         masks=None, high_cardinality=False, mining=None, execution=None, engine=None, strategy=None, threads=None,
-        chunk_bytes=None, warm_start=None, examples="raw", progress=None) -> AnalysisResult
+        chunk_bytes=None, warm_start=None, examples="raw", since=None, until=None, progress=None) -> AnalysisResult
 ```
 
 Folds one run into templates.
@@ -27,6 +27,7 @@ Folds one run into templates.
 | `mining`, `execution` | full configuration objects; the keyword arguments override their fields |
 | `engine`, `strategy`, `threads`, `chunk_bytes`, `warm_start` | execution parameters, see [`ExecutionConfig`](#mining-and-execution-configuration) |
 | `examples` | `"raw"` keeps example messages, `"masked"` applies the masking rules to them, `"none"` drops them |
+| `since`, `until` | keep only records at or after `since` and before `until`: ISO 8601 strings (`2026-10-06T12:30`, a trailing `Z` or an offset means a zone) or `datetime` objects. A time with a zone is converted to UTC; a time without one is compared with the times of the log as written (naive times are UTC everywhere in logfold). A record without a timestamp cannot be placed and is left out. The result counts the records left out in `run.out_of_range` and `run.untimed`, the run name shows the window, and a warning mentions records without a time. A format without a time (`plain`) raises `ConfigError` |
 | `progress` | optional callback receiving the consumed input byte count |
 
 Raises `ConfigError`, `FormatError`, `SourceError` or `EngineError` (see [Errors](#errors)).
@@ -34,8 +35,9 @@ Raises `ConfigError`, `FormatError`, `SourceError` or `EngineError` (see [Errors
 ## `diff`
 
 ```python
-diff(before, after, *, format="auto", multiline=None, threshold_ratio=None, min_count=None, min_new_count=None,
-     recount=None, matcher=None, significance=None, diff_config=None, <all mining and execution arguments of analyze>) -> DiffResult
+diff(before, after=None, *, format="auto", multiline=None, threshold_ratio=None, min_count=None, min_new_count=None,
+     recount=None, matcher=None, significance=None, diff_config=None, since=None, until=None, split_at=None,
+     <all mining and execution arguments of analyze>) -> DiffResult
 ```
 
 Compares two runs. Both runs are mined into one shared template tree, so a template present in both is the same
@@ -47,6 +49,8 @@ template; shares are normalized by the number of records in each run. `before` a
 | `threshold_ratio` | 2.0 | minimum factor by which a share must change to be `changed` (at least 1) |
 | `min_count` | 10 | minimum records, in either run, for a template to be `changed` |
 | `min_new_count` | 1 | minimum records for a template to be reported as new or disappeared |
+| `split_at` | `None` | compare two parts of **one** input: give `before` only; the records before this time are the first run, the records from this time on are the second (needs a format with a time; not for saved results) |
+| `since`, `until` | `None` | as in `analyze`, for both runs; with `split_at`, `since` starts the first run and `until` ends the second |
 | `significance` | 0.01 | highest p-value of a `changed` template that is still reported, in (0, 1]; 1 keeps every template that passes the ratio and count thresholds |
 | `recount` | `True` | assign every record to the finished tree for consistent counts (costs a second pass) |
 | `matcher` | `"jaccard"` | registered diff matcher name: `jaccard`, `token_subset`, `exact` or a plugin's (see [Choosing a matcher](guide.md#choosing-a-matcher)) |
@@ -167,7 +171,8 @@ G statistic of the change of the share) and `p_value`; both are `None` for new a
 ### `RunSummary`, `RunMetrics`, `ResultMeta`
 
 - `RunSummary`: `name`, `files`, `lines` (non-blank physical lines), `records`, `unparsed` (lines that did not become
-  part of a record), `bytes`, `tz_aware` (naive timestamps are interpreted as UTC), `overflowed` (`max_templates` was
+  part of a record), `out_of_range` and `untimed` (records left out by a time window: outside it, or without a timestamp),
+  `bytes`, `tz_aware` (naive timestamps are interpreted as UTC), `overflowed` (`max_templates` was
   reached), and the property `unparsed_ratio`.
 - `RunMetrics`: `engine`, `strategy` (`sequential` or `chunked`: what was used, which `auto` decides), `threads`, `chunks`, and wall times `wall_total_s`, `wall_mine_s`,
   `wall_merge_s`, `wall_recount_s`, `wall_freeze_s`.

@@ -32,6 +32,7 @@ journalctl -o json | logfold analyze - --format journald --json > result.json
 |---|---|---|
 | `--format`, `-f` | `auto` | `auto`, a name from `logfold formats`, or `regex:<pattern>` |
 | `--multiline` / `--no-multiline` | format default | join continuation lines (stack traces) to the previous record |
+| `--since` TIME, `--until` TIME | | only records at or after / before this time (ISO 8601, for example `2026-10-06T12:00`; a trailing `Z` or an offset is a zone). A time without a zone is compared with the times of the log as written. Records without a time are left out and counted; needs a format with a time |
 | `--top`, `-n` | 20 | rows printed per table |
 | `--min-count` | 1 | hide templates with fewer records |
 | `--level` | | keep templates whose most severe level is at least this (`TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `FATAL`; any case) |
@@ -69,10 +70,16 @@ value. Gates and exit codes look at new templates only, so they do not depend on
 
 ```
 logfold diff BEFORE AFTER [options]
+logfold diff LOG --split-at TIME [options]
 ```
 
 `BEFORE` and `AFTER` are single log files (for example before and after a deploy, or a passing and a failing CI job)
 or two saved reports of `logfold analyze --out result.json`; both must be of one kind.
+
+With `--split-at TIME` give **one** log: the records before `TIME` are the first run and the records from `TIME` on are
+the second, for example the hour before an incident against the hour after it. `--since` and `--until` bound the whole
+range. The log is read once for each run and one template tree is shared, as for two files; the run names in the output
+show the window. It needs a format with a time, a real file (not standard input) and does not work for saved reports.
 `diff` accepts the same input, report, mining and execution options as `analyze` (`--min-count` has a different meaning,
 see below), plus:
 

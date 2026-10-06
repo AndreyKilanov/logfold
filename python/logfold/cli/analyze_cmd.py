@@ -29,9 +29,11 @@ from logfold.cli.options import (
     Quiet,
     Report,
     SimTh,
+    Since,
     Strategy,
     Threads,
     Top,
+    Until,
     WarmStart,
     mining_options,
 )
@@ -47,6 +49,8 @@ EXAMPLES = """Examples:
 
   logfold analyze app.log -f nginx --top 50 --json > result.json
 
+  logfold analyze app.log --since 2026-10-06T12:00 --until 2026-10-06T13:00
+
   cat app.log | logfold analyze - -f plain"""
 
 
@@ -54,6 +58,8 @@ def analyze(
     files: Annotated[list[Path], typer.Argument(help="Log files forming one run ('-' reads standard input).")],
     format: Format = "auto",
     multiline: Multiline = None,
+    since: Since = None,
+    until: Until = None,
     top: Top = 20,
     min_count: Annotated[
         int,
@@ -93,6 +99,8 @@ def analyze(
                 [str(f) for f in files],
                 format=format,
                 multiline=multiline,
+                since=since,
+                until=until,
                 examples=examples,  # type: ignore[arg-type]
                 progress=progress,
                 **mining_options(

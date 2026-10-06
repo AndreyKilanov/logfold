@@ -88,6 +88,7 @@ Compare two runs:
 
 ```
 logfold diff before.log after.log --out diff.html --fail-on-new-alerts
+logfold diff app.log --split-at 2026-10-06T12:00    # the part of one log before a time against the part after it
 ```
 
 Exit codes: `0` success, `1` error, `2` something requested by a `--fail-on-*` flag was found.

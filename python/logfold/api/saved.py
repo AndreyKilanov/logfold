@@ -115,6 +115,9 @@ MINING_ONLY_DEFAULTS: dict[str, Any] = {
     "threads": None,
     "chunk_bytes": None,
     "warm_start": None,
+    "since": None,
+    "until": None,
+    "split_at": None,
     "progress": None,
 }
 

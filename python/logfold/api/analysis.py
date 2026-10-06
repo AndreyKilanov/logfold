@@ -16,6 +16,7 @@ from logfold.api._common import (
     _templates,
     _warnings,
 )
+from logfold.api.windows import OPEN, TimeBound, labeled, require_time, window, window_warnings
 from logfold.config import (
     ExamplesMode,
     ExecutionConfig,
@@ -49,6 +50,8 @@ def analyze(
     chunk_bytes: int | None = None,
     warm_start: bool | None = None,
     examples: ExamplesMode = "raw",
+    since: TimeBound = None,
+    until: TimeBound = None,
     progress: Progress | None = None,
 ) -> AnalysisResult:
     """Fold a log into templates.
@@ -74,6 +77,10 @@ def analyze(
         warm_start: Chunked strategy only: start every chunk but the first from a copy of the tree of the first
             (fewer stray templates, a serial prefix of one chunk; default off).
         examples: ``raw`` keeps example messages, ``masked`` applies the masking rules to them, ``none`` drops them.
+        since: Keep only records at or after this time (an ISO 8601 string or a ``datetime``; a time without a zone is
+            compared with the times of the log as written, a time with a zone is converted to UTC). Records without a
+            timestamp cannot be placed and are left out; the result counts them.
+        until: Keep only records before this time; see ``since``.
         progress: Optional callback receiving consumed input byte counts.
 
     Returns:
@@ -88,10 +95,13 @@ def analyze(
     run = _paths(path, "analyze()")
     resolved = resolve_format(format, run, multiline)
     spec = resolved.spec
+    bounds = window(since, until)
+    if bounds != OPEN:
+        require_time(spec)
     mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks, high_cardinality)
     exec_config = _execution(execution, engine, strategy, threads, chunk_bytes, high_cardinality, warm_start)
-    mined, used = _mine((run,), spec, mining_config, exec_config, progress)
-    summary = _summary(run, mined.runs[0])
+    mined, used = _mine((run,), spec, mining_config, exec_config, progress, windows=(bounds,) if bounds != OPEN else ())
+    summary = labeled(_summary(run, mined.runs[0]), bounds)
     masker = Masker(mining_config.masks)
     templates = _templates(mined.templates, 0, summary.tz_aware, examples, masker)
     return AnalysisResult(
@@ -99,7 +109,8 @@ def analyze(
         run=summary,
         metrics=mined.metrics,
         meta=_meta(spec, mining_config, used),
-        warnings=tuple(
-            _warnings([summary], used, exec_config, resolved, mining_config, high_cardinality, mined.metrics.strategy)
+        warnings=(
+            *_warnings([summary], used, exec_config, resolved, mining_config, high_cardinality, mined.metrics.strategy),
+            *window_warnings(summary),
         ),
     )

@@ -23,6 +23,25 @@ Format = Annotated[
         rich_help_panel=PANEL_INPUT,
     ),
 ]
+Since = Annotated[
+    str | None,
+    typer.Option(
+        "--since",
+        metavar="TIME",
+        help="Only records at or after this time (ISO 8601, for example 2026-10-06T12:00). A time without a zone is "
+        "compared with the times in the log as written; records without a time are left out.",
+        rich_help_panel=PANEL_INPUT,
+    ),
+]
+Until = Annotated[
+    str | None,
+    typer.Option(
+        "--until",
+        metavar="TIME",
+        help="Only records before this time (ISO 8601); see --since.",
+        rich_help_panel=PANEL_INPUT,
+    ),
+]
 Multiline = Annotated[
     bool | None,
     typer.Option(
