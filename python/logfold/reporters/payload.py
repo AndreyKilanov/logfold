@@ -17,6 +17,7 @@ from logfold.model import (
     RunMetrics,
     RunSummary,
     Template,
+    Unmatched,
 )
 
 
@@ -34,6 +35,8 @@ def run_payload(run: RunSummary) -> dict[str, Any]:
         A JSON-compatible dictionary.
     """
     data = asdict(run)
+    if run.unmatched is None:
+        del data["unmatched"]
     data["unparsed_ratio"] = round(run.unparsed_ratio, 6)
     return data
 
@@ -188,6 +191,12 @@ def analysis_from_payload(payload: dict[str, Any]) -> AnalysisResult:
     try:
         templates = tuple(_template(item) for item in payload["templates"])
         run = {key: value for key, value in payload["run"].items() if key != "unparsed_ratio"}
+        if run.get("unmatched") is not None:
+            raw = run["unmatched"]
+            run["unmatched"] = Unmatched(
+                records=int(raw["records"]),
+                by_length=tuple((int(length), int(count)) for length, count in raw["by_length"]),
+            )
         result = AnalysisResult(
             templates=templates,
             run=RunSummary(**run),

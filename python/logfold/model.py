@@ -44,6 +44,20 @@ class Template:
 
 
 @dataclass(frozen=True, slots=True)
+class Unmatched:
+    """The records of a run that belong to no template of the saved state it was matched against.
+
+    Attributes:
+        records: Number of records.
+        by_length: ``(token count, records)`` pairs sorted by token count; a message is cut into tokens after masking.
+            The text of the records is not kept.
+    """
+
+    records: int
+    by_length: tuple[tuple[int, int], ...]
+
+
+@dataclass(frozen=True, slots=True)
 class RunSummary:
     """Counters of one analyzed run.
 
@@ -58,6 +72,8 @@ class RunSummary:
         overflowed: ``True`` when ``max_templates`` was reached and some records were pooled into overflow templates.
         out_of_range: Records parsed but left out because their timestamp is outside the time window.
         untimed: Records parsed but left out because they have no timestamp and a time window was set.
+        unmatched: Set by :func:`logfold.match`: the records that belong to no template of the state; ``None`` when the
+            run was mined.
     """
 
     name: str
@@ -70,6 +86,7 @@ class RunSummary:
     overflowed: bool
     out_of_range: int = 0
     untimed: int = 0
+    unmatched: Unmatched | None = None
 
     @property
     def unparsed_ratio(self) -> float:

@@ -61,6 +61,23 @@
         "overflowed": { "type": "boolean" },
         "out_of_range": { "type": "integer", "minimum": 0 },
         "untimed": { "type": "integer", "minimum": 0 },
+        "unmatched": {
+          "type": "object",
+          "required": ["records", "by_length"],
+          "properties": {
+            "records": { "type": "integer", "minimum": 0 },
+            "by_length": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "prefixItems": [{ "type": "integer", "minimum": 0 }, { "type": "integer", "minimum": 1 }],
+                "items": false,
+                "minItems": 2
+              }
+            }
+          },
+          "additionalProperties": false
+        },
         "unparsed_ratio": { "type": "number", "minimum": 0, "maximum": 1 }
       },
       "additionalProperties": false

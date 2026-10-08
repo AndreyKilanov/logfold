@@ -106,7 +106,15 @@ def _to_result(answer: dict[str, Any]) -> MiningResult:
     table = TemplateTable(
         ids=columns["ids"], texts=columns["texts"], runs=tuple(RunColumns(**run) for run in columns["runs"])
     )
-    return MiningResult(runs=runs, templates=table, metrics=RunMetrics(**answer["metrics"]))
+    unmatched = answer.get("unmatched")
+    return MiningResult(
+        runs=runs,
+        templates=table,
+        metrics=RunMetrics(**answer["metrics"]),
+        unmatched=None
+        if unmatched is None
+        else tuple(tuple((int(length), int(records)) for length, records in run) for run in unmatched),
+    )
 
 
 class NativeEngine:
@@ -143,3 +151,21 @@ class NativeEngine:
             StateError: If a state file cannot be used.
         """
         return _to_result(_bridge.mine(request_to_dict(request), progress))
+
+    def match(self, request: MineRequest, progress: ProgressCallback | None = None) -> MiningResult:
+        """Assign the records of ``request`` to the templates of its saved state with the Rust engine.
+
+        Args:
+            request: What to read, with the state to match against.
+            progress: Optional progress callback.
+
+        Returns:
+            The templates that were hit, with the statistics of these records only, and the unmatched records.
+
+        Raises:
+            ConfigError: If a parameter is invalid.
+            FormatError: If the format is invalid.
+            SourceError: If an input cannot be read.
+            StateError: If the state file cannot be used.
+        """
+        return _to_result(_bridge.match_state(request_to_dict(request), progress))

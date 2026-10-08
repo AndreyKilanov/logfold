@@ -28,10 +28,20 @@ from logfold.api import (
     inspect_file,
     is_saved_analysis,
     load_analysis,
+    match,
 )
 from logfold.config import DiffConfig, ExecutionConfig, MaskRule, MiningConfig
 from logfold.errors import ConfigError, EngineError, FormatError, LogfoldError, SourceError, StateError
-from logfold.model import AnalysisResult, DiffEntry, DiffResult, ResultMeta, RunMetrics, RunSummary, Template
+from logfold.model import (
+    AnalysisResult,
+    DiffEntry,
+    DiffResult,
+    ResultMeta,
+    RunMetrics,
+    RunSummary,
+    Template,
+    Unmatched,
+)
 
 __version__ = get_version()
 
@@ -56,6 +66,7 @@ __all__ = [
     "SourceError",
     "StateError",
     "Template",
+    "Unmatched",
     "__version__",
     "analyze",
     "diff",
@@ -63,4 +74,5 @@ __all__ = [
     "inspect_file",
     "is_saved_analysis",
     "load_analysis",
+    "match",
 ]

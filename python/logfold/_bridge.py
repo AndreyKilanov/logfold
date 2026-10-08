@@ -58,10 +58,35 @@ def mine(request: dict[str, Any], progress: Callable[[int], None] | None = None)
         SourceError: If an input cannot be read.
         StateError: If a state file cannot be used.
     """
+    return _call("mine", request, progress)
+
+
+def match_state(request: dict[str, Any], progress: Callable[[int], None] | None = None) -> dict[str, Any]:
+    """Assign the records of ``request`` to the templates of its saved state in the extension, in one call.
+
+    Args:
+        request: The plain-data request of :func:`mine` with a state to load.
+        progress: Optional callback receiving the number of input bytes consumed since the previous call.
+
+    Returns:
+        The plain-data answer of :func:`mine` plus ``unmatched``: for every run, the records that matched no
+        template as ``(token count, records)`` pairs.
+
+    Raises:
+        EngineError: If the extension is unavailable.
+        ConfigError: If a parameter is invalid or no state is given.
+        FormatError: If the format is invalid.
+        SourceError: If an input cannot be read.
+        StateError: If the state file cannot be used.
+    """
+    return _call("match_state", request, progress)
+
+
+def _call(name: str, request: dict[str, Any], progress: Callable[[int], None] | None) -> dict[str, Any]:
     if _core is None:
         raise EngineError("the native extension is unavailable")
     try:
-        answer: dict[str, Any] = _core.mine(request, progress)
+        answer: dict[str, Any] = getattr(_core, name)(request, progress)
     except _core.CoreConfigError as error:
         raise ConfigError(str(error)) from None
     except _core.CoreFormatError as error:

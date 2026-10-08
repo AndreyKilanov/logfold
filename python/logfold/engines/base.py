@@ -246,11 +246,14 @@ class MiningResult:
         runs: Per-run counters.
         templates: Unique templates sorted by total count descending, then text ascending, as columns.
         metrics: Execution facts.
+        unmatched: Set by :meth:`Engine.match`: for every run, the records that matched no template as
+            ``(token count, records)`` pairs sorted by token count. ``None`` for a mined result.
     """
 
     runs: tuple[RunCounters, ...]
     templates: TemplateTable
     metrics: RunMetrics
+    unmatched: tuple[tuple[tuple[int, int], ...], ...] | None = None
 
 
 ProgressCallback = Callable[[int], None]
@@ -274,5 +277,17 @@ class Engine(Protocol):
 
         Returns:
             Templates with per-run statistics.
+        """
+        ...
+
+    def match(self, request: MineRequest, progress: ProgressCallback | None = None) -> MiningResult:
+        """Assign the records of ``request`` to the templates of its saved state, without learning anything.
+
+        Args:
+            request: What to read; ``request.state.load`` is the state to match against.
+            progress: Optional callback receiving the number of input bytes consumed since the previous call.
+
+        Returns:
+            The templates that were hit, with the statistics of these records only, and the unmatched records.
         """
         ...
