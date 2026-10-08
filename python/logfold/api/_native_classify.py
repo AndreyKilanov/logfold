@@ -31,7 +31,7 @@ Spec = tuple[str, "float | None", "Sequence[tuple[str, str]] | None"]
 
 
 @dataclass(frozen=True, slots=True)
-class Side:
+class ComparedRun:
     """The templates of one run: columns for the extension and a row accessor for the entries.
 
     Attributes:
@@ -47,7 +47,7 @@ class Side:
     row: Callable[[int], Row]
 
 
-def table_side(table: TemplateTable, run: int, summary: RunSummary) -> Side:
+def table_side(table: TemplateTable, run: int, summary: RunSummary) -> ComparedRun:
     """Describe one run of an engine result; templates without records in the run are left out.
 
     Args:
@@ -74,7 +74,7 @@ def table_side(table: TemplateTable, run: int, summary: RunSummary) -> Side:
             columns.examples[i],
         )
 
-    return Side([table.texts[i] for i in present], [columns.counts[i] for i in present], summary.records, row)
+    return ComparedRun([table.texts[i] for i in present], [columns.counts[i] for i in present], summary.records, row)
 
 
 def _moment(value: datetime | None, aware: bool) -> datetime | None:
@@ -83,7 +83,7 @@ def _moment(value: datetime | None, aware: bool) -> datetime | None:
     return micros_to_datetime(datetime_to_micros(value), aware)
 
 
-def result_side(result: AnalysisResult) -> Side:
+def result_side(result: AnalysisResult) -> ComparedRun:
     """Describe a saved or freshly analyzed result.
 
     Args:
@@ -99,7 +99,7 @@ def result_side(result: AnalysisResult) -> Side:
         t = templates[i]
         return (t.id, t.text, t.count, _moment(t.first_seen, aware), _moment(t.last_seen, aware), t.levels, t.example)
 
-    return Side([t.text for t in templates], [t.count for t in templates], result.run.records, row)
+    return ComparedRun([t.text for t in templates], [t.count for t in templates], result.run.records, row)
 
 
 def _levels(*parts: Mapping[str, int]) -> tuple[str | None, dict[str, int]]:
@@ -132,8 +132,8 @@ def _entry(
 
 
 def classify_native(
-    before: Side,
-    after: Side,
+    before: ComparedRun,
+    after: ComparedRun,
     config: DiffConfig,
     spec: Spec,
     example: Callable[[str | None], str | None],

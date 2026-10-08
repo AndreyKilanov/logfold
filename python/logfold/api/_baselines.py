@@ -11,7 +11,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from logfold.engines.base import MiningResult, RunColumns, RunInfo, TemplateTable
+from logfold.engines.base import MiningResult, RunColumns, RunCounters, TemplateTable
 from logfold.errors import ConfigError
 from logfold.levels import LEVEL_NAMES
 
@@ -19,7 +19,7 @@ MANY_BASELINES = 10
 
 
 @dataclass(frozen=True, slots=True)
-class Pooled:
+class PooledBaseline:
     """Baselines pooled against the second run.
 
     Attributes:
@@ -31,8 +31,8 @@ class Pooled:
     """
 
     table: TemplateTable
-    before: RunInfo
-    after: RunInfo
+    before: RunCounters
+    after: RunCounters
     unstable: int
 
 
@@ -56,7 +56,7 @@ def required_baselines(count: int, minimum: int | None) -> int:
     return minimum
 
 
-def pool_info(infos: Sequence[RunInfo]) -> RunInfo:
+def pool_info(infos: Sequence[RunCounters]) -> RunCounters:
     """Add up the counters of runs.
 
     Args:
@@ -65,7 +65,7 @@ def pool_info(infos: Sequence[RunInfo]) -> RunInfo:
     Returns:
         The counters of the runs read as one.
     """
-    return RunInfo(
+    return RunCounters(
         files=sum(i.files for i in infos),
         lines=sum(i.lines for i in infos),
         records=sum(i.records for i in infos),
@@ -99,7 +99,7 @@ def _pool(runs: Sequence[RunColumns], rows: Sequence[int]) -> RunColumns:
     return RunColumns(counts, first, last, levels, level, examples)
 
 
-def pool_baselines(mined: MiningResult, baselines: int, minimum: int) -> Pooled:
+def pool_baselines(mined: MiningResult, baselines: int, minimum: int) -> PooledBaseline:
     """Pool the first ``baselines`` runs of a result and keep the last run as the second run.
 
     Args:
@@ -114,7 +114,7 @@ def pool_baselines(mined: MiningResult, baselines: int, minimum: int) -> Pooled:
     """
     table = mined.templates
     if baselines == 1:
-        return Pooled(table, mined.runs[0], mined.runs[1], 0)
+        return PooledBaseline(table, mined.runs[0], mined.runs[1], 0)
     before = table.runs[:baselines]
     after = table.runs[baselines]
     keep: list[int] = []
@@ -133,10 +133,10 @@ def pool_baselines(mined: MiningResult, baselines: int, minimum: int) -> Pooled:
         texts=[table.texts[i] for i in keep],
         runs=(_pool(before, keep), _pool([after], keep)),
     )
-    return Pooled(pooled, pool_info(mined.runs[:baselines]), mined.runs[baselines], unstable)
+    return PooledBaseline(pooled, pool_info(mined.runs[:baselines]), mined.runs[baselines], unstable)
 
 
-def baseline_warnings(names: Sequence[Sequence[str]], infos: Sequence[RunInfo]) -> list[str]:
+def baseline_warnings(names: Sequence[Sequence[str]], infos: Sequence[RunCounters]) -> list[str]:
     """Warn about baselines that do not help: empty ones, and more of them than are useful.
 
     Args:

@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from logfold import _bridge
-from logfold.engines.base import MineRequest, MiningResult, ProgressCallback, RunColumns, RunInfo, TemplateTable
+from logfold.engines.base import MineRequest, MiningResult, ProgressCallback, RunColumns, RunCounters, TemplateTable
 from logfold.errors import FormatError
 from logfold.ext.formats import FormatSpec, JsonFormat, PlainFormat, RegexFormat
 from logfold.model import RunMetrics
@@ -101,7 +101,7 @@ def request_to_dict(request: MineRequest) -> dict[str, Any]:
 
 
 def _to_result(answer: dict[str, Any]) -> MiningResult:
-    runs = tuple(RunInfo(**run) for run in answer["runs"])
+    runs = tuple(RunCounters(**run) for run in answer["runs"])
     columns = answer["templates"]
     table = TemplateTable(
         ids=columns["ids"], texts=columns["texts"], runs=tuple(RunColumns(**run) for run in columns["runs"])

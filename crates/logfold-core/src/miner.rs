@@ -16,8 +16,8 @@ mod snapshot;
 
 use leaf::{INDEX_MIN_CLUSTERS, LeafIndex, Node, SCRATCH};
 use matching::{BoxedTokens, Tokens, has_digit, score_bounded, update_stats};
-pub use recount::{Assigned, Recount};
-pub use snapshot::{ClusterSnapshot, History, MinerSnapshot, NodeSnapshot};
+pub use recount::{Assignment, Recount};
+pub use snapshot::{ClusterHistory, ClusterSnapshot, MinerSnapshot, NodeSnapshot};
 
 /// Token that stands for a variable part of a template.
 pub const WILDCARD: &[u8] = b"<*>";
@@ -60,7 +60,7 @@ impl MinerConfig {
 
 impl Default for MinerConfig {
     fn default() -> Self {
-        MinerConfig::new(4, 0.4, 100, 100_000).expect("default configuration is valid")
+        MinerConfig { depth: 4, max_children: 100, max_templates: 100_000, threshold_micro: 400_000 }
     }
 }
 
@@ -80,14 +80,14 @@ pub(crate) struct Cluster {
     pub(crate) tokens: Vec<Box<[u8]>>,
     pub(crate) stats: Vec<RunStats>,
     /// Counts of earlier runs that were saved with the tree; never part of a report of the current run.
-    pub(crate) history: History,
+    pub(crate) history: ClusterHistory,
     wild: u32,
 }
 
 impl Cluster {
     pub(crate) fn new(tokens: Vec<Box<[u8]>>, stats: Vec<RunStats>) -> Self {
         let wild = tokens.iter().filter(|t| &***t == WILDCARD).count() as u32;
-        Cluster { tokens, stats, history: History::default(), wild }
+        Cluster { tokens, stats, history: ClusterHistory::default(), wild }
     }
 }
 
@@ -159,14 +159,14 @@ impl DrainMiner {
     /// Assigns a message to a cluster of the finished tree without changing the tree.
     ///
     /// The tree search of training comes first; when it finds nothing, every cluster of the same length is scanned
-    /// (see `docs/ALGORITHM.md` §9). A message that still matches nothing is [`Assigned::Unmatched`].
-    pub fn assign(&self, tokens: &TokenView<'_>) -> Assigned {
+    /// (see `docs/ALGORITHM.md` §9). A message that still matches nothing is [`Assignment::Unmatched`].
+    pub fn assign(&self, tokens: &TokenView<'_>) -> Assignment {
         if let Some(index) = self.find_match(tokens) {
-            return Assigned::Cluster(index as u32);
+            return Assignment::Cluster(index as u32);
         }
         match self.best_in(self.length_clusters.get(&tokens.len()).map(Vec::as_slice).unwrap_or(&[]), tokens) {
-            Some(index) => Assigned::Cluster(index as u32),
-            None => Assigned::Unmatched(tokens.len()),
+            Some(index) => Assignment::Cluster(index as u32),
+            None => Assignment::Unmatched(tokens.len()),
         }
     }
 

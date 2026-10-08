@@ -442,7 +442,7 @@ fn synthetic(clusters: usize) -> MinerSnapshot {
             tokens.push(Box::from(format!("t{}x{}", position, id % (31 + position)).as_bytes()));
         }
         nodes[leaf + 1].clusters.push(id as u32);
-        let history = History {
+        let history = ClusterHistory {
             count: id as u64 % 1000 + 1,
             first: 1_700_000_000_000_000 + id as i64,
             last: 1_700_000_100_000_000 + id as i64,

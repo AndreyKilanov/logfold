@@ -13,9 +13,13 @@ pytest
 
 You need Rust 1.99 or newer (the minimum supported version, checked by its own CI job) and, on Windows, the MSVC build tools.
 
+The Rust toolchain is pinned in `rust-toolchain.toml` (the minimum supported version); CI also builds with the latest
+stable. Dependencies are checked weekly by `cargo deny`, `cargo audit` and `pip-audit` (`.github/workflows/audit.yml`).
+
 ## Architecture rules (enforced in CI)
 
 - Dependencies point inward only: `logfold-core` ← `logfold-io` ← `logfold-engine` ← `logfold-py` ← Python.
+- `logfold-report` (the text of the pipeline reports) depends on no other crate; only `logfold-py` uses it.
 - `logfold-core` has no file I/O, threads, serialization formats, PyO3 or `unsafe`.
 - The Python/Rust boundary is **one coarse call per use case**, never per line.
 - Python layering is checked by `import-linter`; `logfold._core` is imported only from `_bridge.py`.
@@ -64,7 +68,7 @@ verify, Risks and rollback). A change is done when all of these pass:
 
 ```
 cargo fmt --all --check
-cargo clippy --workspace --exclude logfold-py --all-targets -- -D warnings
+cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace --exclude logfold-py --exclude logfold-bench
 ruff check . && ruff format --check . && mypy && lint-imports
 pytest
@@ -72,6 +76,10 @@ pytest
 
 Rust tests live in one package, `crates/logfold-tests` (`tests/<crate>.rs`, one module per topic), not inline in the crates; a test
 needs only the public API of a crate. A source file has at most 500 lines (checked by `tests/test_source_size.py`).
+
+The parsers of untrusted input (state files and gzip sources) have fuzz targets in `fuzz/`, outside the workspace. They
+need nightly Rust and `cargo-fuzz`: `cd fuzz && cargo fuzz run state_json corpus/state_json`. A weekly workflow runs
+them; `python fuzz/seed_corpus.py` rebuilds the seed corpus.
 
 New behavior has tests, user-visible changes are in `CHANGELOG.md`, and a change to an irreversible decision
 (public contract, algorithm) is called out in the PR.

@@ -9,7 +9,7 @@ The native engine writes the text; the contract is ``docs/ALGORITHM.md`` section
 from __future__ import annotations
 
 from logfold.model import AnalysisResult, DiffResult
-from logfold.plugins.report_data import int_option, render_native
+from logfold.plugins.reporters_data import int_option, render_native
 
 __all__ = ["GithubSummaryReporter", "JunitReporter"]
 

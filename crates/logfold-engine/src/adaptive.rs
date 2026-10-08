@@ -11,9 +11,9 @@ use logfold_core::DrainMiner;
 use logfold_io::Counters;
 
 use crate::error::EngineError;
-use crate::pipeline::{Context, scan_unit};
-use crate::plan::Unit;
-use crate::request::Observer;
+use crate::pipeline::{PipelineContext, scan_unit};
+use crate::plan::WorkUnit;
+use crate::types::ProgressObserver;
 
 /// Number of records of the first chunk after which the strategy is chosen. A first chunk with fewer records stays
 /// chunked.
@@ -33,10 +33,10 @@ pub(crate) fn too_diverse(templates: usize, records: u64) -> bool {
 
 /// Trains `miner` on the first unit and gives the chunked strategy up, by stopping `tally`, when the sample is diverse.
 pub(crate) fn probe_unit(
-    context: &Context,
-    unit: &Unit,
+    context: &PipelineContext,
+    unit: &WorkUnit,
     miner: &mut DrainMiner,
-    tally: &Tally<'_>,
+    tally: &TallyingObserver<'_>,
 ) -> Result<Counters, EngineError> {
     let mut seen = 0u64;
     scan_unit(context, unit, tally, |run, tokens, meta| {
@@ -49,15 +49,15 @@ pub(crate) fn probe_unit(
 }
 
 /// Counts the bytes reported by the workers and cancels them when the strategy is given up.
-pub(crate) struct Tally<'a> {
-    inner: &'a dyn Observer,
+pub(crate) struct TallyingObserver<'a> {
+    inner: &'a dyn ProgressObserver,
     consumed: AtomicU64,
     stopped: AtomicBool,
 }
 
-impl<'a> Tally<'a> {
-    pub(crate) fn new(inner: &'a dyn Observer) -> Self {
-        Tally { inner, consumed: AtomicU64::new(0), stopped: AtomicBool::new(false) }
+impl<'a> TallyingObserver<'a> {
+    pub(crate) fn new(inner: &'a dyn ProgressObserver) -> Self {
+        TallyingObserver { inner, consumed: AtomicU64::new(0), stopped: AtomicBool::new(false) }
     }
 
     /// Cancels the workers that still read their chunks.
@@ -65,7 +65,7 @@ impl<'a> Tally<'a> {
         self.stopped.store(true, Ordering::Relaxed);
     }
 
-    /// Tells whether [`Tally::stop`] was called.
+    /// Tells whether [`TallyingObserver::stop`] was called.
     pub(crate) fn is_stopped(&self) -> bool {
         self.stopped.load(Ordering::Relaxed)
     }
@@ -76,7 +76,7 @@ impl<'a> Tally<'a> {
     }
 }
 
-impl Observer for Tally<'_> {
+impl ProgressObserver for TallyingObserver<'_> {
     fn on_bytes(&self, consumed: u64) {
         self.consumed.fetch_add(consumed, Ordering::Relaxed);
         self.inner.on_bytes(consumed);
@@ -88,18 +88,18 @@ impl Observer for Tally<'_> {
 }
 
 /// Swallows the first `skip` reported bytes, so that reading the input again does not count it twice.
-pub(crate) struct Skip<'a> {
-    inner: &'a dyn Observer,
+pub(crate) struct SkippingObserver<'a> {
+    inner: &'a dyn ProgressObserver,
     remaining: AtomicU64,
 }
 
-impl<'a> Skip<'a> {
-    pub(crate) fn new(inner: &'a dyn Observer, skip: u64) -> Self {
-        Skip { inner, remaining: AtomicU64::new(skip) }
+impl<'a> SkippingObserver<'a> {
+    pub(crate) fn new(inner: &'a dyn ProgressObserver, skip: u64) -> Self {
+        SkippingObserver { inner, remaining: AtomicU64::new(skip) }
     }
 }
 
-impl Observer for Skip<'_> {
+impl ProgressObserver for SkippingObserver<'_> {
     fn on_bytes(&self, consumed: u64) {
         let mut left = self.remaining.load(Ordering::Relaxed);
         loop {

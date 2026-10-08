@@ -46,31 +46,34 @@ impl<'a> Cursor<'a> {
     }
 
     pub(super) fn bytes(&mut self, length: usize) -> Result<&'a [u8], StateError> {
-        if length > self.remaining() {
-            return Err(damaged("the file ends in the middle of a value"));
-        }
-        let slice = &self.data[self.position..self.position + length];
-        self.position += length;
+        let ends = || damaged("the file ends in the middle of a value");
+        let end = self.position.checked_add(length).ok_or_else(ends)?;
+        let slice = self.data.get(self.position..end).ok_or_else(ends)?;
+        self.position = end;
         Ok(slice)
     }
 
+    fn array<const N: usize>(&mut self) -> Result<[u8; N], StateError> {
+        <[u8; N]>::try_from(self.bytes(N)?).map_err(|_| damaged("the file ends in the middle of a value"))
+    }
+
     pub(super) fn u16_le(&mut self) -> Result<u16, StateError> {
-        Ok(u16::from_le_bytes(self.bytes(2)?.try_into().expect("two bytes")))
+        Ok(u16::from_le_bytes(self.array()?))
     }
 
     pub(super) fn u32_le(&mut self) -> Result<u32, StateError> {
-        Ok(u32::from_le_bytes(self.bytes(4)?.try_into().expect("four bytes")))
+        Ok(u32::from_le_bytes(self.array()?))
     }
 
     pub(super) fn i64_le(&mut self) -> Result<i64, StateError> {
-        Ok(i64::from_le_bytes(self.bytes(8)?.try_into().expect("eight bytes")))
+        Ok(i64::from_le_bytes(self.array()?))
     }
 
     /// An unsigned LEB128 number of at most 64 bits.
     pub(super) fn varint(&mut self) -> Result<u64, StateError> {
         let mut value = 0u64;
         for shift in (0..70).step_by(7) {
-            let byte = self.bytes(1)?[0];
+            let [byte] = self.array::<1>()?;
             if shift == 63 && byte > 1 {
                 return Err(damaged("a number does not fit 64 bits"));
             }
@@ -111,6 +114,7 @@ pub(super) fn put_varint(out: &mut Vec<u8>, mut value: u64) {
     }
 }
 
+#[expect(clippy::indexing_slicing, reason = "the index is a nibble, below 16")]
 pub(super) fn to_hex(bytes: &[u8]) -> String {
     const DIGITS: &[u8; 16] = b"0123456789abcdef";
     let mut text = String::with_capacity(bytes.len() * 2);
@@ -131,5 +135,6 @@ pub(super) fn from_hex(text: &str) -> Result<Vec<u8>, StateError> {
         b'a'..=b'f' => Ok(digit - b'a' + 10),
         _ => Err(damaged("a hex string has a character that is not a lower-case hex digit")),
     };
-    digits.chunks(2).map(|pair| Ok(value(pair[0])? << 4 | value(pair[1])?)).collect()
+    let (pairs, _) = digits.as_chunks::<2>();
+    pairs.iter().map(|&[high, low]| Ok(value(high)? << 4 | value(low)?)).collect()
 }

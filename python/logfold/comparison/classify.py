@@ -14,7 +14,7 @@ from logfold.model import DiffEntry, RunSummary, micros_to_datetime
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-    from logfold.engines.base import RunStatsData, TemplateStats
+    from logfold.engines.base import RunStats, TemplateStats
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,8 +53,8 @@ def _entry(
 ) -> DiffEntry:
     primary = template_after if template_after is not None else template_before
     assert primary is not None
-    before: RunStatsData | None = template_before.runs[0] if template_before is not None else None
-    after: RunStatsData | None = template_after.runs[1] if template_after is not None else None
+    before: RunStats | None = template_before.runs[0] if template_before is not None else None
+    after: RunStats | None = template_after.runs[1] if template_after is not None else None
     before_count = before.count if before else 0
     after_count = after.count if after else 0
     before_share, after_share, ratio = _shares(before_count, after_count, before_total, after_total)

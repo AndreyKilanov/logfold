@@ -5,7 +5,7 @@
 //! all the bytes before it. Texts and byte strings are a varint length and the bytes; templates carry their history
 //! (count, first and last time as little-endian i64, one count per level as varints).
 
-use logfold_core::{ClusterSnapshot, History, LEVEL_COUNT, MinerSnapshot, NodeSnapshot};
+use logfold_core::{ClusterHistory, ClusterSnapshot, LEVEL_COUNT, MinerSnapshot, NodeSnapshot};
 use sha2::{Digest, Sha256};
 
 use super::wire::{Cursor, StateCounts, counts_of, put_varint};
@@ -112,11 +112,11 @@ impl<'a> Reader<'a> {
         for _ in 0..count {
             tokens.push(self.token()?);
         }
-        let mut history = History {
+        let mut history = ClusterHistory {
             count: self.cursor.varint()?,
             first: self.cursor.i64_le()?,
             last: self.cursor.i64_le()?,
-            ..History::default()
+            ..ClusterHistory::default()
         };
         for slot in history.levels.iter_mut().take(LEVEL_COUNT) {
             *slot = self.cursor.varint()?;
@@ -129,7 +129,10 @@ pub(super) fn decode(bytes: &[u8], limits: &StateLimits) -> Result<State, StateE
     if bytes.len() < BINARY_MAGIC.len() + 2 {
         return Err(damaged("the file is too short"));
     }
-    let schema = u32::from(u16::from_le_bytes([bytes[BINARY_MAGIC.len()], bytes[BINARY_MAGIC.len() + 1]]));
+    let Some([low, high]) = bytes.get(BINARY_MAGIC.len()..BINARY_MAGIC.len() + 2) else {
+        return Err(damaged("the file is too short"));
+    };
+    let schema = u32::from(u16::from_le_bytes([*low, *high]));
     if schema > STATE_SCHEMA_VERSION {
         return Err(StateError::Version { found: schema, supported: STATE_SCHEMA_VERSION });
     }
@@ -140,7 +143,7 @@ pub(super) fn decode(bytes: &[u8], limits: &StateLimits) -> Result<State, StateE
     if Sha256::digest(body).as_slice() != digest {
         return Err(StateError::Checksum);
     }
-    let mut cursor = Cursor::new(&body[BINARY_MAGIC.len()..]);
+    let mut cursor = Cursor::new(body.get(BINARY_MAGIC.len()..).ok_or_else(|| damaged("the file is too short"))?);
     cursor.u16_le()?;
     let algo_version = cursor.u32_le()?;
     let contract = cursor.u32_le()?;

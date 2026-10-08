@@ -6,6 +6,7 @@ import dataclasses
 from collections.abc import Sequence
 from typing import Any
 
+from logfold.api._baselines import baseline_warnings, pool_baselines, required_baselines
 from logfold.api._common import (
     PathLike,
     Progress,
@@ -18,11 +19,9 @@ from logfold.api._common import (
     _summary,
     _warnings,
 )
-from logfold.api.baselines import baseline_warnings, pool_baselines, required_baselines
-from logfold.api.comparing import classify_native, table_side
-from logfold.api.matching import native_spec, resolve_matcher
-from logfold.api.saved import MINING_ONLY_DEFAULTS, diff_saved
-from logfold.api.windows import (
+from logfold.api._matching import native_spec, resolve_matcher
+from logfold.api._native_classify import classify_native, table_side
+from logfold.api._windows import (
     OPEN,
     TimeBound,
     Window,
@@ -32,6 +31,7 @@ from logfold.api.windows import (
     window,
     window_warnings,
 )
+from logfold.api.saved import MINING_ONLY_DEFAULTS, diff_saved
 from logfold.comparison import Classification, classify
 from logfold.config import (
     DiffConfig,

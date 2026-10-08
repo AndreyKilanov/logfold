@@ -21,7 +21,7 @@ fn app(multiline: bool) -> FormatConfig {
 }
 
 fn micros(text: &str) -> i64 {
-    parse_iso(text.as_bytes()).expect("a valid timestamp").0
+    parse_iso(text.as_bytes()).expect("a valid timestamp").micros
 }
 
 #[test]

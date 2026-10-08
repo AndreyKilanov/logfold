@@ -3,7 +3,7 @@
 use std::fmt::Write as _;
 
 use super::text::{push_escaped_xml, push_group, push_share, xml_text};
-use super::{Diff, Row, is_alert};
+use super::{DiffInput, ReportRow, is_alert};
 
 fn push_attribute(out: &mut String, name: &str, value: &str) {
     let _ = write!(out, " {name}=\"");
@@ -11,7 +11,7 @@ fn push_attribute(out: &mut String, name: &str, value: &str) {
     out.push('"');
 }
 
-fn test_case(out: &mut String, row: &Row<'_>, run_records: u64) {
+fn test_case(out: &mut String, row: &ReportRow<'_>, run_records: u64) {
     let level = row.level.unwrap_or("none");
     let id: String = row.id.chars().take(8).collect();
     out.push_str("    <testcase");
@@ -40,9 +40,9 @@ fn test_case(out: &mut String, row: &Row<'_>, run_records: u64) {
 
 /// Render `diff` as JUnit XML: every new WARN+ template is a failed test case, and up to `top` new templates below
 /// WARN are passing cases. A diff without any of them holds one passing case, so the report is never empty.
-pub fn junit(diff: &Diff<'_>, top: usize) -> String {
-    let alerts: Vec<&Row<'_>> = diff.new.iter().filter(|row| is_alert(row.level)).collect();
-    let quiet: Vec<&Row<'_>> = diff.new.iter().filter(|row| !is_alert(row.level)).take(top).collect();
+pub fn junit(diff: &DiffInput<'_>, top: usize) -> String {
+    let alerts: Vec<&ReportRow<'_>> = diff.new.iter().filter(|row| is_alert(row.level)).collect();
+    let quiet: Vec<&ReportRow<'_>> = diff.new.iter().filter(|row| !is_alert(row.level)).take(top).collect();
     let tests = (alerts.len() + quiet.len()).max(1);
     let mut out = String::with_capacity(512 + 400 * (alerts.len() + quiet.len()));
     let _ = write!(

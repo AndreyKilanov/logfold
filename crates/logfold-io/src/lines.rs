@@ -52,6 +52,7 @@ impl<R: Read> LineReader<R> {
     ///
     /// Of a line longer than [`MAX_LINE_BYTES`] only the first `MAX_LINE_BYTES` bytes are returned; the rest of the
     /// line, up to and including its line feed, is dropped before the next line is read.
+    #[expect(clippy::indexing_slicing, reason = "`pos <= end <= buf.len()` holds after every refill")]
     pub fn next_line(&mut self) -> std::io::Result<Option<Line<'_>>> {
         if self.dropping {
             self.drop_rest_of_line()?;
@@ -77,6 +78,7 @@ impl<R: Read> LineReader<R> {
     }
 
     /// Reads and drops bytes up to and including the next line feed, or to the end of the stream.
+    #[expect(clippy::indexing_slicing, reason = "`pos <= end <= buf.len()` holds after every refill")]
     fn drop_rest_of_line(&mut self) -> std::io::Result<()> {
         loop {
             if let Some(found) = memchr::memchr(b'\n', &self.buf[self.pos..self.end]) {
@@ -95,6 +97,7 @@ impl<R: Read> LineReader<R> {
         }
     }
 
+    #[expect(clippy::indexing_slicing, reason = "the caller passes lengths inside the window of `buf`")]
     fn take(&mut self, content_len: usize, consumed: usize, strip_cr: bool) -> Line<'_> {
         let begin = self.pos;
         let mut stop = begin + content_len;
@@ -107,6 +110,7 @@ impl<R: Read> LineReader<R> {
         Line { bytes: &self.buf[begin..stop], start }
     }
 
+    #[expect(clippy::indexing_slicing, reason = "`pos <= end <= buf.len()` holds after every refill")]
     fn refill(&mut self) -> std::io::Result<()> {
         if self.pos > 0 {
             self.buf.copy_within(self.pos..self.end, 0);

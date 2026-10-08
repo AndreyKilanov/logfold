@@ -50,7 +50,8 @@ pub fn inspect(path: &Path) -> Result<SourceInfo, IoError> {
     let mut magic = [0u8; 4];
     let mut filled = 0;
     while filled < magic.len() {
-        match file.read(&mut magic[filled..]).map_err(|e| read_error(path, e))? {
+        let Some(unfilled) = magic.get_mut(filled..) else { break };
+        match file.read(unfilled).map_err(|e| read_error(path, e))? {
             0 => break,
             n => filled += n,
         }

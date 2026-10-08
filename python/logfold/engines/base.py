@@ -73,7 +73,7 @@ class MineRequest:
 
 
 @dataclass(frozen=True, slots=True)
-class RunStatsData:
+class RunStats:
     """Statistics of one template within one run.
 
     Attributes:
@@ -103,7 +103,7 @@ class TemplateStats:
 
     id: str
     text: str
-    runs: tuple[RunStatsData, ...]
+    runs: tuple[RunStats, ...]
 
     @property
     def total(self) -> int:
@@ -168,7 +168,7 @@ class TemplateTable:
         if not isinstance(index, int):
             raise TypeError(f"template indices must be integers, not {type(index).__name__}")
         runs = tuple(
-            RunStatsData(
+            RunStats(
                 count=run.counts[index],
                 first=run.first[index],
                 last=run.last[index],
@@ -212,7 +212,7 @@ class TemplateTable:
 
 
 @dataclass(frozen=True, slots=True)
-class RunInfo:
+class RunCounters:
     """Counters of one run.
 
     Attributes:
@@ -248,7 +248,7 @@ class MiningResult:
         metrics: Execution facts.
     """
 
-    runs: tuple[RunInfo, ...]
+    runs: tuple[RunCounters, ...]
     templates: TemplateTable
     metrics: RunMetrics
 

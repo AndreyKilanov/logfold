@@ -59,6 +59,25 @@ pub struct State {
     pub snapshot: MinerSnapshot,
 }
 
+impl State {
+    /// Checks that the state was mined with the algorithm version and the settings fingerprint that are asked for.
+    pub fn ensure_compatible(&self, algo_version: u32, config_hash: &str) -> Result<(), StateError> {
+        if self.header.algo_version != algo_version {
+            return Err(StateError::Incompatible(format!(
+                "the state was mined with algorithm version {}, this logfold uses {algo_version}",
+                self.header.algo_version
+            )));
+        }
+        if self.header.config_hash != config_hash {
+            return Err(StateError::Incompatible(format!(
+                "the state was mined with other masks or parameters (fingerprint {}, now {config_hash})",
+                self.header.config_hash
+            )));
+        }
+        Ok(())
+    }
+}
+
 /// The two forms of a state file.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum StateFormat {
@@ -134,6 +153,9 @@ pub enum StateError {
     /// The content does not match the checksum.
     #[error("the state file does not match its checksum")]
     Checksum,
+    /// The state was mined with another algorithm, masks or parameters than the ones asked for.
+    #[error("{0}")]
+    Incompatible(String),
 }
 
 pub(crate) fn damaged(message: impl Into<String>) -> StateError {

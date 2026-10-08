@@ -5,7 +5,7 @@ use regex::bytes::Regex;
 use serde_json::Value;
 
 use crate::error::IoError;
-use crate::timestamp::{Parsed, TsFormat, epoch_float_to_micros, epoch_int_to_micros, parse_iso};
+use crate::timestamp::{ParsedTimestamp, TimestampFormat, epoch_float_to_micros, epoch_int_to_micros, parse_iso};
 
 /// Declarative description of a log format (see `docs/ALGORITHM.md` §1.2).
 #[derive(Clone, Debug)]
@@ -70,7 +70,7 @@ enum Kind {
 /// A format ready to parse records.
 pub struct CompiledFormat {
     kind: Kind,
-    ts_format: Option<TsFormat>,
+    ts_format: Option<TimestampFormat>,
     multiline: bool,
 }
 
@@ -93,7 +93,7 @@ impl CompiledFormat {
     /// Compiles `config`, validating patterns, group names and the timestamp format.
     pub fn new(config: &FormatConfig) -> Result<Self, IoError> {
         let ts_format = match &config.ts_format {
-            Some(text) => Some(TsFormat::new(text).map_err(IoError::Format)?),
+            Some(text) => Some(TimestampFormat::new(text).map_err(IoError::Format)?),
             None => None,
         };
         let kind = match &config.spec {
@@ -147,7 +147,7 @@ impl CompiledFormat {
         }
     }
 
-    fn parse_time(&self, text: &[u8]) -> Option<Parsed> {
+    fn parse_time(&self, text: &[u8]) -> Option<ParsedTimestamp> {
         match &self.ts_format {
             Some(format) => format.parse(text),
             None => parse_iso(text),
@@ -176,15 +176,14 @@ impl CompiledFormat {
                     .and_then(|s| Level::parse(s.as_bytes()));
                 Some(ParsedRecord {
                     message: Cow::Owned(message),
-                    timestamp: parsed_time.map(|(micros, _)| micros),
-                    tz_aware: parsed_time.is_some_and(|(_, aware)| aware),
+                    timestamp: parsed_time.map(|parsed| parsed.micros),
+                    tz_aware: parsed_time.is_some_and(|parsed| parsed.tz_aware),
                     level,
                 })
             }
             Kind::Regex { regex, message, time, level } => {
-                let first = &text[..first_len];
+                let (first, continuation) = text.split_at(first_len);
                 let caps = regex.captures(first)?;
-                let continuation = &text[first_len..];
                 let head: &[u8] = match message {
                     Some(index) => caps.get(*index).map_or(&[][..], |m| m.as_bytes()),
                     None => first,
@@ -201,29 +200,32 @@ impl CompiledFormat {
                 let level = level.and_then(|i| caps.get(i)).and_then(|m| Level::parse(m.as_bytes()));
                 Some(ParsedRecord {
                     message,
-                    timestamp: parsed_time.map(|(micros, _)| micros),
-                    tz_aware: parsed_time.is_some_and(|(_, aware)| aware),
+                    timestamp: parsed_time.map(|parsed| parsed.micros),
+                    tz_aware: parsed_time.is_some_and(|parsed| parsed.tz_aware),
                     level,
                 })
             }
         }
     }
 
-    fn json_time(&self, value: &Value) -> Option<Parsed> {
+    fn json_time(&self, value: &Value) -> Option<ParsedTimestamp> {
         match value {
             Value::String(text) => {
                 let digits = text.as_bytes();
                 if !digits.is_empty() && digits.len() <= 18 && digits.iter().all(u8::is_ascii_digit) {
                     let int: i64 = text.parse().ok()?;
-                    return epoch_int_to_micros(int).map(|micros| (micros, true));
+                    return epoch_int_to_micros(int).map(|micros| ParsedTimestamp { micros, tz_aware: true });
                 }
                 self.parse_time(digits)
             }
             Value::Number(number) => {
                 if let Some(int) = number.as_i64() {
-                    epoch_int_to_micros(int).map(|micros| (micros, true))
+                    epoch_int_to_micros(int).map(|micros| ParsedTimestamp { micros, tz_aware: true })
                 } else {
-                    number.as_f64().and_then(epoch_float_to_micros).map(|micros| (micros, true))
+                    number
+                        .as_f64()
+                        .and_then(epoch_float_to_micros)
+                        .map(|micros| ParsedTimestamp { micros, tz_aware: true })
                 }
             }
             _ => None,

@@ -8,7 +8,7 @@ import pytest
 from typer.testing import CliRunner
 
 import logfold
-from logfold.api.matching import resolve_matcher
+from logfold.api._matching import resolve_matcher
 from logfold.cli import exit_codes
 from logfold.cli.app import app
 from logfold.errors import ConfigError

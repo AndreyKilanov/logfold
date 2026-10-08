@@ -19,4 +19,5 @@ workspace = true
 logfold-core = { path = "../logfold-core" }
 logfold-io = { path = "../logfold-io" }
 logfold-engine = { path = "../logfold-engine" }
+logfold-report = { path = "../logfold-report" }
 pyo3 = { version = "0.29", features = ["abi3-py311"] }

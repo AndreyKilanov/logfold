@@ -2,16 +2,16 @@ use logfold_core::{DrainMiner, MinerConfig, Recount};
 use logfold_io::Counters;
 
 use crate::error::EngineError;
-use crate::pipeline::{Context, recount_unit, train_unit};
-use crate::plan::Plan;
-use crate::request::Observer;
+use crate::pipeline::{PipelineContext, recount_unit, train_unit};
+use crate::plan::ChunkPlan;
+use crate::types::ProgressObserver;
 
 /// Trains a single tree on all units, in plan order, starting from `start` or from an empty tree.
 pub(crate) fn train(
-    context: &Context,
+    context: &PipelineContext,
     config: &MinerConfig,
-    plan: &Plan,
-    observer: &dyn Observer,
+    plan: &ChunkPlan,
+    observer: &dyn ProgressObserver,
     start: Option<DrainMiner>,
 ) -> Result<(DrainMiner, Vec<Counters>), EngineError> {
     let n_runs = plan.run_bytes.len();
@@ -26,10 +26,10 @@ pub(crate) fn train(
 
 /// Assigns the records of all units to the clusters of `miner`, in plan order.
 pub(crate) fn recount(
-    context: &Context,
+    context: &PipelineContext,
     miner: &DrainMiner,
-    plan: &Plan,
-    observer: &dyn Observer,
+    plan: &ChunkPlan,
+    observer: &dyn ProgressObserver,
 ) -> Result<Recount, EngineError> {
     let mut recount = Recount::new(plan.run_bytes.len());
     for unit in &plan.units {

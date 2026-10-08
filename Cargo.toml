@@ -4,6 +4,7 @@ members = [
     "crates/logfold-core",
     "crates/logfold-io",
     "crates/logfold-engine",
+    "crates/logfold-report",
     "crates/logfold-py",
     "crates/logfold-bench",
     "crates/logfold-tests",
@@ -24,6 +25,8 @@ missing_docs = "warn"
 
 [workspace.lints.clippy]
 all = { level = "deny", priority = -1 }
+unwrap_used = "warn"
+expect_used = "warn"
 
 [profile.release]
 lto = "fat"

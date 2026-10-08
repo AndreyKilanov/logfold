@@ -17,7 +17,7 @@ from logfold.cli import runtime
 from logfold.errors import LogfoldError
 from logfold.ext import printable, registry
 from logfold.plugins import listing as plugin_listing
-from logfold.plugins import templates
+from logfold.plugins import scaffold
 
 if TYPE_CHECKING:
     from logfold.plugins.catalog import Catalog
@@ -195,7 +195,7 @@ def new_plugin(
 ) -> None:
     """Write a working plugin template into your plugin folder, ready to edit."""
     try:
-        target = templates.write_template(kind, name, folder, force)
+        target = scaffold.write_template(kind, name, folder, force)
     except LogfoldError as error:
         raise _fail(error) from None
     console = _stdout()

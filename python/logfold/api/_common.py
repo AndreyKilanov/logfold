@@ -19,7 +19,7 @@ from logfold.config import (
     MiningConfig,
     config_fingerprint,
 )
-from logfold.engines.base import MineRequest, MiningResult, RunInfo, StateRequest, TemplateTable
+from logfold.engines.base import MineRequest, MiningResult, RunCounters, StateRequest, TemplateTable
 from logfold.engines.select import select_engine
 from logfold.errors import ConfigError, read_error
 from logfold.ext.formats import FormatSpec
@@ -171,7 +171,7 @@ def _mine(
     return engine.mine(request, progress)
 
 
-def _summary(paths: tuple[str, ...], info: RunInfo) -> RunSummary:
+def _summary(paths: tuple[str, ...], info: RunCounters) -> RunSummary:
     return RunSummary(
         name=",".join(paths),
         files=info.files,

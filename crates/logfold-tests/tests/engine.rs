@@ -4,7 +4,7 @@ use std::io::Write;
 use std::path::PathBuf;
 
 use logfold_core::default_mask_rules;
-use logfold_engine::{MineRequest, MiningParams, NoObserver, Strategy, mine};
+use logfold_engine::{ExecutionStrategy, MineRequest, MiningConfig, NullObserver, mine};
 use logfold_io::{FormatConfig, FormatSpec};
 
 fn write_log(dir: &tempfile::TempDir, name: &str, lines: usize, seed: usize) -> PathBuf {
@@ -35,13 +35,13 @@ fn write_log(dir: &tempfile::TempDir, name: &str, lines: usize, seed: usize) -> 
     path
 }
 
-fn request(runs: Vec<Vec<PathBuf>>, strategy: Strategy) -> MineRequest {
+fn request(runs: Vec<Vec<PathBuf>>, strategy: ExecutionStrategy) -> MineRequest {
     MineRequest {
         windows: Vec::new(),
         runs,
         format: FormatConfig { spec: FormatSpec::Plain { record_start: None }, ts_format: None, multiline: false },
         masks: default_mask_rules(),
-        mining: MiningParams::default(),
+        mining: MiningConfig::default(),
         strategy,
         warm_start: false,
         recount: false,
@@ -58,7 +58,7 @@ fn summary(output: &logfold_engine::MineOutput) -> Vec<(String, Vec<u64>)> {
 fn sequential_counts_every_record() {
     let dir = tempfile::tempdir().unwrap();
     let path = write_log(&dir, "a.log", 5000, 0);
-    let output = mine(&request(vec![vec![path]], Strategy::Sequential), &NoObserver).unwrap();
+    let output = mine(&request(vec![vec![path]], ExecutionStrategy::Sequential), &NullObserver).unwrap();
     assert_eq!(output.runs[0].records, 5000);
     assert_eq!(output.runs[0].lines, 5000);
     let total: u64 = output.templates.iter().map(|t| t.total()).sum();
@@ -71,8 +71,8 @@ fn chunked_is_deterministic_across_thread_counts() {
     let dir = tempfile::tempdir().unwrap();
     let path = write_log(&dir, "a.log", 20_000, 0);
     let run = |threads| {
-        let strategy = Strategy::Chunked { chunk_bytes: 64 * 1024, threads };
-        mine(&request(vec![vec![path.clone()]], strategy), &NoObserver).unwrap()
+        let strategy = ExecutionStrategy::Chunked { chunk_bytes: 64 * 1024, threads };
+        mine(&request(vec![vec![path.clone()]], strategy), &NullObserver).unwrap()
     };
     let one = run(1);
     assert!(one.metrics.chunks > 4);
@@ -89,10 +89,12 @@ fn chunked_is_deterministic_across_thread_counts() {
 fn chunked_matches_sequential_on_simple_logs() {
     let dir = tempfile::tempdir().unwrap();
     let path = write_log(&dir, "a.log", 20_000, 0);
-    let sequential = mine(&request(vec![vec![path.clone()]], Strategy::Sequential), &NoObserver).unwrap();
-    let chunked =
-        mine(&request(vec![vec![path]], Strategy::Chunked { chunk_bytes: 100 * 1024, threads: 4 }), &NoObserver)
-            .unwrap();
+    let sequential = mine(&request(vec![vec![path.clone()]], ExecutionStrategy::Sequential), &NullObserver).unwrap();
+    let chunked = mine(
+        &request(vec![vec![path]], ExecutionStrategy::Chunked { chunk_bytes: 100 * 1024, threads: 4 }),
+        &NullObserver,
+    )
+    .unwrap();
     assert_eq!(summary(&sequential), summary(&chunked));
 }
 
@@ -101,7 +103,7 @@ fn two_runs_keep_separate_counters() {
     let dir = tempfile::tempdir().unwrap();
     let before = write_log(&dir, "before.log", 1000, 0);
     let after = write_log(&dir, "after.log", 3000, 7);
-    let output = mine(&request(vec![vec![before], vec![after]], Strategy::Sequential), &NoObserver).unwrap();
+    let output = mine(&request(vec![vec![before], vec![after]], ExecutionStrategy::Sequential), &NullObserver).unwrap();
     assert_eq!(output.runs[0].records, 1000);
     assert_eq!(output.runs[1].records, 3000);
     let per_run: Vec<u64> = (0..2).map(|r| output.templates.iter().map(|t| t.runs[r].count).sum()).collect();
@@ -110,11 +112,12 @@ fn two_runs_keep_separate_counters() {
 
 #[test]
 fn missing_file_is_an_io_error() {
-    let result = mine(&request(vec![vec![PathBuf::from("does-not-exist.log")]], Strategy::Sequential), &NoObserver);
+    let result =
+        mine(&request(vec![vec![PathBuf::from("does-not-exist.log")]], ExecutionStrategy::Sequential), &NullObserver);
     assert!(matches!(result, Err(logfold_engine::EngineError::Io(_))));
 }
 
-fn recount_request(runs: Vec<Vec<PathBuf>>, strategy: Strategy, mining: MiningParams) -> MineRequest {
+fn recount_request(runs: Vec<Vec<PathBuf>>, strategy: ExecutionStrategy, mining: MiningConfig) -> MineRequest {
     MineRequest { mining, recount: true, ..request(runs, strategy) }
 }
 
@@ -123,10 +126,12 @@ fn recount_makes_identical_runs_identical() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("tricky.log");
     std::fs::write(&path, "a\n<*>\na\n<*>\na\n").unwrap();
-    let mining = MiningParams { depth: 3, sim_th: 0.3, max_children: 1, max_templates: 2, ..MiningParams::default() };
-    let recounted =
-        mine(&recount_request(vec![vec![path.clone()], vec![path]], Strategy::Sequential, mining), &NoObserver)
-            .unwrap();
+    let mining = MiningConfig { depth: 3, sim_th: 0.3, max_children: 1, max_templates: 2, ..MiningConfig::default() };
+    let recounted = mine(
+        &recount_request(vec![vec![path.clone()], vec![path]], ExecutionStrategy::Sequential, mining),
+        &NullObserver,
+    )
+    .unwrap();
     for template in &recounted.templates {
         assert_eq!(template.runs[0].count, template.runs[1].count, "{}", template.text);
     }
@@ -140,10 +145,10 @@ fn recount_is_deterministic_across_threads_and_conserves_records() {
     let before = write_log(&dir, "before.log", 12_000, 0);
     let after = write_log(&dir, "after.log", 12_000, 0);
     let run = |threads| {
-        let strategy = Strategy::Chunked { chunk_bytes: 64 * 1024, threads };
+        let strategy = ExecutionStrategy::Chunked { chunk_bytes: 64 * 1024, threads };
         mine(
-            &recount_request(vec![vec![before.clone()], vec![after.clone()]], strategy, MiningParams::default()),
-            &NoObserver,
+            &recount_request(vec![vec![before.clone()], vec![after.clone()]], strategy, MiningConfig::default()),
+            &NullObserver,
         )
         .unwrap()
     };

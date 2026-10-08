@@ -28,3 +28,7 @@ python/logfold/*.so
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Fuzzing
+/fuzz/target/
+/fuzz/artifacts/

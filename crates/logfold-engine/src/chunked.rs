@@ -6,11 +6,11 @@ use std::time::{Duration, Instant};
 use logfold_core::{DrainMiner, MinerConfig, Recount};
 use logfold_io::Counters;
 
-use crate::adaptive::{Tally, probe_unit};
+use crate::adaptive::{TallyingObserver, probe_unit};
 use crate::error::EngineError;
-use crate::pipeline::{Context, recount_unit, train_unit};
-use crate::plan::Plan;
-use crate::request::Observer;
+use crate::pipeline::{PipelineContext, recount_unit, train_unit};
+use crate::plan::ChunkPlan;
+use crate::types::ProgressObserver;
 
 /// Runs `work(index)` for `0..total` on `threads` workers and folds the results strictly in index order.
 ///
@@ -23,7 +23,7 @@ use crate::request::Observer;
 fn ordered_reduce<R: Send>(
     total: usize,
     threads: usize,
-    observer: &dyn Observer,
+    observer: &dyn ProgressObserver,
     work: &(dyn Fn(usize) -> Result<R, EngineError> + Sync),
     is_stopped: impl Fn() -> bool,
     mut fold: impl FnMut(usize, R),
@@ -121,7 +121,7 @@ pub(crate) struct ChunkOptions {
 }
 
 /// What [`train`] produced.
-pub(crate) enum Trained {
+pub(crate) enum TrainingOutcome {
     /// The merged tree, the counters per run, the threads used and the time spent merging.
     Merged(Box<DrainMiner>, Vec<Counters>, usize, f64),
     /// The first chunk was too diverse for this strategy; `consumed` input bytes were already reported.
@@ -131,7 +131,7 @@ pub(crate) enum Trained {
 /// Trains one tree per unit in parallel and merges the trees in unit order.
 ///
 /// With `adaptive` the first unit decides: when its tree holds too many templates after its first records (see
-/// [`probe_unit`]) the run stops before anything is merged and [`Trained::TooDiverse`] is returned.
+/// [`probe_unit`]) the run stops before anything is merged and [`TrainingOutcome::TooDiverse`] is returned.
 ///
 /// With `warm` the first unit is trained alone and every other unit starts from a copy of its tree (see
 /// `docs/ALGORITHM.md` §6): the units do not begin with an empty tree, so they produce fewer stray templates, at the
@@ -141,18 +141,18 @@ pub(crate) enum Trained {
 /// alone first: the loaded tree is the seed (`adaptive` is not used then, there is no first chunk to judge by). The
 /// caller passes it only when there is more than one unit.
 pub(crate) fn train(
-    context: &Context,
+    context: &PipelineContext,
     config: &MinerConfig,
-    plan: &Plan,
+    plan: &ChunkPlan,
     options: ChunkOptions,
-    observer: &dyn Observer,
-) -> Result<Trained, EngineError> {
+    observer: &dyn ProgressObserver,
+) -> Result<TrainingOutcome, EngineError> {
     let ChunkOptions { threads, adaptive, warm, initial } = options;
     let n_runs = plan.run_bytes.len();
     let mut accumulator = crate::empty_miner(config, n_runs);
     let mut counters = vec![Counters::default(); n_runs];
-    let tally = Tally::new(observer);
-    let workers: &dyn Observer = if adaptive { &tally } else { observer };
+    let tally = TallyingObserver::new(observer);
+    let workers: &dyn ProgressObserver = if adaptive { &tally } else { observer };
     let seeded = initial.is_some();
     let warm = warm && !seeded && plan.units.len() > 1;
     let mut template: Option<DrainMiner> = None;
@@ -172,7 +172,7 @@ pub(crate) fn train(
         match scanned {
             Ok(unit) => counters[plan.units[0].run].add(&unit),
             Err(EngineError::Cancelled) if tally.is_stopped() => {
-                return Ok(Trained::TooDiverse { consumed: tally.consumed() });
+                return Ok(TrainingOutcome::TooDiverse { consumed: tally.consumed() });
             }
             Err(error) => return Err(error),
         }
@@ -210,18 +210,18 @@ pub(crate) fn train(
         },
     )?;
     if stopped {
-        return Ok(Trained::TooDiverse { consumed: tally.consumed() });
+        return Ok(TrainingOutcome::TooDiverse { consumed: tally.consumed() });
     }
-    Ok(Trained::Merged(Box::new(accumulator), counters, used, merge_seconds))
+    Ok(TrainingOutcome::Merged(Box::new(accumulator), counters, used, merge_seconds))
 }
 
 /// Assigns the records of every unit to the clusters of `miner` in parallel and merges the statistics in unit order.
 pub(crate) fn recount(
-    context: &Context,
+    context: &PipelineContext,
     miner: &DrainMiner,
-    plan: &Plan,
+    plan: &ChunkPlan,
     threads: usize,
-    observer: &dyn Observer,
+    observer: &dyn ProgressObserver,
 ) -> Result<Recount, EngineError> {
     let n_runs = plan.run_bytes.len();
     let mut accumulator = Recount::new(n_runs);

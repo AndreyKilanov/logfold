@@ -222,7 +222,7 @@ def test_a_signed_file_with_a_broken_tree_is_refused(tmp_path: Path, stream: lis
     signed = f"{header}\n{body}\n"
     digest = hashlib.sha256(signed.encode("utf-8")).hexdigest()
     (tmp_path / "forged.json").write_text(f'{signed}{{"sha256":"{digest}"}}\n', encoding="utf-8", newline="")
-    with pytest.raises(StateError, match="invalid miner state"):
+    with pytest.raises(StateError, match="damaged state file"):
         mine(second, load_state=tmp_path / "forged.json")
 
 

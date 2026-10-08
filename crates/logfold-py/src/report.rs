@@ -1,10 +1,10 @@
-//! Conversion of the data of a report from Python into the rows of `logfold_core::report`.
+//! Conversion of the data of a report from Python into the rows of `logfold_report`.
 //!
 //! Python hands over the columns of a result once. The texts are read in place, as `&str` borrowed from the Python
 //! strings, so a column of a hundred thousand templates is not copied; the report is rendered while the GIL is held.
 
 use logfold_core::Level;
-use logfold_core::report::{Analysis, Diff, Row, Run, Subject};
+use logfold_report::{AnalysisInput, DiffInput, ReportRow, ReportRun, ReportSubject};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList, PyString};
 
@@ -85,14 +85,14 @@ impl<'py> Columns<'py> {
         Ok(columns)
     }
 
-    fn rows(&self) -> PyResult<Vec<Row<'_>>> {
+    fn rows(&self) -> PyResult<Vec<ReportRow<'_>>> {
         let mut rows = Vec::with_capacity(self.count);
         for index in 0..self.count {
             let level = match self.levels.get(index) {
                 Some(Some(value)) => canonical(value.to_str()?),
                 _ => None,
             };
-            rows.push(Row {
+            rows.push(ReportRow {
                 id: cell(&self.ids, index)?,
                 text: cell(&self.texts, index)?,
                 level,
@@ -124,8 +124,8 @@ impl<'py> RunData<'py> {
         })
     }
 
-    fn view(&self) -> PyResult<Run<'_>> {
-        Ok(Run { name: self.name.to_str()?, records: self.records, unparsed: self.unparsed })
+    fn view(&self) -> PyResult<ReportRun<'_>> {
+        Ok(ReportRun { name: self.name.to_str()?, records: self.records, unparsed: self.unparsed })
     }
 }
 
@@ -168,11 +168,11 @@ fn render_analysis(
     let levels: Vec<(String, u64)> = required(data, "levels")?.extract()?;
     let levels: Vec<(&str, u64)> = levels.iter().map(|(name, count)| (name.as_str(), *count)).collect();
     let rows = columns.rows()?;
-    let analysis = Analysis { run: run.view()?, templates: &rows, levels: &levels, warnings };
+    let analysis = AnalysisInput { run: run.view()?, templates: &rows, levels: &levels, warnings };
     match name {
-        "github-summary" => Ok(logfold_core::report::github_summary(&Subject::Analysis(analysis), top, limit)),
-        "chat-message" => Ok(logfold_core::report::chat_message(&Subject::Analysis(analysis), top, limit)),
-        "prometheus" => Ok(logfold_core::report::prometheus(&Subject::Analysis(analysis), top)),
+        "github-summary" => Ok(logfold_report::github_summary(&ReportSubject::Analysis(analysis), top, limit)),
+        "chat-message" => Ok(logfold_report::chat_message(&ReportSubject::Analysis(analysis), top, limit)),
+        "prometheus" => Ok(logfold_report::prometheus(&ReportSubject::Analysis(analysis), top)),
         _ => Err(CoreConfigError::new_err(format!("the {name} report renders diff results"))),
     }
 }
@@ -183,7 +183,7 @@ fn render_diff(name: &str, data: &Bound<'_, PyDict>, warnings: &[&str], top: usi
     let changed = Columns::parse(&sub_dict(data, "changed")?)?;
     let disappeared = Columns::parse(&sub_dict(data, "disappeared")?)?;
     let (new, changed, disappeared) = (new.rows()?, changed.rows()?, disappeared.rows()?);
-    let diff = Diff {
+    let diff = DiffInput {
         before: before.view()?,
         after: after.view()?,
         new: &new,
@@ -193,9 +193,9 @@ fn render_diff(name: &str, data: &Bound<'_, PyDict>, warnings: &[&str], top: usi
         warnings,
     };
     match name {
-        "github-summary" => Ok(logfold_core::report::github_summary(&Subject::Diff(diff), top, limit)),
-        "chat-message" => Ok(logfold_core::report::chat_message(&Subject::Diff(diff), top, limit)),
-        "prometheus" => Ok(logfold_core::report::prometheus(&Subject::Diff(diff), top)),
-        _ => Ok(logfold_core::report::junit(&diff, top)),
+        "github-summary" => Ok(logfold_report::github_summary(&ReportSubject::Diff(diff), top, limit)),
+        "chat-message" => Ok(logfold_report::chat_message(&ReportSubject::Diff(diff), top, limit)),
+        "prometheus" => Ok(logfold_report::prometheus(&ReportSubject::Diff(diff), top)),
+        _ => Ok(logfold_report::junit(&diff, top)),
     }
 }

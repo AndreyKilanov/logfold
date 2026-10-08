@@ -4,19 +4,19 @@ use logfold_io::{
 };
 
 use crate::error::EngineError;
-use crate::plan::Unit;
-use crate::request::{MineRequest, Observer};
+use crate::plan::WorkUnit;
+use crate::types::{MineRequest, ProgressObserver};
 
 /// Compiled, immutable parts of the pipeline shared by all workers.
-pub(crate) struct Context {
+pub(crate) struct PipelineContext {
     pub(crate) format: CompiledFormat,
     pub(crate) masker: RuleMasker,
     pub(crate) tokenizer: Tokenizer,
 }
 
-impl Context {
+impl PipelineContext {
     pub(crate) fn new(request: &MineRequest) -> Result<Self, EngineError> {
-        Ok(Context {
+        Ok(PipelineContext {
             format: CompiledFormat::new(&request.format)?,
             masker: RuleMasker::new(&request.masks)?,
             tokenizer: Tokenizer::new(&request.mining.delimiters)?,
@@ -25,7 +25,7 @@ impl Context {
 }
 
 struct Feeder<'c> {
-    context: &'c Context,
+    context: &'c PipelineContext,
     scratch: MaskScratch,
     spans: Vec<(usize, usize)>,
 }
@@ -42,9 +42,9 @@ impl Feeder<'_> {
 
 /// Scans one unit and hands every record, masked and tokenized, to `on_record` together with its run.
 pub(crate) fn scan_unit<F>(
-    context: &Context,
-    unit: &Unit,
-    observer: &dyn Observer,
+    context: &PipelineContext,
+    unit: &WorkUnit,
+    observer: &dyn ProgressObserver,
     mut on_record: F,
 ) -> Result<Counters, EngineError>
 where
@@ -84,21 +84,21 @@ where
 
 /// Trains `miner` on one unit and returns its counters.
 pub(crate) fn train_unit(
-    context: &Context,
-    unit: &Unit,
+    context: &PipelineContext,
+    unit: &WorkUnit,
     miner: &mut DrainMiner,
-    observer: &dyn Observer,
+    observer: &dyn ProgressObserver,
 ) -> Result<Counters, EngineError> {
     scan_unit(context, unit, observer, |run, tokens, meta| miner.add(run, tokens, meta))
 }
 
 /// Assigns the records of one unit to the clusters of the finished `miner`.
 pub(crate) fn recount_unit(
-    context: &Context,
-    unit: &Unit,
+    context: &PipelineContext,
+    unit: &WorkUnit,
     miner: &DrainMiner,
     recount: &mut Recount,
-    observer: &dyn Observer,
+    observer: &dyn ProgressObserver,
 ) -> Result<Counters, EngineError> {
     scan_unit(context, unit, observer, |run, tokens, meta| recount.record(miner, run, tokens, meta))
 }

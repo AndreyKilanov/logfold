@@ -16,8 +16,14 @@ const MONTHS: [&str; 12] = [
     "december",
 ];
 
-/// Parsed result: microseconds since the Unix epoch (UTC) and whether the text carried a zone.
-pub type Parsed = (i64, bool);
+/// A parsed timestamp: microseconds since the Unix epoch (UTC) and whether the text carried a zone.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ParsedTimestamp {
+    /// Microseconds since the Unix epoch, in UTC.
+    pub micros: i64,
+    /// True when the text carried a zone.
+    pub tz_aware: bool,
+}
 
 fn is_leap(year: i64) -> bool {
     (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
@@ -100,7 +106,7 @@ impl<'a> Cursor<'a> {
         }
         let mut micros: i64 = 0;
         let mut used = 0;
-        for &b in &self.bytes[start..self.pos] {
+        for &b in self.bytes.get(start..self.pos).unwrap_or_default() {
             if used < 6 {
                 micros = micros * 10 + i64::from(b - b'0');
                 used += 1;
@@ -151,7 +157,7 @@ struct Fields {
 }
 
 impl Fields {
-    fn finish(self) -> Option<Parsed> {
+    fn finish(self) -> Option<ParsedTimestamp> {
         let year = self.year.unwrap_or(1970);
         if self.hour > 23 || self.minute > 59 || self.second > 59 {
             return None;
@@ -173,12 +179,12 @@ impl Fields {
         let seconds = days * 86_400 + self.hour * 3600 + self.minute * 60 + self.second;
         let micros = seconds.checked_mul(MICROS)?.checked_add(self.micros)?;
         let offset = self.offset.unwrap_or(0);
-        Some((micros - offset * MICROS, self.offset.is_some()))
+        Some(ParsedTimestamp { micros: micros - offset * MICROS, tz_aware: self.offset.is_some() })
     }
 }
 
 /// Parses an ISO-8601 timestamp (`YYYY-MM-DD[(T| )HH:MM[:SS[.f]]][zone]`).
-pub fn parse_iso(text: &[u8]) -> Option<Parsed> {
+pub fn parse_iso(text: &[u8]) -> Option<ParsedTimestamp> {
     let mut cur = Cursor::new(text.trim_ascii());
     let mut fields = Fields { year: Some(cur.digits(4, 4)?), ..Fields::default() };
     if !cur.eat(b'-') {
@@ -232,18 +238,17 @@ enum Item {
 
 /// A compiled `strptime`-style format (`%Y %y %m %d %e %H %M %S %f %z %b %B %j %T %%`).
 #[derive(Clone, Debug)]
-pub struct TsFormat {
+pub struct TimestampFormat {
     items: Vec<Item>,
 }
 
-impl TsFormat {
+impl TimestampFormat {
     /// Compiles `format`; unknown directives are rejected.
     pub fn new(format: &str) -> Result<Self, String> {
         let bytes = format.as_bytes();
         let mut items = Vec::new();
         let mut index = 0;
-        while index < bytes.len() {
-            let byte = bytes[index];
+        while let Some(&byte) = bytes.get(index) {
             index += 1;
             if byte == b' ' {
                 if items.last() != Some(&Item::Spaces) {
@@ -276,11 +281,11 @@ impl TsFormat {
                 }
             }
         }
-        Ok(TsFormat { items })
+        Ok(TimestampFormat { items })
     }
 
     /// Parses `text` with this format.
-    pub fn parse(&self, text: &[u8]) -> Option<Parsed> {
+    pub fn parse(&self, text: &[u8]) -> Option<ParsedTimestamp> {
         let mut cur = Cursor::new(text.trim_ascii());
         let mut fields = Fields::default();
         for item in &self.items {
@@ -322,11 +327,11 @@ impl TsFormat {
 }
 
 fn month_name(cur: &mut Cursor<'_>, abbreviated: bool) -> Option<i64> {
-    let rest = &cur.bytes[cur.pos..];
+    let rest = cur.bytes.get(cur.pos..).unwrap_or_default();
     for (index, name) in MONTHS.iter().enumerate() {
-        let candidate = if abbreviated { &name[..3] } else { name };
+        let candidate = if abbreviated { name.get(..3).unwrap_or(name) } else { name };
         let len = candidate.len();
-        if rest.len() >= len && rest[..len].eq_ignore_ascii_case(candidate.as_bytes()) {
+        if rest.get(..len).is_some_and(|head| head.eq_ignore_ascii_case(candidate.as_bytes())) {
             cur.pos += len;
             return Some(index as i64 + 1);
         }

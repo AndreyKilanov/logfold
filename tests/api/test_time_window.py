@@ -13,7 +13,7 @@ from hypothesis import strategies as st
 import logfold
 from conftest import requires_native
 from logfold import ConfigError
-from logfold.api.windows import split_windows, to_micros, window
+from logfold.api._windows import split_windows, to_micros, window
 
 FORMAT = r"regex:^(?P<ts>\S+) (?P<lvl>[A-Z]+) (?P<msg>.*)$"
 BASE = datetime(2026, 10, 6, 0, 0, 0)

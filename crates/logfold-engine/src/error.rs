@@ -1,5 +1,5 @@
 use logfold_core::CoreError;
-use logfold_io::IoError;
+use logfold_io::{IoError, StateError};
 use thiserror::Error;
 
 /// Errors of the mining pipeline.
@@ -11,6 +11,9 @@ pub enum EngineError {
     /// A source could not be read or a format is invalid.
     #[error(transparent)]
     Io(#[from] IoError),
+    /// A state file or a saved miner cannot be used.
+    #[error(transparent)]
+    State(#[from] StateError),
     /// The request is inconsistent.
     #[error("invalid request: {0}")]
     Config(String),

@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 use common::lines;
 use logfold_core::default_mask_rules;
-use logfold_engine::{MineOutput, MineRequest, MiningParams, NoObserver, Strategy, mine};
+use logfold_engine::{ExecutionStrategy, MineOutput, MineRequest, MiningConfig, NullObserver, mine};
 use logfold_io::{FormatConfig, FormatSpec};
 use proptest::prelude::*;
 
@@ -17,13 +17,13 @@ fn write_log(dir: &tempfile::TempDir, stream: &[String]) -> PathBuf {
     path
 }
 
-fn request(path: PathBuf, strategy: Strategy) -> MineRequest {
+fn request(path: PathBuf, strategy: ExecutionStrategy) -> MineRequest {
     MineRequest {
         windows: Vec::new(),
         runs: vec![vec![path]],
         format: FormatConfig { spec: FormatSpec::Plain { record_start: None }, ts_format: None, multiline: false },
         masks: default_mask_rules(),
-        mining: MiningParams::default(),
+        mining: MiningConfig::default(),
         strategy,
         warm_start: false,
         recount: false,
@@ -43,9 +43,9 @@ proptest! {
     fn every_record_is_counted_by_every_strategy(stream in lines(400), chunk_bytes in 64u64..2048) {
         let dir = tempfile::tempdir().unwrap();
         let path = write_log(&dir, &stream);
-        let strategies = [Strategy::Sequential, Strategy::Chunked { chunk_bytes, threads: 2 }];
+        let strategies = [ExecutionStrategy::Sequential, ExecutionStrategy::Chunked { chunk_bytes, threads: 2 }];
         for strategy in strategies {
-            let output = mine(&request(path.clone(), strategy), &NoObserver).unwrap();
+            let output = mine(&request(path.clone(), strategy), &NullObserver).unwrap();
             prop_assert_eq!(output.runs[0].records, stream.len() as u64);
             let counted: u64 = output.templates.iter().map(|template| template.total()).sum();
             prop_assert_eq!(counted, stream.len() as u64);
@@ -61,7 +61,7 @@ proptest! {
         let dir = tempfile::tempdir().unwrap();
         let path = write_log(&dir, &stream);
         let run = |threads| {
-            let output = mine(&request(path.clone(), Strategy::Chunked { chunk_bytes, threads }), &NoObserver);
+            let output = mine(&request(path.clone(), ExecutionStrategy::Chunked { chunk_bytes, threads }), &NullObserver);
             summary(&output.unwrap())
         };
         prop_assert_eq!(run(1), run(threads));

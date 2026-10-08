@@ -22,14 +22,14 @@ from logfold import ConfigError, DiffConfig
 from logfold.cli.app import app
 from logfold.comparison import ExactMatcher, apply_significance, classify, g_test
 from logfold.comparison.classify import Classification
-from logfold.engines.base import RunStatsData, TemplateStats
+from logfold.engines.base import RunStats, TemplateStats
 from logfold.model import DiffEntry, RunSummary
 
 runner = CliRunner(env={"COLUMNS": "200", "NO_COLOR": "1"})
 
 
-def stats(count: int) -> RunStatsData:
-    return RunStatsData(count, None, None, (0, 0, 0, 0, 0, 0), "example")
+def stats(count: int) -> RunStats:
+    return RunStats(count, None, None, (0, 0, 0, 0, 0, 0), "example")
 
 
 def template(text: str, before: int, after: int) -> TemplateStats:

@@ -1,0 +1,48 @@
+name: Fuzz
+
+on:
+  schedule:
+    - cron: "17 3 * * 0"
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: Seconds per target
+        default: "120"
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  fuzz:
+    name: ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    env:
+      RUSTUP_TOOLCHAIN: nightly
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [state_json, state_binary, gzip_lines]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: fuzz
+      - run: cargo install cargo-fuzz --version 0.13.2 --locked
+      - name: Fuzz
+        working-directory: fuzz
+        env:
+          FUZZ_SECONDS: ${{ inputs.seconds || '120' }}
+          FUZZ_TARGET: ${{ matrix.target }}
+        run: >
+          cargo fuzz run "$FUZZ_TARGET" "corpus/$FUZZ_TARGET"
+          -- -max_total_time="$FUZZ_SECONDS" -rss_limit_mb=2048 -max_len=65536
+      - name: Keep the failing input
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fuzz-${{ matrix.target }}
+          path: fuzz/artifacts/${{ matrix.target }}

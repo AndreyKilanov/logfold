@@ -6,8 +6,8 @@ engine's plain-data answer into the public result model.
 
 from __future__ import annotations
 
-from logfold.api.analysis import analyze
-from logfold.api.compare import diff
+from logfold.api.analyze import analyze
+from logfold.api.diff import diff
 from logfold.api.info import Info, info
 from logfold.api.inspecting import InspectedRecord, Inspection, inspect_file
 from logfold.api.saved import is_saved_analysis, load_analysis

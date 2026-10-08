@@ -9,7 +9,7 @@
 use std::fmt;
 use std::marker::PhantomData;
 
-use logfold_core::{ClusterSnapshot, History, MinerSnapshot, NodeSnapshot};
+use logfold_core::{ClusterHistory, ClusterSnapshot, MinerSnapshot, NodeSnapshot};
 use serde::Deserialize;
 use serde::de::{self, DeserializeSeed, Deserializer, MapAccess, SeqAccess, Visitor};
 use sha2::{Digest, Sha256};
@@ -22,6 +22,7 @@ use super::{
 
 const LIMIT_MARK: &str = "state limit: ";
 
+#[expect(clippy::expect_used, reason = "serializing a string into a vector cannot fail")]
 fn put_text(out: &mut Vec<u8>, text: &str) {
     serde_json::to_writer(&mut *out, text).expect("a string always serializes");
 }
@@ -239,7 +240,7 @@ impl ClusterJson {
         let (count, first, last, levels) = self.h;
         ClusterSnapshot {
             tokens: self.t.into_iter().map(|token| token.0).collect(),
-            history: History { count, first, last, levels },
+            history: ClusterHistory { count, first, last, levels },
         }
     }
 }
@@ -363,7 +364,7 @@ pub(super) fn decode(bytes: &[u8], limits: &StateLimits) -> Result<State, StateE
         return Err(damaged("the header line is longer than 64 KiB"));
     }
     // the kind and the schema version first, so that a newer layout is reported as newer whatever else changed in it
-    let probe: serde_json::Value = serde_json::from_slice(&bytes[..first_end]).map_err(parse_error)?;
+    let probe: serde_json::Value = serde_json::from_slice(bytes.split_at(first_end).0).map_err(parse_error)?;
     if probe.get("kind").and_then(serde_json::Value::as_str) != Some(STATE_KIND) {
         return Err(StateError::NotState);
     }
@@ -375,16 +376,20 @@ pub(super) fn decode(bytes: &[u8], limits: &StateLimits) -> Result<State, StateE
         Some(_) => {}
         None => return Err(damaged("the header has no schema version")),
     }
+    let three_lines = || damaged("a JSON state file has three lines: the header, the body and the checksum");
     let lines: Vec<&[u8]> = bytes.split(|&byte| byte == b'\n').collect();
-    if lines.len() != 4 || !lines[3].is_empty() {
-        return Err(damaged("a JSON state file has three lines: the header, the body and the checksum"));
+    let Ok([header_line, body_line, trailer_line, rest]) = <[&[u8]; 4]>::try_from(lines) else {
+        return Err(three_lines());
+    };
+    if !rest.is_empty() {
+        return Err(three_lines());
     }
-    let trailer: TrailerJson = serde_json::from_slice(lines[2]).map_err(parse_error)?;
-    let signed = lines[0].len() + lines[1].len() + 2;
-    if to_hex(&Sha256::digest(&bytes[..signed])) != trailer.sha256 {
+    let trailer: TrailerJson = serde_json::from_slice(trailer_line).map_err(parse_error)?;
+    let signed = bytes.get(..header_line.len() + body_line.len() + 2).ok_or_else(three_lines)?;
+    if to_hex(&Sha256::digest(signed)) != trailer.sha256 {
         return Err(StateError::Checksum);
     }
-    let header: HeaderJson = serde_json::from_slice(lines[0]).map_err(parse_error)?;
+    let header: HeaderJson = serde_json::from_slice(header_line).map_err(parse_error)?;
     if header.kind != STATE_KIND {
         return Err(StateError::NotState);
     }
@@ -408,7 +413,7 @@ pub(super) fn decode(bytes: &[u8], limits: &StateLimits) -> Result<State, StateE
     check_counts(&counts, limits)?;
 
     let body =
-        BodySeed(limits).deserialize(&mut serde_json::Deserializer::from_slice(lines[1])).map_err(parse_error)?;
+        BodySeed(limits).deserialize(&mut serde_json::Deserializer::from_slice(body_line)).map_err(parse_error)?;
     let nodes: Vec<NodeSnapshot> = body
         .nodes
         .into_iter()

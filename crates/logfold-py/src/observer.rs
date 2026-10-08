@@ -1,7 +1,7 @@
 use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use logfold_engine::Observer;
+use logfold_engine::ProgressObserver;
 use pyo3::prelude::*;
 
 /// Bridges engine progress and cancellation to Python: calls the optional callback and polls for Ctrl+C.
@@ -28,7 +28,7 @@ impl PyObserver {
     }
 }
 
-impl Observer for PyObserver {
+impl ProgressObserver for PyObserver {
     fn on_bytes(&self, consumed: u64) {
         let Some(callback) = &self.callback else { return };
         Python::attach(|py| {

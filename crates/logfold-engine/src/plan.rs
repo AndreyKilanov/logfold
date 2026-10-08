@@ -3,10 +3,10 @@ use std::path::PathBuf;
 use logfold_io::{SourceInfo, TimeWindow, inspect};
 
 use crate::error::EngineError;
-use crate::request::MineRequest;
+use crate::types::MineRequest;
 
 /// One contiguous piece of work: a byte range of one file belonging to one run.
-pub(crate) struct Unit {
+pub(crate) struct WorkUnit {
     pub(crate) run: usize,
     pub(crate) window: TimeWindow,
     pub(crate) path: PathBuf,
@@ -16,13 +16,13 @@ pub(crate) struct Unit {
 }
 
 /// The ordered work list plus per-run input sizes.
-pub(crate) struct Plan {
-    pub(crate) units: Vec<Unit>,
+pub(crate) struct ChunkPlan {
+    pub(crate) units: Vec<WorkUnit>,
     pub(crate) run_bytes: Vec<u64>,
 }
 
 /// Plans units in run, file, offset order. Without `chunk_bytes` every file is a single unit.
-pub(crate) fn plan(request: &MineRequest, chunk_bytes: Option<u64>) -> Result<Plan, EngineError> {
+pub(crate) fn plan(request: &MineRequest, chunk_bytes: Option<u64>) -> Result<ChunkPlan, EngineError> {
     if chunk_bytes == Some(0) {
         return Err(EngineError::Config("chunk size must be positive".into()));
     }
@@ -39,12 +39,12 @@ pub(crate) fn plan(request: &MineRequest, chunk_bytes: Option<u64>) -> Result<Pl
                 let count = info.size.div_ceil(chunk);
                 for index in 0..count {
                     let end = if index + 1 == count { u64::MAX } else { (index + 1) * chunk };
-                    units.push(Unit { run, window, path: path.clone(), info, start: index * chunk, end });
+                    units.push(WorkUnit { run, window, path: path.clone(), info, start: index * chunk, end });
                 }
             } else if !(info.seekable() && info.size == 0) {
-                units.push(Unit { run, window, path: path.clone(), info, start: 0, end: u64::MAX });
+                units.push(WorkUnit { run, window, path: path.clone(), info, start: 0, end: u64::MAX });
             }
         }
     }
-    Ok(Plan { units, run_bytes })
+    Ok(ChunkPlan { units, run_bytes })
 }
