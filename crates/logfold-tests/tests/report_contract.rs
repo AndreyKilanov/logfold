@@ -1,10 +1,10 @@
-use logfold_core::report::text::{
+#![allow(missing_docs)]
+
+use logfold_report::text::{
     ZERO_WIDTH_SPACE, alert_noun, clip, code_span, defuse_mentions, escape_xml, flatten, group, label_value, share,
     xml_text,
 };
-use logfold_core::report::{
-    Analysis, Diff, Row, Run, Subject, chat_message, github_summary, is_alert, junit, prometheus,
-};
+use logfold_report::{Analysis, Diff, Row, Run, Subject, chat_message, github_summary, is_alert, junit, prometheus};
 
 fn zws(text: &str) -> String {
     text.replace('|', &ZERO_WIDTH_SPACE.to_string())

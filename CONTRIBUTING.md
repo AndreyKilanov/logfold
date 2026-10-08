@@ -16,6 +16,7 @@ You need Rust 1.99 or newer (the minimum supported version, checked by its own C
 ## Architecture rules (enforced in CI)
 
 - Dependencies point inward only: `logfold-core` ← `logfold-io` ← `logfold-engine` ← `logfold-py` ← Python.
+- `logfold-report` (the text of the pipeline reports) depends on no other crate; only `logfold-py` uses it.
 - `logfold-core` has no file I/O, threads, serialization formats, PyO3 or `unsafe`.
 - The Python/Rust boundary is **one coarse call per use case**, never per line.
 - Python layering is checked by `import-linter`; `logfold._core` is imported only from `_bridge.py`.

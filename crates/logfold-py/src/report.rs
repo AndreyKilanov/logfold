@@ -1,10 +1,10 @@
-//! Conversion of the data of a report from Python into the rows of `logfold_core::report`.
+//! Conversion of the data of a report from Python into the rows of `logfold_report`.
 //!
 //! Python hands over the columns of a result once. The texts are read in place, as `&str` borrowed from the Python
 //! strings, so a column of a hundred thousand templates is not copied; the report is rendered while the GIL is held.
 
 use logfold_core::Level;
-use logfold_core::report::{Analysis, Diff, Row, Run, Subject};
+use logfold_report::{Analysis, Diff, Row, Run, Subject};
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList, PyString};
 
@@ -170,9 +170,9 @@ fn render_analysis(
     let rows = columns.rows()?;
     let analysis = Analysis { run: run.view()?, templates: &rows, levels: &levels, warnings };
     match name {
-        "github-summary" => Ok(logfold_core::report::github_summary(&Subject::Analysis(analysis), top, limit)),
-        "chat-message" => Ok(logfold_core::report::chat_message(&Subject::Analysis(analysis), top, limit)),
-        "prometheus" => Ok(logfold_core::report::prometheus(&Subject::Analysis(analysis), top)),
+        "github-summary" => Ok(logfold_report::github_summary(&Subject::Analysis(analysis), top, limit)),
+        "chat-message" => Ok(logfold_report::chat_message(&Subject::Analysis(analysis), top, limit)),
+        "prometheus" => Ok(logfold_report::prometheus(&Subject::Analysis(analysis), top)),
         _ => Err(CoreConfigError::new_err(format!("the {name} report renders diff results"))),
     }
 }
@@ -193,9 +193,9 @@ fn render_diff(name: &str, data: &Bound<'_, PyDict>, warnings: &[&str], top: usi
         warnings,
     };
     match name {
-        "github-summary" => Ok(logfold_core::report::github_summary(&Subject::Diff(diff), top, limit)),
-        "chat-message" => Ok(logfold_core::report::chat_message(&Subject::Diff(diff), top, limit)),
-        "prometheus" => Ok(logfold_core::report::prometheus(&Subject::Diff(diff), top)),
-        _ => Ok(logfold_core::report::junit(&diff, top)),
+        "github-summary" => Ok(logfold_report::github_summary(&Subject::Diff(diff), top, limit)),
+        "chat-message" => Ok(logfold_report::chat_message(&Subject::Diff(diff), top, limit)),
+        "prometheus" => Ok(logfold_report::prometheus(&Subject::Diff(diff), top)),
+        _ => Ok(logfold_report::junit(&diff, top)),
     }
 }

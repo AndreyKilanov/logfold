@@ -524,8 +524,13 @@ dependencies = [
  "logfold-core",
  "logfold-engine",
  "logfold-io",
+ "logfold-report",
  "pyo3",
 ]
+
+[[package]]
+name = "logfold-report"
+version = "0.4.0"
 
 [[package]]
 name = "logfold-tests"
@@ -535,6 +540,7 @@ dependencies = [
  "logfold-core",
  "logfold-engine",
  "logfold-io",
+ "logfold-report",
  "proptest",
  "sha2",
  "tempfile",

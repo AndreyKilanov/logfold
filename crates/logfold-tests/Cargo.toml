@@ -15,6 +15,7 @@ workspace = true
 logfold-core = { path = "../logfold-core" }
 logfold-io = { path = "../logfold-io" }
 logfold-engine = { path = "../logfold-engine" }
+logfold-report = { path = "../logfold-report" }
 
 [dev-dependencies]
 flate2 = "1"

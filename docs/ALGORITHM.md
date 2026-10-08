@@ -1,6 +1,6 @@
 # logfold algorithm specification (version 1)
 
-This document is the contract of the Rust engine (`logfold-core`, `logfold-io`, `logfold-engine`). The golden results
+This document is the contract of the Rust engine (`logfold-core`, `logfold-io`, `logfold-engine`, `logfold-report`). The golden results
 in `tests/fixtures/golden` and the property tests of `logfold-tests` hold the sequential strategy to it: the templates,
 counts, timestamps, levels and examples are exactly the ones described here. All comparisons use integer arithmetic.
 
@@ -304,8 +304,8 @@ run) and the number of records of the run; the thresholds `threshold_ratio` (at 
 
 ## 12. Pipeline reports
 
-`github-summary`, `junit`, `chat-message` and `prometheus` turn a result into text. The Rust core
-(`logfold-core`, `report`) writes the text; the reporter classes in `logfold.plugins` cut a result into columns and call
+`github-summary`, `junit`, `chat-message` and `prometheus` turn a result into text. The Rust crate
+`logfold-report` writes the text; the reporter classes in `logfold.plugins` cut a result into columns and call
 it. The text is held by the golden fingerprints in `tests/fixtures/golden/reports.json`. The reports do not change mined
 templates or counts, so they do not affect `ALGO_VERSION`. The extension takes the columns of a result in one call,
 `render_report(report, data, options)`. A lone surrogate in a text is read as U+FFFD, and a count below 0 or above

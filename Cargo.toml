@@ -4,6 +4,7 @@ members = [
     "crates/logfold-core",
     "crates/logfold-io",
     "crates/logfold-engine",
+    "crates/logfold-report",
     "crates/logfold-py",
     "crates/logfold-bench",
     "crates/logfold-tests",

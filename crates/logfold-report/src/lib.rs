@@ -1,9 +1,8 @@
 //! Text of the pipeline reports: `github-summary`, `junit`, `chat-message` and `prometheus`.
 //!
 //! Pure functions from plain rows to a `String`: no I/O and no Python types. The rules (what is cut, escaped or
-//! neutralized, byte for byte) are the contract in `docs/ALGORITHM.md`; the pure-Python reporters are the reference
-//! that the contract tests compare with. Log text is untrusted, so every value that comes from a log goes through
-//! [`text`] before it is written.
+//! neutralized, byte for byte) are the contract in `docs/ALGORITHM.md`, pinned by the contract tests. Log text is
+//! untrusted, so every value that comes from a log goes through [`text`] before it is written.
 
 mod chat;
 mod github;
