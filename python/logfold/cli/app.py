@@ -11,11 +11,12 @@ from typing import Annotated
 import typer
 
 import logfold
-from logfold.cli import analyze_cmd, diff_cmd, exit_codes, inspect_cmd
+from logfold.cli import analyze_cmd, diff_cmd, exit_codes, inspect_cmd, match_cmd
 from logfold.cli.analyze_cmd import analyze
 from logfold.cli.available_help import AvailableHelpCommand
 from logfold.cli.diff_cmd import diff
 from logfold.cli.info_cmd import formats, info
+from logfold.cli.match_cmd import match
 from logfold.cli.plugins_cmd import plugins_app
 from logfold.cli.runtime import stderr_console
 from logfold.ext import registry
@@ -52,6 +53,7 @@ def root(
 
 
 app.command(cls=AvailableHelpCommand, epilog=analyze_cmd.EXAMPLES)(analyze)
+app.command(cls=AvailableHelpCommand, epilog=match_cmd.EXAMPLES)(match)
 app.command(cls=AvailableHelpCommand, epilog=diff_cmd.EXAMPLES)(diff)
 app.command(cls=AvailableHelpCommand, epilog=inspect_cmd.EXAMPLES)(inspect_cmd.inspect)
 app.command()(formats)
