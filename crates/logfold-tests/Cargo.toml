@@ -17,4 +17,6 @@ logfold-io = { path = "../logfold-io" }
 logfold-engine = { path = "../logfold-engine" }
 
 [dev-dependencies]
+flate2 = "1"
+sha2 = "0.10"
 tempfile = "3"
