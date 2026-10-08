@@ -13,6 +13,9 @@ pytest
 
 You need Rust 1.99 or newer (the minimum supported version, checked by its own CI job) and, on Windows, the MSVC build tools.
 
+The Rust toolchain is pinned in `rust-toolchain.toml` (the minimum supported version); CI also builds with the latest
+stable. Dependencies are checked weekly by `cargo deny`, `cargo audit` and `pip-audit` (`.github/workflows/audit.yml`).
+
 ## Architecture rules (enforced in CI)
 
 - Dependencies point inward only: `logfold-core` ← `logfold-io` ← `logfold-engine` ← `logfold-py` ← Python.
@@ -65,7 +68,7 @@ verify, Risks and rollback). A change is done when all of these pass:
 
 ```
 cargo fmt --all --check
-cargo clippy --workspace --exclude logfold-py --all-targets -- -D warnings
+cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace --exclude logfold-py --exclude logfold-bench
 ruff check . && ruff format --check . && mypy && lint-imports
 pytest
