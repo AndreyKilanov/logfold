@@ -6,9 +6,9 @@
 use std::path::PathBuf;
 
 use logfold_core::ALGO_VERSION;
-use logfold_engine::{MineOutput, MineRequest};
+use logfold_engine::{EngineError, MineOutput, MineRequest};
 use logfold_io::{
-    State, StateError, StateFormat, StateHeader, StateLimits, check_state_writable, read_state_file, write_state_file,
+    State, StateFormat, StateHeader, StateLimits, check_state_writable, read_state_file, write_state_file,
 };
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
@@ -24,15 +24,6 @@ pub(crate) struct StateIo {
     masks: String,
     logfold_version: String,
     log_format: String,
-}
-
-/// A failure of reading, checking or writing a state file, as text for the Python exception.
-pub(crate) struct StateFailure(pub(crate) String);
-
-impl From<StateError> for StateFailure {
-    fn from(error: StateError) -> Self {
-        StateFailure(error.to_string())
-    }
 }
 
 pub(crate) fn parse(dict: &Bound<'_, PyDict>) -> PyResult<Option<StateIo>> {
@@ -58,33 +49,23 @@ pub(crate) fn parse(dict: &Bound<'_, PyDict>) -> PyResult<Option<StateIo>> {
 impl StateIo {
     /// Reads the file to continue from, checks that it was mined with the same algorithm and parameters, and sets it as
     /// the start of the request. Asks the engine for a snapshot when a state is to be saved.
-    pub(crate) fn before(&self, request: &mut MineRequest) -> Result<(), StateFailure> {
+    pub(crate) fn before(&self, request: &mut MineRequest) -> Result<(), EngineError> {
         request.keep_snapshot = self.save.is_some();
         if let Some(path) = &self.save {
             check_state_writable(path)?;
         }
         let Some(path) = &self.load else { return Ok(()) };
         let state = read_state_file(path, &StateLimits::default())?;
-        if state.header.algo_version != ALGO_VERSION {
-            return Err(StateFailure(format!(
-                "the state was mined with algorithm version {}, this logfold uses {ALGO_VERSION}",
-                state.header.algo_version
-            )));
-        }
-        if state.header.config_hash != self.config_hash {
-            return Err(StateFailure(format!(
-                "the state was mined with other masks or parameters (fingerprint {}, now {})",
-                state.header.config_hash, self.config_hash
-            )));
-        }
+        state.ensure_compatible(ALGO_VERSION, &self.config_hash)?;
         request.initial = Some(state.snapshot);
         Ok(())
     }
 
     /// Writes the trained miner when a state is to be saved.
-    pub(crate) fn after(&self, output: &mut MineOutput) -> Result<(), StateFailure> {
+    pub(crate) fn after(&self, output: &mut MineOutput) -> Result<(), EngineError> {
         let Some(path) = &self.save else { return Ok(()) };
-        let snapshot = output.snapshot.take().ok_or_else(|| StateFailure("the engine returned no snapshot".into()))?;
+        let snapshot =
+            output.snapshot.take().ok_or_else(|| EngineError::Config("the engine returned no snapshot".into()))?;
         let header = StateHeader {
             algo_version: ALGO_VERSION,
             contract: crate::CORE_API_VERSION,

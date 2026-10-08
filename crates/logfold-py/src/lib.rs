@@ -26,7 +26,7 @@ pyo3::create_exception!(_core, CoreStateError, pyo3::exceptions::PyException, "A
 
 fn translate(error: EngineError) -> PyErr {
     match error {
-        EngineError::Core(e @ logfold_core::CoreError::InvalidState(_)) => CoreStateError::new_err(e.to_string()),
+        EngineError::State(e) => CoreStateError::new_err(e.to_string()),
         EngineError::Core(e) => CoreConfigError::new_err(e.to_string()),
         EngineError::Config(message) => CoreConfigError::new_err(message),
         EngineError::Io(e @ logfold_io::IoError::Format(_)) => CoreFormatError::new_err(e.to_string()),
@@ -48,17 +48,9 @@ fn mine<'py>(
     let result = py.detach(|| run(&mut request, state.as_ref(), &observer));
     match result {
         Ok(output) => convert::build_output(py, &output),
-        Err(Failure::Engine(EngineError::Cancelled)) => {
-            Err(observer.take_error().unwrap_or_else(|| translate(EngineError::Cancelled)))
-        }
-        Err(Failure::Engine(other)) => Err(translate(other)),
-        Err(Failure::State(failure)) => Err(CoreStateError::new_err(failure.0)),
+        Err(EngineError::Cancelled) => Err(observer.take_error().unwrap_or_else(|| translate(EngineError::Cancelled))),
+        Err(other) => Err(translate(other)),
     }
-}
-
-enum Failure {
-    Engine(EngineError),
-    State(state::StateFailure),
 }
 
 /// One load of the state to continue from, the mining run, and one save of the state: a state never crosses the
@@ -67,13 +59,13 @@ fn run(
     request: &mut MineRequest,
     state: Option<&state::StateIo>,
     observer: &PyObserver,
-) -> Result<logfold_engine::MineOutput, Failure> {
+) -> Result<logfold_engine::MineOutput, EngineError> {
     if let Some(state) = state {
-        state.before(request).map_err(Failure::State)?;
+        state.before(request)?;
     }
-    let mut output = logfold_engine::mine(request, observer).map_err(Failure::Engine)?;
+    let mut output = logfold_engine::mine(request, observer)?;
     if let Some(state) = state {
-        state.after(&mut output).map_err(Failure::State)?;
+        state.after(&mut output)?;
     }
     Ok(output)
 }

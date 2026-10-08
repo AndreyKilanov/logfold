@@ -6,8 +6,10 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use logfold_core::{DrainMiner, MinerSnapshot, default_mask_rules};
-use logfold_engine::{ExecutionStrategy, MineOutput, MineRequest, MiningConfig, NullObserver, mine, threads_for_seed};
-use logfold_io::{FormatConfig, FormatSpec};
+use logfold_engine::{
+    EngineError, ExecutionStrategy, MineOutput, MineRequest, MiningConfig, NullObserver, mine, threads_for_seed,
+};
+use logfold_io::{FormatConfig, FormatSpec, StateError};
 
 fn write_log(dir: &tempfile::TempDir, name: &str, range: std::ops::Range<usize>) -> PathBuf {
     let path = dir.path().join(name);
@@ -174,4 +176,14 @@ fn a_large_loaded_tree_gets_fewer_threads_so_that_its_copies_fit_the_memory() {
     assert_eq!(threads_for_seed(10_000_000, 16), 1, "a huge tree is continued by one thread");
     assert_eq!(threads_for_seed(1_000, 0), 1, "never fewer than one");
     assert_eq!(threads_for_seed(usize::MAX, 4), 1, "no overflow");
+}
+
+#[test]
+fn a_snapshot_that_the_miner_refuses_is_a_state_error() {
+    let dir = tempfile::tempdir().unwrap();
+    let first = write_log(&dir, "a.log", 0..400);
+    let mut state = saved(&first);
+    state.roots.push((1000, u32::MAX));
+    let error = mine(&request(&first, ExecutionStrategy::Sequential, Some(state), false), &NullObserver).unwrap_err();
+    assert!(matches!(error, EngineError::State(StateError::Damaged(_))), "{error}");
 }

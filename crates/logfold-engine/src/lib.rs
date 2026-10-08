@@ -24,7 +24,8 @@ pub use types::{
     RunMetrics, RunSummary,
 };
 
-use logfold_core::{DrainMiner, MinerConfig};
+use logfold_core::{CoreError, DrainMiner, MinerConfig};
+use logfold_io::StateError;
 use pipeline::PipelineContext;
 
 /// Memory that the copies of a loaded tree may take together: every worker holds a copy and the window of unmerged
@@ -65,7 +66,10 @@ pub fn mine(request: &MineRequest, observer: &dyn ProgressObserver) -> Result<Mi
                         .into(),
                 ));
             }
-            Some(DrainMiner::from_snapshot(snapshot.clone(), n_runs)?)
+            Some(DrainMiner::from_snapshot(snapshot.clone(), n_runs).map_err(|error| match error {
+                CoreError::InvalidState(message) => EngineError::State(StateError::Damaged(message)),
+                other => EngineError::Core(other),
+            })?)
         }
         None => None,
     };
