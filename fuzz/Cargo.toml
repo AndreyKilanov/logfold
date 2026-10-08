@@ -1,0 +1,39 @@
+[package]
+name = "logfold-fuzz"
+description = "Fuzz targets for the parsers of untrusted input of logfold-io."
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+logfold-core = { path = "../crates/logfold-core" }
+logfold-io = { path = "../crates/logfold-io" }
+sha2 = "0.10"
+tempfile = "3"
+
+[workspace]
+
+[[bin]]
+name = "state_json"
+path = "fuzz_targets/state_json.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "state_binary"
+path = "fuzz_targets/state_binary.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "gzip_lines"
+path = "fuzz_targets/gzip_lines.rs"
+test = false
+doc = false
+bench = false

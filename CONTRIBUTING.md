@@ -74,5 +74,9 @@ pytest
 Rust tests live in one package, `crates/logfold-tests` (`tests/<crate>.rs`, one module per topic), not inline in the crates; a test
 needs only the public API of a crate. A source file has at most 500 lines (checked by `tests/test_source_size.py`).
 
+The parsers of untrusted input (state files and gzip sources) have fuzz targets in `fuzz/`, outside the workspace. They
+need nightly Rust and `cargo-fuzz`: `cd fuzz && cargo fuzz run state_json corpus/state_json`. A weekly workflow runs
+them; `python fuzz/seed_corpus.py` rebuilds the seed corpus.
+
 New behavior has tests, user-visible changes are in `CHANGELOG.md`, and a change to an irreversible decision
 (public contract, algorithm) is called out in the PR.
