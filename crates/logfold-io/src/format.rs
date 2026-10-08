@@ -182,9 +182,8 @@ impl CompiledFormat {
                 })
             }
             Kind::Regex { regex, message, time, level } => {
-                let first = &text[..first_len];
+                let (first, continuation) = text.split_at(first_len);
                 let caps = regex.captures(first)?;
-                let continuation = &text[first_len..];
                 let head: &[u8] = match message {
                     Some(index) => caps.get(*index).map_or(&[][..], |m| m.as_bytes()),
                     None => first,

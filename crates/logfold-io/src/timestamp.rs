@@ -100,7 +100,7 @@ impl<'a> Cursor<'a> {
         }
         let mut micros: i64 = 0;
         let mut used = 0;
-        for &b in &self.bytes[start..self.pos] {
+        for &b in self.bytes.get(start..self.pos).unwrap_or_default() {
             if used < 6 {
                 micros = micros * 10 + i64::from(b - b'0');
                 used += 1;
@@ -242,8 +242,7 @@ impl TsFormat {
         let bytes = format.as_bytes();
         let mut items = Vec::new();
         let mut index = 0;
-        while index < bytes.len() {
-            let byte = bytes[index];
+        while let Some(&byte) = bytes.get(index) {
             index += 1;
             if byte == b' ' {
                 if items.last() != Some(&Item::Spaces) {
@@ -322,11 +321,11 @@ impl TsFormat {
 }
 
 fn month_name(cur: &mut Cursor<'_>, abbreviated: bool) -> Option<i64> {
-    let rest = &cur.bytes[cur.pos..];
+    let rest = cur.bytes.get(cur.pos..).unwrap_or_default();
     for (index, name) in MONTHS.iter().enumerate() {
-        let candidate = if abbreviated { &name[..3] } else { name };
+        let candidate = if abbreviated { name.get(..3).unwrap_or(name) } else { name };
         let len = candidate.len();
-        if rest.len() >= len && rest[..len].eq_ignore_ascii_case(candidate.as_bytes()) {
+        if rest.get(..len).is_some_and(|head| head.eq_ignore_ascii_case(candidate.as_bytes())) {
             cur.pos += len;
             return Some(index as i64 + 1);
         }

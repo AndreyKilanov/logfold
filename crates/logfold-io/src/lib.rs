@@ -4,6 +4,7 @@
 //! `logfold-core` only for domain types such as [`logfold_core::Level`].
 
 #![forbid(unsafe_code)]
+#![warn(clippy::indexing_slicing)]
 
 mod error;
 mod format;

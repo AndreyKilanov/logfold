@@ -60,7 +60,7 @@ impl MinerConfig {
 
 impl Default for MinerConfig {
     fn default() -> Self {
-        MinerConfig::new(4, 0.4, 100, 100_000).expect("default configuration is valid")
+        MinerConfig { depth: 4, max_children: 100, max_templates: 100_000, threshold_micro: 400_000 }
     }
 }
 

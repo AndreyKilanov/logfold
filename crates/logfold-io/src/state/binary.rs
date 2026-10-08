@@ -129,7 +129,10 @@ pub(super) fn decode(bytes: &[u8], limits: &StateLimits) -> Result<State, StateE
     if bytes.len() < BINARY_MAGIC.len() + 2 {
         return Err(damaged("the file is too short"));
     }
-    let schema = u32::from(u16::from_le_bytes([bytes[BINARY_MAGIC.len()], bytes[BINARY_MAGIC.len() + 1]]));
+    let Some([low, high]) = bytes.get(BINARY_MAGIC.len()..BINARY_MAGIC.len() + 2) else {
+        return Err(damaged("the file is too short"));
+    };
+    let schema = u32::from(u16::from_le_bytes([*low, *high]));
     if schema > STATE_SCHEMA_VERSION {
         return Err(StateError::Version { found: schema, supported: STATE_SCHEMA_VERSION });
     }
@@ -140,7 +143,7 @@ pub(super) fn decode(bytes: &[u8], limits: &StateLimits) -> Result<State, StateE
     if Sha256::digest(body).as_slice() != digest {
         return Err(StateError::Checksum);
     }
-    let mut cursor = Cursor::new(&body[BINARY_MAGIC.len()..]);
+    let mut cursor = Cursor::new(body.get(BINARY_MAGIC.len()..).ok_or_else(|| damaged("the file is too short"))?);
     cursor.u16_le()?;
     let algo_version = cursor.u32_le()?;
     let contract = cursor.u32_le()?;
