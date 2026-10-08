@@ -6,6 +6,7 @@ matcher and random thresholds. The entries must be equal, field by field, includ
 
 from __future__ import annotations
 
+import math
 import random
 from datetime import UTC, datetime, timedelta
 
@@ -117,6 +118,26 @@ def test_native_classification_equals_the_reference_for_engine_results(
             table_side(table, 0, before), table_side(table, 1, after), config, spec, lambda text: text
         )
         assert got == expected, (matcher.name, config)  # type: ignore[attr-defined]
+
+
+@pytest.mark.parametrize("threshold", [0.0, -1.0, math.nan, math.inf, 1.5])
+@pytest.mark.parametrize("seed", range(5))
+def test_native_classification_equals_the_reference_for_unusual_thresholds(seed: int, threshold: float) -> None:
+    rng = random.Random(seed)
+    templates = random_templates(rng, 30)
+    before, after = (
+        summary(sum(t.runs[0].count for t in templates), False),
+        summary(sum(t.runs[1].count for t in templates), False),
+    )
+    table = TemplateTable.from_stats(templates, 2)
+    for matcher in (JaccardMatcher(), JaccardIdfMatcher(), OverlapMatcher(), RulesMatcher()):
+        if hasattr(matcher, "threshold"):
+            matcher.threshold = threshold
+        config = DiffConfig(min_count=0, min_new_count=0, matcher=matcher.name)
+        spec = native_spec(matcher)
+        assert spec is not None
+        got = classify_native(table_side(table, 0, before), table_side(table, 1, after), config, spec, lambda t: t)
+        assert got == reference(templates, before, after, config, matcher), (matcher.name, threshold)
 
 
 def moment(value: int | None, aware: bool) -> datetime | None:
