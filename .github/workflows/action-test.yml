@@ -116,3 +116,7 @@ jobs:
       - name: The HTML report is there
         shell: bash
         run: test -s report/diff.html && grep -q "db timeout" report/diff.html
+
+      - name: The report names the log after the commit
+        shell: bash
+        run: grep -Eq "@[0-9a-f]{7}[.]log" report/diff.html

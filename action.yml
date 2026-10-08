@@ -121,8 +121,15 @@ runs:
         esac
         if [ -n "$INPUT_LEVEL" ]; then gate=("${gate[@]+"${gate[@]}"}" --level "$INPUT_LEVEL"); fi
 
+        # a saved analysis keeps the name of its log, so the log is named after the branch and the commit and the report
+        # reads "main@1a2b3c4.log -> fix-x@5d6e7f8.log" instead of the same file name on both sides
+        case "$INPUT_LOG" in *.gz) suffix=.log.gz ;; *.zst) suffix=.log.zst ;; *) suffix=.log ;; esac
+        label="$(printf '%s' "${GITHUB_HEAD_REF:-${GITHUB_REF_NAME:-run}}@${GITHUB_SHA:0:7}" | tr -c 'A-Za-z0-9._@-' '-')$suffix"
+        case "$INPUT_LOG" in /* | [A-Za-z]:*) source_log="$INPUT_LOG" ;; *) source_log="$PWD/$INPUT_LOG" ;; esac
+        ln -sf "$source_log" "$WORK/$label" 2>/dev/null || cp "$source_log" "$WORK/$label"
+
         current="$WORK/current.json"
-        logfold analyze "$INPUT_LOG" --format "$INPUT_FORMAT" --examples "$INPUT_EXAMPLES" --out "$current" -q
+        (cd "$WORK" && logfold analyze "$label" --format "$INPUT_FORMAT" --examples "$INPUT_EXAMPLES" --out "$current" -q)
 
         baseline="$INPUT_BASELINE"
         if [ -z "$baseline" ] && [ -f "$CACHED_BASELINE" ]; then baseline="$CACHED_BASELINE"; fi
