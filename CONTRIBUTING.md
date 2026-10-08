@@ -19,9 +19,8 @@ You need Rust 1.99 or newer (the minimum supported version, checked by its own C
 - `logfold-core` has no file I/O, threads, serialization formats, PyO3 or `unsafe`.
 - The Python/Rust boundary is **one coarse call per use case**, never per line.
 - Python layering is checked by `import-linter`; `logfold._core` is imported only from `_bridge.py`.
-- The algorithm is a contract: [`docs/ALGORITHM.md`](docs/ALGORITHM.md). The Rust engine and the pure-Python reference
-  engine must give identical results for the sequential strategy; change the spec, both engines and the equivalence
-  tests in one pull request.
+- The algorithm is a contract: [`docs/ALGORITHM.md`](docs/ALGORITHM.md). The Rust engine is the only implementation;
+  change the spec, the engine and the golden results (`tests/fixtures/golden`) in one pull request.
 - Public contracts (Python API, CLI flags, exit codes, JSON schemas, `FormatSpec`) need a changelog entry.
 
 ## Code style

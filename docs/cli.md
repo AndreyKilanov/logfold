@@ -58,7 +58,7 @@ Mining and execution options, shared with `diff`:
 | `--max-templates` | 100000 | template cap; further records are pooled into catch-all templates |
 | `--no-masks` | off | do not mask numbers, IPs, UUIDs and other values |
 | `--high-cardinality` | off | fast bounded mode for data with a huge number of distinct messages (5000 templates, sequential) |
-| `--engine` | `auto` | `auto`, `native` or `python` (slow reference engine) |
+| `--engine` | `auto` | `auto` or `native`; `python` is deprecated and runs `native` |
 | `--strategy` | `auto` | `auto`, `sequential` (one tree) or `chunked` (parallel); `auto` chunks above 64 MiB, but mines sequentially when the first chunk shows that almost every record is a new template |
 | `--threads` | all cores | worker threads of the chunked strategy |
 | `--chunk-mb` | 64 | chunk size in MiB of the chunked strategy |
@@ -267,10 +267,10 @@ width. `--debug` shows the traceback instead.
 - `logfold analyze --help` and `logfold diff --help` group the options into the panels Input, Output, Diff (`diff` only),
   Mining, Execution and General, and end with usage examples.
 - `--warm-start` and `--chunk-mb` only matter for the chunked strategy. When the run turned out sequential (a small input
-  with `--strategy auto`, `--strategy sequential`, `--high-cardinality`, or the python engine) the result's warnings say that
-  `warm_start` was ignored, and for the last three also `chunk_bytes`, and they are printed with the other warnings; the exit code does not change.
-- `LOGFOLD_ENGINE=auto|native|python` selects the engine when `--engine` is not given. `python` forces the slow
-  reference engine.
+  with `--strategy auto`, `--strategy sequential` or `--high-cardinality`) the result's warnings say that
+  `warm_start` was ignored, and for the last two also `chunk_bytes`, and they are printed with the other warnings; the exit code does not change.
+- `LOGFOLD_ENGINE=auto|native` selects the engine when `--engine` is not given. `python`, the name of the removed
+  reference engine, still works: it runs the native engine with a deprecation warning.
 - `LOGFOLD_OFFLINE=1` forbids the network access of `logfold plugins check|install --online` and `--catalog URL`.
 - `LOGFOLD_PLUGIN_PATH` adds plugin folders (separated like `PATH`); `LOGFOLD_NO_USER_PLUGINS=1` switches off the
   plugin folder and `LOGFOLD_PLUGIN_PATH`.

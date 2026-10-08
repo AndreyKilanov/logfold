@@ -287,11 +287,11 @@ a fast parser, so plugins cost nothing per line. `Reporter` and `DiffMatcher` ar
 
 ## Engines
 
-`engine="auto"` uses the Rust engine and falls back to a slow pure-Python reference engine with a warning when the
-extension is missing. The reference engine is also the oracle that the Rust engine is tested against; for the
-sequential strategy both give identical results (`docs/ALGORITHM.md`). Set `LOGFOLD_ENGINE=python` to force it. State
-files (`save_state`, `load_state`, see [the CLI reference](cli.md#state-files)) are read and written by the native engine only
-for now; the reference engine refuses them with an `EngineError`.
+The Rust engine does the mining (`engine="auto"` and `engine="native"` are the same); its behavior is the contract in
+`docs/ALGORITHM.md`. If the extension is missing or speaks another contract version, mining raises an `EngineError`
+that asks for a reinstall. The value `engine="python"` of the removed pure-Python engine still works: it runs the Rust
+engine with a deprecation warning, and will be refused in a later release. State files (`save_state`, `load_state`, see
+[the CLI reference](cli.md#state-files)) are read and written by the Rust engine.
 
 ## Security
 

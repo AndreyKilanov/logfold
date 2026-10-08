@@ -1,8 +1,8 @@
 # logfold algorithm specification (version 1)
 
-This document is the contract between the Rust engine (`logfold-core`, `logfold-io`, `logfold-engine`) and the
-pure-Python reference engine (`logfold.engines.python`). For the sequential strategy both engines must produce
-**identical** templates, counts, timestamps, levels and examples. All comparisons use integer arithmetic.
+This document is the contract of the Rust engine (`logfold-core`, `logfold-io`, `logfold-engine`). The golden results
+in `tests/fixtures/golden` and the property tests of `logfold-tests` hold the sequential strategy to it: the templates,
+counts, timestamps, levels and examples are exactly the ones described here. All comparisons use integer arithmetic.
 
 `ALGO_VERSION = 1`. Any change to the rules below bumps it.
 
@@ -341,9 +341,7 @@ implementations and of the contract test (`tests/engines/test_native_reports.py`
 ## 13. State files
 
 A state file saves a miner so that a later run continues from it. It does not change how records are mined, so it does not
-affect `ALGO_VERSION`; it adds the extension contract version 8. The native engine reads and writes state files; the
-pure-Python reference engine must write the same bytes and read the same files, and until it does it refuses a state
-file with an error.
+affect `ALGO_VERSION`; it adds the extension contract version 8. The engine reads and writes state files.
 
 **Content.** The miner as plain data: the parameters (`depth`, `threshold_micro`, `max_children`, `max_templates`); the
 nodes of the tree in the order they were created, each with its children (token, node) ordered by the bytes of the token and
@@ -391,6 +389,6 @@ the history as a varint count, two little-endian `i64`, six varint level counts)
 a cluster), and the SHA-256 of all the bytes before it (32 bytes). A varint is an unsigned LEB128 of at most 64 bits.
 
 A file written to a path that ends in `.gz` is compressed with gzip; a gzip file is recognized by its first bytes, whatever its
-name, and read with the size limit applied to the decompressed bytes. The same state is the same bytes in both engines before
+name, and read with the size limit applied to the decompressed bytes. The same state is the same bytes before
 compression (the compressed bytes depend on the compressor, only the content is promised); a change of this layout is a change of this section,
 of both implementations and of the contract tests in one change, and raises `schema_version`.

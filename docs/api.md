@@ -183,7 +183,7 @@ G statistic of the change of the share) and `p_value`; both are `None` for new a
 - `RunMetrics`: `engine`, `strategy` (`sequential` or `chunked`: what was used, which `auto` decides), `threads`, `chunks`, and wall times `wall_total_s`, `wall_mine_s`,
   `wall_merge_s`, `wall_recount_s`, `wall_freeze_s`.
 - `ResultMeta`: `schema_version`, `algo_version`, `logfold_version`, `config_hash` (results with different hashes may
-  not be comparable), `format`, `degraded` (the slow reference engine was used).
+  not be comparable), `format`, `degraded` (always `False`; kept for saved results).
 
 ## Mining and execution configuration
 
@@ -223,7 +223,7 @@ working.
 | `ConfigError` | `ValueError` | an option or configuration value is invalid |
 | `FormatError` | `ValueError` | a format is invalid, unknown or could not be detected |
 | `SourceError` | | an input could not be opened or read |
-| `EngineError` | `RuntimeError` | the engine failed or the requested one is unavailable (also: a state file asked of the pure-Python engine) |
+| `EngineError` | `RuntimeError` | the engine failed or the native extension is unavailable |
 | `StateError` | | a state file is damaged, too large, newer than this logfold, from another algorithm version, or mined with other masks or parameters |
 
 ## Reporters
