@@ -16,8 +16,14 @@ const MONTHS: [&str; 12] = [
     "december",
 ];
 
-/// Parsed result: microseconds since the Unix epoch (UTC) and whether the text carried a zone.
-pub type Parsed = (i64, bool);
+/// A parsed timestamp: microseconds since the Unix epoch (UTC) and whether the text carried a zone.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ParsedTimestamp {
+    /// Microseconds since the Unix epoch, in UTC.
+    pub micros: i64,
+    /// True when the text carried a zone.
+    pub tz_aware: bool,
+}
 
 fn is_leap(year: i64) -> bool {
     (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
@@ -151,7 +157,7 @@ struct Fields {
 }
 
 impl Fields {
-    fn finish(self) -> Option<Parsed> {
+    fn finish(self) -> Option<ParsedTimestamp> {
         let year = self.year.unwrap_or(1970);
         if self.hour > 23 || self.minute > 59 || self.second > 59 {
             return None;
@@ -173,12 +179,12 @@ impl Fields {
         let seconds = days * 86_400 + self.hour * 3600 + self.minute * 60 + self.second;
         let micros = seconds.checked_mul(MICROS)?.checked_add(self.micros)?;
         let offset = self.offset.unwrap_or(0);
-        Some((micros - offset * MICROS, self.offset.is_some()))
+        Some(ParsedTimestamp { micros: micros - offset * MICROS, tz_aware: self.offset.is_some() })
     }
 }
 
 /// Parses an ISO-8601 timestamp (`YYYY-MM-DD[(T| )HH:MM[:SS[.f]]][zone]`).
-pub fn parse_iso(text: &[u8]) -> Option<Parsed> {
+pub fn parse_iso(text: &[u8]) -> Option<ParsedTimestamp> {
     let mut cur = Cursor::new(text.trim_ascii());
     let mut fields = Fields { year: Some(cur.digits(4, 4)?), ..Fields::default() };
     if !cur.eat(b'-') {
@@ -232,11 +238,11 @@ enum Item {
 
 /// A compiled `strptime`-style format (`%Y %y %m %d %e %H %M %S %f %z %b %B %j %T %%`).
 #[derive(Clone, Debug)]
-pub struct TsFormat {
+pub struct TimestampFormat {
     items: Vec<Item>,
 }
 
-impl TsFormat {
+impl TimestampFormat {
     /// Compiles `format`; unknown directives are rejected.
     pub fn new(format: &str) -> Result<Self, String> {
         let bytes = format.as_bytes();
@@ -275,11 +281,11 @@ impl TsFormat {
                 }
             }
         }
-        Ok(TsFormat { items })
+        Ok(TimestampFormat { items })
     }
 
     /// Parses `text` with this format.
-    pub fn parse(&self, text: &[u8]) -> Option<Parsed> {
+    pub fn parse(&self, text: &[u8]) -> Option<ParsedTimestamp> {
         let mut cur = Cursor::new(text.trim_ascii());
         let mut fields = Fields::default();
         for item in &self.items {

@@ -25,8 +25,8 @@ pub use freeze::FrozenTemplate;
 pub use level::{LEVEL_COUNT, Level};
 pub use masker::{MaskRule, MaskScratch, RuleMasker, default_mask_rules};
 pub use miner::{
-    Assigned, ClusterSnapshot, DrainMiner, History, MAX_EXAMPLE_BYTES, MinerConfig, MinerSnapshot, NodeSnapshot,
-    RecordMeta, Recount, WILDCARD,
+    Assignment, ClusterHistory, ClusterSnapshot, DrainMiner, MAX_EXAMPLE_BYTES, MinerConfig, MinerSnapshot,
+    NodeSnapshot, RecordMeta, Recount, WILDCARD,
 };
 pub use stats::RunStats;
 pub use tokenizer::{TokenView, Tokenizer};

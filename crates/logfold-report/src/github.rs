@@ -3,7 +3,7 @@
 use std::fmt::Write as _;
 
 use super::text::{alert_noun, push_code_span, push_group, push_share, run_names};
-use super::{Analysis, Diff, Row, Subject, alerts_first, is_alert};
+use super::{AnalysisInput, DiffInput, ReportRow, ReportSubject, alerts_first, is_alert};
 
 const NAME_WIDTH: usize = 80;
 const TEXT_WIDTH: usize = 300;
@@ -12,10 +12,10 @@ const TEXT_WIDTH: usize = 300;
 ///
 /// `top` is the number of templates per list (at most the length of the longest list). When the document is larger than the budget the lists are cut to half,
 /// then a quarter, and so on, down to none: the headings and the counts are always kept.
-pub fn github_summary(subject: &Subject<'_>, top: usize, max_bytes: usize) -> String {
+pub fn github_summary(subject: &ReportSubject<'_>, top: usize, max_bytes: usize) -> String {
     let longest = match subject {
-        Subject::Analysis(analysis) => analysis.templates.len(),
-        Subject::Diff(diff) => diff.new.len().max(diff.changed.len()).max(diff.disappeared.len()),
+        ReportSubject::Analysis(analysis) => analysis.templates.len(),
+        ReportSubject::Diff(diff) => diff.new.len().max(diff.changed.len()).max(diff.disappeared.len()),
     };
     let top = top.min(longest);
     let mut rows = top;
@@ -28,11 +28,11 @@ pub fn github_summary(subject: &Subject<'_>, top: usize, max_bytes: usize) -> St
     }
 }
 
-fn document(subject: &Subject<'_>, rows: usize, cut: bool) -> String {
+fn document(subject: &ReportSubject<'_>, rows: usize, cut: bool) -> String {
     let mut out = String::new();
     match subject {
-        Subject::Analysis(analysis) => analysis_lines(&mut out, analysis, rows),
-        Subject::Diff(diff) => diff_lines(&mut out, diff, rows),
+        ReportSubject::Analysis(analysis) => analysis_lines(&mut out, analysis, rows),
+        ReportSubject::Diff(diff) => diff_lines(&mut out, diff, rows),
     }
     if cut {
         let _ = writeln!(out, "\n_Lists are shortened to {rows} templates to fit the size limit of a job summary._");
@@ -51,7 +51,7 @@ fn push_level(out: &mut String, level: Option<&str>) {
     }
 }
 
-fn entry_line(out: &mut String, row: &Row<'_>, kind: &str) {
+fn entry_line(out: &mut String, row: &ReportRow<'_>, kind: &str) {
     out.push_str("- ");
     push_level(out, row.level);
     match (kind, row.ratio) {
@@ -73,7 +73,7 @@ fn entry_line(out: &mut String, row: &Row<'_>, kind: &str) {
     out.push('\n');
 }
 
-fn template_line(out: &mut String, row: &Row<'_>, records: u64) {
+fn template_line(out: &mut String, row: &ReportRow<'_>, records: u64) {
     out.push_str("- ");
     push_level(out, row.level);
     push_group(out, row.after);
@@ -96,7 +96,7 @@ fn warning_lines(out: &mut String, warnings: &[&str]) {
     }
 }
 
-fn analysis_lines(out: &mut String, analysis: &Analysis<'_>, rows: usize) {
+fn analysis_lines(out: &mut String, analysis: &AnalysisInput<'_>, rows: usize) {
     let run = &analysis.run;
     out.push_str("## logfold: ");
     push_code_span(out, run.name, NAME_WIDTH, true);
@@ -130,7 +130,7 @@ fn analysis_lines(out: &mut String, analysis: &Analysis<'_>, rows: usize) {
     }
 }
 
-fn diff_lines(out: &mut String, diff: &Diff<'_>, rows: usize) {
+fn diff_lines(out: &mut String, diff: &DiffInput<'_>, rows: usize) {
     let alerts = diff.new.iter().filter(|row| is_alert(row.level)).count() as u64;
     let _ = write!(out, "## logfold: {}\n\n", run_names(diff.before.name, diff.after.name, NAME_WIDTH));
     if alerts > 0 {

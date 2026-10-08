@@ -9,7 +9,7 @@
 use std::fmt;
 use std::marker::PhantomData;
 
-use logfold_core::{ClusterSnapshot, History, MinerSnapshot, NodeSnapshot};
+use logfold_core::{ClusterHistory, ClusterSnapshot, MinerSnapshot, NodeSnapshot};
 use serde::Deserialize;
 use serde::de::{self, DeserializeSeed, Deserializer, MapAccess, SeqAccess, Visitor};
 use sha2::{Digest, Sha256};
@@ -240,7 +240,7 @@ impl ClusterJson {
         let (count, first, last, levels) = self.h;
         ClusterSnapshot {
             tokens: self.t.into_iter().map(|token| token.0).collect(),
-            history: History { count, first, last, levels },
+            history: ClusterHistory { count, first, last, levels },
         }
     }
 }

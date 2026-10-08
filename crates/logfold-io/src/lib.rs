@@ -25,4 +25,4 @@ pub use state::{
     BINARY_MAGIC, MAX_HEADER_TEXT_BYTES, STATE_KIND, STATE_SCHEMA_VERSION, State, StateCounts, StateError, StateFormat,
     StateHeader, StateLimits, check_state_writable, decode_state, encode_state, read_state_file, write_state_file,
 };
-pub use timestamp::{TsFormat, epoch_float_to_micros, epoch_int_to_micros, parse_iso};
+pub use timestamp::{ParsedTimestamp, TimestampFormat, epoch_float_to_micros, epoch_int_to_micros, parse_iso};

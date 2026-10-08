@@ -25,7 +25,7 @@ pub fn is_alert(level: Option<&str>) -> bool {
 
 /// One template of a report: a template of an analysis or an entry of a diff.
 #[derive(Debug, Clone, Copy, Default)]
-pub struct Row<'a> {
+pub struct ReportRow<'a> {
     /// Identifier of the template (16 hex digits).
     pub id: &'a str,
     /// Template text.
@@ -46,7 +46,7 @@ pub struct Row<'a> {
 
 /// Counters of one analyzed run.
 #[derive(Debug, Clone, Copy, Default)]
-pub struct Run<'a> {
+pub struct ReportRun<'a> {
     /// Input paths joined with a comma.
     pub name: &'a str,
     /// Parsed records.
@@ -57,11 +57,11 @@ pub struct Run<'a> {
 
 /// An analysis result: templates most frequent first.
 #[derive(Debug, Clone, Copy)]
-pub struct Analysis<'a> {
+pub struct AnalysisInput<'a> {
     /// The run.
-    pub run: Run<'a>,
+    pub run: ReportRun<'a>,
     /// Templates, most frequent first.
-    pub templates: &'a [Row<'a>],
+    pub templates: &'a [ReportRow<'a>],
     /// Records per level that occurred, least severe first.
     pub levels: &'a [(&'a str, u64)],
     /// Warnings of the run.
@@ -70,17 +70,17 @@ pub struct Analysis<'a> {
 
 /// A diff result: the entries of each kind, in the order of the result.
 #[derive(Debug, Clone, Copy)]
-pub struct Diff<'a> {
+pub struct DiffInput<'a> {
     /// The first run.
-    pub before: Run<'a>,
+    pub before: ReportRun<'a>,
     /// The second run.
-    pub after: Run<'a>,
+    pub after: ReportRun<'a>,
     /// Present after, absent before.
-    pub new: &'a [Row<'a>],
+    pub new: &'a [ReportRow<'a>],
     /// Present in both with a significant change.
-    pub changed: &'a [Row<'a>],
+    pub changed: &'a [ReportRow<'a>],
     /// Present before, absent after.
-    pub disappeared: &'a [Row<'a>],
+    pub disappeared: &'a [ReportRow<'a>],
     /// Templates present in both without a significant change.
     pub unchanged: u64,
     /// Warnings of the comparison.
@@ -89,15 +89,15 @@ pub struct Diff<'a> {
 
 /// What a report describes.
 #[derive(Debug, Clone, Copy)]
-pub enum Subject<'a> {
+pub enum ReportSubject<'a> {
     /// One analyzed run.
-    Analysis(Analysis<'a>),
+    Analysis(AnalysisInput<'a>),
     /// Two runs compared.
-    Diff(Diff<'a>),
+    Diff(DiffInput<'a>),
 }
 
 /// Indices of `rows` with the WARN+ rows first, each group in its own order.
-pub(crate) fn alerts_first(rows: &[Row<'_>]) -> Vec<usize> {
+pub(crate) fn alerts_first(rows: &[ReportRow<'_>]) -> Vec<usize> {
     let alerts = (0..rows.len()).filter(|&i| is_alert(rows[i].level));
     let others = (0..rows.len()).filter(|&i| !is_alert(rows[i].level));
     alerts.chain(others).collect()

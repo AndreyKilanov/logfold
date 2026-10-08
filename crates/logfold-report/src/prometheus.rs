@@ -3,7 +3,7 @@
 use std::fmt::Write as _;
 
 use super::text::push_label_value;
-use super::{Analysis, Diff, Row, Subject, is_alert};
+use super::{AnalysisInput, DiffInput, ReportRow, ReportSubject, is_alert};
 
 const LABEL_WIDTH: usize = 120;
 const ID_WIDTH: usize = 64;
@@ -30,7 +30,7 @@ fn labelled(out: &mut String, name: &str, key: &str, text: &str, value: u64) {
 }
 
 /// Append `id="..",level="..",template=".."` of a row.
-fn template_labels(out: &mut String, row: &Row<'_>) {
+fn template_labels(out: &mut String, row: &ReportRow<'_>) {
     out.push_str("id=\"");
     push_label_value(out, row.id, ID_WIDTH);
     out.push('"');
@@ -44,7 +44,7 @@ fn template_labels(out: &mut String, row: &Row<'_>) {
     out.push('"');
 }
 
-fn analysis_text(out: &mut String, analysis: &Analysis<'_>, top: usize) {
+fn analysis_text(out: &mut String, analysis: &AnalysisInput<'_>, top: usize) {
     let run = &analysis.run;
     family(out, "logfold_records", "Records parsed from the log.", |body| plain(body, "logfold_records", run.records));
     family(out, "logfold_unparsed_lines", "Lines that no record claimed.", |body| {
@@ -67,7 +67,7 @@ fn analysis_text(out: &mut String, analysis: &Analysis<'_>, top: usize) {
     });
 }
 
-fn diff_text(out: &mut String, diff: &Diff<'_>, top: usize) {
+fn diff_text(out: &mut String, diff: &DiffInput<'_>, top: usize) {
     let alerts = diff.new.iter().filter(|row| is_alert(row.level)).count() as u64;
     family(out, "logfold_diff_records", "Records of each run.", |body| {
         labelled(body, "logfold_diff_records", "side", "before", diff.before.records);
@@ -102,11 +102,11 @@ fn diff_text(out: &mut String, diff: &Diff<'_>, top: usize) {
 
 /// Render `subject` as Prometheus gauges. `top` is the number of templates that get a series of their own, per section
 /// for a diff. The levels of an analysis are written in the order they are given.
-pub fn prometheus(subject: &Subject<'_>, top: usize) -> String {
+pub fn prometheus(subject: &ReportSubject<'_>, top: usize) -> String {
     let mut out = String::new();
     match subject {
-        Subject::Analysis(analysis) => analysis_text(&mut out, analysis, top),
-        Subject::Diff(diff) => diff_text(&mut out, diff, top),
+        ReportSubject::Analysis(analysis) => analysis_text(&mut out, analysis, top),
+        ReportSubject::Diff(diff) => diff_text(&mut out, diff, top),
     }
     if out.is_empty() {
         out.push('\n');

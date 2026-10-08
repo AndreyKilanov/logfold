@@ -5,7 +5,7 @@
 //! all the bytes before it. Texts and byte strings are a varint length and the bytes; templates carry their history
 //! (count, first and last time as little-endian i64, one count per level as varints).
 
-use logfold_core::{ClusterSnapshot, History, LEVEL_COUNT, MinerSnapshot, NodeSnapshot};
+use logfold_core::{ClusterHistory, ClusterSnapshot, LEVEL_COUNT, MinerSnapshot, NodeSnapshot};
 use sha2::{Digest, Sha256};
 
 use super::wire::{Cursor, StateCounts, counts_of, put_varint};
@@ -112,11 +112,11 @@ impl<'a> Reader<'a> {
         for _ in 0..count {
             tokens.push(self.token()?);
         }
-        let mut history = History {
+        let mut history = ClusterHistory {
             count: self.cursor.varint()?,
             first: self.cursor.i64_le()?,
             last: self.cursor.i64_le()?,
-            ..History::default()
+            ..ClusterHistory::default()
         };
         for slot in history.levels.iter_mut().take(LEVEL_COUNT) {
             *slot = self.cursor.varint()?;

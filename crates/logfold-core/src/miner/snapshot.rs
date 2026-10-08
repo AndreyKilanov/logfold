@@ -16,7 +16,7 @@ use super::{Cluster, DrainMiner, MinerConfig, WILDCARD};
 
 /// Counts of the runs that were saved with a cluster; the example line of a run is never kept.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct History {
+pub struct ClusterHistory {
     /// Number of records.
     pub count: u64,
     /// Smallest timestamp (microseconds), `i64::MAX` when none.
@@ -27,13 +27,13 @@ pub struct History {
     pub levels: [u64; LEVEL_COUNT],
 }
 
-impl Default for History {
+impl Default for ClusterHistory {
     fn default() -> Self {
-        History { count: 0, first: i64::MAX, last: i64::MIN, levels: [0; LEVEL_COUNT] }
+        ClusterHistory { count: 0, first: i64::MAX, last: i64::MIN, levels: [0; LEVEL_COUNT] }
     }
 }
 
-impl History {
+impl ClusterHistory {
     /// Adds the counts of a run; sums saturate, because a crafted state may hold any number.
     fn add_stats(&mut self, stats: &RunStats) {
         self.count = self.count.saturating_add(stats.count);
@@ -51,7 +51,7 @@ pub struct ClusterSnapshot {
     /// Tokens of the template; a variable position holds the wildcard.
     pub tokens: Vec<Box<[u8]>>,
     /// Records of all runs saved so far, including the run that produced the snapshot.
-    pub history: History,
+    pub history: ClusterHistory,
 }
 
 /// A node of the template tree.

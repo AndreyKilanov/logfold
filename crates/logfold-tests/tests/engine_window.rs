@@ -36,7 +36,7 @@ fn write_log(dir: &tempfile::TempDir) -> PathBuf {
 }
 
 fn base() -> i64 {
-    parse_iso(b"2026-10-04T00:00:00Z").unwrap().0
+    parse_iso(b"2026-10-04T00:00:00Z").unwrap().micros
 }
 
 fn at(second: usize) -> i64 {
