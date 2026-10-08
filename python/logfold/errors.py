@@ -56,6 +56,10 @@ class EngineError(LogfoldError, RuntimeError):
     """The engine failed or is unavailable."""
 
 
+class StateError(LogfoldError):
+    """A state file cannot be used: it is damaged, too large, newer than this logfold, or mined with other settings."""
+
+
 class FormatDetectionError(FormatError):
     """Auto-detection found no built-in format that fits the sampled lines.
 

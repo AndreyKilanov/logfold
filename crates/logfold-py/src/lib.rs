@@ -6,6 +6,7 @@
 mod convert;
 mod observer;
 mod report;
+mod state;
 
 use pyo3::exceptions::PyKeyboardInterrupt;
 use pyo3::prelude::*;
@@ -15,14 +16,16 @@ use logfold_engine::{EngineError, MineRequest};
 use observer::PyObserver;
 
 /// Version of the Python <-> Rust data contract; bump on any incompatible change of the request or result layout.
-const CORE_API_VERSION: u32 = 7;
+const CORE_API_VERSION: u32 = 8;
 
 pyo3::create_exception!(_core, CoreConfigError, pyo3::exceptions::PyException, "Invalid configuration.");
 pyo3::create_exception!(_core, CoreFormatError, pyo3::exceptions::PyException, "Invalid or unusable log format.");
 pyo3::create_exception!(_core, CoreSourceError, pyo3::exceptions::PyException, "A source could not be read.");
+pyo3::create_exception!(_core, CoreStateError, pyo3::exceptions::PyException, "A state file cannot be used.");
 
 fn translate(error: EngineError) -> PyErr {
     match error {
+        EngineError::Core(e @ logfold_core::CoreError::InvalidState(_)) => CoreStateError::new_err(e.to_string()),
         EngineError::Core(e) => CoreConfigError::new_err(e.to_string()),
         EngineError::Config(message) => CoreConfigError::new_err(message),
         EngineError::Io(e @ logfold_io::IoError::Format(_)) => CoreFormatError::new_err(e.to_string()),
@@ -39,14 +42,39 @@ fn mine<'py>(
     request: &Bound<'py, PyDict>,
     progress: Option<Py<PyAny>>,
 ) -> PyResult<Bound<'py, PyDict>> {
-    let request: MineRequest = convert::parse_request(request)?;
+    let (mut request, state): (MineRequest, _) = convert::parse_request(request)?;
     let observer = PyObserver::new(progress);
-    let result = py.detach(|| logfold_engine::mine(&request, &observer));
+    let result = py.detach(|| run(&mut request, state.as_ref(), &observer));
     match result {
         Ok(output) => convert::build_output(py, &output),
-        Err(EngineError::Cancelled) => Err(observer.take_error().unwrap_or_else(|| translate(EngineError::Cancelled))),
-        Err(other) => Err(translate(other)),
+        Err(Failure::Engine(EngineError::Cancelled)) => {
+            Err(observer.take_error().unwrap_or_else(|| translate(EngineError::Cancelled)))
+        }
+        Err(Failure::Engine(other)) => Err(translate(other)),
+        Err(Failure::State(failure)) => Err(CoreStateError::new_err(failure.0)),
     }
+}
+
+enum Failure {
+    Engine(EngineError),
+    State(state::StateFailure),
+}
+
+/// One load of the state to continue from, the mining run, and one save of the state: a state never crosses the
+/// boundary line by line.
+fn run(
+    request: &mut MineRequest,
+    state: Option<&state::StateIo>,
+    observer: &PyObserver,
+) -> Result<logfold_engine::MineOutput, Failure> {
+    if let Some(state) = state {
+        state.before(request).map_err(Failure::State)?;
+    }
+    let mut output = logfold_engine::mine(request, observer).map_err(Failure::Engine)?;
+    if let Some(state) = state {
+        state.after(&mut output).map_err(Failure::State)?;
+    }
+    Ok(output)
 }
 
 /// Pairs templates that exist in one run only.
@@ -198,6 +226,7 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("CoreConfigError", m.py().get_type::<CoreConfigError>())?;
     m.add("CoreFormatError", m.py().get_type::<CoreFormatError>())?;
     m.add("CoreSourceError", m.py().get_type::<CoreSourceError>())?;
+    m.add("CoreStateError", m.py().get_type::<CoreStateError>())?;
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     Ok(())
 }

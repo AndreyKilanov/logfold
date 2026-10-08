@@ -8,6 +8,7 @@ use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyList};
 
 use crate::CoreConfigError;
+use crate::state::StateIo;
 
 pub(crate) fn required<'py>(dict: &Bound<'py, PyDict>, key: &str) -> PyResult<Bound<'py, PyAny>> {
     dict.get_item(key)?.ok_or_else(|| PyKeyError::new_err(format!("missing request key '{key}'")))
@@ -110,10 +111,11 @@ fn parse_windows(dict: &Bound<'_, PyDict>) -> PyResult<Vec<TimeWindow>> {
     Ok(bounds.into_iter().map(|(since, until)| TimeWindow { since, until }).collect())
 }
 
-/// Converts the plain-data request dict into an engine request.
-pub(crate) fn parse_request(dict: &Bound<'_, PyDict>) -> PyResult<MineRequest> {
+/// Converts the plain-data request dict into an engine request and the state files it asks for.
+pub(crate) fn parse_request(dict: &Bound<'_, PyDict>) -> PyResult<(MineRequest, Option<StateIo>)> {
     let runs: Vec<Vec<String>> = required(dict, "runs")?.extract()?;
-    Ok(MineRequest {
+    let state = crate::state::parse(dict)?;
+    let request = MineRequest {
         runs: runs.into_iter().map(|files| files.into_iter().map(PathBuf::from).collect()).collect(),
         windows: parse_windows(dict)?,
         format: parse_format(&sub_dict(dict, "format")?)?,
@@ -122,7 +124,10 @@ pub(crate) fn parse_request(dict: &Bound<'_, PyDict>) -> PyResult<MineRequest> {
         strategy: parse_strategy(&sub_dict(dict, "execution")?)?,
         warm_start: parse_warm_start(&sub_dict(dict, "execution")?)?,
         recount: required(dict, "recount")?.extract()?,
-    })
+        initial: None,
+        keep_snapshot: false,
+    };
+    Ok((request, state))
 }
 
 /// Per-run statistics of every template as parallel lists.

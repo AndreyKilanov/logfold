@@ -62,6 +62,8 @@ fn request(path: &Path, strategy: Strategy, warm_start: bool) -> MineRequest {
         strategy,
         warm_start,
         recount: false,
+        initial: None,
+        keep_snapshot: false,
     }
 }
 

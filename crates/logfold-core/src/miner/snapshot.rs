@@ -83,6 +83,16 @@ pub struct MinerSnapshot {
     pub overflow: Vec<(usize, ClusterSnapshot)>,
 }
 
+impl MinerSnapshot {
+    /// Tells whether the snapshot was mined with the parameters of `config`.
+    pub fn has_config(&self, config: &MinerConfig) -> bool {
+        self.depth == config.depth
+            && self.threshold_micro == config.threshold_micro
+            && self.max_children == config.max_children
+            && self.max_templates == config.max_templates
+    }
+}
+
 fn invalid(message: impl Into<String>) -> CoreError {
     CoreError::InvalidState(message.into())
 }

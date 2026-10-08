@@ -11,6 +11,7 @@ from typing import Any
 from logfold._version import get_version
 from logfold.config import (
     DEFAULT_CHUNK_BYTES,
+    DEFAULT_MASKS,
     HIGH_CARDINALITY_MAX_TEMPLATES,
     ExamplesMode,
     ExecutionConfig,
@@ -19,9 +20,9 @@ from logfold.config import (
     config_fingerprint,
 )
 from logfold.engines import native
-from logfold.engines.base import Engine, MineRequest, MiningResult, RunInfo, TemplateTable
+from logfold.engines.base import Engine, MineRequest, MiningResult, RunInfo, StateRequest, TemplateTable
 from logfold.engines.select import select_engine
-from logfold.errors import ConfigError, read_error
+from logfold.errors import ConfigError, EngineError, read_error
 from logfold.ext.formats import FormatSpec
 from logfold.ext.masks import Masker, validate_masks
 from logfold.formats import ResolvedFormat
@@ -113,7 +114,45 @@ def _total_size(runs: tuple[tuple[str, ...], ...]) -> int:
     return total
 
 
-def _resolve_strategy(engine: Engine, execution: ExecutionConfig, runs: tuple[tuple[str, ...], ...]) -> str:
+STATE_FORMATS = ("json", "binary")
+
+
+def _state(
+    load: PathLike | None,
+    save: PathLike | None,
+    state_format: str,
+    mining: MiningConfig,
+    spec: FormatSpec,
+) -> StateRequest | None:
+    """Build the state request of ``analyze()``, or ``None`` when no state file is involved."""
+    if state_format not in STATE_FORMATS:
+        raise ConfigError(f"state_format must be one of {', '.join(STATE_FORMATS)}, got {state_format!r}")
+    if load is None and save is None:
+        return None
+    return StateRequest(
+        load=None if load is None else os.fspath(load),
+        save=None if save is None else os.fspath(save),
+        format=state_format,
+        config_hash=config_fingerprint(mining),
+        masks="default" if mining.masks == DEFAULT_MASKS else "custom",
+        logfold_version=get_version(),
+        log_format=spec.name,
+    )
+
+
+def _resolve_strategy(
+    engine: Engine,
+    execution: ExecutionConfig,
+    runs: tuple[tuple[str, ...], ...],
+    state: StateRequest | None = None,
+) -> str:
+    if state is not None and state.load is not None:
+        if execution.strategy == "chunked" and engine.name != "python":
+            raise ConfigError(
+                "a saved state is continued by the sequential strategy only (the parallel one is not available yet)",
+                hint="leave out strategy='chunked', or train without load_state",
+            )
+        return "sequential"
     if engine.name == "python":
         if execution.strategy == "chunked":
             logger.warning("the pure-Python engine is always sequential; ignoring strategy='chunked'")
@@ -131,18 +170,25 @@ def _mine(
     progress: Progress | None,
     recount: bool = False,
     windows: tuple[tuple[int | None, int | None], ...] = (),
+    state: StateRequest | None = None,
 ) -> tuple[MiningResult, Engine]:
     engine = select_engine(execution)
+    if state is not None and engine.name == "python":
+        raise EngineError(
+            "state files need the native engine; the pure-Python engine cannot load or save them yet",
+            hint="install a wheel with the native extension, or leave out the state options",
+        )
     request = MineRequest(
         runs=runs,
         format=spec,
         mining=mining,
-        strategy=_resolve_strategy(engine, execution, runs),
+        strategy=_resolve_strategy(engine, execution, runs, state),
         threads=execution.threads,
         chunk_bytes=execution.chunk_bytes,
         warm_start=execution.warm_start,
         recount=recount,
         windows=windows,
+        state=state,
     )
     return engine.mine(request, progress), engine
 

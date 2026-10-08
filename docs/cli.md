@@ -42,6 +42,9 @@ journalctl -o json | logfold analyze - --format journald --json > result.json
 | `--report` | | reporter by name (`logfold plugins list`, for example a plugin reporter): with `--out` it replaces the suffix's choice, without `--out` its text is printed instead of the tables; not with `--json` |
 | `--json` | off | print JSON to standard output instead of tables |
 | `--examples` | `raw` | `raw`, `masked` or `none`: how example messages are kept (use `masked` or `none` before sharing) |
+| `--load-state` FILE | | continue from the miner that an earlier run saved (see [State files](#state-files)); the report counts only this run |
+| `--save-state` FILE | | save the trained miner for a later run (templates and counts, no example lines); a `.gz` path is compressed |
+| `--state-format` | `json` | `json` (readable) or `binary` (compact, for states of hundreds of thousands of templates) |
 | `--quiet`, `-q` | off | no progress and no status messages on standard error |
 | `--debug` | off | show tracebacks |
 
@@ -60,6 +63,25 @@ Mining and execution options, shared with `diff`:
 | `--threads` | all cores | worker threads of the chunked strategy |
 | `--chunk-mb` | 64 | chunk size in MiB of the chunked strategy |
 | `--warm-start` | off | chunked strategy: train the first chunk alone and start every other chunk from a copy of its tree; fewer stray templates, a serial prefix of one chunk (see the guide) |
+
+### State files
+
+A run can save what it learned and the next run can continue from it, so that a baseline is a small file and no log is read
+twice:
+
+```
+logfold analyze monday.log --save-state model.json
+logfold analyze tuesday.log --load-state model.json --save-state model.json
+```
+
+The second run reports only the records of `tuesday.log`, and `model.json` then holds both days: the same file as `analyze
+monday.log tuesday.log --save-state ...` would have written. A state holds the templates (after masking: a template seen once is
+its line with the values replaced), the shape of the tree and counts by level and time, never an example message. It must be
+used with the same masks and parameters (`--depth`, `--sim-th`, `--max-children`, `--max-templates`, `--no-masks`); otherwise
+the run stops with an error that says so. Continuing is sequential (`--strategy chunked` is refused, `auto` mines
+sequentially), and needs the native engine. The size of a state depends on the number of templates (tens of kilobytes for a
+typical application, 12 MB for 100 thousand templates in JSON, half of it in binary), not on the size of the logs. Treat a state like
+a report of the templates: a template seen once contains the words of its line.
 
 ## `logfold diff`
 

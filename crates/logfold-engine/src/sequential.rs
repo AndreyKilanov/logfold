@@ -6,15 +6,16 @@ use crate::pipeline::{Context, recount_unit, train_unit};
 use crate::plan::Plan;
 use crate::request::Observer;
 
-/// Trains a single tree on all units, in plan order.
+/// Trains a single tree on all units, in plan order, starting from `start` or from an empty tree.
 pub(crate) fn train(
     context: &Context,
     config: &MinerConfig,
     plan: &Plan,
     observer: &dyn Observer,
+    start: Option<DrainMiner>,
 ) -> Result<(DrainMiner, Vec<Counters>), EngineError> {
     let n_runs = plan.run_bytes.len();
-    let mut miner = crate::empty_miner(config, n_runs);
+    let mut miner = start.unwrap_or_else(|| crate::empty_miner(config, n_runs));
     let mut counters = vec![Counters::default(); n_runs];
     for unit in &plan.units {
         let unit_counters = train_unit(context, unit, &mut miner, observer)?;

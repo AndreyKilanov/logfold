@@ -18,7 +18,7 @@ from typing import IO, Any, cast
 from logfold.engines import _timeparse as tp
 from logfold.engines._reference_tree import Miner, Recount
 from logfold.engines.base import MineRequest, MiningResult, ProgressCallback, RunInfo, TemplateTable
-from logfold.errors import ConfigError, FormatError, SourceError, read_error
+from logfold.errors import ConfigError, EngineError, FormatError, SourceError, read_error
 from logfold.ext.formats import FormatSpec, JsonFormat, PlainFormat, RegexFormat
 from logfold.ext.masks import Masker
 from logfold.model import RunMetrics
@@ -282,6 +282,11 @@ class PythonEngine:
             Templates with per-run statistics.
         """
         started = time.perf_counter()
+        if request.state is not None:
+            raise EngineError(
+                "state files need the native engine; the pure-Python engine cannot load or save them yet",
+                hint="install a wheel with the native extension, or leave out the state options",
+            )
         if request.windows and len(request.windows) != len(request.runs):
             raise ConfigError("there must be one time window per run")
         parser = RecordParser(request.format)

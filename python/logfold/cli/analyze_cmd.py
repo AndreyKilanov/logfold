@@ -21,6 +21,7 @@ from logfold.cli.options import (
     Format,
     HighCardinality,
     Level,
+    LoadState,
     MaxChildren,
     MaxTemplates,
     Multiline,
@@ -29,8 +30,10 @@ from logfold.cli.options import (
     Out,
     Quiet,
     Report,
+    SaveState,
     SimTh,
     Since,
+    StateForm,
     Strategy,
     Threads,
     Top,
@@ -41,6 +44,7 @@ from logfold.cli.options import (
 from logfold.cli.output import resolve_outputs
 from logfold.cli.runtime import emit, fail, note, progress_reporter, write_report
 from logfold.errors import LogfoldError
+from logfold.ext.text import printable
 
 EXAMPLES = """Examples:
 
@@ -88,6 +92,9 @@ def analyze(
     high_cardinality: HighCardinality = False,
     warm_start: WarmStart = False,
     examples: Examples = "raw",
+    load_state: LoadState = None,
+    save_state: SaveState = None,
+    state_format: StateForm = "json",
     as_json: AsJson = False,
     quiet: Quiet = False,
     debug: Debug = False,
@@ -104,6 +111,9 @@ def analyze(
                 since=since,
                 until=until,
                 examples=examples,  # type: ignore[arg-type]
+                load_state=load_state,
+                save_state=save_state,
+                state_format=state_format,
                 progress=progress,
                 **mining_options(
                     sim_th,
@@ -119,6 +129,8 @@ def analyze(
                     warm_start,
                 ),
             )
+        if save_state is not None:
+            note(f"saved the state to {printable(str(save_state))}", quiet)
         shown = result
         if threshold is not None:
             shown = result.filter(min_level=threshold)

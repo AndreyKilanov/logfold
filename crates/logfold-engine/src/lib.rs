@@ -41,12 +41,30 @@ pub fn mine(request: &MineRequest, observer: &dyn Observer) -> Result<MineOutput
         request.mining.max_templates,
     )?;
     let n_runs = request.runs.len();
+    let initial = match &request.initial {
+        Some(snapshot) => {
+            if !snapshot.has_config(&miner_config) {
+                return Err(EngineError::Config(
+                    "the saved state was mined with other parameters (depth, sim_th, max_children or max_templates)"
+                        .into(),
+                ));
+            }
+            Some(DrainMiner::from_snapshot(snapshot.clone(), n_runs)?)
+        }
+        None => None,
+    };
 
     let mine_started = Instant::now();
-    let (chunk_bytes, threads_requested, adaptive) = match request.strategy {
-        Strategy::Sequential => (None, None, false),
-        Strategy::Chunked { chunk_bytes, threads } => (Some(chunk_bytes), Some(threads), false),
-        Strategy::Adaptive { chunk_bytes, threads } => (Some(chunk_bytes), Some(threads), true),
+    let (chunk_bytes, threads_requested, adaptive) = match (request.strategy, initial.is_some()) {
+        (Strategy::Sequential | Strategy::Adaptive { .. }, true) | (Strategy::Sequential, false) => (None, None, false),
+        (Strategy::Chunked { .. }, true) => {
+            return Err(EngineError::Config(
+                "a saved state is continued by the sequential strategy only (the parallel one is not available yet)"
+                    .into(),
+            ));
+        }
+        (Strategy::Chunked { chunk_bytes, threads }, false) => (Some(chunk_bytes), Some(threads), false),
+        (Strategy::Adaptive { chunk_bytes, threads }, false) => (Some(chunk_bytes), Some(threads), true),
     };
     let planned = plan::plan(request, chunk_bytes)?;
     let mut chunks = planned.units.len();
@@ -63,7 +81,7 @@ pub fn mine(request: &MineRequest, observer: &dyn Observer) -> Result<MineOutput
                     let whole = plan::plan(request, None)?;
                     chunks = whole.units.len();
                     let again = adaptive::Skip::new(observer, consumed);
-                    let (miner, counters) = sequential::train(&context, &miner_config, &whole, &again)?;
+                    let (miner, counters) = sequential::train(&context, &miner_config, &whole, &again, None)?;
                     Some((miner, counters, 1, 0.0, "sequential"))
                 }
             }
@@ -72,7 +90,7 @@ pub fn mine(request: &MineRequest, observer: &dyn Observer) -> Result<MineOutput
     let (miner, counters, threads, merge_seconds, strategy_name) = match trained {
         Some(done) => done,
         None => {
-            let (miner, counters) = sequential::train(&context, &miner_config, &planned, observer)?;
+            let (miner, counters) = sequential::train(&context, &miner_config, &planned, observer, initial)?;
             (miner, counters, 1, 0.0, "sequential")
         }
     };
@@ -90,13 +108,17 @@ pub fn mine(request: &MineRequest, observer: &dyn Observer) -> Result<MineOutput
     let recount_seconds = recount_started.elapsed().as_secs_f64();
 
     let freeze_started = Instant::now();
-    let (templates, overflowed) = match recounted {
+    let snapshot = request.keep_snapshot.then(|| miner.snapshot());
+    let (mut templates, overflowed) = match recounted {
         Some(recount) => miner.freeze_recounted(recount),
         None => {
             let flags = miner.overflowed().to_vec();
             (miner.freeze(), flags)
         }
     };
+    if request.initial.is_some() {
+        templates.retain(|template| template.total() > 0);
+    }
     let freeze_seconds = freeze_started.elapsed().as_secs_f64();
 
     let runs = (0..n_runs)
@@ -122,7 +144,7 @@ pub fn mine(request: &MineRequest, observer: &dyn Observer) -> Result<MineOutput
         wall_recount_s: recount_seconds,
         wall_freeze_s: freeze_seconds,
     };
-    Ok(MineOutput { runs, templates, metrics })
+    Ok(MineOutput { runs, templates, snapshot, metrics })
 }
 
 pub(crate) fn empty_miner(config: &MinerConfig, n_runs: usize) -> DrainMiner {

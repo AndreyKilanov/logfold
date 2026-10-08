@@ -12,6 +12,7 @@ from logfold.api._common import (
     _mine,
     _mining,
     _paths,
+    _state,
     _summary,
     _templates,
     _warnings,
@@ -52,6 +53,9 @@ def analyze(
     examples: ExamplesMode = "raw",
     since: TimeBound = None,
     until: TimeBound = None,
+    load_state: PathLike | None = None,
+    save_state: PathLike | None = None,
+    state_format: str = "json",
     progress: Progress | None = None,
 ) -> AnalysisResult:
     """Fold a log into templates.
@@ -81,6 +85,12 @@ def analyze(
             compared with the times of the log as written, a time with a zone is converted to UTC). Records without a
             timestamp cannot be placed and are left out; the result counts them.
         until: Keep only records before this time; see ``since``.
+        load_state: A state file of an earlier run to continue from: the templates it holds are the start of the tree,
+            the result counts only the records of this run, and the file must have been mined with the same masks and
+            parameters. Needs the native engine; the run is sequential.
+        save_state: Write the trained miner to this file (a path that ends in ``.gz`` is compressed), so that a later
+            run can continue from it. The file holds templates and counts, never example lines.
+        state_format: ``json`` (readable, the default) or ``binary`` (compact, for very large states).
         progress: Optional callback receiving consumed input byte counts.
 
     Returns:
@@ -90,7 +100,8 @@ def analyze(
         ConfigError: If an option is invalid.
         FormatError: If the format is invalid or cannot be detected.
         SourceError: If an input cannot be read.
-        EngineError: If the requested engine is unavailable.
+        EngineError: If the requested engine is unavailable, or it cannot use state files.
+        StateError: If a state file is damaged, too large, newer than this logfold or mined with other settings.
     """
     run = _paths(path, "analyze()")
     resolved = resolve_format(format, run, multiline)
@@ -100,7 +111,10 @@ def analyze(
         require_time(spec)
     mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks, high_cardinality)
     exec_config = _execution(execution, engine, strategy, threads, chunk_bytes, high_cardinality, warm_start)
-    mined, used = _mine((run,), spec, mining_config, exec_config, progress, windows=(bounds,) if bounds != OPEN else ())
+    state = _state(load_state, save_state, state_format, mining_config, spec)
+    mined, used = _mine(
+        (run,), spec, mining_config, exec_config, progress, windows=(bounds,) if bounds != OPEN else (), state=state
+    )
     summary = labeled(_summary(run, mined.runs[0]), bounds)
     masker = Masker(mining_config.masks)
     templates = _templates(mined.templates, 0, summary.tz_aware, examples, masker)

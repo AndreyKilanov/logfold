@@ -10,7 +10,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from logfold.engines.base import MineRequest, MiningResult, ProgressCallback, RunColumns, RunInfo, TemplateTable
-from logfold.errors import ConfigError, EngineError, FormatError, SourceError
+from logfold.errors import ConfigError, EngineError, FormatError, SourceError, StateError
 from logfold.ext import native_reports
 from logfold.ext.formats import FormatSpec, JsonFormat, PlainFormat, RegexFormat
 from logfold.model import RunMetrics
@@ -20,7 +20,7 @@ try:
 except ImportError:
     _core = None  # type: ignore[assignment]
 
-EXPECTED_CORE_API_VERSION = 7
+EXPECTED_CORE_API_VERSION = 8
 
 
 def is_available() -> bool:
@@ -203,9 +203,21 @@ def request_to_dict(request: MineRequest) -> dict[str, Any]:
     }
     if request.threads is not None:
         execution["threads"] = request.threads
+    state = request.state
     return {
         "runs": [list(files) for files in request.runs],
         "windows": [tuple(window) for window in request.windows],
+        "state": None
+        if state is None
+        else {
+            "load": state.load,
+            "save": state.save,
+            "format": state.format,
+            "config_hash": state.config_hash,
+            "masks": state.masks,
+            "logfold_version": state.logfold_version,
+            "log_format": state.log_format,
+        },
         "format": format_to_dict(request.format),
         "masks": [
             {"name": rule.name, "pattern": rule.pattern, "token": rule.token, "ascii": rule.ascii}
@@ -271,6 +283,7 @@ class NativeEngine:
             ConfigError: If a parameter is invalid.
             FormatError: If the format is invalid.
             SourceError: If an input cannot be read.
+            StateError: If a state file cannot be used.
         """
         assert _core is not None
         try:
@@ -281,4 +294,8 @@ class NativeEngine:
             raise FormatError(str(error)) from None
         except _core.CoreSourceError as error:
             raise SourceError(str(error)) from None
+        except _core.CoreStateError as error:
+            raise StateError(
+                str(error), hint="mine the state again, or use a state made with the same settings"
+            ) from None
         return _to_result(answer)

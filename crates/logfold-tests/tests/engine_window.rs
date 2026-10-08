@@ -62,6 +62,8 @@ fn request(runs: Vec<Vec<PathBuf>>, windows: Vec<TimeWindow>, strategy: Strategy
         strategy,
         warm_start: false,
         recount: true,
+        initial: None,
+        keep_snapshot: false,
     }
 }
 

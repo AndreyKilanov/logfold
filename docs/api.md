@@ -12,7 +12,8 @@ from logfold import analyze, diff
 ```python
 analyze(path, *, format="auto", multiline=None, depth=None, sim_th=None, max_children=None, max_templates=None,
         masks=None, high_cardinality=False, mining=None, execution=None, engine=None, strategy=None, threads=None,
-        chunk_bytes=None, warm_start=None, examples="raw", since=None, until=None, progress=None) -> AnalysisResult
+        chunk_bytes=None, warm_start=None, examples="raw", since=None, until=None, load_state=None, save_state=None,
+        state_format="json", progress=None) -> AnalysisResult
 ```
 
 Folds one run into templates.
@@ -28,9 +29,11 @@ Folds one run into templates.
 | `engine`, `strategy`, `threads`, `chunk_bytes`, `warm_start` | execution parameters, see [`ExecutionConfig`](#mining-and-execution-configuration) |
 | `examples` | `"raw"` keeps example messages, `"masked"` applies the masking rules to them, `"none"` drops them |
 | `since`, `until` | keep only records at or after `since` and before `until`: ISO 8601 strings (`2026-10-06T12:30`, a trailing `Z` or an offset means a zone) or `datetime` objects. A time with a zone is converted to UTC; a time without one is compared with the times of the log as written (naive times are UTC everywhere in logfold). A record without a timestamp cannot be placed and is left out. The result counts the records left out in `run.out_of_range` and `run.untimed`, the run name shows the window, and a warning mentions records without a time. A format without a time (`plain`) raises `ConfigError` |
+| `load_state` | a state file of an earlier run to continue from: its templates start the tree, the result counts only the records of this run, and it must have been mined with the same masks and parameters. The run is sequential and needs the native engine (see [State files](cli.md#state-files)) |
+| `save_state`, `state_format` | write the trained miner to this file (`.gz` is compressed), `"json"` (readable, default) or `"binary"`; the file holds templates and counts, never example lines |
 | `progress` | optional callback receiving the consumed input byte count |
 
-Raises `ConfigError`, `FormatError`, `SourceError` or `EngineError` (see [Errors](#errors)).
+Raises `ConfigError`, `FormatError`, `SourceError`, `EngineError` or `StateError` (see [Errors](#errors)).
 
 ## `diff`
 
@@ -220,7 +223,8 @@ working.
 | `ConfigError` | `ValueError` | an option or configuration value is invalid |
 | `FormatError` | `ValueError` | a format is invalid, unknown or could not be detected |
 | `SourceError` | | an input could not be opened or read |
-| `EngineError` | `RuntimeError` | the engine failed or the requested one is unavailable |
+| `EngineError` | `RuntimeError` | the engine failed or the requested one is unavailable (also: a state file asked of the pure-Python engine) |
+| `StateError` | | a state file is damaged, too large, newer than this logfold, from another algorithm version, or mined with other masks or parameters |
 
 ## Reporters
 
