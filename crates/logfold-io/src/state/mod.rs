@@ -185,6 +185,22 @@ pub fn read_state_file(path: &Path, limits: &StateLimits) -> Result<State, State
     decode_state(&bytes, limits)
 }
 
+/// The file a state is written to first, next to the target; the process id keeps two writers apart.
+fn staging_path(path: &Path) -> PathBuf {
+    let mut staging = path.as_os_str().to_owned();
+    staging.push(format!(".{}.part", std::process::id()));
+    PathBuf::from(staging)
+}
+
+/// Checks that a state can be written to `path`, by creating and removing its staging file. A long run asks for this
+/// before it starts, so that a mistyped folder does not cost the whole run.
+pub fn check_state_writable(path: &Path) -> Result<(), StateError> {
+    let staging = staging_path(path);
+    let write_error = |source| StateError::Write { path: path.to_path_buf(), source };
+    fs::File::create(&staging).map_err(write_error)?;
+    fs::remove_file(&staging).map_err(write_error)
+}
+
 /// Writes a state file; a path that ends in `.gz` is compressed. The file appears whole or not at all.
 pub fn write_state_file(path: &Path, state: &State, format: StateFormat) -> Result<(), StateError> {
     let write_error = |source| StateError::Write { path: path.to_path_buf(), source };
@@ -197,9 +213,7 @@ pub fn write_state_file(path: &Path, state: &State, format: StateFormat) -> Resu
     } else {
         bytes
     };
-    let mut staging = path.as_os_str().to_owned();
-    staging.push(".part");
-    let staging = PathBuf::from(staging);
+    let staging = staging_path(path);
     fs::write(&staging, &bytes).map_err(write_error)?;
     fs::rename(&staging, path).map_err(|source| {
         let _ = fs::remove_file(&staging);

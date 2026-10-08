@@ -350,6 +350,16 @@ fn mutated_files_never_panic_and_never_build_a_broken_miner() {
     }
 }
 
+#[test]
+fn a_state_path_is_checked_before_a_run_and_leaves_nothing_behind() {
+    let directory = tempfile::tempdir().unwrap();
+    let good = directory.path().join("state.json");
+    check_state_writable(&good).unwrap();
+    assert_eq!(std::fs::read_dir(directory.path()).unwrap().count(), 0, "the staging file is removed");
+    let missing = directory.path().join("no-such-folder").join("state.json");
+    assert!(matches!(check_state_writable(&missing), Err(StateError::Write { .. })));
+}
+
 /// A valid snapshot of `clusters` templates of six tokens in 100 leaves, built directly (no mining).
 fn synthetic(clusters: usize) -> MinerSnapshot {
     const WORDS: usize = 100;

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import gzip
+import hashlib
+import json
 from pathlib import Path
 
 import pytest
@@ -11,6 +13,7 @@ import logfold
 from conftest import requires_native
 from corpora import app_lines, write
 from logfold import ConfigError, EngineError, StateError
+from logfold.config import MiningConfig, config_fingerprint
 
 pytestmark = requires_native
 
@@ -159,3 +162,34 @@ def test_saving_alone_does_not_change_the_result(tmp_path: Path, stream: list[st
     plain = mine(first)
     saved = mine(first, save_state=tmp_path / "s.json")
     assert [(t.id, t.count) for t in plain.templates] == [(t.id, t.count) for t in saved.templates]
+
+
+def test_a_state_path_that_cannot_be_written_fails_before_the_run(tmp_path: Path, stream: list[str]) -> None:
+    _, first, _ = split(tmp_path, stream, 1500)
+    consumed: list[int] = []
+    with pytest.raises(StateError, match=r"cannot write"):
+        mine(first, save_state=tmp_path / "no-such-folder" / "s.json", progress=consumed.append)
+    assert consumed == [], "the log was not read: a mistyped folder must not cost the whole run"
+
+
+def test_a_signed_file_with_a_broken_tree_is_refused(tmp_path: Path, stream: list[str]) -> None:
+    """The checksum only says that the bytes are those that were written; the tree is checked on its own."""
+    _, first, second = split(tmp_path, stream, 1500)
+    mine(first, save_state=tmp_path / "s.json")
+    header, body, _ = (tmp_path / "s.json").read_text(encoding="utf-8").split("\n")[:3]
+    document = json.loads(body)
+    leaf = next(node for node in document["nodes"] if node["k"])
+    leaf["k"].append(10**6)
+    body = json.dumps(document, separators=(",", ":"), ensure_ascii=False)
+    signed = f"{header}\n{body}\n"
+    digest = hashlib.sha256(signed.encode("utf-8")).hexdigest()
+    (tmp_path / "forged.json").write_text(f'{signed}{{"sha256":"{digest}"}}\n', encoding="utf-8", newline="")
+    with pytest.raises(StateError, match="invalid miner state"):
+        mine(second, load_state=tmp_path / "forged.json")
+
+
+def test_the_fingerprint_of_the_default_settings_is_pinned() -> None:
+    """A state is refused when the fingerprint of its settings differs, so changing how it is computed (a new field of
+    MiningConfig, another masks default) would silently invalidate every saved state: change this value on purpose, with
+    a changelog entry, never by accident."""
+    assert config_fingerprint(MiningConfig()) == "721277182c26"

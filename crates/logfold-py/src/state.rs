@@ -7,7 +7,9 @@ use std::path::PathBuf;
 
 use logfold_core::ALGO_VERSION;
 use logfold_engine::{MineOutput, MineRequest};
-use logfold_io::{State, StateError, StateFormat, StateHeader, StateLimits, read_state_file, write_state_file};
+use logfold_io::{
+    State, StateError, StateFormat, StateHeader, StateLimits, check_state_writable, read_state_file, write_state_file,
+};
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
 
@@ -58,6 +60,9 @@ impl StateIo {
     /// the start of the request. Asks the engine for a snapshot when a state is to be saved.
     pub(crate) fn before(&self, request: &mut MineRequest) -> Result<(), StateFailure> {
         request.keep_snapshot = self.save.is_some();
+        if let Some(path) = &self.save {
+            check_state_writable(path)?;
+        }
         let Some(path) = &self.load else { return Ok(()) };
         let state = read_state_file(path, &StateLimits::default())?;
         if state.header.algo_version != ALGO_VERSION {

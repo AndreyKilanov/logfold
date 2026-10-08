@@ -79,8 +79,9 @@ monday.log tuesday.log --save-state ...` would have written. A state holds the t
 its line with the values replaced), the shape of the tree and counts by level and time, never an example message. It must be
 used with the same masks and parameters (`--depth`, `--sim-th`, `--max-children`, `--max-templates`, `--no-masks`); otherwise
 the run stops with an error that says so. Continuing is sequential (`--strategy chunked` is refused, `auto` mines
-sequentially), and needs the native engine. The size of a state depends on the number of templates (tens of kilobytes for a
-typical application, 12 MB for 100 thousand templates in JSON, half of it in binary), not on the size of the logs. Treat a state like
+sequentially), and needs the native engine. The size of a state depends on the number of templates (kilobytes for a
+typical application; for 100 thousand templates about 12 MB in JSON at the least, since real templates are longer than the
+short ones of that measurement, and about half of it in binary), not on the size of the logs. Treat a state like
 a report of the templates: a template seen once contains the words of its line.
 
 ## `logfold diff`
