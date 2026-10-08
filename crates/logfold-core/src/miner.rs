@@ -12,10 +12,12 @@ mod leaf;
 mod matching;
 mod merging;
 mod recount;
+mod snapshot;
 
 use leaf::{INDEX_MIN_CLUSTERS, LeafIndex, Node, SCRATCH};
 use matching::{BoxedTokens, Tokens, has_digit, score_bounded, update_stats};
 pub use recount::{Assigned, Recount};
+pub use snapshot::{ClusterSnapshot, History, MinerSnapshot, NodeSnapshot};
 
 /// Token that stands for a variable part of a template.
 pub const WILDCARD: &[u8] = b"<*>";
@@ -77,13 +79,15 @@ pub struct RecordMeta<'a> {
 pub(crate) struct Cluster {
     pub(crate) tokens: Vec<Box<[u8]>>,
     pub(crate) stats: Vec<RunStats>,
+    /// Counts of earlier runs that were saved with the tree; never part of a report of the current run.
+    pub(crate) history: History,
     wild: u32,
 }
 
 impl Cluster {
     pub(crate) fn new(tokens: Vec<Box<[u8]>>, stats: Vec<RunStats>) -> Self {
         let wild = tokens.iter().filter(|t| &***t == WILDCARD).count() as u32;
-        Cluster { tokens, stats, wild }
+        Cluster { tokens, stats, history: History::default(), wild }
     }
 }
 
