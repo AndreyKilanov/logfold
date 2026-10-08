@@ -1,4 +1,4 @@
-"""The native jaccard-idf, overlap and rules matchers give exactly the pairs of the Python reference."""
+"""The jaccard-idf, overlap and rules matchers give exactly the pairs of the oracles of ``tests/oracles.py``."""
 
 from __future__ import annotations
 
@@ -11,9 +11,9 @@ from hypothesis import strategies as st
 
 from conftest import requires_native
 from logfold import _bridge as native
-from logfold.api.matching import accelerated, native_spec
+from logfold.api.matching import native_spec
 from logfold.plugins.matchers import JaccardIdfMatcher, OverlapMatcher, RulesMatcher
-from oracles import quadratic_jaccard_idf, quadratic_overlap
+from oracles import quadratic_jaccard_idf, quadratic_overlap, reference_rules
 
 pytestmark = requires_native
 
@@ -27,7 +27,7 @@ SETTINGS = settings(max_examples=500, deadline=None, suppress_health_check=[Heal
 
 @SETTINGS
 @given(before=TEMPLATE_LISTS, after=TEMPLATE_LISTS, threshold=THRESHOLDS)
-def test_native_jaccard_idf_equals_python_and_the_oracle(before: list[str], after: list[str], threshold: float) -> None:
+def test_jaccard_idf_equals_the_oracle(before: list[str], after: list[str], threshold: float) -> None:
     matcher = JaccardIdfMatcher()
     matcher.threshold = threshold
     expected = quadratic_jaccard_idf(before, after, threshold)
@@ -37,7 +37,7 @@ def test_native_jaccard_idf_equals_python_and_the_oracle(before: list[str], afte
 
 @SETTINGS
 @given(before=TEMPLATE_LISTS, after=TEMPLATE_LISTS, threshold=THRESHOLDS)
-def test_native_overlap_equals_python_and_the_oracle(before: list[str], after: list[str], threshold: float) -> None:
+def test_overlap_equals_the_oracle(before: list[str], after: list[str], threshold: float) -> None:
     matcher = OverlapMatcher()
     matcher.threshold = threshold
     expected = quadratic_overlap(before, after, threshold)
@@ -47,8 +47,10 @@ def test_native_overlap_equals_python_and_the_oracle(before: list[str], after: l
 
 @SETTINGS
 @given(before=TEMPLATE_LISTS, after=TEMPLATE_LISTS, rules=RULES)
-def test_native_rules_equal_python(before: list[str], after: list[str], rules: list[tuple[str, str]]) -> None:
-    assert native.match_templates("rules", before, after, None, rules) == RulesMatcher(rules).match(before, after)
+def test_rules_equal_the_oracle(before: list[str], after: list[str], rules: list[tuple[str, str]]) -> None:
+    expected = reference_rules(before, after, rules)
+    assert native.match_templates("rules", before, after, None, rules) == expected
+    assert RulesMatcher(rules).match(before, after) == expected
 
 
 def test_overlap_catches_an_extended_message_that_jaccard_misses() -> None:
@@ -95,16 +97,21 @@ def test_every_template_is_used_once_in_the_order_of_the_rules() -> None:
     assert native.match_templates("rules", before, after, None, rules) == [(0, 0)]
 
 
-def test_the_new_matchers_are_accelerated_with_the_threshold_and_the_rules_of_the_instance() -> None:
+def test_the_built_in_matchers_describe_themselves_to_the_native_comparison() -> None:
     for matcher in (JaccardIdfMatcher(), OverlapMatcher()):
-        assert accelerated(matcher).__class__.__name__ == "_NativeMatcher"
         assert native_spec(matcher) is not None
-    rules = RulesMatcher([("a", "b")])
-    assert native_spec(rules) == ("rules", None, (("a", "b"),))
-    assert native_spec(RulesMatcher()) is None
+    assert native_spec(RulesMatcher([("a", "b")])) == ("rules", None, (("a", "b"),))
+    assert native_spec(RulesMatcher()) == ("rules", None, ())
     strict = JaccardIdfMatcher()
     strict.threshold = float("nan")
-    assert accelerated(strict) is strict
+    spec = native_spec(strict)
+    assert spec is not None
+    assert spec[1] != spec[1]
+
+    class Custom(OverlapMatcher):
+        name = "custom"
+
+    assert native_spec(Custom()) is None
 
 
 def test_missing_threshold_and_rules_are_config_errors() -> None:

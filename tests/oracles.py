@@ -1,6 +1,6 @@
 """Reference implementations of the diff matchers: every pair of templates is compared.
 
-They are the first versions of the matchers, kept as oracles for the indexed Python matchers and for the native ones.
+They are the first versions of the matchers, kept as oracles for the native ones: they share no code with the engine.
 """
 
 from __future__ import annotations
@@ -8,7 +8,12 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from collections.abc import Sequence
 
-from logfold.comparison.matchers import WILDCARD, _generalizes
+WILDCARD = "<*>"
+
+
+def generalizes(general: list[str], specific: list[str]) -> bool:
+    """Tell whether ``general`` has a wildcard or the same token as ``specific`` at every position."""
+    return all(g in (WILDCARD, s) for g, s in zip(general, specific, strict=True))
 
 
 def quadratic_token_subset(before_only: Sequence[str], after_only: Sequence[str]) -> list[tuple[int, int]]:
@@ -26,7 +31,7 @@ def quadratic_token_subset(before_only: Sequence[str], after_only: Sequence[str]
             if i in used:
                 continue
             candidate = before_tokens[i]
-            if _generalizes(candidate, tokens) or _generalizes(tokens, candidate):
+            if generalizes(candidate, tokens) or generalizes(tokens, candidate):
                 distance = abs(candidate.count(WILDCARD) - tokens.count(WILDCARD))
                 if best is None or distance < best[0]:
                     best = (distance, i)
@@ -107,3 +112,32 @@ def quadratic_jaccard_idf(
             if score >= threshold:
                 scored.append((score, i, j))
     return _greedy(scored)
+
+
+def _tokens(text: str) -> list[str]:
+    return text.split(" ") if text else []
+
+
+def _agree(pattern: list[str], text: list[str]) -> bool:
+    return len(pattern) == len(text) and all(p == t or WILDCARD in (p, t) for p, t in zip(pattern, text, strict=True))
+
+
+def reference_rules(
+    before_only: Sequence[str], after_only: Sequence[str], rules: Sequence[tuple[str, str]]
+) -> list[tuple[int, int]]:
+    """Apply the rules in order, each in both directions, by testing every template against every rule."""
+    before = [_tokens(text) for text in before_only]
+    after = [_tokens(text) for text in after_only]
+    used_before: set[int] = set()
+    used_after: set[int] = set()
+    pairs: list[tuple[int, int]] = []
+    for left_text, right_text in rules:
+        left, right = _tokens(left_text), _tokens(right_text)
+        for first, second in ((left, right), (right, left)):
+            firsts = [i for i, tokens in enumerate(before) if i not in used_before and _agree(first, tokens)]
+            seconds = [j for j, tokens in enumerate(after) if j not in used_after and _agree(second, tokens)]
+            for i, j in zip(firsts, seconds, strict=False):
+                used_before.add(i)
+                used_after.add(j)
+                pairs.append((i, j))
+    return sorted(pairs)

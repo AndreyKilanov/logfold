@@ -6,7 +6,6 @@ import dataclasses
 from collections.abc import Sequence
 from typing import Any
 
-from logfold import _bridge
 from logfold.api._common import (
     PathLike,
     Progress,
@@ -21,7 +20,7 @@ from logfold.api._common import (
 )
 from logfold.api.baselines import baseline_warnings, pool_baselines, required_baselines
 from logfold.api.comparing import classify_native, table_side
-from logfold.api.matching import accelerated, native_spec, resolve_matcher
+from logfold.api.matching import native_spec, resolve_matcher
 from logfold.api.saved import MINING_ONLY_DEFAULTS, diff_saved
 from logfold.api.windows import (
     OPEN,
@@ -232,7 +231,7 @@ def diff(
     before_summary = labeled(_summary(before_names, pooled.before), windows[0] if windows else OPEN)
     after_summary = labeled(_summary(second, pooled.after), windows[-1] if windows else OPEN)
     masker = Masker(mining_config.masks)
-    native_matcher = native_spec(resolved_matcher) if _bridge.supports_comparison() else None
+    native_matcher = native_spec(resolved_matcher)
     classification = None
     if native_matcher is not None:
         classification = classify_native(
@@ -249,7 +248,7 @@ def diff(
             before_summary,
             after_summary,
             config,
-            accelerated(resolved_matcher, True),
+            resolved_matcher,
         )
 
         def scrub(entries: tuple) -> tuple:  # type: ignore[type-arg]

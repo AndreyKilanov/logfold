@@ -24,6 +24,9 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 - The slow pure-Python reference engine is removed: `engine="python"`, `--engine python` and `LOGFOLD_ENGINE=python` run
   the native engine with a `DeprecationWarning` and will be refused later. Without the extension, mining raises
   `EngineError` instead of falling back; `degraded` in a result is always `False`.
+- The pure-Python copies of the built-in matchers and of the four pipeline reports are removed: the Rust code is the only
+  implementation. A lone surrogate in a template is read as U+FFFD, and a report refuses a count below 0 or above 2^64 - 1
+  with a `ConfigError`; a short listing of 100 thousand templates takes up to 75 ms more.
 - `inspect` reads the sample in the extension, so a format is read exactly as `analyze` reads it (a pattern that only
   Python's `re` accepts, such as a lookahead, is now refused).
 

@@ -7,6 +7,7 @@ exceptions of logfold. It knows nothing about the models, the engines or the rep
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable, Sequence
 from typing import Any
 
@@ -72,9 +73,24 @@ def mine(request: dict[str, Any], progress: Callable[[int], None] | None = None)
     return answer
 
 
-def supports_matching() -> bool:
-    """Return True when the extension can pair templates (older builds of the extension lack the function)."""
-    return is_available() and hasattr(_core, "match_templates")
+_SURROGATES = re.compile("[\ud800-\udfff]")
+
+
+def _clean(value: Any) -> Any:
+    """Copy ``value`` with every lone surrogate in its strings replaced by U+FFFD, which UTF-8 can hold."""
+    if isinstance(value, str):
+        return _SURROGATES.sub("\ufffd", value)
+    if isinstance(value, list):
+        return [_clean(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_clean(item) for item in value)
+    if isinstance(value, dict):
+        return {key: _clean(item) for key, item in value.items()}
+    return value
+
+
+def _rule_list(rules: Sequence[tuple[str, str]] | None) -> list[tuple[str, str]] | None:
+    return None if rules is None else [(left, right) for left, right in rules]
 
 
 def match_templates(
@@ -86,6 +102,8 @@ def match_templates(
 ) -> list[tuple[int, int]]:
     """Pair the templates of two runs that occur in one run only, in the extension.
 
+    A lone surrogate in a text has no UTF-8 form and is read as U+FFFD.
+
     Args:
         kind: ``token_subset``, ``jaccard``, ``jaccard_idf``, ``overlap`` or ``rules``.
         before: Template texts present only in the first run.
@@ -94,27 +112,21 @@ def match_templates(
         rules: The ``(left, right)`` template texts of the ``rules`` matcher.
 
     Returns:
-        ``(i, j)`` pairs, exactly as the pure-Python matcher of the same name returns them.
+        ``(i, j)`` pairs as ``docs/ALGORITHM.md`` section 10 defines them.
 
     Raises:
+        EngineError: If the extension is unavailable or speaks another contract version.
         ConfigError: If the extension rejects the request.
-        UnicodeError: If a text cannot be passed to the extension (for example a lone surrogate).
     """
-    if _core is None:
-        raise EngineError("the native extension is unavailable")
+    require()
+    arguments = (kind, list(before), list(after), threshold, _rule_list(rules))
     try:
-        return list(_core.match_templates(kind, list(before), list(after), threshold, _rule_list(rules)))
+        try:
+            return list(_core.match_templates(*arguments))
+        except UnicodeError:
+            return list(_core.match_templates(*_clean(arguments)))
     except _core.CoreConfigError as error:
         raise ConfigError(str(error)) from error
-
-
-def _rule_list(rules: Sequence[tuple[str, str]] | None) -> list[tuple[str, str]] | None:
-    return None if rules is None else list(rules)
-
-
-def supports_comparison() -> bool:
-    """Return True when the extension can classify the templates of two runs."""
-    return is_available() and hasattr(_core, "compare_runs")
 
 
 def compare_runs(
@@ -126,6 +138,8 @@ def compare_runs(
     rules: Sequence[tuple[str, str]] | None = None,
 ) -> tuple[list[int], list[int], list[tuple[int, int, float, float, float | None]], int]:
     """Split the templates of two runs into new, disappeared, changed and unchanged, in the extension.
+
+    A lone surrogate in a text has no UTF-8 form and is read as U+FFFD.
 
     Args:
         before: Texts, counts and total records of the first run.
@@ -140,17 +154,28 @@ def compare_runs(
         changed ones, and the number of unchanged ones; see ``docs/ALGORITHM.md`` section 11.
 
     Raises:
+        EngineError: If the extension is unavailable or speaks another contract version.
         ConfigError: If the extension rejects the request.
-        UnicodeError: If a text cannot be passed to the extension (for example a lone surrogate).
         OverflowError: If a count does not fit an unsigned 64-bit integer.
     """
-    if _core is None:
-        raise EngineError("the native extension is unavailable")
+    require()
+    arguments = (
+        list(before[0]),
+        list(before[1]),
+        before[2],
+        list(after[0]),
+        list(after[1]),
+        after[2],
+        *thresholds,
+        matcher,
+        matcher_threshold,
+        _rule_list(rules),
+    )
     try:
-        return _core.compare_runs(
-            list(before[0]), list(before[1]), before[2], list(after[0]), list(after[1]), after[2], *thresholds,
-            matcher, matcher_threshold, _rule_list(rules),
-        )  # fmt: skip
+        try:
+            return _core.compare_runs(*arguments)
+        except UnicodeError:
+            return _core.compare_runs(*_clean(arguments))
     except _core.CoreConfigError as error:
         raise ConfigError(str(error)) from error
 
@@ -183,13 +208,10 @@ def inspect_sample(sample: bytes, format: dict[str, Any], keep: int) -> dict[str
     return answer
 
 
-def supports_reports() -> bool:
-    """Return True when the extension can render the pipeline reports."""
-    return is_available() and hasattr(_core, "render_report")
-
-
 def render_report(name: str, data: dict[str, Any], options: dict[str, Any]) -> str:
     """Render a pipeline report of a result given as columns, in the extension.
+
+    A lone surrogate in a text has no UTF-8 form and is read as U+FFFD.
 
     Args:
         name: ``github-summary``, ``junit``, ``chat-message`` or ``prometheus``.
@@ -197,18 +219,22 @@ def render_report(name: str, data: dict[str, Any], options: dict[str, Any]) -> s
         options: ``top`` and, for ``github-summary`` and ``chat-message``, ``max_bytes`` or ``max_chars``.
 
     Returns:
-        The text, exactly as the pure-Python reporter of the same name writes it.
+        The text of the report.
 
     Raises:
-        ConfigError: If the extension rejects the data.
-        UnicodeError: If a text cannot be passed to the extension (for example a lone surrogate).
+        EngineError: If the extension is unavailable or speaks another contract version.
+        ConfigError: If the extension rejects the data, or a count of the result is negative or above 2^64 - 1.
     """
-    if _core is None:
-        raise EngineError("the native extension is unavailable")
+    require()
     try:
-        return _core.render_report(name, data, options)
+        try:
+            return _core.render_report(name, data, options)
+        except UnicodeError:
+            return _core.render_report(name, _clean(data), options)
     except _core.CoreConfigError as error:
         raise ConfigError(str(error)) from error
+    except OverflowError as error:
+        raise ConfigError(f"a report cannot show the result: {error}") from error
 
 
 def core_versions() -> dict[str, Any] | None:

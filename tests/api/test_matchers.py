@@ -10,9 +10,8 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 from logfold.comparison import TokenSubsetMatcher
-from logfold.comparison.matchers import _generalizes
 from logfold.plugins.matchers import JaccardMatcher
-from oracles import quadratic_jaccard, quadratic_token_subset
+from oracles import generalizes, quadratic_jaccard, quadratic_token_subset
 
 TOKENS = st.sampled_from(["a", "b", "c", "<*>", "<*>", "", "é", "<NUM>", "x" * 40])
 TEMPLATES = st.lists(TOKENS, max_size=6).map(" ".join)
@@ -27,14 +26,14 @@ def test_indexed_matcher_equals_the_quadratic_search(before: list[str], after: l
 
 @settings(max_examples=200, deadline=None)
 @given(before=TEMPLATE_LISTS, after=TEMPLATE_LISTS)
-def test_every_index_is_used_once_and_every_pair_generalizes(before: list[str], after: list[str]) -> None:
+def test_every_index_is_used_once_and_every_pairgeneralizes(before: list[str], after: list[str]) -> None:
     pairs = TokenSubsetMatcher().match(before, after)
     assert len({i for i, _ in pairs}) == len(pairs)
     assert len({j for _, j in pairs}) == len(pairs)
     for i, j in pairs:
         left = before[i].split(" ") if before[i] else []
         right = after[j].split(" ") if after[j] else []
-        assert _generalizes(left, right) or _generalizes(right, left)
+        assert generalizes(left, right) or generalizes(right, left)
 
 
 def test_ties_go_to_the_fewest_wildcard_differences_then_the_lowest_index() -> None:

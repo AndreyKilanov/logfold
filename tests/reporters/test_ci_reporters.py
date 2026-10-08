@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import xml.etree.ElementTree as ET
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -13,7 +14,7 @@ from corpora import hostile_pair, write
 from logfold import ConfigError
 from logfold.ext import registry
 from logfold.model import DiffResult
-from logfold.plugins.reporter_text import xml_text
+from logfold.plugins.reporters_ci import JunitReporter
 
 CODE_SPAN = re.compile(r"`[^`]*`")
 
@@ -210,7 +211,9 @@ def test_the_xml_suffix_selects_junit(real_diff: DiffResult, tmp_path: Path) -> 
     assert parse(out.read_text(encoding="utf-8")).tag == "testsuites"
 
 
-def test_xml_text_shows_what_xml_cannot_hold() -> None:
-    cleaned = xml_text("a" + chr(0) + chr(0xFFFF) + chr(0xFFFE) + "\x1b" + "b\tc\nd", 200)
-    assert cleaned == "a\\x00U+FFFFU+FFFE\\x1bb c d"
-    assert xml_text("x" * 50, 10) == "xxxxxxx..."
+def test_junit_shows_what_xml_cannot_hold(real_diff: DiffResult) -> None:
+    text = "a" + chr(0) + chr(0xFFFF) + chr(0xFFFE) + "\x1b" + "b\tc\nd"
+    entry = replace(real_diff.new_templates[0], text=text, level="ERROR")
+    xml = JunitReporter().render(replace(real_diff, new_templates=(entry, *real_diff.new_templates[1:])))
+    parse(xml)
+    assert "a\\x00U+FFFFU+FFFE\\x1bb c d" in xml

@@ -1,4 +1,4 @@
-"""The native comparison gives exactly the classification of the pure-Python reference.
+"""The native comparison gives exactly the classification of the Python policy (``logfold.comparison.classify``).
 
 Both are run on random runs: templates present in one run or both, counts of zero, totals of zero, every built-in
 matcher and random thresholds. The entries must be equal, field by field, including the floats.

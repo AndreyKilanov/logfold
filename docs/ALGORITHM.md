@@ -206,8 +206,9 @@ result stays independent of the thread count. Identical inputs therefore produce
 
 After recount (§9) or, for saved results, after joining templates by id, templates that exist in one run only can be
 paired by a *matcher* so that a reworded message is compared as one template. The built-in matchers are part of the
-contract: the native implementation (`logfold-core`, `compare`) and the pure-Python one (`logfold.comparison.matchers`,
-`logfold.plugins.matchers`) must return **identical** pairs, in the same order. Matching does not change mined
+contract, and `logfold-core` (`compare`) is their only implementation: the classes in `logfold.comparison.matchers` and
+`logfold.plugins.matchers` hold the name, the threshold and the rules, and call it. A lone surrogate in a template text
+has no UTF-8 form and is read as U+FFFD. Matching does not change mined
 templates or counts, so it does not affect `ALGO_VERSION`. It is the one place that uses floating point (`jaccard`, `jaccard-idf`, `overlap`).
 
 A template text is split into tokens: `token_subset` splits on the single space character (an empty text has no tokens),
@@ -269,9 +270,10 @@ A matcher that is not built in (a plugin, or a subclass of a built-in one) alway
 ## 11. Comparison (diff)
 
 After recount (§9), or for two saved results, the templates of two runs are classified as *new*, *disappeared*,
-*changed* or *unchanged*. The native comparison (`logfold-core`, `compare`) and the pure-Python one
-(`logfold.comparison.classify`) must return **identical** entries, in the same order, with identical floats (the same
-IEEE double operations in the same order). It does not change mined templates or counts, so it does not affect
+*changed* or *unchanged*. The native comparison (`logfold-core`, `compare`) and the Python one
+(`logfold.comparison.classify`, which a plugin matcher and a result the extension cannot take, such as a count below 0
+or above 2^64 - 1 or a template listed twice in one run, go through) must return **identical** entries, in the same
+order, with identical floats (the same IEEE double operations in the same order). It does not change mined templates or counts, so it does not affect
 `ALGO_VERSION`.
 
 With several baselines (`diff(before, after, baselines=...)`) the runs are mined and recounted together, then the
@@ -303,12 +305,11 @@ run) and the number of records of the run; the thresholds `threshold_ratio` (at 
 ## 12. Pipeline reports
 
 `github-summary`, `junit`, `chat-message` and `prometheus` turn a result into text. The Rust core
-(`logfold-core`, `report`) and the pure-Python reporters (`logfold.plugins.reporters_ci`, `reporters_feeds`, the reference)
-must write **byte-identical** text for the same result and options. They do not change mined templates or counts, so they
-do not affect `ALGO_VERSION`. The extension takes the columns of a result in one call, `render_report(report, data, options)`
-(contract version 7); without the extension, or for a text it cannot take (a lone surrogate), the Python reporter renders.
-The Python reporter also renders when only a small part of a large result is listed, because building the columns passes
-over every template (`report_data.MIN_LISTED`, `LISTED_FRACTION`); the choice never changes the text.
+(`logfold-core`, `report`) writes the text; the reporter classes in `logfold.plugins` cut a result into columns and call
+it. The text is held by the golden fingerprints in `tests/fixtures/golden/reports.json`. The reports do not change mined
+templates or counts, so they do not affect `ALGO_VERSION`. The extension takes the columns of a result in one call,
+`render_report(report, data, options)`. A lone surrogate in a text is read as U+FFFD, and a count below 0 or above
+2^64 - 1 is a `ConfigError`.
 
 Counts are whole numbers below 2^53 (the shares are computed in double precision from them). A level that is not one of
 `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `FATAL` is shown as no level. A new template is an *alert* when its level is

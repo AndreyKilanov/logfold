@@ -2,8 +2,8 @@
 
 Which matcher should `logfold diff` use? Measured on pairs cut from the four large real logs ([`LOGHUB2.md`](LOGHUB2.md))
 with [`accuracy.py`](../accuracy.py). The 0.3.0 evaluation compared `exact`, `token_subset` and `jaccard`, and
-`jaccard` has been the default since. 0.4.0 added `jaccard-idf`, `overlap` and `rules`, computed by the Rust core with the
-pure-Python implementation as the reference the tests compare against; they were measured the same way, on smaller windows
+`jaccard` has been the default since. 0.4.0 added `jaccard-idf`, `overlap` and `rules`, computed by the Rust core (the tests compare it with the
+quadratic oracles of `tests/oracles.py`); they were measured the same way, on smaller windows
 (see [the 0.4.0 matchers](#the-040-matchers-accuracy)). The 0.4.0 accuracy numbers come from `python bench/accuracy.py --window 200000`, the speed of the
 matcher alone from `python bench/speed.py matchers`.
 

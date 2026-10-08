@@ -3,53 +3,18 @@
 Both show templates, never example lines: a job summary and a test report are read by everyone who can open the
 repository, while a template has its values replaced by placeholders.
 
-The native engine renders them when it is installed; the code here is the reference of the contract in
-``docs/ALGORITHM.md`` section 12 and renders when there is no extension. The native text equals it byte for byte.
+The native engine writes the text; the contract is ``docs/ALGORITHM.md`` section 12.
 """
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-
-from logfold.model import AnalysisResult, DiffEntry, DiffResult, Template
-from logfold.plugins.report_data import ALERT_LEVELS, level_name, listed_rows, native_text
-from logfold.plugins.reporter_text import alert_noun, code_span, int_option, iso, run_names, xml_text
+from logfold.model import AnalysisResult, DiffResult
+from logfold.plugins.report_data import int_option, render_native
 
 __all__ = ["GithubSummaryReporter", "JunitReporter"]
 
 _SUMMARY_BYTES = 900_000
 """A step summary may hold 1 MiB; the rest is left for what other steps write to the same file."""
-_NAME_WIDTH = 80
-_TEXT_WIDTH = 300
-
-
-def _alerts_first(entries: Sequence[DiffEntry]) -> list[DiffEntry]:
-    """Put the WARN+ entries before the others without changing the order inside either group."""
-    return [e for e in entries if e.level in ALERT_LEVELS] + [e for e in entries if e.level not in ALERT_LEVELS]
-
-
-def _level(level: str | None) -> str:
-    name = level_name(level)
-    return f"**{name}** " if name else ""
-
-
-def _entry_line(entry: DiffEntry, kind: str) -> str:
-    if kind == "changed" and entry.ratio is not None:
-        counts = f"x{entry.ratio:.2f} ({entry.before_count:,} -> {entry.after_count:,})"
-    elif kind == "disappeared":
-        counts = f"{entry.before_count:,} -> 0"
-    else:
-        counts = f"{entry.after_count:,}"
-    return f"- {_level(entry.level)}{counts} {code_span(entry.text, _TEXT_WIDTH)}"
-
-
-def _template_line(template: Template, records: int) -> str:
-    share = f"{template.count / records:.2%}" if records else "-"
-    return f"- {_level(template.level)}{template.count:,} ({share}) {code_span(template.text, _TEXT_WIDTH)}"
-
-
-def _warnings(result: AnalysisResult | DiffResult) -> list[str]:
-    return ["", *(f"> warning: {code_span(text, _TEXT_WIDTH)}" for text in result.warnings)] if result.warnings else []
 
 
 class GithubSummaryReporter:
@@ -68,7 +33,7 @@ class GithubSummaryReporter:
     kinds: tuple[str, ...] = ("analysis", "diff")
 
     def render(self, result: AnalysisResult | DiffResult, **options: object) -> str:
-        """Render ``result``, in the native engine when it is installed.
+        """Render ``result``.
 
         Args:
             result: An analysis or a diff result.
@@ -82,113 +47,9 @@ class GithubSummaryReporter:
         top = int_option(options, "top", 20, minimum=0)
         budget = int_option(options, "max_bytes", _SUMMARY_BYTES)
         levels = list(result.levels.items()) if isinstance(result, AnalysisResult) else []
-        fields = ("levels", "before", "ratios")
-        text = native_text(
-            self.name, result, {"top": top, "max_bytes": budget}, fields, levels, listed_rows(result, top)
+        return render_native(
+            self.name, result, {"top": top, "max_bytes": budget}, ("levels", "before", "ratios"), levels
         )
-        return text if text is not None else self._reference(result, top, budget)
-
-    def render_reference(self, result: AnalysisResult | DiffResult, **options: object) -> str:
-        """Render ``result`` in Python, the reference of the contract; same arguments and result as :meth:`render`."""
-        top = int_option(options, "top", 20, minimum=0)
-        return self._reference(result, top, int_option(options, "max_bytes", _SUMMARY_BYTES))
-
-    def _reference(self, result: AnalysisResult | DiffResult, top: int, budget: int) -> str:
-        if isinstance(result, DiffResult):
-            top = min(top, max(len(result.new_templates), len(result.changed), len(result.disappeared)))
-        else:
-            top = min(top, len(result.templates))
-        rows = top
-        while True:
-            text = self._document(result, rows, cut=rows < top)
-            if len(text.encode("utf-8")) <= budget or rows == 0:
-                return text
-            rows //= 2
-
-    def _document(self, result: AnalysisResult | DiffResult, rows: int, *, cut: bool) -> str:
-        lines = self._diff(result, rows) if isinstance(result, DiffResult) else self._analysis(result, rows)
-        if cut:
-            lines.extend(["", f"_Lists are shortened to {rows} templates to fit the size limit of a job summary._"])
-        return "\n".join(lines) + "\n"
-
-    def _analysis(self, result: AnalysisResult, rows: int) -> list[str]:
-        run = result.run
-        lines = [
-            f"## logfold: {code_span(run.name, _NAME_WIDTH, tail=True)}",
-            "",
-            f"{run.records:,} records, {len(result.templates):,} templates, {run.unparsed:,} unparsed lines.",
-        ]
-        counts = result.levels
-        if counts:
-            levels = ", ".join(f"{name} {count:,}" for name, count in reversed(list(counts.items())))
-            lines.extend(["", f"Levels: {levels}"])
-        lines.extend(_warnings(result))
-        shown = result.top(rows)
-        lines.extend(["", f"### Most frequent templates ({len(shown):,} of {len(result.templates):,})", ""])
-        lines.extend(_template_line(template, run.records) for template in shown)
-        return lines
-
-    def _diff(self, result: DiffResult, rows: int) -> list[str]:
-        alerts = len(result.new_alerts)
-        verdict = f"**{alert_noun(alerts)}.**" if alerts else "**No new WARN+ templates.**"
-        lines = [
-            f"## logfold: {run_names(result.before.name, result.after.name, _NAME_WIDTH)}",
-            "",
-            verdict,
-            "",
-            "| new | WARN+ | disappeared | changed | unchanged | records |",
-            "|---:|---:|---:|---:|---:|---|",
-            f"| {len(result.new_templates):,} | {alerts:,} | {len(result.disappeared):,} | {len(result.changed):,} "
-            f"| {result.unchanged:,} | {result.before.records:,} -> {result.after.records:,} |",
-        ]
-        lines.extend(_warnings(result))
-        shown = _alerts_first(result.new_templates)[:rows]
-        lines.extend(["", f"### New templates ({len(shown):,} of {len(result.new_templates):,})", ""])
-        lines.extend(_entry_line(entry, "new") for entry in shown)
-        for title, kind, entries in (
-            ("Changed", "changed", result.changed),
-            ("Disappeared", "disappeared", result.disappeared),
-        ):
-            if not entries:
-                continue
-            lines.extend(["", f"<details><summary>{title} templates ({len(entries):,})</summary>", ""])
-            lines.extend(_entry_line(entry, kind) for entry in entries[:rows])
-            lines.extend(["", "</details>"])
-        return lines
-
-
-def _attribute(value: str) -> str:
-    return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
-
-
-def _content(value: str) -> str:
-    return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-
-
-def _case(lines: list[str], entry: DiffEntry, run_records: int) -> None:
-    level = level_name(entry.level) or "none"
-    head = (
-        f'<testcase classname="{_attribute(f"logfold.new.{level}")}" '
-        f'name="{_attribute(f"{xml_text(entry.text, 200)} [{entry.id[:8]}]")}" time="0"'
-    )
-    if entry.level not in ALERT_LEVELS:
-        lines.append(f"    {head} />")
-        return
-    share = f"{entry.after_count / run_records:.2%}" if run_records else "-"
-    body = "\n".join(
-        (
-            f"template: {xml_text(entry.text, 500)}",
-            f"records: {entry.after_count:,} ({share} of the run)",
-            f"first seen: {iso(entry.first_seen)}",
-            f"last seen: {iso(entry.last_seen)}",
-        )
-    )
-    message = f"new {level} template, {entry.after_count:,} records"
-    lines.append(f"    {head}>")
-    lines.append(
-        f'      <failure message="{_attribute(message)}" type="{_attribute(level)}">{_content(body)}</failure>'
-    )
-    lines.append("    </testcase>")
 
 
 class JunitReporter:
@@ -207,7 +68,7 @@ class JunitReporter:
     kinds: tuple[str, ...] = ("diff",)
 
     def render(self, result: AnalysisResult | DiffResult, **options: object) -> str:
-        """Render ``result``, in the native engine when it is installed.
+        """Render ``result``.
 
         Args:
             result: A diff result.
@@ -223,42 +84,4 @@ class JunitReporter:
         if not isinstance(result, DiffResult):
             raise TypeError("the junit reporter renders diff results")
         top = int_option(options, "top", 100, minimum=0)
-        alerts = len(result.new_alerts)
-        listed = alerts + min(top, len(result.new_templates) - alerts)
-        text = native_text(
-            self.name, result, {"top": top}, ("ids", "levels", "moments"), rows=(listed, len(result.new_templates))
-        )
-        return text if text is not None else self._reference(result, top)
-
-    def render_reference(self, result: AnalysisResult | DiffResult, **options: object) -> str:
-        """Render ``result`` in Python, the reference of the contract; same arguments and result as :meth:`render`."""
-        if not isinstance(result, DiffResult):
-            raise TypeError("the junit reporter renders diff results")
-        return self._reference(result, int_option(options, "top", 100, minimum=0))
-
-    def _reference(self, result: DiffResult, top: int) -> str:
-        alerts = [e for e in result.new_templates if e.level in ALERT_LEVELS]
-        quiet = [e for e in result.new_templates if e.level not in ALERT_LEVELS][:top]
-        lines = [
-            '<?xml version="1.0" encoding="UTF-8"?>',
-            "<testsuites>",
-            f'  <testsuite name="logfold" tests="{len(alerts) + len(quiet) or 1}" failures="{len(alerts)}" '
-            'errors="0" skipped="0" time="0">',
-            "    <properties>",
-        ]
-        for key, value in (
-            ("before", xml_text(result.before.name, 200, tail=True)),
-            ("after", xml_text(result.after.name, 200, tail=True)),
-            ("new_templates", str(len(result.new_templates))),
-            ("disappeared_templates", str(len(result.disappeared))),
-            ("changed_templates", str(len(result.changed))),
-            ("unchanged_templates", str(result.unchanged)),
-        ):
-            lines.append(f'      <property name="{key}" value="{_attribute(value)}" />')
-        lines.append("    </properties>")
-        for entry in (*alerts, *quiet):
-            _case(lines, entry, result.after.records)
-        if not alerts and not quiet:
-            lines.append('    <testcase classname="logfold.new" name="no new templates" time="0" />')
-        lines.extend(["  </testsuite>", "</testsuites>"])
-        return "\n".join(lines) + "\n"
+        return render_native(self.name, result, {"top": top}, ("ids", "levels", "moments"))
