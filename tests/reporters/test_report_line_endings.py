@@ -21,13 +21,13 @@ ANALYSIS_REPORTERS = ("text", "markdown", "html", "json", "csv", "github-summary
 @pytest.fixture
 def diff_result(tmp_path: Path) -> DiffResult:
     before, after = hostile_pair(tmp_path)
-    return logfold.diff(str(before), str(after), format="app", engine="python")
+    return logfold.diff(str(before), str(after), format="app", engine="native")
 
 
 @pytest.fixture
 def analysis_result(tmp_path: Path) -> AnalysisResult:
     _, after = hostile_pair(tmp_path)
-    return logfold.analyze(str(after), format="app", engine="python")
+    return logfold.analyze(str(after), format="app", engine="native")
 
 
 def test_write_text_keeps_the_line_feed(tmp_path: Path) -> None:

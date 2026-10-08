@@ -5,8 +5,8 @@ from __future__ import annotations
 import sys
 from dataclasses import dataclass
 
+from logfold import _bridge
 from logfold._version import get_version
-from logfold.engines import native
 from logfold.ext import registry
 
 
@@ -17,7 +17,7 @@ class Info:
     Attributes:
         version: The logfold version.
         python: The Python version, for example ``3.13.1``.
-        native_available: Whether the native engine can be used; when ``False`` the slow pure-Python engine runs.
+        native_available: Whether the native engine can be used; when ``False`` mining raises ``EngineError``.
         core_version: Version of the native extension, or ``None`` when it is unavailable.
         contract_version: Version of the contract between the Python layer and the extension, or ``None``.
         algo_version: Version of the template algorithm, or ``None``.
@@ -43,7 +43,7 @@ def info() -> Info:
     Returns:
         The facts. Registered plugins are loaded first, so their names are included.
     """
-    versions = native.core_versions() if native.is_available() else None
+    versions = _bridge.core_versions() if _bridge.is_available() else None
     return Info(
         version=get_version(),
         python=sys.version.split()[0],

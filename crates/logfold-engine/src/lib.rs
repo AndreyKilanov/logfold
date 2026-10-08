@@ -9,6 +9,7 @@
 mod adaptive;
 mod chunked;
 mod error;
+mod inspect;
 mod pipeline;
 mod plan;
 mod request;
@@ -17,6 +18,7 @@ mod sequential;
 use std::time::Instant;
 
 pub use error::EngineError;
+pub use inspect::{SampleRecord, SampleReport, inspect_sample};
 pub use request::{
     DEFAULT_CHUNK_BYTES, Metrics, MineOutput, MineRequest, MiningParams, NoObserver, Observer, RunSummary, Strategy,
 };

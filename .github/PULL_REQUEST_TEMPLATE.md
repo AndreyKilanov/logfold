@@ -17,6 +17,6 @@
 ## Checklist
 
 - [ ] Tests added or updated (unit / contract / property-based)
-- [ ] Rust and Python engines still give identical results
+- [ ] The algorithm contract is unchanged, or `docs/ALGORITHM.md`, the engine and the golden results changed together
 - [ ] `CHANGELOG.md` updated for user-visible changes
 - [ ] Public contract changed: yes / no (if yes, snapshot tests updated and ADR linked)

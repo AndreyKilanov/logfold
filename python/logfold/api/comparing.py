@@ -2,9 +2,9 @@
 
 The extension joins the templates of the two runs, pairs the ones that exist in one run only with a built-in matcher and
 decides which are new, disappeared, changed or unchanged, working on columns of texts and counts. Only the reported
-templates become :class:`~logfold.model.DiffEntry` objects here. The pure-Python :func:`logfold.comparison.classify`
-is the reference: it gives the same entries (see the differential tests) and handles everything the extension does not
-(plugin matchers, the pure-Python engine, values the extension cannot take).
+templates become :class:`~logfold.model.DiffEntry` objects here. The Python :func:`logfold.comparison.classify`
+gives the same entries (see the differential tests) and handles everything the extension does not (plugin matchers,
+values the extension cannot take).
 """
 
 from __future__ import annotations
@@ -13,9 +13,9 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
+from logfold import _bridge
 from logfold.comparison import Classification, apply_significance
 from logfold.config import DiffConfig
-from logfold.engines import native
 from logfold.engines.base import TemplateTable
 from logfold.levels import LEVEL_NAMES
 from logfold.model import (
@@ -149,13 +149,13 @@ def classify_native(
 
     Returns:
         The classification, or ``None`` when the extension cannot take the data (a text it cannot pass, a count it
-        cannot hold, a template listed twice in one run) and the reference should run.
+        cannot hold, a template listed twice in one run) and the Python classification should run.
     """
     kind, threshold, rules = spec
     if len(set(before.texts)) != len(before.texts) or len(set(after.texts)) != len(after.texts):
         return None
     try:
-        new, gone, changed, unchanged = native.compare_runs(
+        new, gone, changed, unchanged = _bridge.compare_runs(
             (before.texts, before.counts, before.total),
             (after.texts, after.counts, after.total),
             (config.threshold_ratio, config.min_count, config.min_new_count),

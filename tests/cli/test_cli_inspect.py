@@ -7,10 +7,11 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
+from logfold import _bridge
 from logfold.api.inspecting import inspect_file
 from logfold.cli import exit_codes
 from logfold.cli.app import app
-from logfold.errors import FormatError, SourceError
+from logfold.errors import EngineError, FormatError, SourceError
 
 runner = CliRunner()
 
@@ -41,6 +42,18 @@ def test_the_sample_and_the_shown_records_are_limited(corpus_dir: Path) -> None:
     whole = inspect_file(corpus_dir / "app.log", sample_lines=10_000)
     assert whole.truncated is False
     assert whole.records == 1500
+
+
+def test_a_negative_limit_shows_no_records_but_still_counts(corpus_dir: Path) -> None:
+    found = inspect_file(corpus_dir / "app.log", limit=-1, sample_lines=50)
+    assert found.shown == ()
+    assert found.records == 50
+
+
+def test_an_extension_of_another_contract_version_is_refused(corpus_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(_bridge._core, "api_version", lambda: _bridge.EXPECTED_CORE_API_VERSION - 1)
+    with pytest.raises(EngineError, match="reinstall"):
+        inspect_file(corpus_dir / "app.log")
 
 
 def test_multiline_records_count_their_lines(corpus_dir: Path) -> None:

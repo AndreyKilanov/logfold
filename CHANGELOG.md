@@ -12,7 +12,7 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   saved). Continuing gives the same state as one run over both logs; a big input is continued in parallel from
   the loaded tree by default (deterministic; on logs of many rare messages it has more templates, and a warning says so),
   `--strategy sequential` is the exact continuation. Error `StateError`; extension contract
-  version 8.
+  version 9.
   See `docs/cli.md`.
 - A GitHub Action (`uses: AndreyKilanov/logfold@<tag>`) and a GitLab CI template (`ci/gitlab/logfold.yml`): analyze the
   log, compare it with the baseline of the last good run, write the summary and fail on new alerts; see `docs/ci.md`.
@@ -21,6 +21,14 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 - Python 3.11 or newer is required; Python 3.10 is no longer supported (0.4.0 is the last release for it). The wheels are
   tagged `cp311-abi3`.
+- The slow pure-Python reference engine is removed: `engine="python"`, `--engine python` and `LOGFOLD_ENGINE=python` run
+  the native engine with a `DeprecationWarning` and will be refused later. Without the extension, mining raises
+  `EngineError` instead of falling back; `degraded` in a result is always `False`.
+- The pure-Python copies of the built-in matchers and of the four pipeline reports are removed: the Rust code is the only
+  implementation. A lone surrogate in a template is read as U+FFFD, and a report refuses a count below 0 or above 2^64 - 1
+  with a `ConfigError`; a short listing of 100 thousand templates takes up to 75 ms more.
+- `inspect` reads the sample in the extension, so a format is read exactly as `analyze` reads it (a pattern that only
+  Python's `re` accepts, such as a lookahead, is now refused).
 
 ### Fixed
 

@@ -55,5 +55,4 @@ page cache.
 - The result is deterministic for a fixed chunk size and does not depend on the thread count (tests).
 - With `strategy="auto"` the first chunk is still the one that decides whether to give the parallel run up
   ([`ADAPTIVE.md`](ADAPTIVE.md)); with the warm start it is mined alone first, so a log of unique messages is given up at once.
-- The option has no effect on a run that is mined sequentially (the sequential strategy, an input of one chunk, the pure-Python
-  engine, which says so in a warning).
+- The option has no effect on a run that is mined sequentially (the sequential strategy, an input of one chunk), which says so in a warning.

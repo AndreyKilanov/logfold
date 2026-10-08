@@ -169,7 +169,9 @@ Threads = Annotated[
 ]
 Engine = Annotated[
     str | None,
-    typer.Option("--engine", help="auto, native or python (slow reference engine).", rich_help_panel=PANEL_EXECUTION),
+    typer.Option(
+        "--engine", help="auto or native (python is deprecated and runs native).", rich_help_panel=PANEL_EXECUTION
+    ),
 ]
 Strategy = Annotated[
     str | None,

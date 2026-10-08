@@ -160,7 +160,7 @@ class ResultMeta:
         logfold_version: Version of the library.
         config_hash: Fingerprint of masks and mining parameters; results with different hashes may not be comparable.
         format: Name of the log format used.
-        degraded: ``True`` when the slow reference engine was used.
+        degraded: Always ``False``; kept for the saved results and the JSON schema of the time of the reference engine.
     """
 
     schema_version: int

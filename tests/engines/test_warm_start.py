@@ -103,10 +103,3 @@ def test_saved_results_refuse_the_keyword(tmp_path: Path) -> None:
     result = logfold.analyze(path, format="plain")
     with pytest.raises(logfold.ConfigError):
         logfold.diff(result, result, warm_start=True)
-
-
-def test_the_pure_python_engine_says_that_it_ignores_the_option(tmp_path: Path) -> None:
-    path = stray_log(tmp_path, 2_000)
-    result = logfold.analyze(path, format="plain", engine="python", warm_start=True, examples="none")
-    assert result.metrics.strategy == "sequential"
-    assert any("warm_start was ignored" in warning and "python engine" in warning for warning in result.warnings)

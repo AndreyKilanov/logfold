@@ -103,22 +103,23 @@ exclude_type_checking_imports = true
 name = "Layered architecture"
 type = "layers"
 # grimp cannot resolve the compiled logfold._core and falls back to the package root.
-ignore_imports = ["logfold.engines.native -> logfold"]
+ignore_imports = ["logfold._bridge -> logfold"]
 layers = [
   "logfold.cli",
   "logfold.api",
   "logfold.engines | logfold.formats | logfold.reporters | logfold.comparison | logfold.plugins",
   "logfold.model",
   "logfold.ext",
-  "logfold.config | logfold._version | logfold.levels",
+  "logfold.config | logfold._version | logfold.levels | logfold._bridge",
   "logfold.errors",
 ]
 
 [[tool.importlinter.contracts]]
-name = "Native extension is imported only by the native engine adapter"
+name = "Native extension is imported only by the bridge"
 type = "forbidden"
 source_modules = [
   "logfold.cli",
+  "logfold.engines",
   "logfold.api",
   "logfold.formats",
   "logfold.reporters",

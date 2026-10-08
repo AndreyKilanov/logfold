@@ -39,6 +39,3 @@ Machine: Windows 11, 8 cores / 16 threads, warm page cache. The 0.4.0 developmen
 - The slowest is `postgresql` (0.27 of `plain`): its prefix is matched by a bounded lazy scan (`.{0,120}?`) up to the level word,
   because `log_line_prefix` differs from site to site. Still 279 MB/s, 1 GB in about 3.7 seconds.
 
-## Against the reference engine
-
-The reference engine is about 100 to 200 times slower on large logs.

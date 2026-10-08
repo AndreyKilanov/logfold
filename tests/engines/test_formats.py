@@ -27,7 +27,7 @@ SAMPLES = {
 def test_builtin_formats_parse_their_samples(tmp_path: Path, name: str) -> None:
     path = tmp_path / "one.log"
     path.write_text(SAMPLES[name] + "\n", encoding="utf-8")
-    result = logfold.analyze(str(path), format=name, engine="python")
+    result = logfold.analyze(str(path), format=name, engine="native")
     assert result.run.records == 1, name
     template = result.templates[0]
     if name not in ("nginx-error", "app", "jsonl", "journald") or name == "app":
@@ -39,9 +39,9 @@ def test_builtin_formats_parse_their_samples(tmp_path: Path, name: str) -> None:
 def test_level_extraction(tmp_path: Path) -> None:
     path = tmp_path / "levels.log"
     path.write_text(SAMPLES["app"] + "\n" + SAMPLES["nginx-error"] + "\n", encoding="utf-8")
-    app = logfold.analyze(str(path), format="app", engine="python")
+    app = logfold.analyze(str(path), format="app", engine="native")
     assert [t.level for t in app.templates if t.count] == ["WARN"]
-    err = logfold.analyze(str(path), format="nginx-error", engine="python")
+    err = logfold.analyze(str(path), format="nginx-error", engine="native")
     assert err.templates[0].level == "ERROR"
 
 
@@ -49,7 +49,7 @@ def test_journald_priority_maps_to_levels(tmp_path: Path) -> None:
     path = tmp_path / "j.log"
     rows = [{"__REALTIME_TIMESTAMP": "1790000000000000", "PRIORITY": p, "MESSAGE": f"msg {p}"} for p in "3467"]
     path.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
-    result = logfold.analyze(str(path), format="journald", sim_th=1.0, engine="python")
+    result = logfold.analyze(str(path), format="journald", sim_th=1.0, engine="native")
     assert result.templates[0].levels == {"ERROR": 1, "WARN": 1, "INFO": 1, "DEBUG": 1}
     assert result.templates[0].level == "ERROR"
 
@@ -81,7 +81,7 @@ def test_auto_detection_fails_loudly_on_unstructured_text(tmp_path: Path) -> Non
 def test_auto_detection_of_empty_file_is_plain(tmp_path: Path) -> None:
     path = tmp_path / "empty.log"
     path.write_text("", encoding="utf-8")
-    result = logfold.analyze(str(path), engine="python")
+    result = logfold.analyze(str(path), engine="native")
     assert result.run.records == 0
     assert any("no records" in w for w in result.warnings)
 
@@ -115,7 +115,7 @@ def test_custom_regex_format_end_to_end(tmp_path: Path) -> None:
         time_group="ts",
         level_group="lvl",
     )
-    for engine in ("python", "auto"):
+    for engine in ("native", "auto"):
         result = logfold.analyze(str(path), format=spec, engine=engine)
         assert [(t.text, t.count, t.level) for t in result.templates] == [("disk <NUM>% full", 2, "WARN")]
 
@@ -124,7 +124,7 @@ def test_bad_timestamp_format_is_rejected(tmp_path: Path) -> None:
     path = tmp_path / "a.log"
     path.write_text("x\n", encoding="utf-8")
     spec = RegexFormat(pattern=r"(?P<ts>\d+)", time_group="ts", ts_format="%Q")
-    for engine in ("python", "auto"):
+    for engine in ("native", "auto"):
         with pytest.raises(FormatError):
             logfold.analyze(str(path), format=spec, engine=engine)
 

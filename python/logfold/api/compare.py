@@ -20,7 +20,7 @@ from logfold.api._common import (
 )
 from logfold.api.baselines import baseline_warnings, pool_baselines, required_baselines
 from logfold.api.comparing import classify_native, table_side
-from logfold.api.matching import accelerated, native_spec, resolve_matcher
+from logfold.api.matching import native_spec, resolve_matcher
 from logfold.api.saved import MINING_ONLY_DEFAULTS, diff_saved
 from logfold.api.windows import (
     OPEN,
@@ -40,7 +40,6 @@ from logfold.config import (
     MaskRule,
     MiningConfig,
 )
-from logfold.engines import native
 from logfold.errors import ConfigError
 from logfold.ext.formats import Format, FormatSpec
 from logfold.ext.masks import Masker
@@ -225,14 +224,14 @@ def diff(
         )
     mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks, high_cardinality)
     exec_config = _execution(execution, engine, strategy, threads, chunk_bytes, high_cardinality, warm_start)
-    mined, used = _mine(runs, spec, mining_config, exec_config, progress, config.recount, windows)
+    mined = _mine(runs, spec, mining_config, exec_config, progress, config.recount, windows)
     pooled = pool_baselines(mined, len(runs) - 1, required_baselines(len(runs) - 1, config.min_baselines))
     table = pooled.table
     before_names = tuple(name for run in runs[:-1] for name in run)
     before_summary = labeled(_summary(before_names, pooled.before), windows[0] if windows else OPEN)
     after_summary = labeled(_summary(second, pooled.after), windows[-1] if windows else OPEN)
     masker = Masker(mining_config.masks)
-    native_matcher = native_spec(resolved_matcher) if used.name == "native" and native.supports_comparison() else None
+    native_matcher = native_spec(resolved_matcher)
     classification = None
     if native_matcher is not None:
         classification = classify_native(
@@ -249,7 +248,7 @@ def diff(
             before_summary,
             after_summary,
             config,
-            accelerated(resolved_matcher, used.name == "native"),
+            resolved_matcher,
         )
 
         def scrub(entries: tuple) -> tuple:  # type: ignore[type-arg]
@@ -269,11 +268,10 @@ def diff(
         after=after_summary,
         config=config,
         metrics=mined.metrics,
-        meta=_meta(spec, mining_config, used),
+        meta=_meta(spec, mining_config),
         warnings=(
             *_warnings(
                 [before_summary, after_summary],
-                used,
                 exec_config,
                 resolved,
                 mining_config,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -11,7 +12,7 @@ from prometheus_client.parser import text_string_to_metric_families
 import logfold
 from corpora import hostile_pair
 from logfold import ConfigError
-from logfold.ext import registry
+from logfold.ext import get_reporter, registry
 from logfold.model import AnalysisResult, DiffResult
 
 CODE_SPAN = re.compile(r"`[^`]*`")
@@ -20,19 +21,19 @@ CODE_SPAN = re.compile(r"`[^`]*`")
 @pytest.fixture
 def real_diff(corpus_dir: Path) -> DiffResult:
     return logfold.diff(
-        str(corpus_dir / "app_before.log"), str(corpus_dir / "app_after.log"), format="app", engine="python"
+        str(corpus_dir / "app_before.log"), str(corpus_dir / "app_after.log"), format="app", engine="native"
     )
 
 
 @pytest.fixture
 def hostile_diff(tmp_path: Path) -> DiffResult:
     before, after = hostile_pair(tmp_path)
-    return logfold.diff(str(before), str(after), format="app", engine="python")
+    return logfold.diff(str(before), str(after), format="app", engine="native")
 
 
 @pytest.fixture
 def analysis(corpus_dir: Path) -> AnalysisResult:
-    return logfold.analyze(str(corpus_dir / "app.log"), format="app", engine="python")
+    return logfold.analyze(str(corpus_dir / "app.log"), format="app", engine="native")
 
 
 def families(text: str) -> dict[str, list[tuple[dict[str, str], float]]]:
@@ -97,7 +98,7 @@ def test_chat_message_neutralizes_hostile_text(hostile_diff: DiffResult) -> None
 
 def test_chat_message_with_nothing_new_says_so(corpus_dir: Path) -> None:
     path = str(corpus_dir / "app_before.log")
-    text = logfold.diff(path, path, format="app", engine="python").render("chat-message")
+    text = logfold.diff(path, path, format="app", engine="native").render("chat-message")
     assert "0 new WARN+ templates of 0 new, 0 disappeared, 0 changed." in text
     assert "New templates:" not in text
 
@@ -182,11 +183,13 @@ def test_chat_message_can_be_appended(real_diff: DiffResult, tmp_path: Path) -> 
     assert out.read_text(encoding="utf-8").count("logfold: ") == 2
 
 
-def test_defuse_mentions_changes_only_the_mention_syntax() -> None:
-    from logfold.plugins.reporter_text import defuse_mentions
+def test_the_chat_message_changes_only_the_mention_syntax(real_diff: DiffResult) -> None:
+    def message(text: str) -> str:
+        entry = replace(real_diff.new_templates[0], text=text, level="ERROR")
+        return get_reporter("chat-message").render(replace(real_diff, new_templates=(entry,)))
 
     zws = chr(0x200B)
-    assert defuse_mentions("a <!channel> <@U1> <#C1> @here @ALL @everyone b") == (
-        f"a <{zws}!channel> <{zws}@U1> <{zws}#C1> @{zws}here @{zws}ALL @{zws}everyone b"
+    assert f"a <{zws}!channel> <{zws}@U1> <{zws}#C1> @{zws}here @{zws}ALL @{zws}everyone b" in message(
+        "a <!channel> <@U1> <#C1> @here @ALL @everyone b"
     )
-    assert defuse_mentions("ERROR user@example.com <NUM> <*> @channels") == "ERROR user@example.com <NUM> <*> @channels"
+    assert "ERROR user@example.com <NUM> <*> @channels" in message("ERROR user@example.com <NUM> <*> @channels")

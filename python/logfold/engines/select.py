@@ -2,46 +2,45 @@
 
 from __future__ import annotations
 
-import logging
 import os
+import warnings
 
 from logfold.config import ExecutionConfig
-from logfold.engines import native
 from logfold.engines.base import Engine
-from logfold.engines.python import PythonEngine
+from logfold.engines.native import NativeEngine
 from logfold.errors import ConfigError
 
-logger = logging.getLogger("logfold")
-
 ENV_ENGINE = "LOGFOLD_ENGINE"
+ENGINE_NAMES = ("auto", "native", "python")
 
 
 def select_engine(config: ExecutionConfig) -> Engine:
-    """Pick an engine for ``config``.
+    """Pick the engine for ``config``.
 
-    ``auto`` prefers the native engine and falls back to the slow reference engine with a warning. The environment
-    variable ``LOGFOLD_ENGINE`` overrides ``auto`` (not an explicit choice).
+    The Rust engine is the only one. ``python``, the name of the removed reference engine, is still accepted and runs
+    the Rust engine with a deprecation warning. The environment variable ``LOGFOLD_ENGINE`` is read when the
+    configuration says ``auto``.
 
     Args:
         config: Execution configuration.
 
     Returns:
-        An engine instance.
+        The native engine.
 
     Raises:
         ConfigError: If the environment variable holds an unknown engine name.
-        EngineError: If ``native`` is requested but unavailable.
+        EngineError: If the native extension is unavailable or speaks another contract version.
     """
     choice = config.engine
     if choice == "auto":
         choice = os.environ.get(ENV_ENGINE, "auto")  # type: ignore[assignment]
-        if choice not in ("auto", "native", "python"):
+        if choice not in ENGINE_NAMES:
             raise ConfigError(f"{ENV_ENGINE} must be auto, native or python, got {choice!r}")
     if choice == "python":
-        return PythonEngine()
-    if choice == "native":
-        return native.NativeEngine()
-    if native.is_available():
-        return native.NativeEngine()
-    logger.warning("native extension unavailable; falling back to the slow pure-Python engine")
-    return PythonEngine()
+        warnings.warn(
+            "the pure-Python engine has been removed; engine='python' runs the native engine and will be refused "
+            "in a later release",
+            FutureWarning,
+            stacklevel=2,
+        )
+    return NativeEngine()

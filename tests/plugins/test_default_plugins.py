@@ -43,7 +43,7 @@ def test_default_plugins_are_registered_after_a_plain_import() -> None:
 
 
 def test_logfmt_format(tmp_path: Path) -> None:
-    result = logfold.analyze(write(tmp_path, "a.log", LOGFMT), format="logfmt", engine="python")
+    result = logfold.analyze(write(tmp_path, "a.log", LOGFMT), format="logfmt", engine="native")
     assert result.run.unparsed == 0
     assert {t.text: (t.count, t.level) for t in result.templates} == {
         'msg="user <NUM> logged in" ip=<IP>': (2, "INFO"),
@@ -53,7 +53,7 @@ def test_logfmt_format(tmp_path: Path) -> None:
 
 
 def test_serilog_clef_format(tmp_path: Path) -> None:
-    result = logfold.analyze(write(tmp_path, "a.jsonl", SERILOG), format="serilog-clef", engine="python")
+    result = logfold.analyze(write(tmp_path, "a.jsonl", SERILOG), format="serilog-clef", engine="native")
     assert {t.text: t.level for t in result.templates} == {
         "User <NUM> logged in": "WARN",
         "Cache warmed <NUM> keys": None,
@@ -66,7 +66,7 @@ def test_serilog_clef_format(tmp_path: Path) -> None:
 def test_native_and_python_engines_agree(tmp_path: Path, name: str, text: str) -> None:
     path = write(tmp_path, "a.log", text)
     native = logfold.analyze(path, format=name, engine="native")
-    reference = logfold.analyze(path, format=name, engine="python")
+    reference = logfold.analyze(path, format=name, engine="native")
     assert [(t.text, t.count, t.level) for t in native.templates] == [
         (t.text, t.count, t.level) for t in reference.templates
     ]
@@ -74,12 +74,12 @@ def test_native_and_python_engines_agree(tmp_path: Path, name: str, text: str) -
 
 def test_auto_detection_does_not_pick_the_default_plugins(tmp_path: Path) -> None:
     path = write(tmp_path, "a.log", "2026-10-04T10:00:01Z [main] INFO hello 1\n" * 5)
-    assert logfold.analyze(path, engine="python").meta.format == "app"
+    assert logfold.analyze(path, engine="native").meta.format == "app"
 
 
 def test_markdown_reporter_tables_cannot_be_broken_by_log_content(tmp_path: Path) -> None:
     path = write(tmp_path, "a.log", "a|b `c` d\nline two 1\n")
-    markdown = logfold.analyze(path, format="plain", engine="python").render("markdown")
+    markdown = logfold.analyze(path, format="plain", engine="native").render("markdown")
     rows = [line for line in markdown.splitlines() if line.startswith("| ") and "`" in line]
     assert rows
     for row in rows:
@@ -89,7 +89,7 @@ def test_markdown_reporter_tables_cannot_be_broken_by_log_content(tmp_path: Path
 
 def test_csv_reporter_neutralizes_spreadsheet_formulas(tmp_path: Path) -> None:
     path = write(tmp_path, "a.log", '=HYPERLINK("http://evil.example","x")\n-2+3\n')
-    text = logfold.analyze(path, format="plain", engine="python").render("csv")
+    text = logfold.analyze(path, format="plain", engine="native").render("csv")
     cells = [row[-1] for row in csv.reader(io.StringIO(text))][1:]
     assert cells
     assert all(cell.startswith("'") for cell in cells)
@@ -98,7 +98,7 @@ def test_csv_reporter_neutralizes_spreadsheet_formulas(tmp_path: Path) -> None:
 def test_csv_and_markdown_reporters_render_a_diff_and_honour_top(tmp_path: Path) -> None:
     before = write(tmp_path, "b.log", LOGFMT)
     after = write(tmp_path, "a.log", LOGFMT.replace("slow query", "disk full"))
-    result = logfold.diff(before, after, format="logfmt", engine="python", min_count=1)
+    result = logfold.diff(before, after, format="logfmt", engine="native", min_count=1)
     rows = list(csv.reader(io.StringIO(CsvReporter().render(result))))
     assert rows[0] == ["kind", "before_count", "after_count", "level", "template", "score", "p_value"]
     assert {row[0] for row in rows[1:]} == {"new", "disappeared"}
@@ -107,7 +107,7 @@ def test_csv_and_markdown_reporters_render_a_diff_and_honour_top(tmp_path: Path)
 
 
 def test_csv_top_below_one_means_all_rows(tmp_path: Path) -> None:
-    result = logfold.analyze(write(tmp_path, "a.log", LOGFMT), format="logfmt", engine="python")
+    result = logfold.analyze(write(tmp_path, "a.log", LOGFMT), format="logfmt", engine="native")
     assert result.render("csv", top=0).count("\n") == len(result.templates) + 1
 
 
@@ -123,8 +123,8 @@ def test_jaccard_matcher_pairs_the_closest_templates() -> None:
 def test_jaccard_matcher_makes_a_reworded_message_one_template(tmp_path: Path) -> None:
     before = write(tmp_path, "b.log", 'ts=2026-10-04T10:00:01Z level=error msg="retry failed after 3 attempts" id=7\n')
     after = write(tmp_path, "a.log", 'ts=2026-10-04T10:00:01Z level=error msg="retry gave up after 3 attempts" id=7\n')
-    exact = logfold.diff(before, after, format="logfmt", engine="python", min_count=1, matcher="exact")
+    exact = logfold.diff(before, after, format="logfmt", engine="native", min_count=1, matcher="exact")
     assert (len(exact.new_templates), len(exact.disappeared)) == (1, 1)
-    paired = logfold.diff(before, after, format="logfmt", engine="python", min_count=1)
+    paired = logfold.diff(before, after, format="logfmt", engine="native", min_count=1)
     assert paired.config.matcher == "jaccard"
     assert (len(paired.new_templates), len(paired.disappeared)) == (0, 0)

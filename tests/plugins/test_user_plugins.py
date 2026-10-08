@@ -120,7 +120,7 @@ def test_a_dropped_file_provides_a_format_a_reporter_and_a_matcher(plugin_dir: P
     log = tmp_path / "a.log"
     log.write_text(LOG, encoding="utf-8")
 
-    result = logfold.analyze(str(log), format="mine", engine="python")
+    result = logfold.analyze(str(log), format="mine", engine="native")
     assert {t.text: t.level for t in result.templates} == {"disk <NUM> percent full": "WARN", "user <NUM> in": "INFO"}
     assert result.render("shout").splitlines()[0] in {"DISK <NUM> PERCENT FULL", "USER <NUM> IN"}
     assert registry.get_matcher("first-word").name == "first-word"
@@ -136,7 +136,7 @@ def test_a_matcher_from_the_folder_is_used_by_diff(plugin_dir: Path, tmp_path: P
     after = tmp_path / "a.log"
     before.write_text("2026-10-04T10:00:01Z ERROR retry failed after 3 tries\n", encoding="utf-8")
     after.write_text("2026-10-04T10:00:01Z ERROR retry gave up after 3 tries\n", encoding="utf-8")
-    options = {"format": "mine", "engine": "python", "min_count": 1}
+    options = {"format": "mine", "engine": "native", "min_count": 1}
     assert len(logfold.diff(str(before), str(after), **options).new_templates) == 1
     assert len(logfold.diff(str(before), str(after), matcher="first-word", **options).new_templates) == 0
 
@@ -274,12 +274,12 @@ def test_every_template_loads_and_is_usable(plugin_dir: Path, kind: str, tmp_pat
     log = tmp_path / "a.log"
     log.write_text(LOG, encoding="utf-8")
     if kind == "format":
-        result = logfold.analyze(str(log), format="my-thing", engine="python")
+        result = logfold.analyze(str(log), format="my-thing", engine="native")
         assert result.run.records == 2
     elif kind == "reporter":
-        result = logfold.analyze(str(log), format="plain", engine="python")
+        result = logfold.analyze(str(log), format="plain", engine="native")
         assert "disk" in result.render("my-thing")
-        comparison = logfold.diff(str(log), str(log), format="plain", engine="python")
+        comparison = logfold.diff(str(log), str(log), format="plain", engine="native")
         assert comparison.render("my-thing").startswith("0 new")
     else:
         assert registry.get_matcher("my-thing").match(["retry failed"], ["retry gave up"]) == [(0, 0)]
@@ -340,6 +340,6 @@ def test_the_example_in_the_plugins_guide_works(plugin_dir: Path, tmp_path: Path
     write(plugin_dir, "from_the_guide.py", code.group(1))
     log = tmp_path / "a.log"
     log.write_text(LOG, encoding="utf-8")
-    result = logfold.analyze(str(log), format="mine", engine="python")
+    result = logfold.analyze(str(log), format="mine", engine="native")
     assert result.run.records == 2
     assert result.render("shout").strip()

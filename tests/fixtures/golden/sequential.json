@@ -1,0 +1,3037 @@
+{
+ "generated_by": "python engine, logfold 0.4.0",
+ "cases": {
+  "corpus/app": {
+   "run": {
+    "files": 1,
+    "lines": 1500,
+    "records": 1500,
+    "unparsed": 0,
+    "bytes": 83926,
+    "tz_aware": true,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "f3e77e7e1fcc67a2",
+     "text": "heartbeat from <*>",
+     "count": 241,
+     "first_seen": "2026-10-04T00:00:10+00:00",
+     "last_seen": "2026-10-04T00:24:59+00:00",
+     "example": "heartbeat from alpha",
+     "level": "DEBUG",
+     "levels": {
+      "DEBUG": 241
+     }
+    },
+    {
+     "id": "83b3179af1b76691",
+     "text": "cache miss for key <*>",
+     "count": 227,
+     "first_seen": "2026-10-04T00:00:03+00:00",
+     "last_seen": "2026-10-04T00:24:58+00:00",
+     "example": "cache miss for key k667",
+     "level": "INFO",
+     "levels": {
+      "INFO": 227
+     }
+    },
+    {
+     "id": "7fa8720cce6befc5",
+     "text": "disk usage <NUM>% on <PATH>",
+     "count": 227,
+     "first_seen": "2026-10-04T00:00:00+00:00",
+     "last_seen": "2026-10-04T00:24:50+00:00",
+     "example": "disk usage 86% on /dev/sda1",
+     "level": "WARN",
+     "levels": {
+      "WARN": 227
+     }
+    },
+    {
+     "id": "698fb288ba8ca62f",
+     "text": "request <NUM> failed with status <NUM>",
+     "count": 217,
+     "first_seen": "2026-10-04T00:00:01+00:00",
+     "last_seen": "2026-10-04T00:24:54+00:00",
+     "example": "request 15456 failed with status 502",
+     "level": "ERROR",
+     "levels": {
+      "ERROR": 217
+     }
+    },
+    {
+     "id": "f0300c158d54fe70",
+     "text": "job <NUM> finished in <*>",
+     "count": 199,
+     "first_seen": "2026-10-04T00:00:08+00:00",
+     "last_seen": "2026-10-04T00:24:42+00:00",
+     "example": "job 456 finished in 2.66s",
+     "level": "INFO",
+     "levels": {
+      "INFO": 199
+     }
+    },
+    {
+     "id": "5ac4356e40d2beb5",
+     "text": "user <*> logged in from <IP>",
+     "count": 199,
+     "first_seen": "2026-10-04T00:00:06+00:00",
+     "last_seen": "2026-10-04T00:24:53+00:00",
+     "example": "user dave logged in from 10.0.6.156",
+     "level": "INFO",
+     "levels": {
+      "INFO": 199
+     }
+    },
+    {
+     "id": "56a684fc3567c481",
+     "text": "unexpected exception in handler <*>",
+     "count": 190,
+     "first_seen": "2026-10-04T00:00:02+00:00",
+     "last_seen": "2026-10-04T00:24:56+00:00",
+     "example": "unexpected exception in handler delta",
+     "level": "ERROR",
+     "levels": {
+      "ERROR": 190
+     }
+    }
+   ]
+  },
+  "corpus/multiline": {
+   "run": {
+    "files": 1,
+    "lines": 2021,
+    "records": 1500,
+    "unparsed": 0,
+    "bytes": 99827,
+    "tz_aware": true,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "f0300c158d54fe70",
+     "text": "job <NUM> finished in <*>",
+     "count": 226,
+     "first_seen": "2026-10-04T00:00:09+00:00",
+     "last_seen": "2026-10-04T00:24:54+00:00",
+     "example": "job 880 finished in 9.95s",
+     "level": "INFO",
+     "levels": {
+      "INFO": 226
+     }
+    },
+    {
+     "id": "7fa8720cce6befc5",
+     "text": "disk usage <NUM>% on <PATH>",
+     "count": 225,
+     "first_seen": "2026-10-04T00:00:02+00:00",
+     "last_seen": "2026-10-04T00:24:56+00:00",
+     "example": "disk usage 97% on /dev/sda3",
+     "level": "WARN",
+     "levels": {
+      "WARN": 225
+     }
+    },
+    {
+     "id": "f3e77e7e1fcc67a2",
+     "text": "heartbeat from <*>",
+     "count": 218,
+     "first_seen": "2026-10-04T00:00:05+00:00",
+     "last_seen": "2026-10-04T00:24:58+00:00",
+     "example": "heartbeat from alpha",
+     "level": "DEBUG",
+     "levels": {
+      "DEBUG": 218
+     }
+    },
+    {
+     "id": "cb7d277a4db3bc36",
+     "text": "unexpected exception in handler <*> File \"service.py\", line <NUM>, in handle raise RuntimeError('boom')",
+     "count": 216,
+     "first_seen": "2026-10-04T00:00:00+00:00",
+     "last_seen": "2026-10-04T00:24:50+00:00",
+     "example": "unexpected exception in handler alpha\n  File \"service.py\", line 8, in handle\n    raise RuntimeError('boom')",
+     "level": "ERROR",
+     "levels": {
+      "ERROR": 216
+     }
+    },
+    {
+     "id": "698fb288ba8ca62f",
+     "text": "request <NUM> failed with status <NUM>",
+     "count": 213,
+     "first_seen": "2026-10-04T00:00:04+00:00",
+     "last_seen": "2026-10-04T00:24:59+00:00",
+     "example": "request 79423 failed with status 500",
+     "level": "ERROR",
+     "levels": {
+      "ERROR": 213
+     }
+    },
+    {
+     "id": "5ac4356e40d2beb5",
+     "text": "user <*> logged in from <IP>",
+     "count": 208,
+     "first_seen": "2026-10-04T00:00:01+00:00",
+     "last_seen": "2026-10-04T00:24:51+00:00",
+     "example": "user alice logged in from 10.0.5.214",
+     "level": "INFO",
+     "levels": {
+      "INFO": 208
+     }
+    },
+    {
+     "id": "83b3179af1b76691",
+     "text": "cache miss for key <*>",
+     "count": 194,
+     "first_seen": "2026-10-04T00:00:07+00:00",
+     "last_seen": "2026-10-04T00:24:45+00:00",
+     "example": "cache miss for key k653",
+     "level": "INFO",
+     "levels": {
+      "INFO": 194
+     }
+    }
+   ]
+  },
+  "corpus/nginx": {
+   "run": {
+    "files": 1,
+    "lines": 1500,
+    "records": 1500,
+    "unparsed": 0,
+    "bytes": 138847,
+    "tz_aware": true,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "dc616117155f4c48",
+     "text": "\"GET <*> HTTP/<NUM>\" <NUM>",
+     "count": 736,
+     "first_seen": "2026-10-03T21:00:00+00:00",
+     "last_seen": "2026-10-03T21:24:58+00:00",
+     "example": "\"GET /login HTTP/1.1\" 200",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "7662e505d6a3ed51",
+     "text": "\"PUT <*> HTTP/<NUM>\" <NUM>",
+     "count": 383,
+     "first_seen": "2026-10-03T21:00:06+00:00",
+     "last_seen": "2026-10-03T21:24:56+00:00",
+     "example": "\"PUT /login HTTP/1.1\" 301",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "02a85f460add6713",
+     "text": "\"POST <*> HTTP/<NUM>\" <NUM>",
+     "count": 381,
+     "first_seen": "2026-10-03T21:00:05+00:00",
+     "last_seen": "2026-10-03T21:24:59+00:00",
+     "example": "\"POST /login HTTP/1.1\" 500",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "corpus/syslog": {
+   "run": {
+    "files": 1,
+    "lines": 1500,
+    "records": 1500,
+    "unparsed": 0,
+    "bytes": 87004,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "cf8559be0a6bd51e",
+     "text": "cron[<NUM>]: session <*> for <*>",
+     "count": 506,
+     "first_seen": "1970-10-01T00:00:01",
+     "last_seen": "1970-10-01T00:24:58",
+     "example": "cron[258]: session closed for alice",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "101eb95553f6b23d",
+     "text": "sshd[<NUM>]: session <*> for <*>",
+     "count": 501,
+     "first_seen": "1970-10-01T00:00:00",
+     "last_seen": "1970-10-01T00:24:57",
+     "example": "sshd[205]: session closed for frank",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "ec843d2b3e0be35b",
+     "text": "kernel[<NUM>]: session <*> for <*>",
+     "count": 493,
+     "first_seen": "1970-10-01T00:00:04",
+     "last_seen": "1970-10-01T00:24:59",
+     "example": "kernel[383]: session closed for bob",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "corpus/jsonl": {
+   "run": {
+    "files": 1,
+    "lines": 1503,
+    "records": 1500,
+    "unparsed": 3,
+    "bytes": 111001,
+    "tz_aware": true,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "7925b2d3a729dd92",
+     "text": "payment failed",
+     "count": 375,
+     "first_seen": "2026-10-04T10:00:02.054000+00:00",
+     "last_seen": "2026-10-04T10:00:58.995000+00:00",
+     "example": "payment failed",
+     "level": "ERROR",
+     "levels": {
+      "ERROR": 375
+     }
+    },
+    {
+     "id": "b72325dcf192cbd5",
+     "text": "queue depth <NUM>",
+     "count": 375,
+     "first_seen": "2026-09-21T14:13:21+00:00",
+     "last_seen": "2026-09-21T14:38:17+00:00",
+     "example": "queue depth 130",
+     "level": "WARN",
+     "levels": {
+      "WARN": 375
+     }
+    },
+    {
+     "id": "152eec22bf63e7de",
+     "text": "retry <NUM> for <*>",
+     "count": 375,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "retry 2 for alpha",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "de0696b1e3293b2f",
+     "text": "user <*> signed in",
+     "count": 375,
+     "first_seen": "2026-10-04T00:00:00+00:00",
+     "last_seen": "2026-10-04T00:24:56+00:00",
+     "example": "user erin signed in",
+     "level": "INFO",
+     "levels": {
+      "INFO": 375
+     }
+    }
+   ]
+  },
+  "corpus/journald": {
+   "run": {
+    "files": 1,
+    "lines": 1500,
+    "records": 1500,
+    "unparsed": 0,
+    "bytes": 163836,
+    "tz_aware": true,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "1a2d1c199bea573d",
+     "text": "Started session <NUM> of user <*>",
+     "count": 1500,
+     "first_seen": "2026-09-21T14:13:20+00:00",
+     "last_seen": "2026-09-21T14:13:21.499000+00:00",
+     "example": "Started session 10 of user dave.",
+     "level": "ERROR",
+     "levels": {
+      "DEBUG": 289,
+      "INFO": 587,
+      "WARN": 304,
+      "ERROR": 320
+     }
+    }
+   ]
+  },
+  "corpus/unicode": {
+   "run": {
+    "files": 1,
+    "lines": 1500,
+    "records": 1500,
+    "unparsed": 0,
+    "bytes": 47927,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": 637,
+   "sha256": "a878f1d4f8f6d54cb0f22fa6fec1f45cdef0020229c5d04d2d5edb8d4c875f92"
+  },
+  "corpus/noisy": {
+   "run": {
+    "files": 1,
+    "lines": 1500,
+    "records": 1340,
+    "unparsed": 0,
+    "bytes": 23480,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": 1004,
+   "sha256": "f040288c3d847ca4c99a1f84d235d4e307891f4bbbd5a1c48405aaf771fe646c"
+  },
+  "line_endings/app_crlf.log": {
+   "run": {
+    "files": 1,
+    "lines": 400,
+    "records": 400,
+    "unparsed": 0,
+    "bytes": 22765,
+    "tz_aware": true,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "f3e77e7e1fcc67a2",
+     "text": "heartbeat from <*>",
+     "count": 68,
+     "first_seen": "2026-10-04T00:00:10+00:00",
+     "last_seen": "2026-10-04T00:06:33+00:00",
+     "example": "heartbeat from alpha",
+     "level": "DEBUG",
+     "levels": {
+      "DEBUG": 68
+     }
+    },
+    {
+     "id": "698fb288ba8ca62f",
+     "text": "request <NUM> failed with status <NUM>",
+     "count": 61,
+     "first_seen": "2026-10-04T00:00:01+00:00",
+     "last_seen": "2026-10-04T00:06:38+00:00",
+     "example": "request 15456 failed with status 502",
+     "level": "ERROR",
+     "levels": {
+      "ERROR": 61
+     }
+    },
+    {
+     "id": "83b3179af1b76691",
+     "text": "cache miss for key <*>",
+     "count": 60,
+     "first_seen": "2026-10-04T00:00:03+00:00",
+     "last_seen": "2026-10-04T00:06:30+00:00",
+     "example": "cache miss for key k667",
+     "level": "INFO",
+     "levels": {
+      "INFO": 60
+     }
+    },
+    {
+     "id": "7fa8720cce6befc5",
+     "text": "disk usage <NUM>% on <PATH>",
+     "count": 59,
+     "first_seen": "2026-10-04T00:00:00+00:00",
+     "last_seen": "2026-10-04T00:06:39+00:00",
+     "example": "disk usage 86% on /dev/sda1",
+     "level": "WARN",
+     "levels": {
+      "WARN": 59
+     }
+    },
+    {
+     "id": "56a684fc3567c481",
+     "text": "unexpected exception in handler <*>",
+     "count": 56,
+     "first_seen": "2026-10-04T00:00:02+00:00",
+     "last_seen": "2026-10-04T00:06:37+00:00",
+     "example": "unexpected exception in handler delta",
+     "level": "ERROR",
+     "levels": {
+      "ERROR": 56
+     }
+    },
+    {
+     "id": "f0300c158d54fe70",
+     "text": "job <NUM> finished in <*>",
+     "count": 53,
+     "first_seen": "2026-10-04T00:00:08+00:00",
+     "last_seen": "2026-10-04T00:06:36+00:00",
+     "example": "job 456 finished in 2.66s",
+     "level": "INFO",
+     "levels": {
+      "INFO": 53
+     }
+    },
+    {
+     "id": "5ac4356e40d2beb5",
+     "text": "user <*> logged in from <IP>",
+     "count": 43,
+     "first_seen": "2026-10-04T00:00:06+00:00",
+     "last_seen": "2026-10-04T00:06:32+00:00",
+     "example": "user dave logged in from 10.0.6.156",
+     "level": "INFO",
+     "levels": {
+      "INFO": 43
+     }
+    }
+   ]
+  },
+  "line_endings/app_nonl.log": {
+   "run": {
+    "files": 1,
+    "lines": 400,
+    "records": 400,
+    "unparsed": 0,
+    "bytes": 22364,
+    "tz_aware": true,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "f3e77e7e1fcc67a2",
+     "text": "heartbeat from <*>",
+     "count": 68,
+     "first_seen": "2026-10-04T00:00:10+00:00",
+     "last_seen": "2026-10-04T00:06:33+00:00",
+     "example": "heartbeat from alpha",
+     "level": "DEBUG",
+     "levels": {
+      "DEBUG": 68
+     }
+    },
+    {
+     "id": "698fb288ba8ca62f",
+     "text": "request <NUM> failed with status <NUM>",
+     "count": 61,
+     "first_seen": "2026-10-04T00:00:01+00:00",
+     "last_seen": "2026-10-04T00:06:38+00:00",
+     "example": "request 15456 failed with status 502",
+     "level": "ERROR",
+     "levels": {
+      "ERROR": 61
+     }
+    },
+    {
+     "id": "83b3179af1b76691",
+     "text": "cache miss for key <*>",
+     "count": 60,
+     "first_seen": "2026-10-04T00:00:03+00:00",
+     "last_seen": "2026-10-04T00:06:30+00:00",
+     "example": "cache miss for key k667",
+     "level": "INFO",
+     "levels": {
+      "INFO": 60
+     }
+    },
+    {
+     "id": "7fa8720cce6befc5",
+     "text": "disk usage <NUM>% on <PATH>",
+     "count": 59,
+     "first_seen": "2026-10-04T00:00:00+00:00",
+     "last_seen": "2026-10-04T00:06:39+00:00",
+     "example": "disk usage 86% on /dev/sda1",
+     "level": "WARN",
+     "levels": {
+      "WARN": 59
+     }
+    },
+    {
+     "id": "56a684fc3567c481",
+     "text": "unexpected exception in handler <*>",
+     "count": 56,
+     "first_seen": "2026-10-04T00:00:02+00:00",
+     "last_seen": "2026-10-04T00:06:37+00:00",
+     "example": "unexpected exception in handler delta",
+     "level": "ERROR",
+     "levels": {
+      "ERROR": 56
+     }
+    },
+    {
+     "id": "f0300c158d54fe70",
+     "text": "job <NUM> finished in <*>",
+     "count": 53,
+     "first_seen": "2026-10-04T00:00:08+00:00",
+     "last_seen": "2026-10-04T00:06:36+00:00",
+     "example": "job 456 finished in 2.66s",
+     "level": "INFO",
+     "levels": {
+      "INFO": 53
+     }
+    },
+    {
+     "id": "5ac4356e40d2beb5",
+     "text": "user <*> logged in from <IP>",
+     "count": 43,
+     "first_seen": "2026-10-04T00:00:06+00:00",
+     "last_seen": "2026-10-04T00:06:32+00:00",
+     "example": "user dave logged in from 10.0.6.156",
+     "level": "INFO",
+     "levels": {
+      "INFO": 43
+     }
+    }
+   ]
+  },
+  "parameters/0": {
+   "run": {
+    "files": 1,
+    "lines": 1500,
+    "records": 1340,
+    "unparsed": 0,
+    "bytes": 23480,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": 994,
+   "sha256": "515b0ddbf3fb4f14479e6defc160bc8feee5865dd3965f01374f48a2df486065"
+  },
+  "parameters/1": {
+   "run": {
+    "files": 1,
+    "lines": 1500,
+    "records": 1340,
+    "unparsed": 0,
+    "bytes": 23480,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": 1020,
+   "sha256": "61aae9d8c0bb787dab550fe19e6b23c27ddea7b97e0c119fbd00328fb269dfac"
+  },
+  "parameters/2": {
+   "run": {
+    "files": 1,
+    "lines": 1500,
+    "records": 1340,
+    "unparsed": 0,
+    "bytes": 23480,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "b52a85c929f6f5a4",
+     "text": "<*>",
+     "count": 180,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w31",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "b9d03c833db22200",
+     "text": "<*> <*> <*> <*> <*>",
+     "count": 174,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "<*> w22 ok w31 w32",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "6724e1dcf372d57f",
+     "text": "<*> <*>",
+     "count": 170,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w15 w32",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "17f7d0a45d1682cc",
+     "text": "<*> <*> <*>",
+     "count": 169,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w23 w24 w8",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "ac900b55aa355f92",
+     "text": "<*> <*> <*> <*>",
+     "count": 169,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w2 w27 w16 w24",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "d23b0161f9f2d5bd",
+     "text": "<*> <*> <*> <*> <*> <*> <*>",
+     "count": 168,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w31 w29 w24 w31 w36 w12 w25",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "2d5ccdda05467623",
+     "text": "<*> <*> <*> <*> <*> <*> <*> <*>",
+     "count": 167,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w26 w30 w24 a/b/c w7 start w16 w6",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "a117d9ca22d2bfb7",
+     "text": "<*> <*> <*> <*> <*> <*>",
+     "count": 143,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w6 start w3 w21 w15 <*>",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "parameters/3": {
+   "run": {
+    "files": 1,
+    "lines": 1500,
+    "records": 1340,
+    "unparsed": 0,
+    "bytes": 23480,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": 1202,
+   "sha256": "caea14ebab0dff7ca24d51195769f7e239ef175f738cccab25f92be4636f6d9d"
+  },
+  "parameters/4": {
+   "run": {
+    "files": 1,
+    "lines": 1500,
+    "records": 1340,
+    "unparsed": 0,
+    "bytes": 23480,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": 1202,
+   "sha256": "caea14ebab0dff7ca24d51195769f7e239ef175f738cccab25f92be4636f6d9d"
+  },
+  "parameters/5": {
+   "run": {
+    "files": 1,
+    "lines": 1500,
+    "records": 1340,
+    "unparsed": 0,
+    "bytes": 23480,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": 994,
+   "sha256": "515b0ddbf3fb4f14479e6defc160bc8feee5865dd3965f01374f48a2df486065"
+  },
+  "parameters/6": {
+   "run": {
+    "files": 1,
+    "lines": 1500,
+    "records": 1340,
+    "unparsed": 0,
+    "bytes": 23480,
+    "tz_aware": false,
+    "overflowed": true,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "b52a85c929f6f5a4",
+     "text": "<*>",
+     "count": 180,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w31",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "b9d03c833db22200",
+     "text": "<*> <*> <*> <*> <*>",
+     "count": 174,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "<*> w22 ok w31 w32",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "6724e1dcf372d57f",
+     "text": "<*> <*>",
+     "count": 170,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w15 w32",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "ac900b55aa355f92",
+     "text": "<*> <*> <*> <*>",
+     "count": 169,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w2 w27 w16 w24",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "17f7d0a45d1682cc",
+     "text": "<*> <*> <*>",
+     "count": 168,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "x=1 w2 w5",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "d23b0161f9f2d5bd",
+     "text": "<*> <*> <*> <*> <*> <*> <*>",
+     "count": 168,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w31 w29 w24 w31 w36 w12 w25",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "2d5ccdda05467623",
+     "text": "<*> <*> <*> <*> <*> <*> <*> <*>",
+     "count": 167,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w26 w30 w24 a/b/c w7 start w16 w6",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "a117d9ca22d2bfb7",
+     "text": "<*> <*> <*> <*> <*> <*>",
+     "count": 143,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w6 start w3 w21 w15 <*>",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "0b9cfbb099dc62ad",
+     "text": "w23 w24 w8",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w23 w24 w8",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "parameters/7": {
+   "run": {
+    "files": 1,
+    "lines": 1500,
+    "records": 1340,
+    "unparsed": 0,
+    "bytes": 23480,
+    "tz_aware": false,
+    "overflowed": true,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "b52a85c929f6f5a4",
+     "text": "<*>",
+     "count": 180,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w31",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "b9d03c833db22200",
+     "text": "<*> <*> <*> <*> <*>",
+     "count": 174,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "<*> w22 ok w31 w32",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "ac900b55aa355f92",
+     "text": "<*> <*> <*> <*>",
+     "count": 169,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w2 w27 w16 w24",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "d23b0161f9f2d5bd",
+     "text": "<*> <*> <*> <*> <*> <*> <*>",
+     "count": 168,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w31 w29 w24 w31 w36 w12 w25",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "2d5ccdda05467623",
+     "text": "<*> <*> <*> <*> <*> <*> <*> <*>",
+     "count": 167,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w26 w30 w24 a/b/c w7 start w16 w6",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "6724e1dcf372d57f",
+     "text": "<*> <*>",
+     "count": 166,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w36 w27",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "17f7d0a45d1682cc",
+     "text": "<*> <*> <*>",
+     "count": 166,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w1 <*> w17",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "a117d9ca22d2bfb7",
+     "text": "<*> <*> <*> <*> <*> <*>",
+     "count": 143,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w6 start w3 w21 w15 <*>",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "64ce7816f627925b",
+     "text": "<*> w32",
+     "count": 4,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w15 w32",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "0b9cfbb099dc62ad",
+     "text": "w23 w24 w8",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w23 w24 w8",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "20e9e7efd671a166",
+     "text": "w25 ok w1",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w25 ok w1",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "2404b15ce01f0304",
+     "text": "x=<NUM> w2 w5",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "x=1 w2 w5",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "parameters/8": {
+   "run": {
+    "files": 1,
+    "lines": 1500,
+    "records": 1340,
+    "unparsed": 0,
+    "bytes": 23480,
+    "tz_aware": false,
+    "overflowed": true,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "b52a85c929f6f5a4",
+     "text": "<*>",
+     "count": 180,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w31",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "b9d03c833db22200",
+     "text": "<*> <*> <*> <*> <*>",
+     "count": 174,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "<*> w22 ok w31 w32",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "ac900b55aa355f92",
+     "text": "<*> <*> <*> <*>",
+     "count": 169,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w2 w27 w16 w24",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "d23b0161f9f2d5bd",
+     "text": "<*> <*> <*> <*> <*> <*> <*>",
+     "count": 167,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w18 w35 w22 w27 w8 w10 w38",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "2d5ccdda05467623",
+     "text": "<*> <*> <*> <*> <*> <*> <*> <*>",
+     "count": 167,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w26 w30 w24 a/b/c w7 start w16 w6",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "6724e1dcf372d57f",
+     "text": "<*> <*>",
+     "count": 166,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w36 w27",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "17f7d0a45d1682cc",
+     "text": "<*> <*> <*>",
+     "count": 166,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w1 <*> w17",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "a117d9ca22d2bfb7",
+     "text": "<*> <*> <*> <*> <*> <*>",
+     "count": 143,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w6 start w3 w21 w15 <*>",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "64ce7816f627925b",
+     "text": "<*> w32",
+     "count": 4,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w15 w32",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "0b9cfbb099dc62ad",
+     "text": "w23 w24 w8",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w23 w24 w8",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "20e9e7efd671a166",
+     "text": "w25 ok w1",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w25 ok w1",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "c02629f720baa04d",
+     "text": "w31 w29 w24 w31 w36 w12 w25",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "w31 w29 w24 w31 w36 w12 w25",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "2404b15ce01f0304",
+     "text": "x=<NUM> w2 w5",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "x=1 w2 w5",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "custom_masks": {
+   "run": {
+    "files": 1,
+    "lines": 1500,
+    "records": 1500,
+    "unparsed": 0,
+    "bytes": 83926,
+    "tz_aware": true,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "f3e77e7e1fcc67a2",
+     "text": "heartbeat from <*>",
+     "count": 241,
+     "first_seen": "2026-10-04T00:00:10+00:00",
+     "last_seen": "2026-10-04T00:24:59+00:00",
+     "example": "heartbeat from alpha",
+     "level": "DEBUG",
+     "levels": {
+      "DEBUG": 241
+     }
+    },
+    {
+     "id": "a405cd9bc87153a7",
+     "text": "cache miss for key k<N>",
+     "count": 227,
+     "first_seen": "2026-10-04T00:00:03+00:00",
+     "last_seen": "2026-10-04T00:24:58+00:00",
+     "example": "cache miss for key k667",
+     "level": "INFO",
+     "levels": {
+      "INFO": 227
+     }
+    },
+    {
+     "id": "301ad135815262f7",
+     "text": "disk usage <N>% on /dev/sda<N>",
+     "count": 227,
+     "first_seen": "2026-10-04T00:00:00+00:00",
+     "last_seen": "2026-10-04T00:24:50+00:00",
+     "example": "disk usage 86% on /dev/sda1",
+     "level": "WARN",
+     "levels": {
+      "WARN": 227
+     }
+    },
+    {
+     "id": "47c8205db00eec15",
+     "text": "request <N> failed with status <N>",
+     "count": 217,
+     "first_seen": "2026-10-04T00:00:01+00:00",
+     "last_seen": "2026-10-04T00:24:54+00:00",
+     "example": "request 15456 failed with status 502",
+     "level": "ERROR",
+     "levels": {
+      "ERROR": 217
+     }
+    },
+    {
+     "id": "776ed069f42e82d8",
+     "text": "job <N> finished in <N>.<N>s",
+     "count": 199,
+     "first_seen": "2026-10-04T00:00:08+00:00",
+     "last_seen": "2026-10-04T00:24:42+00:00",
+     "example": "job 456 finished in 2.66s",
+     "level": "INFO",
+     "levels": {
+      "INFO": 199
+     }
+    },
+    {
+     "id": "988f46d17c56cb2e",
+     "text": "user <USER> logged in from <N>.<N>.<N>.<N>",
+     "count": 199,
+     "first_seen": "2026-10-04T00:00:06+00:00",
+     "last_seen": "2026-10-04T00:24:53+00:00",
+     "example": "user dave logged in from 10.0.6.156",
+     "level": "INFO",
+     "levels": {
+      "INFO": 199
+     }
+    },
+    {
+     "id": "56a684fc3567c481",
+     "text": "unexpected exception in handler <*>",
+     "count": 190,
+     "first_seen": "2026-10-04T00:00:02+00:00",
+     "last_seen": "2026-10-04T00:24:56+00:00",
+     "example": "unexpected exception in handler delta",
+     "level": "ERROR",
+     "levels": {
+      "ERROR": 190
+     }
+    }
+   ]
+  },
+  "multiple_files": {
+   "run": {
+    "files": 2,
+    "lines": 1900,
+    "records": 1900,
+    "unparsed": 0,
+    "bytes": 106290,
+    "tz_aware": true,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "f3e77e7e1fcc67a2",
+     "text": "heartbeat from <*>",
+     "count": 309,
+     "first_seen": "2026-10-04T00:00:10+00:00",
+     "last_seen": "2026-10-04T00:24:59+00:00",
+     "example": "heartbeat from alpha",
+     "level": "DEBUG",
+     "levels": {
+      "DEBUG": 309
+     }
+    },
+    {
+     "id": "83b3179af1b76691",
+     "text": "cache miss for key <*>",
+     "count": 287,
+     "first_seen": "2026-10-04T00:00:03+00:00",
+     "last_seen": "2026-10-04T00:24:58+00:00",
+     "example": "cache miss for key k667",
+     "level": "INFO",
+     "levels": {
+      "INFO": 287
+     }
+    },
+    {
+     "id": "7fa8720cce6befc5",
+     "text": "disk usage <NUM>% on <PATH>",
+     "count": 286,
+     "first_seen": "2026-10-04T00:00:00+00:00",
+     "last_seen": "2026-10-04T00:24:50+00:00",
+     "example": "disk usage 86% on /dev/sda1",
+     "level": "WARN",
+     "levels": {
+      "WARN": 286
+     }
+    },
+    {
+     "id": "698fb288ba8ca62f",
+     "text": "request <NUM> failed with status <NUM>",
+     "count": 278,
+     "first_seen": "2026-10-04T00:00:01+00:00",
+     "last_seen": "2026-10-04T00:24:54+00:00",
+     "example": "request 15456 failed with status 502",
+     "level": "ERROR",
+     "levels": {
+      "ERROR": 278
+     }
+    },
+    {
+     "id": "f0300c158d54fe70",
+     "text": "job <NUM> finished in <*>",
+     "count": 252,
+     "first_seen": "2026-10-04T00:00:08+00:00",
+     "last_seen": "2026-10-04T00:24:42+00:00",
+     "example": "job 456 finished in 2.66s",
+     "level": "INFO",
+     "levels": {
+      "INFO": 252
+     }
+    },
+    {
+     "id": "56a684fc3567c481",
+     "text": "unexpected exception in handler <*>",
+     "count": 246,
+     "first_seen": "2026-10-04T00:00:02+00:00",
+     "last_seen": "2026-10-04T00:24:56+00:00",
+     "example": "unexpected exception in handler delta",
+     "level": "ERROR",
+     "levels": {
+      "ERROR": 246
+     }
+    },
+    {
+     "id": "5ac4356e40d2beb5",
+     "text": "user <*> logged in from <IP>",
+     "count": 242,
+     "first_seen": "2026-10-04T00:00:06+00:00",
+     "last_seen": "2026-10-04T00:24:53+00:00",
+     "example": "user dave logged in from 10.0.6.156",
+     "level": "INFO",
+     "levels": {
+      "INFO": 242
+     }
+    }
+   ]
+  },
+  "time_window": {
+   "run": {
+    "files": 1,
+    "lines": 1500,
+    "records": 600,
+    "unparsed": 0,
+    "bytes": 83926,
+    "tz_aware": true,
+    "overflowed": false,
+    "out_of_range": 900,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "f3e77e7e1fcc67a2",
+     "text": "heartbeat from <*>",
+     "count": 93,
+     "first_seen": "2026-10-04T00:05:22+00:00",
+     "last_seen": "2026-10-04T00:14:58+00:00",
+     "example": "heartbeat from alpha",
+     "level": "DEBUG",
+     "levels": {
+      "DEBUG": 93
+     }
+    },
+    {
+     "id": "5ac4356e40d2beb5",
+     "text": "user <*> logged in from <IP>",
+     "count": 91,
+     "first_seen": "2026-10-04T00:05:10+00:00",
+     "last_seen": "2026-10-04T00:14:46+00:00",
+     "example": "user carol logged in from 10.0.8.26",
+     "level": "INFO",
+     "levels": {
+      "INFO": 91
+     }
+    },
+    {
+     "id": "f0300c158d54fe70",
+     "text": "job <NUM> finished in <*>",
+     "count": 90,
+     "first_seen": "2026-10-04T00:05:00+00:00",
+     "last_seen": "2026-10-04T00:14:54+00:00",
+     "example": "job 159 finished in 6.34s",
+     "level": "INFO",
+     "levels": {
+      "INFO": 90
+     }
+    },
+    {
+     "id": "83b3179af1b76691",
+     "text": "cache miss for key <*>",
+     "count": 89,
+     "first_seen": "2026-10-04T00:05:01+00:00",
+     "last_seen": "2026-10-04T00:14:57+00:00",
+     "example": "cache miss for key k801",
+     "level": "INFO",
+     "levels": {
+      "INFO": 89
+     }
+    },
+    {
+     "id": "7fa8720cce6befc5",
+     "text": "disk usage <NUM>% on <PATH>",
+     "count": 84,
+     "first_seen": "2026-10-04T00:05:14+00:00",
+     "last_seen": "2026-10-04T00:14:51+00:00",
+     "example": "disk usage 82% on /dev/sda3",
+     "level": "WARN",
+     "levels": {
+      "WARN": 84
+     }
+    },
+    {
+     "id": "56a684fc3567c481",
+     "text": "unexpected exception in handler <*>",
+     "count": 77,
+     "first_seen": "2026-10-04T00:05:03+00:00",
+     "last_seen": "2026-10-04T00:14:59+00:00",
+     "example": "unexpected exception in handler alpha",
+     "level": "ERROR",
+     "levels": {
+      "ERROR": 77
+     }
+    },
+    {
+     "id": "698fb288ba8ca62f",
+     "text": "request <NUM> failed with status <NUM>",
+     "count": 76,
+     "first_seen": "2026-10-04T00:05:02+00:00",
+     "last_seen": "2026-10-04T00:14:56+00:00",
+     "example": "request 23351 failed with status 500",
+     "level": "ERROR",
+     "levels": {
+      "ERROR": 76
+     }
+    }
+   ]
+  },
+  "long_example": {
+   "run": {
+    "files": 1,
+    "lines": 1,
+    "records": 1,
+    "unparsed": 0,
+    "bytes": 6007,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "251fb7c35ed78a62",
+     "text": "start éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "start ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "wide/0.1": {
+   "run": {
+    "files": 1,
+    "lines": 4000,
+    "records": 4000,
+    "unparsed": 0,
+    "bytes": 134905,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": 507,
+   "sha256": "a11bed517b19dd9cf36940e52b5b49091877a139479a52577b1d6353cea31f71"
+  },
+  "wide/0.4": {
+   "run": {
+    "files": 1,
+    "lines": 4000,
+    "records": 4000,
+    "unparsed": 0,
+    "bytes": 134905,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": 3243,
+   "sha256": "b2997841c4446b3ce828194c053f1daa656b72f62e4dff028f481bec092aa157"
+  },
+  "wide/0.7": {
+   "run": {
+    "files": 1,
+    "lines": 4000,
+    "records": 4000,
+    "unparsed": 0,
+    "bytes": 134905,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": 3981,
+   "sha256": "89e24f20931d550c36123225a941fceeaf423f844659668e3807b26c8c4a12fe"
+  },
+  "wide/1.0": {
+   "run": {
+    "files": 1,
+    "lines": 4000,
+    "records": 4000,
+    "unparsed": 0,
+    "bytes": 134905,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": 3994,
+   "sha256": "60f1b0de5c858eca580cf350ea9dfe36567f444cd3427ce1904f93c3c84b8116"
+  },
+  "crowded/0.2": {
+   "run": {
+    "files": 1,
+    "lines": 12000,
+    "records": 12000,
+    "unparsed": 0,
+    "bytes": 921410,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "bcca7fc6cb2aea5a",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*>",
+     "count": 456,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x23 f0p2 r3x1775 f0p4 s5x1 m6x8 r7x1491 f0p8",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "66e19b18e9ef1409",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*>",
+     "count": 447,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x9 f10p2 r3x2569 f10p4 s5x0 m6x17 r7x1677",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "0e46275b63f10835",
+     "text": "- <*> <*> <*> <*> s5x1",
+     "count": 441,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x29 f22p2 r3x3022 f22p4 s5x1",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "abcc75391b0247a8",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*>",
+     "count": 438,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x26 r2x697 f17p3 r4x515 s5x0 m6x10 f17p7 r8x3517",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "a480d49e8d3ab57e",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*>",
+     "count": 433,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x23 f22p2 r3x3346 f22p4 s5x1 m6x29 r7x1412 f22p8 r9x3684",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "d16bb3101227614a",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*>",
+     "count": 421,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x28 f12p2 r3x3139 f12p4 s5x1 m6x0 r7x2958",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "ce82f7405a345f6c",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*>",
+     "count": 414,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x23 r2x2929 f1p3 r4x3311 s5x0 m6x17 f1p7 r8x3431 f1p9",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "3d98ca01ea14051b",
+     "text": "- <*> <*> <*> <*> s5x1 <*>",
+     "count": 412,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x26 f16p2 r3x3298 f16p4 s5x1 m6x4",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "266c496153d30bb7",
+     "text": "- <*> <*> <*> <*> s5x0 <*>",
+     "count": 406,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x15 r2x2019 f23p3 r4x3119 s5x0 m6x18",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "c9f4deb16b42a942",
+     "text": "- <*> <*> <*> <*> s5x0",
+     "count": 386,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x21 r2x3740 f1p3 r4x3864 s5x0",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "9f0a5c69c801c5b8",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x1 <*>",
+     "count": 253,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x3 f2p2 r3x1389 f2p4 s5x1 m6x3 r7x2305 f2p8 r9x1632 s10x1 m11x15",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "9a5eca2f1224a08e",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x0 <*> <*> <*> <*>",
+     "count": 230,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x23 f16p2 r3x2937 f16p4 s5x0 m6x26 r7x3814 f16p8 r9x2040 s10x0 m11x28 f16p12 r13x1284 f16p14",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "2c7cbca6bef44bc2",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x1 <*> <*>",
+     "count": 230,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x27 r2x1386 f39p3 r4x4277 s5x1 m6x15 f39p7 r8x2602 f39p9 s10x1 m11x8 r12x2384",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "a0a5beeb583ea75f",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x1",
+     "count": 222,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x22 r2x2300 f35p3 r4x3978 s5x1 m6x24 f35p7 r8x2407 f35p9 s10x1",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "41a29b8ec8429cbd",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x0 <*> <*>",
+     "count": 219,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x28 r2x1200 f25p3 r4x922 s5x1 m6x26 f25p7 r8x4356 f25p9 s10x0 m11x20 r12x4090",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "ada0e9f44dcaae8a",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x0",
+     "count": 215,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x25 f6p2 r3x4347 f6p4 s5x0 m6x17 r7x3150 f6p8 r9x439 s10x0",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "641339712a8e8a27",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x1 <*> <*> <*>",
+     "count": 215,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x28 f38p2 r3x968 f38p4 s5x0 m6x24 r7x1032 f38p8 r9x2463 s10x1 m11x17 f38p12 r13x2753",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "14b4156afb6fe85a",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x0",
+     "count": 215,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x18 f24p2 r3x74 f24p4 s5x1 m6x1 r7x1482 f24p8 r9x1609 s10x0",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "4c94e5832ea56a9a",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x1 <*> <*> <*> <*>",
+     "count": 213,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x29 r2x2983 f25p3 r4x2554 s5x0 m6x14 f25p7 r8x2961 f25p9 s10x1 m11x2 r12x3834 f25p13 r14x1338",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "e040ea351a47b56d",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x1 <*> <*> <*>",
+     "count": 213,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x17 r2x1964 f13p3 r4x1377 s5x1 m6x17 f13p7 r8x2058 f13p9 s10x1 m11x9 r12x883 f13p13",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "1211a53fe05d86a1",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x0 <*> <*>",
+     "count": 210,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x18 r2x3632 f35p3 r4x1973 s5x0 m6x8 f35p7 r8x143 f35p9 s10x0 m11x23 r12x3156",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "7c33b62f023d8bf9",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x1 <*> <*>",
+     "count": 210,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x4 f18p2 r3x3907 f18p4 s5x0 m6x3 r7x3632 f18p8 r9x2011 s10x1 m11x1 f18p12",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "a1995e1d6a4d5ab1",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x1 <*>",
+     "count": 208,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x6 r2x1649 f29p3 r4x2269 s5x0 m6x9 f29p7 r8x4607 f29p9 s10x1 m11x24",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "c143f5bb4306530c",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x1",
+     "count": 207,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x16 r2x1162 f21p3 r4x4336 s5x0 m6x6 f21p7 r8x2965 f21p9 s10x1",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "565e5a7cf16e4893",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x0 <*>",
+     "count": 198,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x8 f4p2 r3x471 f4p4 s5x0 m6x23 r7x3264 f4p8 r9x1100 s10x0 m11x13",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "843928a609206f2c",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x0 <*> <*> <*>",
+     "count": 198,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x8 f18p2 r3x1165 f18p4 s5x0 m6x29 r7x3593 f18p8 r9x613 s10x0 m11x16 f18p12 r13x1027",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "a9447081a3681168",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x1 <*> <*> <*> <*>",
+     "count": 198,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x4 f34p2 r3x2666 f34p4 s5x1 m6x13 r7x3536 f34p8 r9x1854 s10x1 m11x9 f34p12 r13x3928 f34p14",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "7cee2334699e0ab2",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x0 <*> <*> <*> <*>",
+     "count": 196,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x14 r2x346 f15p3 r4x4401 s5x1 m6x25 f15p7 r8x2816 f15p9 s10x0 m11x8 r12x974 f15p13 r14x4669",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "422d2c2bb5ee70d2",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x0 <*> <*> <*>",
+     "count": 194,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x25 f8p2 r3x1920 f8p4 s5x1 m6x14 r7x3185 f8p8 r9x1468 s10x0 m11x22 f8p12 r13x153",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "28001306ec576f7d",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x0 <*>",
+     "count": 191,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x29 f10p2 r3x1193 f10p4 s5x1 m6x2 r7x2718 f10p8 r9x2468 s10x0 m11x19",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "92f18a59e49ba351",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x0 <*> <*> <*> <*> s15x0",
+     "count": 121,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x27 f30p2 r3x4372 f30p4 s5x0 m6x25 r7x1630 f30p8 r9x3083 s10x0 m11x3 f30p12 r13x4192 f30p14 s15x0",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "eae468f766e9680c",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x0 <*> <*> <*> <*> s15x1 <*> <*>",
+     "count": 115,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x18 r2x2010 f27p3 r4x2259 s5x0 m6x15 f27p7 r8x2037 f27p9 s10x0 m11x22 r12x1637 f27p13 r14x2343 s15x1 m16x28 f27p17",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "8ddc2a67dfcbe6f5",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x1 <*> <*> <*> <*> s15x0 <*>",
+     "count": 114,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x18 r2x900 f5p3 r4x2424 s5x1 m6x10 f5p7 r8x518 f5p9 s10x1 m11x1 r12x1805 f5p13 r14x3446 s15x0 m16x8",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "ddb2c7b98c910cf3",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x1 <*> <*> <*> <*> s15x1",
+     "count": 113,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x24 f26p2 r3x1519 f26p4 s5x0 m6x20 r7x513 f26p8 r9x4668 s10x1 m11x13 f26p12 r13x1890 f26p14 s15x1",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "14490ddbcb2ef5e6",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x1 <*> <*> <*> <*> s15x1 <*> <*> <*>",
+     "count": 112,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x0 f24p2 r3x2598 f24p4 s5x0 m6x19 r7x2556 f24p8 r9x4207 s10x1 m11x16 f24p12 r13x3900 f24p14 s15x1 m16x14 r17x4746 f24p18",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "1b729337d06e1758",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x1 <*> <*> <*> <*> s15x0 <*> <*>",
+     "count": 112,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x24 r2x504 f25p3 r4x4446 s5x1 m6x28 f25p7 r8x1483 f25p9 s10x1 m11x2 r12x3819 f25p13 r14x1374 s15x0 m16x13 f25p17",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "442cc0149167ce37",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x0 <*> <*> <*> <*> s15x0 <*> <*>",
+     "count": 111,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x15 f30p2 r3x2368 f30p4 s5x0 m6x0 r7x3811 f30p8 r9x4949 s10x0 m11x0 f30p12 r13x3636 f30p14 s15x0 m16x2 r17x2784",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "eb5f33136d451e38",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x1 <*> <*> <*> <*> s15x0 <*> <*> <*>",
+     "count": 111,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x11 r2x134 f9p3 r4x174 s5x1 m6x17 f9p7 r8x3753 f9p9 s10x1 m11x27 r12x4233 f9p13 r14x642 s15x0 m16x6 f9p17 r18x1587",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "52b9f13b3daebbd6",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x0 <*> <*> <*> <*> s15x0",
+     "count": 108,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x7 r2x3303 f5p3 r4x4452 s5x1 m6x12 f5p7 r8x46 f5p9 s10x0 m11x19 r12x3067 f5p13 r14x1087 s15x0",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "8425f238ed775b28",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x1 <*> <*> <*> <*> s15x1 <*> <*>",
+     "count": 108,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x3 r2x2731 f27p3 r4x2597 s5x1 m6x29 f27p7 r8x1870 f27p9 s10x1 m11x19 r12x3556 f27p13 r14x1405 s15x1 m16x1 f27p17",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "cb2ead49c2efb821",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x0 <*> <*> <*> <*> s15x0 <*> <*> <*>",
+     "count": 106,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x26 f6p2 r3x933 f6p4 s5x1 m6x27 r7x65 f6p8 r9x4400 s10x0 m11x19 f6p12 r13x3780 f6p14 s15x0 m16x22 r17x1939 f6p18",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "e16d9ac6cdc3b6c4",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x1 <*> <*> <*> <*> s15x1",
+     "count": 105,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x18 r2x94 f11p3 r4x3885 s5x1 m6x10 f11p7 r8x2242 f11p9 s10x1 m11x9 r12x4098 f11p13 r14x2921 s15x1",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "2ab9ef5c48a446b2",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x1 <*> <*> <*> <*> s15x0 <*> <*> <*>",
+     "count": 104,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x10 r2x1039 f39p3 r4x4839 s5x0 m6x0 f39p7 r8x1658 f39p9 s10x1 m11x20 r12x1603 f39p13 r14x392 s15x0 m16x21 f39p17 r18x3064",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "8c644d9fb526c1d9",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x0 <*> <*> <*> <*> s15x0 <*>",
+     "count": 104,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x13 f20p2 r3x1426 f20p4 s5x1 m6x11 r7x341 f20p8 r9x2535 s10x0 m11x29 f20p12 r13x4250 f20p14 s15x0 m16x24",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "0a1e05a4f2b73550",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x1 <*> <*> <*> <*> s15x1 <*> <*> <*>",
+     "count": 103,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x4 r2x4620 f13p3 r4x1087 s5x1 m6x3 f13p7 r8x1382 f13p9 s10x1 m11x11 r12x1222 f13p13 r14x481 s15x1 m16x9 f13p17 r18x1156",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "d5d59df2fe7cbfea",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x0 <*> <*> <*> <*> s15x1 <*> <*> <*>",
+     "count": 101,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x23 r2x3496 f3p3 r4x2469 s5x0 m6x3 f3p7 r8x1 f3p9 s10x0 m11x5 r12x2093 f3p13 r14x253 s15x1 m16x14 f3p17 r18x1356",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "4a98184407c331d2",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x1 <*> <*> <*> <*> s15x1 <*>",
+     "count": 101,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x1 r2x1305 f7p3 r4x3839 s5x0 m6x21 f7p7 r8x2947 f7p9 s10x1 m11x2 r12x4186 f7p13 r14x1763 s15x1 m16x8",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "7c6d5d03cee7b7a2",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x1 <*> <*> <*> <*> s15x1 <*> <*>",
+     "count": 100,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x14 f14p2 r3x1439 f14p4 s5x0 m6x8 r7x3013 f14p8 r9x1651 s10x1 m11x0 f14p12 r13x372 f14p14 s15x1 m16x10 r17x3418",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "4df8bf096877e0d4",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x0 <*> <*> <*> <*> s15x0 <*> <*>",
+     "count": 100,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x15 f16p2 r3x4043 f16p4 s5x1 m6x2 r7x3703 f16p8 r9x4584 s10x0 m11x21 f16p12 r13x2596 f16p14 s15x0 m16x18 r17x4317",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "69b0e3bb31fb2b95",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x1 <*> <*> <*> <*> s15x0 <*>",
+     "count": 98,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x14 f6p2 r3x1916 f6p4 s5x0 m6x7 r7x1373 f6p8 r9x735 s10x1 m11x8 f6p12 r13x3800 f6p14 s15x0 m16x25",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "3c72583835400044",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x0 <*> <*> <*> <*> s15x1 <*> <*>",
+     "count": 98,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x10 f30p2 r3x1172 f30p4 s5x1 m6x5 r7x2118 f30p8 r9x2663 s10x0 m11x18 f30p12 r13x426 f30p14 s15x1 m16x18 r17x951",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "32ee3f3474392d4c",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x1 <*> <*> <*> <*> s15x0",
+     "count": 97,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x25 r2x72 f3p3 r4x735 s5x0 m6x6 f3p7 r8x1545 f3p9 s10x1 m11x28 r12x2184 f3p13 r14x1677 s15x0",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "0de503481d34c82c",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x0 <*> <*> <*> <*> s15x1",
+     "count": 97,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x25 f18p2 r3x3550 f18p4 s5x1 m6x16 r7x297 f18p8 r9x4854 s10x0 m11x23 f18p12 r13x1478 f18p14 s15x1",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "96a72adbf87198ec",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x0 <*> <*> <*> <*> s15x1 <*>",
+     "count": 96,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x3 f16p2 r3x3345 f16p4 s5x1 m6x28 r7x785 f16p8 r9x2555 s10x0 m11x9 f16p12 r13x2761 f16p14 s15x1 m16x27",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "1305219cbda26e87",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x0 <*> <*> <*> <*> s15x1 <*> <*> <*>",
+     "count": 96,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x27 f26p2 r3x942 f26p4 s5x1 m6x1 r7x4505 f26p8 r9x2468 s10x0 m11x9 f26p12 r13x4466 f26p14 s15x1 m16x18 r17x2401 f26p18",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "2fc7ad1ed9936d51",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x0 <*> <*> <*> <*> s15x1",
+     "count": 94,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x22 r2x2080 f19p3 r4x647 s5x0 m6x18 f19p7 r8x3815 f19p9 s10x0 m11x21 r12x2839 f19p13 r14x4649 s15x1",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "b9a1d050c69ed16d",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x0 <*> <*> <*> <*> s15x0 <*>",
+     "count": 93,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x4 f28p2 r3x1499 f28p4 s5x0 m6x13 r7x1320 f28p8 r9x550 s10x0 m11x1 f28p12 r13x4550 f28p14 s15x0 m16x21",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "4ce19d994a925d5a",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x1 <*> <*> <*> <*> s15x0 <*> <*>",
+     "count": 93,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x6 f14p2 r3x2713 f14p4 s5x0 m6x12 r7x3798 f14p8 r9x200 s10x1 m11x5 f14p12 r13x997 f14p14 s15x0 m16x22 r17x2906",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "0f783fb02daa15f4",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x1 <*> <*> <*> <*> s15x0",
+     "count": 93,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x9 f32p2 r3x4959 f32p4 s5x1 m6x1 r7x3728 f32p8 r9x3341 s10x1 m11x3 f32p12 r13x4708 f32p14 s15x0",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "876c725ad42b5baa",
+     "text": "- <*> <*> <*> <*> s5x1 <*> <*> <*> <*> s10x1 <*> <*> <*> <*> s15x1 <*>",
+     "count": 93,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x12 f24p2 r3x1302 f24p4 s5x1 m6x23 r7x2464 f24p8 r9x4065 s10x1 m11x13 f24p12 r13x161 f24p14 s15x1 m16x9",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "3ed381f96cfe9753",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x0 <*> <*> <*> <*> s15x0 <*> <*> <*>",
+     "count": 91,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x22 r2x905 f7p3 r4x2755 s5x0 m6x3 f7p7 r8x2331 f7p9 s10x0 m11x1 r12x4448 f7p13 r14x3146 s15x0 m16x20 f7p17 r18x2741",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "ac90c744eb9ccc8f",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x0 <*> <*> <*> <*> s15x1 <*>",
+     "count": 87,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x26 f4p2 r3x3511 f4p4 s5x0 m6x23 r7x3128 f4p8 r9x3273 s10x0 m11x6 f4p12 r13x4088 f4p14 s15x1 m16x13",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "4b1908f7a9b0b660",
+     "text": "- <*> <*> f21p3 <*> <*> <*> f21p7 <*> f21p9 <*> <*> <*> f21p13 <*> <*>",
+     "count": 28,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x2 r2x2539 f21p3 r4x2911 s5x1 m6x15 f21p7 r8x2586 f21p9 s10x0 m11x15 r12x3871 f21p13 r14x1442 s15x0",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "9990b5252e48a463",
+     "text": "- <*> f0p2 <*> f0p4 <*> <*> <*> f0p8 <*> <*> <*> f0p12 <*> f0p14 <*>",
+     "count": 27,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x18 f0p2 r3x4788 f0p4 s5x0 m6x7 r7x45 f0p8 r9x4621 s10x1 m11x2 f0p12 r13x1871 f0p14 s15x0",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "ad23b55fc2bc83b8",
+     "text": "- <*> <*> f33p3 <*> <*> <*> f33p7 <*> f33p9 <*> <*> <*> f33p13 <*>",
+     "count": 26,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x8 r2x4776 f33p3 r4x4867 s5x1 m6x12 f33p7 r8x2472 f33p9 s10x0 m11x18 r12x633 f33p13 r14x3675",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "fdac6b1330ef8269",
+     "text": "- <*> <*> f31p3 <*> <*> <*> f31p7 <*> f31p9 <*> <*> <*> f31p13 <*> <*> <*>",
+     "count": 24,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x28 r2x4758 f31p3 r4x4125 s5x0 m6x28 f31p7 r8x928 f31p9 s10x1 m11x3 r12x2774 f31p13 r14x2759 s15x1 m16x5",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "30c387ed9e472e3b",
+     "text": "- <*> f0p2 <*> f0p4 <*> <*> <*> f0p8 <*> <*> <*> f0p12 <*> f0p14 <*> <*> <*> f0p18",
+     "count": 22,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x4 f0p2 r3x3487 f0p4 s5x0 m6x14 r7x118 f0p8 r9x1552 s10x0 m11x3 f0p12 r13x1410 f0p14 s15x1 m16x28 r17x3591 f0p18",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "f72f6bbbe90dfd58",
+     "text": "- <*> <*> f35p3 <*> <*> <*> f35p7 <*> f35p9 <*> <*> <*> f35p13 <*> <*> <*>",
+     "count": 21,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x21 r2x500 f35p3 r4x4396 s5x0 m6x25 f35p7 r8x3413 f35p9 s10x1 m11x18 r12x165 f35p13 r14x4277 s15x0 m16x9",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "838b8b7ff6cec761",
+     "text": "- <*> f20p2 <*> f20p4 <*> <*>",
+     "count": 17,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x21 f20p2 r3x4916 f20p4 s5x1 m6x15",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "3c0183bc635b0818",
+     "text": "- <*> <*> f15p3 <*> <*> <*> f15p7 <*> f15p9 <*> <*> <*> f15p13 <*> <*> <*> f15p17",
+     "count": 15,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x29 r2x3786 f15p3 r4x2821 s5x1 m6x28 f15p7 r8x4298 f15p9 s10x1 m11x24 r12x3791 f15p13 r14x885 s15x1 m16x27 f15p17",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "959c4f6302c5c446",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> s10x1 <*> <*> <*> <*> <*> m16x14 <*>",
+     "count": 13,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x28 r2x3144 f7p3 r4x1539 s5x0 m6x4 f7p7 r8x3298 f7p9 s10x1 m11x4 r12x3348 f7p13 r14x215 s15x1 m16x14 f7p17",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "28dccfa5a24e5cd6",
+     "text": "- <*> <*> <*> <*> <*> m6x20 <*> <*> <*> s10x0 <*> <*> <*> <*> s15x1 <*>",
+     "count": 9,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x11 f38p2 r3x2049 f38p4 s5x1 m6x20 r7x3455 f38p8 r9x1192 s10x0 m11x29 f38p12 r13x268 f38p14 s15x1 m16x10",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "b1598d02ffe12c43",
+     "text": "- m1x17 <*> <*> <*> s5x1 <*> <*> <*> <*> s10x0 <*> <*> <*> <*> <*> <*> <*>",
+     "count": 9,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x17 f24p2 r3x1066 f24p4 s5x1 m6x2 r7x2510 f24p8 r9x1387 s10x0 m11x8 f24p12 r13x4077 f24p14 s15x1 m16x9 r17x278",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "ceaa57393c10c9e9",
+     "text": "- <*> <*> <*> <*> <*> <*> <*> <*> <*> s10x0 <*> <*> <*> <*> s15x0 m16x9 <*>",
+     "count": 8,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x19 r2x4715 f27p3 r4x3947 s5x1 m6x15 f27p7 r8x3210 f27p9 s10x0 m11x28 r12x2428 f27p13 r14x3809 s15x0 m16x9 f27p17",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "c7194b650ae6dfb6",
+     "text": "- <*> <*> <*> <*> s5x0 m6x28 <*> <*> <*> s10x0 <*> <*> <*> <*> <*> <*> <*> <*>",
+     "count": 8,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x29 r2x3100 f27p3 r4x122 s5x0 m6x28 f27p7 r8x2772 f27p9 s10x0 m11x9 r12x1562 f27p13 r14x3458 s15x0 m16x11 f27p17 r18x1775",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "993bbbeffa0f4fdf",
+     "text": "- m1x12 <*> <*> <*> <*> <*> <*> <*> <*> s10x1 <*> <*> <*> <*> s15x0",
+     "count": 5,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x12 f34p2 r3x3583 f34p4 s5x0 m6x8 r7x2510 f34p8 r9x4513 s10x1 m11x26 f34p12 r13x3505 f34p14 s15x0",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "8637e730d0a280d9",
+     "text": "- <*> <*> <*> <*> s5x0 <*> <*> <*> <*> <*> m11x7 <*> <*> <*> <*> m16x7 <*>",
+     "count": 2,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x23 r2x226 f17p3 r4x1602 s5x0 m6x18 f17p7 r8x3613 f17p9 s10x0 m11x7 r12x1478 f17p13 r14x342 s15x1 m16x7 f17p17",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "7ca3a1cd442ca513",
+     "text": "- m1x5 <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> <*> s15x0 m16x24 <*> <*>",
+     "count": 2,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "- m1x5 f24p2 r3x589 f24p4 s5x0 m6x19 r7x3644 f24p8 r9x1037 s10x0 m11x0 f24p12 r13x43 f24p14 s15x0 m16x24 r17x1765 f24p18",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "crowded/0.4": {
+   "run": {
+    "files": 1,
+    "lines": 12000,
+    "records": 12000,
+    "unparsed": 0,
+    "bytes": 921410,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": 1403,
+   "sha256": "2ed7578392412b67a7f4e8cac52bce00efef020ba449cbe77d216d926e8f522d"
+  },
+  "crowded/0.7": {
+   "run": {
+    "files": 1,
+    "lines": 12000,
+    "records": 12000,
+    "unparsed": 0,
+    "bytes": 921410,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": 11814,
+   "sha256": "bd3a88e7d29cda85bd466a3ab34ddb8ff4d3365c88635af1d36b6ca29a320853"
+  },
+  "crowded/0.95": {
+   "run": {
+    "files": 1,
+    "lines": 12000,
+    "records": 12000,
+    "unparsed": 0,
+    "bytes": 921410,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": 12000,
+   "sha256": "93b9804d6e5257aefa82e5c236e62220215ae525f65a65211c729dd2bb47ac9b"
+  },
+  "timestamps/json": {
+   "run": {
+    "files": 1,
+    "lines": 23,
+    "records": 23,
+    "unparsed": 0,
+    "bytes": 1159,
+    "tz_aware": true,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "c88997f47f3c6182",
+     "text": "bool marker",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "bool marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "f9eb7b81e768cbbd",
+     "text": "float marker",
+     "count": 1,
+     "first_seen": "2026-09-21T14:13:20.500000+00:00",
+     "last_seen": "2026-09-21T14:13:20.500000+00:00",
+     "example": "float marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "330064c46c32ab47",
+     "text": "float-micros marker",
+     "count": 1,
+     "first_seen": "2026-09-21T14:13:20+00:00",
+     "last_seen": "2026-09-21T14:13:20+00:00",
+     "example": "float-micros marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "71febf51ec3cf1bf",
+     "text": "int-seconds marker",
+     "count": 1,
+     "first_seen": "2026-09-21T14:13:20+00:00",
+     "last_seen": "2026-09-21T14:13:20+00:00",
+     "example": "int-seconds marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "c69863a6451c54ac",
+     "text": "row0 marker",
+     "count": 1,
+     "first_seen": "2026-10-04T12:00:00+00:00",
+     "last_seen": "2026-10-04T12:00:00+00:00",
+     "example": "row0 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "553585bd38f5c624",
+     "text": "row1 marker",
+     "count": 1,
+     "first_seen": "2026-10-04T12:00:00+00:00",
+     "last_seen": "2026-10-04T12:00:00+00:00",
+     "example": "row1 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "26d7208621fdface",
+     "text": "row10 marker",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "row10 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "a93cff2795905e40",
+     "text": "row11 marker",
+     "count": 1,
+     "first_seen": "2026-09-21T14:13:20+00:00",
+     "last_seen": "2026-09-21T14:13:20+00:00",
+     "example": "row11 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "26e64b8c6ce22d43",
+     "text": "row12 marker",
+     "count": 1,
+     "first_seen": "2026-09-21T14:13:20.123000+00:00",
+     "last_seen": "2026-09-21T14:13:20.123000+00:00",
+     "example": "row12 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "2e36966129beec9a",
+     "text": "row13 marker",
+     "count": 1,
+     "first_seen": "2026-09-21T14:13:20.123456+00:00",
+     "last_seen": "2026-09-21T14:13:20.123456+00:00",
+     "example": "row13 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "d4bd158e25a90b09",
+     "text": "row14 marker",
+     "count": 1,
+     "first_seen": "2537-03-24T22:13:21.234567+00:00",
+     "last_seen": "2537-03-24T22:13:21.234567+00:00",
+     "example": "row14 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "d89320277ac046c9",
+     "text": "row15 marker",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "row15 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "6a65e42312cfc1dd",
+     "text": "row16 marker",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "row16 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "ac304626be2cd6f2",
+     "text": "row17 marker",
+     "count": 1,
+     "first_seen": "2026-10-04T12:00:00+00:00",
+     "last_seen": "2026-10-04T12:00:00+00:00",
+     "example": "row17 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "e8b4f17bc81d5d58",
+     "text": "row18 marker",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "row18 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "ff027a61f59ebf99",
+     "text": "row2 marker",
+     "count": 1,
+     "first_seen": "2026-10-04T12:00:00.123456+00:00",
+     "last_seen": "2026-10-04T12:00:00.123456+00:00",
+     "example": "row2 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "ff69f89a0c2898be",
+     "text": "row3 marker",
+     "count": 1,
+     "first_seen": "2026-10-04T06:30:00+00:00",
+     "last_seen": "2026-10-04T06:30:00+00:00",
+     "example": "row3 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "16b8f7dc690a57da",
+     "text": "row4 marker",
+     "count": 1,
+     "first_seen": "2026-10-04T20:00:00+00:00",
+     "last_seen": "2026-10-04T20:00:00+00:00",
+     "example": "row4 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "8e23bb280acbb5a1",
+     "text": "row5 marker",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "row5 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "95fdb8ca95c125e5",
+     "text": "row6 marker",
+     "count": 1,
+     "first_seen": "2024-02-29T23:59:59.500000+00:00",
+     "last_seen": "2024-02-29T23:59:59.500000+00:00",
+     "example": "row6 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "16e30eebd1b74394",
+     "text": "row7 marker",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "row7 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "04569ef1a2712f4b",
+     "text": "row8 marker",
+     "count": 1,
+     "first_seen": "2026-10-04T00:00:00+00:00",
+     "last_seen": "2026-10-04T00:00:00+00:00",
+     "example": "row8 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "df560fc3f2997e19",
+     "text": "row9 marker",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "row9 marker",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "timestamps/strptime/%d/%b/%Y:%H:%M:%S %z": {
+   "run": {
+    "files": 1,
+    "lines": 3,
+    "records": 3,
+    "unparsed": 0,
+    "bytes": 114,
+    "tz_aware": true,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "a73b1bc07edae744",
+     "text": "case0 here",
+     "count": 1,
+     "first_seen": "2026-10-04T09:00:00+00:00",
+     "last_seen": "2026-10-04T09:00:00+00:00",
+     "example": "case0 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "59c53c07d944e529",
+     "text": "case1 here",
+     "count": 1,
+     "first_seen": "2026-10-04T13:00:00+00:00",
+     "last_seen": "2026-10-04T13:00:00+00:00",
+     "example": "case1 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "d3d0ef92c47bb986",
+     "text": "case2 here",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "case2 here",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "timestamps/strptime/%b %e %H:%M:%S": {
+   "run": {
+    "files": 1,
+    "lines": 4,
+    "records": 4,
+    "unparsed": 0,
+    "bytes": 105,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "a73b1bc07edae744",
+     "text": "case0 here",
+     "count": 1,
+     "first_seen": "1970-10-04T12:00:00",
+     "last_seen": "1970-10-04T12:00:00",
+     "example": "case0 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "59c53c07d944e529",
+     "text": "case1 here",
+     "count": 1,
+     "first_seen": "1970-10-14T12:00:00",
+     "last_seen": "1970-10-14T12:00:00",
+     "example": "case1 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "d3d0ef92c47bb986",
+     "text": "case2 here",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "case2 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "f49b62d9046b55cf",
+     "text": "case3 here",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "case3 here",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "timestamps/strptime/%Y/%m/%d %H:%M:%S": {
+   "run": {
+    "files": 1,
+    "lines": 3,
+    "records": 3,
+    "unparsed": 0,
+    "bytes": 79,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "a73b1bc07edae744",
+     "text": "case0 here",
+     "count": 1,
+     "first_seen": "2026-10-04T12:00:00",
+     "last_seen": "2026-10-04T12:00:00",
+     "example": "case0 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "59c53c07d944e529",
+     "text": "case1 here",
+     "count": 1,
+     "first_seen": "2026-01-04T01:02:03",
+     "last_seen": "2026-01-04T01:02:03",
+     "example": "case1 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "d3d0ef92c47bb986",
+     "text": "case2 here",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "case2 here",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "timestamps/strptime/%y%m%d %T": {
+   "run": {
+    "files": 1,
+    "lines": 3,
+    "records": 3,
+    "unparsed": 0,
+    "bytes": 81,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "a73b1bc07edae744",
+     "text": "case0 here",
+     "count": 1,
+     "first_seen": "2026-10-04T12:00:00",
+     "last_seen": "2026-10-04T12:00:00",
+     "example": "case0 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "59c53c07d944e529",
+     "text": "case1 here",
+     "count": 1,
+     "first_seen": "1999-12-31T23:59:59",
+     "last_seen": "1999-12-31T23:59:59",
+     "example": "case1 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "d3d0ef92c47bb986",
+     "text": "case2 here",
+     "count": 1,
+     "first_seen": "1969-01-01T00:00:00",
+     "last_seen": "1969-01-01T00:00:00",
+     "example": "case2 here",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "timestamps/strptime/%Y-%j": {
+   "run": {
+    "files": 1,
+    "lines": 4,
+    "records": 4,
+    "unparsed": 0,
+    "bytes": 78,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "a73b1bc07edae744",
+     "text": "case0 here",
+     "count": 1,
+     "first_seen": "2026-10-04T00:00:00",
+     "last_seen": "2026-10-04T00:00:00",
+     "example": "case0 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "59c53c07d944e529",
+     "text": "case1 here",
+     "count": 1,
+     "first_seen": "2024-12-31T00:00:00",
+     "last_seen": "2024-12-31T00:00:00",
+     "example": "case1 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "d3d0ef92c47bb986",
+     "text": "case2 here",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "case2 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "f49b62d9046b55cf",
+     "text": "case3 here",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "case3 here",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "timestamps/strptime/%B %d, %Y %H:%M:%S.%f": {
+   "run": {
+    "files": 1,
+    "lines": 2,
+    "records": 2,
+    "unparsed": 0,
+    "bytes": 86,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "a73b1bc07edae744",
+     "text": "case0 here",
+     "count": 1,
+     "first_seen": "2026-10-04T12:00:00.500000",
+     "last_seen": "2026-10-04T12:00:00.500000",
+     "example": "case0 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "59c53c07d944e529",
+     "text": "case1 here",
+     "count": 1,
+     "first_seen": "2026-10-04T12:00:00.123456",
+     "last_seen": "2026-10-04T12:00:00.123456",
+     "example": "case1 here",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "timestamps/strptime/%Y%m%dT%H%M%S%z": {
+   "run": {
+    "files": 1,
+    "lines": 2,
+    "records": 2,
+    "unparsed": 0,
+    "bytes": 60,
+    "tz_aware": true,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "a73b1bc07edae744",
+     "text": "case0 here",
+     "count": 1,
+     "first_seen": "2026-10-04T12:00:00+00:00",
+     "last_seen": "2026-10-04T12:00:00+00:00",
+     "example": "case0 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "59c53c07d944e529",
+     "text": "case1 here",
+     "count": 1,
+     "first_seen": "2026-10-04T11:00:00+00:00",
+     "last_seen": "2026-10-04T11:00:00+00:00",
+     "example": "case1 here",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "diff/recount": {
+   "new": [
+    {
+     "id": "9971a402c21e24a6",
+     "text": "database connection lost to replica<NUM>",
+     "before_count": 0,
+     "after_count": 80,
+     "before_share": 0.0,
+     "after_share": 0.03361344537815126,
+     "ratio": null,
+     "level": "ERROR",
+     "levels": {
+      "ERROR": 80
+     },
+     "example": "database connection lost to replica-0",
+     "first_seen": "2026-10-04T23:59:00+00:00",
+     "last_seen": "2026-10-04T23:59:59+00:00",
+     "score": null,
+     "p_value": null
+    }
+   ],
+   "disappeared": [],
+   "changed": [
+    {
+     "id": "83b3179af1b76691",
+     "text": "cache miss for key <*>",
+     "before_count": 182,
+     "after_count": 737,
+     "before_share": 0.15166666666666667,
+     "after_share": 0.3096638655462185,
+     "ratio": 2.04173977283221,
+     "level": "INFO",
+     "levels": {
+      "INFO": 919
+     },
+     "example": "cache miss for key k275",
+     "first_seen": "2026-10-04T00:00:00+00:00",
+     "last_seen": "2026-10-04T23:58:59+00:00",
+     "score": 111.148095,
+     "p_value": 5.49116e-26
+    }
+   ],
+   "unchanged": 6
+  },
+  "diff/no_recount": {
+   "new": [
+    {
+     "id": "9971a402c21e24a6",
+     "text": "database connection lost to replica<NUM>",
+     "before_count": 0,
+     "after_count": 80,
+     "before_share": 0.0,
+     "after_share": 0.03361344537815126,
+     "ratio": null,
+     "level": "ERROR",
+     "levels": {
+      "ERROR": 80
+     },
+     "example": "database connection lost to replica-0",
+     "first_seen": "2026-10-04T23:59:00+00:00",
+     "last_seen": "2026-10-04T23:59:59+00:00",
+     "score": null,
+     "p_value": null
+    }
+   ],
+   "disappeared": [],
+   "changed": [
+    {
+     "id": "83b3179af1b76691",
+     "text": "cache miss for key <*>",
+     "before_count": 182,
+     "after_count": 737,
+     "before_share": 0.15166666666666667,
+     "after_share": 0.3096638655462185,
+     "ratio": 2.04173977283221,
+     "level": "INFO",
+     "levels": {
+      "INFO": 919
+     },
+     "example": "cache miss for key k275",
+     "first_seen": "2026-10-04T00:00:00+00:00",
+     "last_seen": "2026-10-04T23:58:59+00:00",
+     "score": 111.148095,
+     "p_value": 5.49116e-26
+    }
+   ],
+   "unchanged": 6
+  }
+ }
+}

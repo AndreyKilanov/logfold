@@ -18,5 +18,6 @@ logfold-engine = { path = "../logfold-engine" }
 
 [dev-dependencies]
 flate2 = "1"
+proptest = "1"
 sha2 = "0.10"
 tempfile = "3"

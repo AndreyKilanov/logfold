@@ -231,8 +231,8 @@ Template quality: `python eval/quality.py` (grouping accuracy on the 16 Loghub-2
 
 A pure core (masking, tokenizer, Drain-compatible tree, merge) with no I/O, adapters for files and formats, an
 execution layer, a thin PyO3 shim, and a Python package on top. The algorithm is described in
-[`docs/ALGORITHM.md`](https://github.com/AndreyKilanov/logfold/blob/main/docs/ALGORITHM.md). A pure-Python reference
-engine implements the same specification, and the Rust engine is tested against it for exactly equal results.
+[`docs/ALGORITHM.md`](https://github.com/AndreyKilanov/logfold/blob/main/docs/ALGORITHM.md). The Rust engine is the
+only implementation; golden results, property tests and a comparison with Drain3 on Loghub hold it to the specification.
 
 ## Development
 

@@ -15,10 +15,9 @@ import time
 from typing import Any
 
 from logfold.api.comparing import classify_native, result_side
-from logfold.api.matching import accelerated, native_spec, resolve_matcher
+from logfold.api.matching import native_spec, resolve_matcher
 from logfold.comparison import classify
 from logfold.config import DiffConfig, ExamplesMode
-from logfold.engines import native
 from logfold.engines.base import RunStatsData, TemplateStats
 from logfold.errors import ConfigError, SourceError
 from logfold.levels import LEVEL_NAMES
@@ -194,7 +193,7 @@ def diff_saved(before: AnalysisResult, after: AnalysisResult, config: DiffConfig
         )
     config = dataclasses.replace(config, recount=False)
     matcher = resolve_matcher(config.matcher)
-    spec = native_spec(matcher) if native.supports_comparison() else None
+    spec = native_spec(matcher)
     classification = None
     if spec is not None:
         classification = classify_native(
@@ -207,7 +206,7 @@ def diff_saved(before: AnalysisResult, after: AnalysisResult, config: DiffConfig
     if classification is not None:
         new, gone, moved = classification.new, classification.disappeared, classification.changed
     else:
-        classification = classify(_join_saved(before, after), before.run, after.run, config, accelerated(matcher))
+        classification = classify(_join_saved(before, after), before.run, after.run, config, matcher)
         new, gone, moved = classification.new, classification.disappeared, classification.changed
         if examples == "none":
             new = tuple(dataclasses.replace(e, example=None) for e in new)

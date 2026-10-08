@@ -1,18 +1,16 @@
-"""Property-based tests: engine equivalence, count conservation and chunk-boundary invariance."""
+"""Property-based tests: count conservation and chunk-boundary invariance."""
 
 from __future__ import annotations
 
-import json
 import tempfile
 from pathlib import Path
 
-import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 import logfold
 from conftest import requires_native
-from logfold.ext.formats import PlainFormat, RegexFormat
+from logfold.ext.formats import PlainFormat
 
 pytestmark = requires_native
 
@@ -37,14 +35,6 @@ configs = st.fixed_dictionaries(
 SETTINGS = settings(max_examples=60, deadline=None, suppress_health_check=[HealthCheck.too_slow])
 
 
-def snapshot(result: logfold.AnalysisResult) -> tuple[object, ...]:
-    run = result.run
-    return (
-        (run.lines, run.records, run.unparsed, run.overflowed),
-        [(t.id, t.text, t.count, t.example, dict(t.levels)) for t in result.templates],
-    )
-
-
 def write_lines(directory: str, lines: list[str], name: str = "x.log", eol: str = "\n") -> str:
     path = Path(directory) / name
     path.write_bytes((eol.join(lines) + eol).encode("utf-8"))
@@ -53,12 +43,12 @@ def write_lines(directory: str, lines: list[str], name: str = "x.log", eol: str 
 
 @SETTINGS
 @given(lines=token_lines, options=configs, eol=st.sampled_from(["\n", "\r\n"]))
-def test_engines_agree_on_random_plain_logs(lines: list[str], options: dict[str, object], eol: str) -> None:
+def test_random_plain_logs_conserve_counts_and_have_unique_ids(
+    lines: list[str], options: dict[str, object], eol: str
+) -> None:
     with tempfile.TemporaryDirectory() as directory:
         path = write_lines(directory, lines, eol=eol)
         native_result = logfold.analyze(path, format="plain", engine="native", strategy="sequential", **options)  # type: ignore[arg-type]
-        python_result = logfold.analyze(path, format="plain", engine="python", **options)  # type: ignore[arg-type]
-    assert snapshot(native_result) == snapshot(python_result)
     assert sum(t.count for t in native_result.templates) == native_result.run.records
     ids = [t.id for t in native_result.templates]
     assert len(ids) == len(set(ids))
@@ -121,72 +111,3 @@ def test_single_line_chunking_conserves_counters(lines: list[str], chunk: int) -
             path, format="plain", engine="native", strategy="chunked", chunk_bytes=chunk, threads=3
         )
     assert (chunked.run.lines, chunked.run.records) == (sequential.run.lines, sequential.run.records)
-
-
-TIMESTAMPS = [
-    "2026-10-04T12:00:00Z",
-    "2026-10-04 12:00:00",
-    "2026-10-04 12:00:00.123456789",
-    "2026-10-04T12:00:00+05:30",
-    "2026-10-04T12:00:00-0800",
-    "2026-02-29T00:00:00Z",
-    "2024-02-29T23:59:59,5Z",
-    "2026-13-01T00:00:00Z",
-    "2026-10-04",
-    "2026-10-04T25:00:00Z",
-    "2026-10-04T12:00:60Z",
-    "1790000000",
-    "1790000000123",
-    "1790000000123456",
-    "17900000001234567",
-    "garbage",
-    "",
-    " 2026-10-04T12:00:00Z ",
-    "2026-10-04T12:00:00+0530x",
-]
-
-
-def test_timestamp_parsing_agrees_for_json_strings_and_numbers() -> None:
-    rows = [{"ts": value, "msg": f"row{index} marker"} for index, value in enumerate(TIMESTAMPS)]
-    rows += [{"ts": 1790000000, "msg": "int-seconds marker"}, {"ts": 1790000000.5, "msg": "float marker"}]
-    rows += [{"ts": 1.79e15, "msg": "float-micros marker"}, {"ts": True, "msg": "bool marker"}]
-    with tempfile.TemporaryDirectory() as directory:
-        path = write_lines(directory, [json.dumps(r) for r in rows])
-        kwargs = {"format": "jsonl", "sim_th": 1.0, "masks": []}
-        native_result = logfold.analyze(path, engine="native", strategy="sequential", **kwargs)  # type: ignore[arg-type]
-        python_result = logfold.analyze(path, engine="python", **kwargs)  # type: ignore[arg-type]
-    assert snapshot(native_result) == snapshot(python_result)
-    assert [(t.text, t.first_seen) for t in native_result.templates] == [
-        (t.text, t.first_seen) for t in python_result.templates
-    ]
-
-
-STRPTIME_CASES = [
-    (
-        "%d/%b/%Y:%H:%M:%S %z",
-        ["04/Oct/2026:12:00:00 +0300", "04/oct/2026:12:00:00 -0100", "31/Feb/2026:00:00:00 +0000"],
-    ),
-    ("%b %e %H:%M:%S", ["Oct  4 12:00:00", "Oct 14 12:00:00", "Foo  4 12:00:00", "Oct  4 12:00"]),
-    ("%Y/%m/%d %H:%M:%S", ["2026/10/04 12:00:00", "2026/1/4 1:2:3", "2026/10/04"]),
-    ("%y%m%d %T", ["261004 12:00:00", "991231 23:59:59", "690101 00:00:00"]),
-    ("%Y-%j", ["2026-277", "2024-366", "2026-366", "2026-0"]),
-    ("%B %d, %Y %H:%M:%S.%f", ["October 04, 2026 12:00:00.5", "October 04, 2026 12:00:00.123456789"]),
-    ("%Y%m%dT%H%M%S%z", ["20261004T120000Z", "20261004T120000+0100"]),
-]
-
-
-@pytest.mark.parametrize(("ts_format", "samples"), STRPTIME_CASES)
-def test_strptime_directives_agree(ts_format: str, samples: list[str]) -> None:
-    spec = RegexFormat(
-        pattern=r"^(?P<ts>[^|]*)\|(?P<msg>.*)$", message_group="msg", time_group="ts", ts_format=ts_format
-    )
-    lines = [f"{sample}|case{index} here" for index, sample in enumerate(samples)]
-    with tempfile.TemporaryDirectory() as directory:
-        path = write_lines(directory, lines)
-        kwargs = {"format": spec, "sim_th": 1.0, "masks": []}
-        native_result = logfold.analyze(path, engine="native", strategy="sequential", **kwargs)  # type: ignore[arg-type]
-        python_result = logfold.analyze(path, engine="python", **kwargs)  # type: ignore[arg-type]
-    assert [(t.text, t.first_seen, t.last_seen) for t in native_result.templates] == [
-        (t.text, t.first_seen, t.last_seen) for t in python_result.templates
-    ]
-    assert native_result.run.tz_aware == python_result.run.tz_aware

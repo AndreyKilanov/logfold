@@ -12,7 +12,7 @@ import pytest
 import logfold
 from conftest import requires_native
 from corpora import app_lines, write
-from logfold import ConfigError, EngineError, StateError
+from logfold import ConfigError, StateError
 from logfold.config import MiningConfig, config_fingerprint
 
 pytestmark = requires_native
@@ -163,12 +163,6 @@ def test_a_parallel_resume_saves_a_state_that_loads_again(tmp_path: Path, stream
         save_state=tmp_path / "s.json",
     )
     assert mine(third, load_state=tmp_path / "s.json").run.records == len(stream) - 2000
-
-
-def test_the_pure_python_engine_cannot_use_state_files_yet(tmp_path: Path, stream: list[str]) -> None:
-    _, first, _ = split(tmp_path, stream, 1500)
-    with pytest.raises(EngineError, match="native engine"):
-        logfold.analyze(str(first), format="app", engine="python", save_state=tmp_path / "s.json")
 
 
 def test_a_missing_state_file_is_an_error_that_names_it(tmp_path: Path, stream: list[str]) -> None:

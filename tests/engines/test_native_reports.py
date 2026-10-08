@@ -1,11 +1,13 @@
-"""The native pipeline reports give exactly the text of the pure-Python reference reporters."""
+"""The pipeline reports render any result, and refuse a result they cannot show with a clear error."""
 
 from __future__ import annotations
 
+import time
 from dataclasses import replace
 from datetime import UTC, datetime
 from functools import cache
 from pathlib import Path
+from xml.etree import ElementTree
 
 import pytest
 from hypothesis import HealthCheck, given, settings
@@ -14,18 +16,11 @@ from hypothesis import strategies as st
 import logfold
 from conftest import requires_native
 from corpora import hostile_pair
-from logfold.ext import get_reporter, native_reports
+from logfold.errors import ConfigError
+from logfold.ext import get_reporter
 from logfold.model import AnalysisResult, DiffEntry, DiffResult, RunSummary, Template
-from logfold.plugins import report_data
 
 pytestmark = requires_native
-
-
-@pytest.fixture(autouse=True)
-def always_native(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Route every call to the extension, so that these tests compare the two implementations on small results."""
-    monkeypatch.setattr(report_data, "MIN_LISTED", 0)
-    monkeypatch.setattr(report_data, "LISTED_FRACTION", 10**9)
 
 
 PIECES = st.sampled_from(
@@ -58,8 +53,8 @@ def bases() -> tuple[AnalysisResult, DiffResult]:
 
     with tempfile.TemporaryDirectory() as folder:
         before, after = hostile_pair(Path(folder))
-        diff = logfold.diff(str(before), str(after), format="app", engine="python")
-        analysis = logfold.analyze(str(after), format="app", engine="python")
+        diff = logfold.diff(str(before), str(after), format="app", engine="native")
+        analysis = logfold.analyze(str(after), format="app", engine="native")
     return analysis, diff
 
 
@@ -139,115 +134,79 @@ OPTIONS = st.fixed_dictionaries(
 )
 
 
-LIMITS = {"github-summary": "max_bytes", "chat-message": "max_chars"}
+REPORTS = ["github-summary", "junit", "chat-message", "prometheus"]
 
 
-def same(name: str, result: AnalysisResult | DiffResult, options: dict[str, int]) -> None:
-    reporter = get_reporter(name)
-    assert native_reports.get_renderer() is not None
-    keep = {"top", LIMITS.get(name, "top")}
-    options = {key: value for key, value in options.items() if key in keep}
-    assert reporter.render(result, **options) == reporter.render_reference(result, **options)  # type: ignore[attr-defined]
+def render(name: str, result: AnalysisResult | DiffResult, options: dict[str, int]) -> str:
+    keep = {"top", {"github-summary": "max_bytes", "chat-message": "max_chars"}.get(name, "top")}
+    return get_reporter(name).render(result, **{key: value for key, value in options.items() if key in keep})
 
 
-@pytest.mark.parametrize("name", ["github-summary", "junit", "chat-message", "prometheus"])
+@pytest.mark.parametrize("name", REPORTS)
 @SETTINGS
 @given(result=diffs(), options=OPTIONS)
-def test_native_diff_reports_equal_the_reference(name: str, result: DiffResult, options: dict[str, int]) -> None:
-    same(name, result, options)
+def test_a_diff_of_any_text_renders(name: str, result: DiffResult, options: dict[str, int]) -> None:
+    text = render(name, result, options)
+    assert text.endswith("\n")
+    if name == "junit":
+        ElementTree.fromstring(text)
 
 
 @pytest.mark.parametrize("name", ["github-summary", "chat-message", "prometheus"])
 @SETTINGS
 @given(result=analyses(), options=OPTIONS)
-def test_native_analysis_reports_equal_the_reference(
-    name: str, result: AnalysisResult, options: dict[str, int]
-) -> None:
-    same(name, result, options)
+def test_an_analysis_of_any_text_renders(name: str, result: AnalysisResult, options: dict[str, int]) -> None:
+    assert render(name, result, options).endswith("\n")
 
 
-@pytest.mark.parametrize("name", ["github-summary", "junit", "chat-message", "prometheus"])
-def test_native_reports_equal_the_reference_on_real_results(name: str, corpus_dir: Path) -> None:
+@pytest.mark.parametrize("name", REPORTS)
+def test_real_results_render_with_every_size_of_listing(name: str, corpus_dir: Path) -> None:
     diff = logfold.diff(str(corpus_dir / "app_before.log"), str(corpus_dir / "app_after.log"), format="app")
     analysis = logfold.analyze(str(corpus_dir / "app.log"), format="app")
     for result in (diff, analysis):
         kind = "diff" if isinstance(result, DiffResult) else "analysis"
         if kind in get_reporter(name).kinds:
             for options in ({}, {"top": 3}, {"top": 100000}):
-                same(name, result, options)
+                assert render(name, result, options).endswith("\n")
 
 
-def test_the_native_text_is_what_the_default_reporters_write(tmp_path: Path) -> None:
-    before, after = hostile_pair(tmp_path)
-    result = logfold.diff(str(before), str(after), format="app")
-    assert result.render("junit") == get_reporter("junit").render_reference(result)  # type: ignore[attr-defined]
-
-
-def test_a_lone_surrogate_falls_back_to_the_reference() -> None:
+def test_a_lone_surrogate_is_read_as_the_replacement_character() -> None:
     _, base = bases()
     entry = replace(base.new_templates[0], text="bad " + chr(0xD800) + " text")
     result = replace(base, new_templates=(entry,))
-    assert "bad" in get_reporter("chat-message").render(result)
+    for name in REPORTS:
+        text = get_reporter(name).render(result)
+        assert "bad" in text
+        assert chr(0xD800) not in text
 
 
-def test_the_size_limits_cut_at_the_same_place_at_every_boundary(tmp_path: Path) -> None:
+@pytest.mark.parametrize("count", [-5, 2**70])
+def test_a_count_outside_the_unsigned_64_bit_range_is_a_config_error(count: int) -> None:
+    _, base = bases()
+    entry = replace(base.new_templates[0], after_count=count)
+    result = replace(base, new_templates=(entry,))
+    for name in REPORTS:
+        with pytest.raises(ConfigError, match="cannot show"):
+            get_reporter(name).render(result)
+
+
+def test_a_huge_top_keeps_the_size_limit(tmp_path: Path) -> None:
     before, after = hostile_pair(tmp_path)
-    diff = logfold.diff(str(before), str(after), format="app", engine="python")
-    analysis = logfold.analyze(str(after), format="app", engine="python")
-    for limit in range(0, 1400, 3):
-        same("chat-message", diff, {"top": 50, "max_chars": limit})
-        same("chat-message", analysis, {"top": 50, "max_chars": limit})
-    for limit in range(0, 3200, 7):
-        same("github-summary", diff, {"top": 50, "max_bytes": limit})
-        same("github-summary", analysis, {"top": 50, "max_bytes": limit})
-
-
-@pytest.fixture
-def native_calls(monkeypatch: pytest.MonkeyPatch) -> list[str]:
-    calls: list[str] = []
-    real = native_reports.get_renderer()
-    assert real is not None
-
-    def spy(name: str, data: dict[str, object], options: dict[str, object]) -> str:
-        calls.append(name)
-        return real(name, data, options)
-
-    monkeypatch.setattr(native_reports, "get_renderer", lambda: spy)
-    monkeypatch.setattr(report_data, "get_renderer", lambda: spy)
-    return calls
-
-
-def test_a_short_listing_is_rendered_in_python_and_a_long_one_in_rust(
-    native_calls: list[str], monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr(report_data, "MIN_LISTED", 5)
-    _, diff = bases()
-    many = replace(diff, new_templates=diff.new_templates * 3)
-    reporter = get_reporter("prometheus")
-    reporter.render(many, top=1)
-    assert native_calls == []
-    reporter.render(many, top=50)
-    assert native_calls == ["prometheus"]
-    assert reporter.render(many, top=1) == reporter.render_reference(many, top=1)
-
-
-def test_a_huge_top_does_not_render_the_document_again_and_again(tmp_path: Path) -> None:
-    before, after = hostile_pair(tmp_path)
-    diff = logfold.diff(str(before), str(after), format="app", engine="python")
+    diff = logfold.diff(str(before), str(after), format="app", engine="native")
     many = replace(diff, new_templates=diff.new_templates * 400)
-    for top in (10**6, 10**30):
-        same("github-summary", many, {"top": top, "max_bytes": 5000})
     text = get_reporter("github-summary").render(many, top=10**30, max_bytes=5000)
     assert "_Lists are shortened to " in text
     assert len(text.encode("utf-8")) <= 5000
 
 
-@pytest.mark.parametrize("count", [-5, 2**70])
-def test_counts_the_extension_cannot_take_are_rendered_in_python(count: int) -> None:
+def test_a_short_listing_of_a_hundred_thousand_templates_is_quick() -> None:
     _, base = bases()
-    entry = replace(base.new_templates[0], after_count=count)
-    result = replace(base, new_templates=(entry,))
-    for name in ("github-summary", "junit", "chat-message", "prometheus"):
-        reporter = get_reporter(name)
-        assert reporter.render(result) == reporter.render_reference(result)  # type: ignore[attr-defined]
-        assert f"{count:,}" in reporter.render(result) or str(count) in reporter.render(result)
+    sample = base.new_templates[0]
+    many = replace(
+        base, new_templates=tuple(replace(sample, text=f"template number {index} <NUM>") for index in range(100_000))
+    )
+    started = time.perf_counter()
+    for name in REPORTS:
+        get_reporter(name).render(many)
+    elapsed = time.perf_counter() - started
+    assert elapsed < 5.0, f"{elapsed:.1f}s for four reports of 100 thousand templates"

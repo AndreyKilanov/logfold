@@ -1,4 +1,4 @@
-"""The native comparison gives exactly the classification of the pure-Python reference.
+"""The native comparison gives exactly the classification of the Python policy (``logfold.comparison.classify``).
 
 Both are run on random runs: templates present in one run or both, counts of zero, totals of zero, every built-in
 matcher and random thresholds. The entries must be equal, field by field, including the floats.
@@ -6,6 +6,7 @@ matcher and random thresholds. The entries must be equal, field by field, includ
 
 from __future__ import annotations
 
+import math
 import random
 from datetime import UTC, datetime, timedelta
 
@@ -119,6 +120,26 @@ def test_native_classification_equals_the_reference_for_engine_results(
         assert got == expected, (matcher.name, config)  # type: ignore[attr-defined]
 
 
+@pytest.mark.parametrize("threshold", [0.0, -1.0, math.nan, math.inf, 1.5])
+@pytest.mark.parametrize("seed", range(5))
+def test_native_classification_equals_the_reference_for_unusual_thresholds(seed: int, threshold: float) -> None:
+    rng = random.Random(seed)
+    templates = random_templates(rng, 30)
+    before, after = (
+        summary(sum(t.runs[0].count for t in templates), False),
+        summary(sum(t.runs[1].count for t in templates), False),
+    )
+    table = TemplateTable.from_stats(templates, 2)
+    for matcher in (JaccardMatcher(), JaccardIdfMatcher(), OverlapMatcher(), RulesMatcher()):
+        if hasattr(matcher, "threshold"):
+            matcher.threshold = threshold
+        config = DiffConfig(min_count=0, min_new_count=0, matcher=matcher.name)
+        spec = native_spec(matcher)
+        assert spec is not None
+        got = classify_native(table_side(table, 0, before), table_side(table, 1, after), config, spec, lambda t: t)
+        assert got == reference(templates, before, after, config, matcher), (matcher.name, threshold)
+
+
 def moment(value: int | None, aware: bool) -> datetime | None:
     if value is None:
         return None
@@ -202,19 +223,6 @@ def test_unusable_values_fall_back_to_the_reference(tmp_path) -> None:  # type: 
     negative = Template("1" * 16, "negative count", -3, None, None, None, None, {})
     odd = AnalysisResult((*second.templates, negative), second.run, second.metrics, second.meta)
     assert logfold.diff(first, odd, min_count=0).unchanged >= 0
-
-
-@pytest.mark.parametrize("matcher", ["exact", "token_subset", "jaccard"])
-def test_public_diff_matches_the_pure_python_engine(tmp_path, matcher: str) -> None:  # type: ignore[no-untyped-def]
-    from corpora import synthetic_pair
-
-    before, after, _truth = synthetic_pair(tmp_path, 12)
-    native_result = logfold.diff(str(before), str(after), format="app", matcher=matcher, engine="native")
-    python_result = logfold.diff(str(before), str(after), format="app", matcher=matcher, engine="python")
-    assert native_result.new_templates == python_result.new_templates
-    assert native_result.disappeared == python_result.disappeared
-    assert native_result.changed == python_result.changed
-    assert native_result.unchanged == python_result.unchanged
 
 
 def test_template_table_rows_reject_slices() -> None:

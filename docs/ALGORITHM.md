@@ -1,8 +1,8 @@
 # logfold algorithm specification (version 1)
 
-This document is the contract between the Rust engine (`logfold-core`, `logfold-io`, `logfold-engine`) and the
-pure-Python reference engine (`logfold.engines.python`). For the sequential strategy both engines must produce
-**identical** templates, counts, timestamps, levels and examples. All comparisons use integer arithmetic.
+This document is the contract of the Rust engine (`logfold-core`, `logfold-io`, `logfold-engine`). The golden results
+in `tests/fixtures/golden` and the property tests of `logfold-tests` hold the sequential strategy to it: the templates,
+counts, timestamps, levels and examples are exactly the ones described here. All comparisons use integer arithmetic.
 
 `ALGO_VERSION = 1`. Any change to the rules below bumps it.
 
@@ -206,8 +206,9 @@ result stays independent of the thread count. Identical inputs therefore produce
 
 After recount (§9) or, for saved results, after joining templates by id, templates that exist in one run only can be
 paired by a *matcher* so that a reworded message is compared as one template. The built-in matchers are part of the
-contract: the native implementation (`logfold-core`, `compare`) and the pure-Python one (`logfold.comparison.matchers`,
-`logfold.plugins.matchers`) must return **identical** pairs, in the same order. Matching does not change mined
+contract, and `logfold-core` (`compare`) is their only implementation: the classes in `logfold.comparison.matchers` and
+`logfold.plugins.matchers` hold the name, the threshold and the rules, and call it. A lone surrogate in a template text
+has no UTF-8 form and is read as U+FFFD. Matching does not change mined
 templates or counts, so it does not affect `ALGO_VERSION`. It is the one place that uses floating point (`jaccard`, `jaccard-idf`, `overlap`).
 
 A template text is split into tokens: `token_subset` splits on the single space character (an empty text has no tokens),
@@ -269,9 +270,10 @@ A matcher that is not built in (a plugin, or a subclass of a built-in one) alway
 ## 11. Comparison (diff)
 
 After recount (§9), or for two saved results, the templates of two runs are classified as *new*, *disappeared*,
-*changed* or *unchanged*. The native comparison (`logfold-core`, `compare`) and the pure-Python one
-(`logfold.comparison.classify`) must return **identical** entries, in the same order, with identical floats (the same
-IEEE double operations in the same order). It does not change mined templates or counts, so it does not affect
+*changed* or *unchanged*. The native comparison (`logfold-core`, `compare`) and the Python one
+(`logfold.comparison.classify`, which a plugin matcher and a result the extension cannot take, such as a count below 0
+or above 2^64 - 1 or a template listed twice in one run, go through) must return **identical** entries, in the same
+order, with identical floats (the same IEEE double operations in the same order). It does not change mined templates or counts, so it does not affect
 `ALGO_VERSION`.
 
 With several baselines (`diff(before, after, baselines=...)`) the runs are mined and recounted together, then the
@@ -303,12 +305,11 @@ run) and the number of records of the run; the thresholds `threshold_ratio` (at 
 ## 12. Pipeline reports
 
 `github-summary`, `junit`, `chat-message` and `prometheus` turn a result into text. The Rust core
-(`logfold-core`, `report`) and the pure-Python reporters (`logfold.plugins.reporters_ci`, `reporters_feeds`, the reference)
-must write **byte-identical** text for the same result and options. They do not change mined templates or counts, so they
-do not affect `ALGO_VERSION`. The extension takes the columns of a result in one call, `render_report(report, data, options)`
-(contract version 7); without the extension, or for a text it cannot take (a lone surrogate), the Python reporter renders.
-The Python reporter also renders when only a small part of a large result is listed, because building the columns passes
-over every template (`report_data.MIN_LISTED`, `LISTED_FRACTION`); the choice never changes the text.
+(`logfold-core`, `report`) writes the text; the reporter classes in `logfold.plugins` cut a result into columns and call
+it. The text is held by the golden fingerprints in `tests/fixtures/golden/reports.json`. The reports do not change mined
+templates or counts, so they do not affect `ALGO_VERSION`. The extension takes the columns of a result in one call,
+`render_report(report, data, options)`. A lone surrogate in a text is read as U+FFFD, and a count below 0 or above
+2^64 - 1 is a `ConfigError`.
 
 Counts are whole numbers below 2^53 (the shares are computed in double precision from them). A level that is not one of
 `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, `FATAL` is shown as no level. A new template is an *alert* when its level is
@@ -341,9 +342,7 @@ implementations and of the contract test (`tests/engines/test_native_reports.py`
 ## 13. State files
 
 A state file saves a miner so that a later run continues from it. It does not change how records are mined, so it does not
-affect `ALGO_VERSION`; it adds the extension contract version 8. The native engine reads and writes state files; the
-pure-Python reference engine must write the same bytes and read the same files, and until it does it refuses a state
-file with an error.
+affect `ALGO_VERSION`; it adds the extension contract version 8. The engine reads and writes state files.
 
 **Content.** The miner as plain data: the parameters (`depth`, `threshold_micro`, `max_children`, `max_templates`); the
 nodes of the tree in the order they were created, each with its children (token, node) ordered by the bytes of the token and
@@ -391,6 +390,6 @@ the history as a varint count, two little-endian `i64`, six varint level counts)
 a cluster), and the SHA-256 of all the bytes before it (32 bytes). A varint is an unsigned LEB128 of at most 64 bits.
 
 A file written to a path that ends in `.gz` is compressed with gzip; a gzip file is recognized by its first bytes, whatever its
-name, and read with the size limit applied to the decompressed bytes. The same state is the same bytes in both engines before
+name, and read with the size limit applied to the decompressed bytes. The same state is the same bytes before
 compression (the compressed bytes depend on the compressor, only the content is promised); a change of this layout is a change of this section,
 of both implementations and of the contract tests in one change, and raises `schema_version`.

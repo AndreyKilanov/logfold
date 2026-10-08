@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import xml.etree.ElementTree as ET
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -13,7 +14,7 @@ from corpora import hostile_pair, write
 from logfold import ConfigError
 from logfold.ext import registry
 from logfold.model import DiffResult
-from logfold.plugins.reporter_text import xml_text
+from logfold.plugins.reporters_ci import JunitReporter
 
 CODE_SPAN = re.compile(r"`[^`]*`")
 
@@ -21,14 +22,14 @@ CODE_SPAN = re.compile(r"`[^`]*`")
 @pytest.fixture
 def real_diff(corpus_dir: Path) -> DiffResult:
     return logfold.diff(
-        str(corpus_dir / "app_before.log"), str(corpus_dir / "app_after.log"), format="app", engine="python"
+        str(corpus_dir / "app_before.log"), str(corpus_dir / "app_after.log"), format="app", engine="native"
     )
 
 
 @pytest.fixture
 def hostile_diff(tmp_path: Path) -> DiffResult:
     before, after = hostile_pair(tmp_path)
-    return logfold.diff(str(before), str(after), format="app", engine="python")
+    return logfold.diff(str(before), str(after), format="app", engine="native")
 
 
 def outside_code_spans(text: str) -> str:
@@ -61,7 +62,7 @@ def test_github_summary_lists_alerts_before_other_templates(real_diff: DiffResul
 
 
 def test_github_summary_of_an_analysis(corpus_dir: Path) -> None:
-    result = logfold.analyze(str(corpus_dir / "app.log"), format="app", engine="python")
+    result = logfold.analyze(str(corpus_dir / "app.log"), format="app", engine="native")
     text = result.render("github-summary", top=3)
     assert re.match(r"## logfold: `[^`]*app\.log`\n", text)
     assert "### Most frequent templates (3 of " in text
@@ -95,7 +96,7 @@ def many_new_templates(tmp_path: Path) -> DiffResult:
     ]
     before = write(tmp_path / "before.log", quiet)
     after = write(tmp_path / "after.log", quiet + noisy)
-    return logfold.diff(str(before), str(after), format="app", engine="python")
+    return logfold.diff(str(before), str(after), format="app", engine="native")
 
 
 def test_github_summary_keeps_to_its_byte_budget(many_new_templates: DiffResult) -> None:
@@ -171,7 +172,7 @@ def test_junit_names_are_unique(real_diff: DiffResult) -> None:
 
 def test_junit_of_a_diff_without_new_templates_has_one_passing_case(corpus_dir: Path) -> None:
     path = str(corpus_dir / "app_before.log")
-    suite = parse(logfold.diff(path, path, format="app", engine="python").render("junit")).find("testsuite")
+    suite = parse(logfold.diff(path, path, format="app", engine="native").render("junit")).find("testsuite")
     assert suite is not None
     assert suite.get("failures") == "0"
     cases = list(suite.iter("testcase"))
@@ -199,7 +200,7 @@ def test_junit_survives_hostile_text(hostile_diff: DiffResult) -> None:
 
 
 def test_junit_refuses_an_analysis(corpus_dir: Path) -> None:
-    result = logfold.analyze(str(corpus_dir / "app.log"), format="app", engine="python")
+    result = logfold.analyze(str(corpus_dir / "app.log"), format="app", engine="native")
     with pytest.raises(ConfigError, match="does not support analysis"):
         result.render("junit")
 
@@ -210,7 +211,9 @@ def test_the_xml_suffix_selects_junit(real_diff: DiffResult, tmp_path: Path) -> 
     assert parse(out.read_text(encoding="utf-8")).tag == "testsuites"
 
 
-def test_xml_text_shows_what_xml_cannot_hold() -> None:
-    cleaned = xml_text("a" + chr(0) + chr(0xFFFF) + chr(0xFFFE) + "\x1b" + "b\tc\nd", 200)
-    assert cleaned == "a\\x00U+FFFFU+FFFE\\x1bb c d"
-    assert xml_text("x" * 50, 10) == "xxxxxxx..."
+def test_junit_shows_what_xml_cannot_hold(real_diff: DiffResult) -> None:
+    text = "a" + chr(0) + chr(0xFFFF) + chr(0xFFFE) + "\x1b" + "b\tc\nd"
+    entry = replace(real_diff.new_templates[0], text=text, level="ERROR")
+    xml = JunitReporter().render(replace(real_diff, new_templates=(entry, *real_diff.new_templates[1:])))
+    parse(xml)
+    assert "a\\x00U+FFFFU+FFFE\\x1bb c d" in xml

@@ -38,4 +38,4 @@ python bench/reporters.py --sizes 5000 20000 100000
 python bench/accuracy.py --window 200000 --logs hdfs bgl             # needs the real logs from data.py loghub2
 ```
 
-`python bench/speed.py analyze --help` lists every flag. The speed of the pure-Python reference engine is not measured.
+`python bench/speed.py analyze --help` lists every flag.

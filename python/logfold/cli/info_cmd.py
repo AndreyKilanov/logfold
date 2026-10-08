@@ -72,7 +72,9 @@ def info() -> None:
             f"algo {facts.algo_version})"
         )
     else:
-        console.print("native engine: [yellow]not available[/yellow] (the slow pure-Python engine will be used)")
+        console.print(
+            "native engine: [yellow]not available[/yellow] (install a wheel for this platform: mining needs it)"
+        )
     console.print(f"formats: {', '.join(facts.formats)}")
     console.print(f"reporters: {', '.join(facts.reporters)}")
     console.print(f"matchers: {', '.join(facts.matchers)}")

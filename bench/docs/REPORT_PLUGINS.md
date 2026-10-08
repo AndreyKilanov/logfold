@@ -1,9 +1,10 @@
-# Report plugins: Python and Rust on many templates
+# Report plugins: the Rust renderers on many templates
 
-The built-in reports `github-summary`, `junit`, `chat-message` and `prometheus` exist twice: a pure-Python reporter, which is the
-reference of the contract (`docs/ALGORITHM.md` section 12) and renders when there is no extension, and the same text written by
-the Rust core (`logfold-core`, `report`). This page measures both on results with 5, 20 and 100 thousand templates, to see what
-the Rust core gains and where. Command: `python bench/reporters.py`.
+The built-in reports `github-summary`, `junit`, `chat-message` and `prometheus` are written by the Rust core
+(`logfold-core`, `report`); the reporter classes cut the result into columns and make one call. Until 0.5.0 a pure-Python
+reporter existed as well, as the reference of the contract and for short listings. This page keeps what was measured when
+both existed (the first table), and the current numbers of the single implementation (the second). Command:
+`python bench/reporters.py`.
 
 ## Method
 
@@ -19,7 +20,7 @@ Rust side is not in it.
 
 Machine: Windows 11, 8 cores / 16 threads, 34 GB, Python 3.13, release build of the extension. The 0.4.0 development code.
 
-## Results
+## Results with both implementations (0.4.0 development code)
 
 | reporter | result | Python, all: 5k / 20k / 100k | Rust, all: 5k / 20k / 100k | Rust is faster by (100k) | default at 100k: Python / Rust |
 |---|---|---|---|---:|---|
@@ -34,6 +35,27 @@ Machine: Windows 11, 8 cores / 16 threads, 34 GB, Python 3.13, release build of 
 For scale, the Python reporters that already write every template take, at 100 thousand templates: `markdown` 0.17 to 0.22 s,
 `csv` 0.4 to 0.5 s, `json` 1.0 to 1.3 s.
 
+## Since 0.5.0: Rust only
+
+The Python reporter was removed (the text is held by the golden fingerprints of `tests/fixtures/golden/reports.json`), so a
+short listing of a large result also goes through Rust and pays for the columns of every template. Measured with
+`python bench/reporters.py --reporter github-summary junit chat-message prometheus` on the machine above (best of three):
+
+| result | reporter | 20k default / all | 100k default / all |
+|---|---|---|---|
+| analysis | `github-summary` | 19 ms / 29 ms | 115 ms / 165 ms |
+| analysis | `chat-message` | 4 ms / 20 ms | 32 ms / 109 ms |
+| analysis | `prometheus` | 23 ms / 34 ms | 135 ms / 198 ms |
+| diff | `github-summary` | 8 ms / 15 ms | 68 ms / 122 ms |
+| diff | `junit` | 23 ms / 29 ms | 149 ms / 199 ms |
+| diff | `chat-message` | 6 ms / 17 ms | 52 ms / 98 ms |
+| diff | `prometheus` | 8 ms / 24 ms | 85 ms / 167 ms |
+
+Against the table above, a short listing (`default`) of 100 thousand templates costs up to 75 ms more than the Python path did
+(`prometheus` of a diff: 10 ms before, 85 ms now); with every template listed the Rust path is faster, as before. A result of
+20 thousand templates or less pays 23 ms at most. The next gain is the one named at the end of this page: read the fields in
+Rust straight from the objects of the result, and pass only the rows a report lists.
+
 ## Reading the numbers
 
 - **Linear growth** in both: from 5 to 100 thousand templates (20 times) the time grows 20 to 30 times; no quadratic step.
@@ -43,9 +65,9 @@ For scale, the Python reporters that already write every template take, at 100 t
   takes 20 to 60 ms for the short listings and 125 ms for the largest text of 34 MB (`prometheus` of a diff, 200 thousand
   series).
 - **With a short listing Rust loses**: `top` 20 or 50 of 100 thousand templates takes 0 to 130 ms in Python and 40 to 170 ms in
-  Rust, because the columns of every template are cut anyway while Python needs only the rows it lists. So the reporters send a
-  result to Rust only when at least 1,000 templates are listed and at least an eighth of the templates of the result
-  (`report_data.MIN_LISTED`, `LISTED_FRACTION`); otherwise Python renders, with the same text.
+  Rust, because the columns of every template are cut anyway while Python needs only the rows it lists. So 0.4.0 sent a
+  result to Rust only when at least 1,000 templates were listed and at least an eighth of the templates of the result
+  (`report_data.MIN_LISTED`, `LISTED_FRACTION`); otherwise Python rendered, with the same text. Both are gone since 0.5.0.
 - **Memory**: the Python allocations of the Rust path are 35 to 50 percent of the Python path with every template
   listed (`prometheus` of a diff: 39 MB against 113 MB). The Rust side holds the rows (borrowed strings, no copy of the texts) and
   the output.

@@ -319,7 +319,7 @@ plugin can override a built-in name; avoid that. A plugin that fails to import i
 ### A format
 
 A format is **data, not code**. You describe the format; the engine compiles the description into a fast parser, so the
-plugin costs nothing per line and works the same in the Rust and the Python engine. There are three specifications,
+plugin costs nothing per line. There are three specifications,
 all in `logfold.ext`.
 
 `RegexFormat`: a regular expression with named groups. It is searched in the first line of a record, so anchor it with
@@ -441,7 +441,7 @@ are plain objects:
 
 ```python
 def test_logfmt():
-    result = logfold.analyze("samples/app.logfmt", format=LOGFMT, engine="python")
+    result = logfold.analyze("samples/app.logfmt", format=LOGFMT)
     assert {t.text: t.count for t in result.templates} == {...}
 
 
@@ -451,9 +451,10 @@ def test_matcher_changes_the_diff(monkeypatch):
     assert not paired.new_templates
 ```
 
-Run a format with both `engine="native"` and `engine="python"` and compare: they must give the same templates. The
-example package does this, see [`tests/test_example_plugin.py`](../tests/test_example_plugin.py). Also test that every
-entry point in `pyproject.toml` resolves to an existing attribute.
+Look at how the engine reads a sample with `logfold inspect FILE --format NAME` (or `logfold.inspect_file`) and assert
+the counts and the templates that `analyze` returns. The example package does this, see
+[`tests/test_example_plugin.py`](../tests/test_example_plugin.py). Also test that every entry point in `pyproject.toml`
+resolves to an existing attribute.
 
 ### Publishing
 
@@ -478,5 +479,4 @@ Build and upload like any Python package (`python -m build`, then `twine upload 
 
 A plugin is Python code and runs with your privileges as soon as logfold loads it (reporters and matchers on import and
 use, formats on import). Install plugins only from sources you trust. A format specification is data and cannot run
-code, but a pattern that backtracks badly can be slow in the pure-Python engine (the Rust engine matches in linear
-time); keep patterns anchored and simple.
+code, and the Rust engine matches patterns in linear time; keep patterns anchored and simple.
