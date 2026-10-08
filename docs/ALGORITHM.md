@@ -356,10 +356,10 @@ the file; the values the masks hide are not.
 **Continuing.** A miner built from a state has empty statistics: its report counts the records of the new run only, and a
 template with no record in the new run is not reported. The state saved after the run holds the history of the earlier runs plus
 the counts of this one. Continuing is exact: mining A and then B from the state of A gives the same state as mining A and B in
-one run (the sequential strategy). The chunked strategy continues a state too: every chunk starts from a copy of the loaded
-tree, which is the seed of §6 without a trained first chunk, and the chunk trees are merged in order as in §6; the result does
-not depend on the number of threads but is not the sequential one (`bench/docs/STATE_PARALLEL.md`), and `auto` continues a
-state sequentially. A state saved after a chunked run is valid
+one run (the sequential strategy, the exact continuation). The chunked strategy, which `auto` chooses for an input of more than
+one chunk, continues a state too: every chunk starts from a copy of the loaded tree, which is the seed of §6 without a trained
+first chunk, and the chunk trees are merged in order as in §6; the result does not depend on the number of threads but is not
+the sequential one (`bench/docs/STATE_PARALLEL.md`). A state saved after a chunked run is valid
 and can be continued, but its tree is the one that merging the chunks built, so it is not the file that a sequential run over the
 same input saves. The run starts with the overflow flags cleared.
 

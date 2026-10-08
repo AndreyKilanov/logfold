@@ -1,9 +1,9 @@
 # Continuing a saved state in parallel
 
-`analyze --load-state FILE --strategy chunked` continues a saved miner with every chunk starting from a copy of the loaded
-tree (the loaded tree is the seed that `--warm-start` otherwise trains on the first chunk), and merges the chunks in order.
-`--strategy auto` with a loaded state is sequential: the sequential continuation is exact (it gives the state of one run over
-both logs), the parallel one is deterministic (it does not depend on the number of threads) but not identical to it.
+`analyze --load-state FILE` continues a saved miner. An input of more than one chunk (`--strategy auto`, or `--strategy chunked`)
+is continued in parallel: every chunk starts from a copy of the loaded tree (the seed that `--warm-start` otherwise trains on
+the first chunk), and the chunks are merged in order. `--strategy sequential` is the exact continuation: it gives the state of
+one run over both logs. The parallel one is deterministic (it does not depend on the number of threads) but not identical to it.
 This page measures how far apart they are. Command: `python bench/state_parallel.py FILE ... [--chunk-mb N]`.
 
 ## Method
@@ -36,7 +36,7 @@ On Thunderbird the chunk size does not close the gap (extra templates: 1,867 at 
 - On Thunderbird, a log of many rare messages, the chunks open stray templates that cannot be merged back, as with the
   cold chunked strategy (`WARM_START.md`): more than twice the templates, in 0.5 percent of the records. A loaded tree
   removes the serial prefix of `--warm-start` but not this effect.
-- So `auto` keeps the continuation sequential, which is exact and fast enough for these sizes, and `--strategy chunked` is
-  there for logs of gigabytes, where the seconds matter and rare strays are acceptable. A parallel continuation that equals the
-  sequential one on every input needs the loaded tree to be read-only while chunks are classified and the records that change it
-  to be replayed in order; it is not implemented (see ADR-011a).
+- So the parallel continuation is the default and the exact one is `--strategy sequential`; the result of a parallel run carries
+  a warning that says it was parallel. A parallel continuation that equals the sequential one on every input needs the loaded
+  tree to be read-only while chunks are classified and the records that change it to be replayed in order; it is not
+  implemented (see ADR-011a).

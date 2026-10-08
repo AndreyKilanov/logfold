@@ -135,11 +135,18 @@ def test_a_saved_state_can_be_continued_in_parallel(tmp_path: Path, stream: list
     assert len(shared) >= 0.9 * len(sequential.templates)
 
 
-def test_auto_continues_a_state_sequentially_and_exactly(tmp_path: Path, stream: list[str]) -> None:
+def test_auto_continues_a_big_input_in_parallel_and_says_so(tmp_path: Path, stream: list[str]) -> None:
     _, first, second = split(tmp_path, stream, 1500)
     mine(first, save_state=tmp_path / "s.json")
-    result = logfold.analyze(str(second), format="app", load_state=tmp_path / "s.json", chunk_bytes=8192)
-    assert result.metrics.strategy == "sequential"
+    big = logfold.analyze(str(second), format="app", load_state=tmp_path / "s.json", chunk_bytes=8192)
+    assert big.metrics.strategy == "chunked"
+    assert any("continued in parallel" in warning for warning in big.warnings)
+    small = logfold.analyze(str(second), format="app", load_state=tmp_path / "s.json")
+    assert small.metrics.strategy == "sequential", "an input of one chunk is mined in one piece"
+    assert not any("continued in parallel" in warning for warning in small.warnings)
+    exact = mine(second, load_state=tmp_path / "s.json", chunk_bytes=8192)
+    assert exact.metrics.strategy == "sequential", "the exact continuation is one option away"
+    assert not any("continued in parallel" in warning for warning in exact.warnings)
 
 
 def test_a_parallel_resume_saves_a_state_that_loads_again(tmp_path: Path, stream: list[str]) -> None:
