@@ -10,10 +10,10 @@ from logfold import analyze, diff
 ## `analyze`
 
 ```python
-analyze(path, *, format="auto", multiline=None, depth=None, sim_th=None, max_children=None, max_templates=None,
+analyze(path, *, format=None, multiline=None, depth=None, sim_th=None, max_children=None, max_templates=None,
         masks=None, high_cardinality=False, mining=None, execution=None, engine=None, strategy=None, threads=None,
         chunk_bytes=None, warm_start=None, examples="raw", since=None, until=None, load_state=None, save_state=None,
-        state_format="json", progress=None) -> AnalysisResult
+        state_format="json", config=None, progress=None) -> AnalysisResult
 ```
 
 Folds one run into templates.
@@ -21,7 +21,7 @@ Folds one run into templates.
 | Argument | Meaning |
 |---|---|
 | `path` | one file or a sequence of files forming a single run (`str` or `PathLike`); `"-"` is standard input; gzip is detected by content |
-| `format` | `"auto"`, a registered name, `"regex:<pattern>"`, `"log4j:<pattern>"`, a format specification or a `Format` object |
+| `format` | `None` or `"auto"` (detect it; a settings file can give another), a registered name, `"regex:<pattern>"`, `"log4j:<pattern>"`, a format specification or a `Format` object |
 | `multiline` | join continuation lines to the previous record; `None` keeps the format's default |
 | `depth`, `sim_th`, `max_children`, `max_templates`, `masks` | mining parameters, see [`MiningConfig`](#mining-and-execution-configuration) |
 | `high_cardinality` | fast bounded mode for data with a huge number of distinct messages |
@@ -31,6 +31,7 @@ Folds one run into templates.
 | `since`, `until` | keep only records at or after `since` and before `until`: ISO 8601 strings (`2026-10-06T12:30`, a trailing `Z` or an offset means a zone) or `datetime` objects. A time with a zone is converted to UTC; a time without one is compared with the times of the log as written (naive times are UTC everywhere in logfold). A record without a timestamp cannot be placed and is left out. The result counts the records left out in `run.out_of_range` and `run.untimed`, the run name shows the window, and a warning mentions records without a time. A format without a time (`plain`) raises `ConfigError` |
 | `load_state` | a state file of an earlier run to continue from: its templates start the tree, the result counts only the records of this run, and it must have been mined with the same masks and parameters. A big input is continued in parallel by default (a warning says so) and `strategy="sequential"` is the exact continuation; it needs the native engine (see [State files](cli.md#state-files)) |
 | `save_state`, `state_format` | write the trained miner to this file (`.gz` is compressed), `"json"` (readable, default) or `"binary"`; the file holds templates and counts, never example lines |
+| `config` | a `Settings` from [`load_config`](#load_config): it gives the format, `multiline`, `mining` and `execution` wherever the call does not name them |
 | `progress` | optional callback receiving the consumed input byte count |
 
 Raises `ConfigError`, `FormatError`, `SourceError`, `EngineError` or `StateError` (see [Errors](#errors)).
@@ -38,9 +39,9 @@ Raises `ConfigError`, `FormatError`, `SourceError`, `EngineError` or `StateError
 ## `match`
 
 ```python
-match(state, path, *, format="auto", multiline=None, depth=None, sim_th=None, max_children=None, max_templates=None,
+match(state, path, *, format=None, multiline=None, depth=None, sim_th=None, max_children=None, max_templates=None,
       masks=None, mining=None, execution=None, engine=None, strategy=None, threads=None, chunk_bytes=None,
-      examples="raw", since=None, until=None, progress=None) -> AnalysisResult
+      examples="raw", since=None, until=None, config=None, progress=None) -> AnalysisResult
 ```
 
 Assigns the records of a log to the templates of a saved state (`analyze(..., save_state=...)`) without learning anything.
@@ -54,7 +55,7 @@ no template) and `by_length` (`(token count, records)` pairs sorted by token cou
 ## `diff`
 
 ```python
-diff(before, after=None, *, format="auto", multiline=None, threshold_ratio=None, min_count=None, min_new_count=None,
+diff(before, after=None, *, format=None, multiline=None, threshold_ratio=None, min_count=None, min_new_count=None,
      recount=None, matcher=None, significance=None, baselines=None, min_baselines=None, diff_config=None, since=None,
      until=None, split_at=None,
      <all mining and execution arguments of analyze>) -> DiffResult
@@ -98,6 +99,19 @@ before.to_json("before.json")
 ...
 result = diff(load_analysis("before.json"), load_analysis("after.json"))
 ```
+
+## `load_config`
+
+```python
+load_config(path=None) -> Settings
+```
+
+Reads the settings file [`logfold.toml`](config.md): the file at `path`, or else the one named by `LOGFOLD_CONFIG`, or
+else the first `logfold.toml` from the current folder up to the repository root. Without any file it returns the
+built-in defaults. The result is passed to `analyze`, `match` and `diff` as `config=`; an argument of the call beats
+it. `Settings` holds `format`, `multiline`, `mining` (`MiningConfig`), `execution` (`ExecutionConfig`) and `diff`
+(`DiffConfig`), and `source`, the path of the file that was read. Raises `ConfigError` when the file cannot be read, is
+larger than 64 KiB, is not valid TOML, or holds an unknown key, a value of the wrong type or a value out of range.
 
 ## `load_analysis`
 

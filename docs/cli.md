@@ -9,6 +9,11 @@ Commands: [`analyze`](#logfold-analyze), [`match`](#logfold-match), [`diff`](#lo
 
 `logfold --version` prints the version. `logfold <command> --help` prints the options of a command.
 
+**Settings file.** `analyze`, `match`, `diff` and `inspect` read a [`logfold.toml`](config.md) for the options that you
+do not give: `logfold --config FILE <command>` names the file, `logfold --no-config <command>` reads none, and without
+either the first `logfold.toml` from the current folder up to the repository root is used. A flag beats the file; the
+file beats the built-in default. A command that uses a file says so on standard error.
+
 ## `logfold analyze`
 
 Fold one run into message templates and count them.

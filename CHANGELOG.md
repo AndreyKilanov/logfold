@@ -16,11 +16,17 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   See `docs/cli.md`.
 - `logfold match STATE FILE` and `logfold.match(state, path)` assign a log to the templates of a saved state without
   learning anything and count the records that fit none (`run.unmatched`, an additive field of the JSON report). See `docs/cli.md`.
+- A settings file `logfold.toml` for the options that you repeat (format, mining, execution, output, `diff`
+  thresholds and `--fail-on-new*`): found from the current folder up to the repository root, or named with `--config`
+  (`--no-config` reads none); a flag beats the file. Library: `load_config()` and `config=` of `analyze`, `match` and
+  `diff`. The file holds no key that runs code or uses the network. See `docs/config.md`.
 - A GitHub Action (`uses: AndreyKilanov/logfold@<tag>`) and a GitLab CI template (`ci/gitlab/logfold.yml`): analyze the
   log, compare it with the baseline of the last good run, write the summary and fail on new alerts; see `docs/ci.md`.
 
 ### Changed
 
+- The `format` argument of `analyze`, `match` and `diff` is `None` by default (the same as `"auto"`), so that a
+  settings file can give the format.
 - Python 3.11 or newer is required; Python 3.10 is no longer supported (0.4.0 is the last release for it). The wheels are
   tagged `cp311-abi3`.
 - The slow pure-Python reference engine is removed: `engine="python"`, `--engine python` and `LOGFOLD_ENGINE=python` run
