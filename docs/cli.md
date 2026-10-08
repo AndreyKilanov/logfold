@@ -43,7 +43,7 @@ journalctl -o json | logfold analyze - --format journald --json > result.json
 | `--json` | off | print JSON to standard output instead of tables |
 | `--examples` | `raw` | `raw`, `masked` or `none`: how example messages are kept (use `masked` or `none` before sharing) |
 | `--load-state` FILE | | continue from the miner that an earlier run saved (see [State files](#state-files)); the report counts only this run |
-| `--save-state` FILE | | save the trained miner for a later run (templates and counts, no example lines); a `.gz` path is compressed |
+| `--save-state` FILE | | save the trained miner for a later run (templates and counts, no example lines); a `.gz` path is compressed (a gzip state is read by its content, whatever its name) |
 | `--state-format` | `json` | `json` (readable) or `binary` (compact, for states of hundreds of thousands of templates) |
 | `--quiet`, `-q` | off | no progress and no status messages on standard error |
 | `--debug` | off | show tracebacks |

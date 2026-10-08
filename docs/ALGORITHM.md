@@ -341,7 +341,9 @@ implementations and of the contract test (`tests/engines/test_native_reports.py`
 ## 13. State files
 
 A state file saves a miner so that a later run continues from it. It does not change how records are mined, so it does not
-affect `ALGO_VERSION`; it adds the extension contract version 8. Both engines read and write the same files.
+affect `ALGO_VERSION`; it adds the extension contract version 8. The native engine reads and writes state files; the
+pure-Python reference engine must write the same bytes and read the same files, and until it does it refuses a state
+file with an error.
 
 **Content.** The miner as plain data: the parameters (`depth`, `threshold_micro`, `max_children`, `max_templates`); the
 nodes of the tree in the order they were created, each with its children (token, node) ordered by the bytes of the token and
@@ -354,10 +356,12 @@ the file; the values the masks hide are not.
 **Continuing.** A miner built from a state has empty statistics: its report counts the records of the new run only, and a
 template with no record in the new run is not reported. The state saved after the run holds the history of the earlier runs plus
 the counts of this one. Continuing is exact: mining A and then B from the state of A gives the same state as mining A and B in
-one run (the sequential strategy; the chunked strategy does not continue a state). The run starts with the overflow flags
-cleared.
+one run (the sequential strategy; the chunked strategy does not continue a state). A state saved after a chunked run is valid
+and can be continued, but its tree is the one that merging the chunks built, so it is not the file that a sequential run over the
+same input saves. The run starts with the overflow flags cleared.
 
-**Checks on loading.** The file is untrusted. Sizes are checked before memory is allocated (defaults: 1 GiB, 1,000,000
+**Checks on loading.** The file is untrusted. The kind and the schema version are read first, so a newer layout is reported as newer whatever else
+changed in it. Sizes are checked before memory is allocated (defaults: 1 GiB, 1,000,000
 templates, 4,000,000 nodes, 64 KiB per token, 512 MiB of tokens together). A state is refused when the checksum does not match,
 the schema is newer than this logfold reads, `algo_version` differs, the fingerprint of the masks and parameters
 (`config_hash`, the hash of the mining configuration without the log format) differs from the current run, or the tree is not
@@ -383,6 +387,7 @@ ids of the clusters, each list with a varint count), the clusters (a varint toke
 the history as a varint count, two little-endian `i64`, six varint level counts), the overflow clusters (length as a varint, then
 a cluster), and the SHA-256 of all the bytes before it (32 bytes). A varint is an unsigned LEB128 of at most 64 bits.
 
-A file written to a path that ends in `.gz` is compressed with gzip, and a gzip file is read with the size limit applied to
-the decompressed bytes. The same state is the same bytes in both engines; a change of this layout is a change of this section,
+A file written to a path that ends in `.gz` is compressed with gzip; a gzip file is recognized by its first bytes, whatever its
+name, and read with the size limit applied to the decompressed bytes. The same state is the same bytes in both engines before
+compression (the compressed bytes depend on the compressor, only the content is promised); a change of this layout is a change of this section,
 of both implementations and of the contract tests in one change, and raises `schema_version`.

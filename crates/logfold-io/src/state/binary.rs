@@ -126,7 +126,14 @@ impl<'a> Reader<'a> {
 }
 
 pub(super) fn decode(bytes: &[u8], limits: &StateLimits) -> Result<State, StateError> {
-    if bytes.len() < BINARY_MAGIC.len() + 32 {
+    if bytes.len() < BINARY_MAGIC.len() + 2 {
+        return Err(damaged("the file is too short"));
+    }
+    let schema = u32::from(u16::from_le_bytes([bytes[BINARY_MAGIC.len()], bytes[BINARY_MAGIC.len() + 1]]));
+    if schema > STATE_SCHEMA_VERSION {
+        return Err(StateError::Version { found: schema, supported: STATE_SCHEMA_VERSION });
+    }
+    if bytes.len() < BINARY_MAGIC.len() + 2 + 32 {
         return Err(damaged("the file is too short"));
     }
     let (body, digest) = bytes.split_at(bytes.len() - 32);
@@ -134,10 +141,7 @@ pub(super) fn decode(bytes: &[u8], limits: &StateLimits) -> Result<State, StateE
         return Err(StateError::Checksum);
     }
     let mut cursor = Cursor::new(&body[BINARY_MAGIC.len()..]);
-    let schema = u32::from(cursor.u16_le()?);
-    if schema > STATE_SCHEMA_VERSION {
-        return Err(StateError::Version { found: schema, supported: STATE_SCHEMA_VERSION });
-    }
+    cursor.u16_le()?;
     let algo_version = cursor.u32_le()?;
     let contract = cursor.u32_le()?;
     let mut reader = Reader { cursor, limits, token_bytes: 0, declared_token_bytes: 0 };

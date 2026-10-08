@@ -193,3 +193,20 @@ def test_the_fingerprint_of_the_default_settings_is_pinned() -> None:
     MiningConfig, another masks default) would silently invalidate every saved state: change this value on purpose, with
     a changelog entry, never by accident."""
     assert config_fingerprint(MiningConfig()) == "721277182c26"
+
+
+@pytest.mark.parametrize(
+    "options",
+    [{"strategy": "chunked"}, {"strategy": "chunked", "warm_start": True}, {"strategy": "auto"}],
+    ids=["chunked", "warm-start", "auto"],
+)
+def test_a_state_saved_by_a_parallel_run_can_be_loaded(tmp_path: Path, options: dict[str, object]) -> None:
+    """The tree that the merge of chunks builds must pass the same checks as a tree mined in one piece."""
+    big = write(tmp_path / "big.log", app_lines(12000, 3))
+    state = tmp_path / "parallel.json"
+    saved = logfold.analyze(str(big), format="app", chunk_bytes=50_000, threads=4, save_state=state, **options)  # type: ignore[arg-type]
+    if options["strategy"] == "chunked":
+        assert saved.metrics.strategy == "chunked", "the state is meant to come from the merge of chunks"
+    again = write(tmp_path / "again.log", app_lines(500, 4))
+    resumed = mine(again, load_state=state)
+    assert resumed.run.records == 500
