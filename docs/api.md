@@ -35,6 +35,22 @@ Folds one run into templates.
 
 Raises `ConfigError`, `FormatError`, `SourceError`, `EngineError` or `StateError` (see [Errors](#errors)).
 
+## `match`
+
+```python
+match(state, path, *, format="auto", multiline=None, depth=None, sim_th=None, max_children=None, max_templates=None,
+      masks=None, mining=None, execution=None, engine=None, strategy=None, threads=None, chunk_bytes=None,
+      examples="raw", since=None, until=None, progress=None) -> AnalysisResult
+```
+
+Assigns the records of a log to the templates of a saved state (`analyze(..., save_state=...)`) without learning anything.
+The state is only read. The options are those of `analyze`; the mining options and the masks must be the ones that the
+state was mined with, otherwise `StateError` says so. The result is an `AnalysisResult` with the templates that were hit,
+with the counts, levels and times of this log only, and `result.run.unmatched`, a `Unmatched` with `records` (records that fit
+no template) and `by_length` (`(token count, records)` pairs sorted by token count; the text is not kept). `strategy` and
+`threads` only decide whether the files are read in parallel: the answer is the same. See
+[`logfold match`](cli.md#logfold-match).
+
 ## `diff`
 
 ```python
@@ -179,7 +195,8 @@ G statistic of the change of the share) and `p_value`; both are `None` for new a
 - `RunSummary`: `name`, `files`, `lines` (non-blank physical lines), `records`, `unparsed` (lines that did not become
   part of a record), `out_of_range` and `untimed` (records left out by a time window: outside it, or without a timestamp),
   `bytes`, `tz_aware` (naive timestamps are interpreted as UTC), `overflowed` (`max_templates` was
-  reached), and the property `unparsed_ratio`.
+  reached), `unmatched` (set by `match`: an `Unmatched` with `records` and `by_length`; `None` for a mined run and
+  absent from the JSON report) and the property `unparsed_ratio`.
 - `RunMetrics`: `engine`, `strategy` (`sequential` or `chunked`: what was used, which `auto` decides), `threads`, `chunks`, and wall times `wall_total_s`, `wall_mine_s`,
   `wall_merge_s`, `wall_recount_s`, `wall_freeze_s`.
 - `ResultMeta`: `schema_version`, `algo_version`, `logfold_version`, `config_hash` (results with different hashes may

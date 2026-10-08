@@ -12,7 +12,8 @@ from datetime import datetime
 
 from logfold.errors import ConfigError
 from logfold.ext.formats import Format, FormatSpec, JsonFormat, PlainFormat, RegexFormat
-from logfold.model import RunSummary, datetime_to_micros, micros_to_datetime
+from logfold.model import RunSummary
+from logfold.timestamps import datetime_to_micros, micros_to_datetime
 
 __all__ = [
     "OPEN",

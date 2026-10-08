@@ -110,7 +110,7 @@ layers = [
   "logfold.engines | logfold.formats | logfold.reporters | logfold.comparison | logfold.plugins",
   "logfold.model",
   "logfold.ext",
-  "logfold.config | logfold._version | logfold.levels | logfold._bridge",
+  "logfold.config | logfold._version | logfold.levels | logfold.timestamps | logfold._bridge",
   "logfold.errors",
 ]
 

@@ -30,8 +30,8 @@ from logfold.model import (
     ResultMeta,
     RunSummary,
     Template,
-    micros_to_datetimes,
 )
+from logfold.timestamps import micros_to_datetimes
 
 logger = logging.getLogger("logfold")
 
@@ -154,6 +154,7 @@ def _mine(
     recount: bool = False,
     windows: tuple[tuple[int | None, int | None], ...] = (),
     state: StateRequest | None = None,
+    matching: bool = False,
 ) -> MiningResult:
     engine = select_engine(execution)
     request = MineRequest(
@@ -168,7 +169,7 @@ def _mine(
         windows=windows,
         state=state,
     )
-    return engine.mine(request, progress)
+    return engine.match(request, progress) if matching else engine.mine(request, progress)
 
 
 def _summary(paths: tuple[str, ...], info: RunCounters) -> RunSummary:

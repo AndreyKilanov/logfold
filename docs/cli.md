@@ -4,7 +4,7 @@
 logfold [--version] <command> [options]
 ```
 
-Commands: [`analyze`](#logfold-analyze), [`diff`](#logfold-diff), [`formats`](#logfold-formats),
+Commands: [`analyze`](#logfold-analyze), [`match`](#logfold-match), [`diff`](#logfold-diff), [`formats`](#logfold-formats),
 [`info`](#logfold-info), [`plugins`](#logfold-plugins). Install the command with `pip install "logfold[cli]"`.
 
 `logfold --version` prints the version. `logfold <command> --help` prints the options of a command.
@@ -87,6 +87,32 @@ continuation: the same state as one run over both logs. A smaller input is conti
 typical application; for 100 thousand templates about 12 MB in JSON at the least, since real templates are longer than the
 short ones of that measurement, and about half of it in binary), not on the size of the logs. Treat a state like
 a report of the templates: a template seen once contains the words of its line.
+
+## `logfold match`
+
+```
+logfold match STATE FILE... [options]
+```
+
+Assigns the records of FILES (one run; `-` reads standard input) to the templates of a state that `logfold analyze
+--save-state` wrote, and counts the records that fit none. Nothing is learned and the state file is only read:
+
+```
+logfold analyze baseline.log --save-state model.json
+logfold match model.json today.log
+```
+
+The report is the one of `analyze`: the templates of the state that were hit, with the counts, levels and times of
+`today.log` only. A warning says how many records belong to no template of the state, and `run.unmatched` in the JSON report
+holds their number and their length in tokens (the text of those records is not kept). The state must be used with the same
+masks and parameters it was mined with (`--depth`, `--sim-th`, `--max-children`, `--max-templates`, `--no-masks`); otherwise the
+command stops with an error that says so. The result does not depend on `--strategy` or `--threads`, which only decide
+whether the files are read in parallel.
+
+Options: `--format`, `--multiline`, `--since`, `--until`, `--top`, `--min-count`, `--level`, `--only-alerts`, `--out`,
+`--append`, `--report`, `--json`, `--examples`, `--quiet`, `--debug` as for [`analyze`](#logfold-analyze), and the mining
+and execution options listed there (`--sim-th`, `--depth`, `--max-children`, `--max-templates`, `--no-masks`, `--strategy`,
+`--threads`, `--chunk-mb`). There is no `--save-state`, `--load-state`, `--high-cardinality`, `--warm-start` or `--engine`.
 
 ## `logfold diff`
 

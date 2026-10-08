@@ -13,7 +13,7 @@ from logfold.errors import read_error
 from logfold.ext.formats import FormatSpec
 from logfold.formats import resolve_format
 from logfold.formats.auto import read_sample
-from logfold.model import micros_to_datetimes
+from logfold.timestamps import micros_to_datetimes
 
 SAMPLE_LINES = 1000
 SHOWN_RECORDS = 10

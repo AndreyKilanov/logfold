@@ -47,6 +47,8 @@ def analysis_payload(result: logfold.AnalysisResult) -> dict[str, Any]:
     """Return the counters and the templates of ``result``, without the file name."""
     run = jsonable(result.run)
     del run["name"]
+    if run.get("unmatched") is None:
+        run.pop("unmatched", None)
     return {"run": run, "templates": jsonable(list(result.templates))}
 
 
