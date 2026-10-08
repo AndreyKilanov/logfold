@@ -16,6 +16,61 @@ the job summary and fail the job when something new and alarming appears.
 
 ## GitHub Actions
 
+### One step: the action
+
+The repository has an action that does the whole recipe of this page: it installs logfold, analyzes the log, restores the
+analysis of the last good run, compares, writes the summary of the run, optionally keeps an HTML report and fails the job on
+new alerts.
+
+```yaml
+jobs:
+  logs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run the tests, keep the log
+        run: ./run-tests.sh > current.log 2>&1
+      - uses: AndreyKilanov/logfold@v0.5.0
+        with:
+          log: current.log
+```
+
+Use the tag of a release (the action installs the logfold of the same version) and, on the default branch, run it after a
+passing job. How it works:
+
+- **The first run has no baseline**, so it only analyzes and writes the summary. A run on the default branch that passes is
+  kept in the cache of the repository as the baseline (a small saved analysis, not the log). Runs of pull requests restore
+  it, because they may read the caches of the default branch, and never write it.
+  Until the default branch has run once there is nothing to restore, and the runs of pull requests only analyze.
+- **A gate that found something fails the step** after the summary is written; `fail-on: none` only reports.
+  With `fail-on: none` nothing fails, so every run of the default branch becomes the baseline, findings included.
+- The cache is dropped when nobody reads it for seven days: a repository that runs on the default branch less often should
+  give the baseline as a file (`baseline`).
+
+| Input | Default | Meaning |
+|---|---|---|
+| `log` | required | The log of this run |
+| `baseline` | cache | A log or a saved analysis (`.json`); empty means the baseline of the last good run |
+| `fail-on` | `new-alerts` | `new-alerts`, `new` or `none` (see "Choosing the gate" below) |
+| `level` | all | Keep this level and above, for example `ERROR` |
+| `format` | `auto` | Log format |
+| `examples` | `masked` | `masked`, `none` or `raw`; the summary and the cache are readable by everyone who can read the repository |
+| `html-report` | none | Name of an artifact with the full HTML report |
+| `save-baseline` | `auto` | `true`, `false`, or `auto` (the default branch only) |
+| `baseline-key` | `default` | Name of the baseline in the cache (letters, digits, `_` and `.`); give each log of a repository its own |
+| `version` | tag of the action | logfold version to install |
+| `python-version` | `3.13` | Python to run it with (3.11 or newer) |
+
+Outputs: `exit-code` (`0`, `2` for a gate, `1` for an error) and `status` (`first-run`, `ok` or `found`).
+
+A saved analysis as the baseline is less exact than a baseline log: the two runs are mined apart and not re-counted
+against one template tree, so a reworded message can show up as one new and one disappeared template (see the warning that
+`diff` prints). The matcher pairs most of them. For a strict gate give a baseline log (`baseline: good/app.log`).
+
+The inputs reach the shell as environment variables, never as part of a script, so a value cannot inject a command.
+
+### By hand
+
 GitHub shows the Markdown that steps append to `$GITHUB_STEP_SUMMARY` on the page of the run. Each step adds its own
 section, so write with `--append`: without it a second logfold step would replace the first one's report.
 
@@ -108,6 +163,34 @@ Check the current major versions of the `actions/*` steps when you copy this.
   This works for logs, not for saved results (see [`diff` with several baselines](guide.md#compare-with-several-baselines)).
 
 ## GitLab CI
+
+### The template
+
+`ci/gitlab/logfold.yml` defines a hidden job `.logfold`. It installs logfold, analyzes the log, compares it with the baseline
+in the cache, writes `diff.html` and a JUnit file (a new WARN+ template is a failed test in the merge request) and fails
+the job on the gate. A passing job on the default branch keeps its analysis as the next baseline.
+
+```yaml
+include:
+  - remote: "https://raw.githubusercontent.com/AndreyKilanov/logfold/v0.5.0/ci/gitlab/logfold.yml"
+
+logfold:
+  extends: .logfold
+  variables:
+    LOGFOLD_LOG: current.log
+  script:
+    - ./run-tests.sh > current.log 2>&1
+    - !reference [.logfold, script]
+```
+
+Variables: `LOGFOLD_LOG` (required), `LOGFOLD_FAIL_ON` (default `--fail-on-new-alerts`; set it to `--fail-on-new` or an empty
+string), `LOGFOLD_EXAMPLES` (default `masked`), `LOGFOLD_VERSION` (default the latest release). The baseline is the file
+`.logfold/baseline.json` in the cache `logfold-baseline`.
+
+The template has been run in a `python` container with the script of the job. It has not been run on a GitLab server:
+check the first pipeline and the artifact paths in your project.
+
+### By hand
 
 GitLab has no summary file, so keep the HTML report as a job artifact. `when: always` keeps it when the gate fails.
 

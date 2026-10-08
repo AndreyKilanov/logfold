@@ -1,0 +1,118 @@
+name: Action
+
+on:
+  pull_request:
+    paths:
+      - "action.yml"
+      - ".github/workflows/action-test.yml"
+  push:
+    branches: [main]
+    paths:
+      - "action.yml"
+      - ".github/workflows/action-test.yml"
+  workflow_dispatch:
+
+jobs:
+  action:
+    name: Action (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Sample logs
+        shell: bash
+        run: |
+          printf '%s\n' \
+            '2026-10-04T12:00:00Z INFO user 1 logged in' \
+            '2026-10-04T12:00:01Z WARN disk 91% full' \
+            '2026-10-04T12:00:02Z INFO user 2 logged in' > good.log
+          printf '%s\n' \
+            '2026-10-04T12:00:00Z INFO user 1 logged in' \
+            '2026-10-04T12:00:01Z ERROR db timeout after 30s' \
+            '2026-10-04T12:00:02Z INFO user 9 logged in' > bad.log
+
+      - name: First run, no baseline yet
+        id: first
+        uses: ./
+        with:
+          log: good.log
+          baseline-key: test_${{ github.run_id }}_${{ runner.os }}
+
+      - name: The first run only analyzes
+        shell: bash
+        env:
+          STATUS: ${{ steps.first.outputs.status }}
+          CODE: ${{ steps.first.outputs.exit-code }}
+        run: test "$STATUS" = first-run && test "$CODE" = 0
+
+      - name: Same log against a baseline log
+        id: clean
+        uses: ./
+        with:
+          log: good.log
+          baseline: good.log
+
+      - name: Nothing new is reported
+        shell: bash
+        env:
+          STATUS: ${{ steps.clean.outputs.status }}
+        run: test "$STATUS" = ok
+
+      - name: Save an analysis as a baseline
+        shell: bash
+        run: logfold analyze good.log --out baseline.json -q
+
+      - name: The same log against a saved analysis
+        id: saved
+        uses: ./
+        with:
+          log: good.log
+          baseline: baseline.json
+
+      - name: Nothing new against the saved analysis
+        shell: bash
+        env:
+          STATUS: ${{ steps.saved.outputs.status }}
+        run: test "$STATUS" = ok
+
+      - name: A new alarming template fails the job
+        id: gate
+        continue-on-error: true
+        uses: ./
+        with:
+          log: bad.log
+          baseline: baseline.json
+
+      - name: The gate failed the step
+        shell: bash
+        env:
+          OUTCOME: ${{ steps.gate.outcome }}
+        run: test "$OUTCOME" = failure
+
+      - name: Without a gate the same finding passes and the report is kept
+        id: report
+        uses: ./
+        with:
+          log: bad.log
+          baseline: baseline.json
+          fail-on: none
+          html-report: logfold-${{ matrix.os }}
+
+      - name: The finding is reported without a failure
+        shell: bash
+        env:
+          STATUS: ${{ steps.report.outputs.status }}
+        run: test "$STATUS" = ok
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: logfold-${{ matrix.os }}
+          path: report
+
+      - name: The HTML report is there
+        shell: bash
+        run: test -s report/diff.html && grep -q "db timeout" report/diff.html

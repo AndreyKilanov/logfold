@@ -5,6 +5,11 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ## [Unreleased]
 
+### Added
+
+- A GitHub Action (`uses: AndreyKilanov/logfold@<tag>`) and a GitLab CI template (`ci/gitlab/logfold.yml`): analyze the
+  log, compare it with the baseline of the last good run, write the summary and fail on new alerts; see `docs/ci.md`.
+
 ### Changed
 
 - Python 3.11 or newer is required; Python 3.10 is no longer supported (0.4.0 is the last release for it). The wheels are

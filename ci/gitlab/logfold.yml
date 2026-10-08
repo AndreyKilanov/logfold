@@ -1,0 +1,48 @@
+# logfold in GitLab CI. Include this file and extend the hidden job:
+#
+#   include:
+#     - remote: "https://raw.githubusercontent.com/AndreyKilanov/logfold/<tag>/ci/gitlab/logfold.yml"
+#
+#   logfold:
+#     extends: .logfold
+#     variables:
+#       LOGFOLD_LOG: current.log
+#     script:
+#       - ./run-tests.sh > current.log 2>&1
+#       - !reference [.logfold, script]
+
+.logfold:
+  image: python:3.13
+  variables:
+    LOGFOLD_LOG: ""
+    LOGFOLD_FAIL_ON: "--fail-on-new-alerts"
+    LOGFOLD_EXAMPLES: "masked"
+    LOGFOLD_VERSION: ""
+  cache:
+    key: logfold-baseline
+    paths:
+      - .logfold/baseline.json
+    policy: pull-push
+  script:
+    - |
+      mkdir -p .logfold
+      pip install --quiet --disable-pip-version-check "logfold[cli]${LOGFOLD_VERSION:+==$LOGFOLD_VERSION}"
+      logfold analyze "$LOGFOLD_LOG" --examples "$LOGFOLD_EXAMPLES" --out .logfold/current.json -q
+      rc=0
+      if [ -f .logfold/baseline.json ]; then
+        logfold diff .logfold/baseline.json .logfold/current.json --out .logfold/junit.xml -q || true
+        logfold diff .logfold/baseline.json .logfold/current.json --out .logfold/diff.html $LOGFOLD_FAIL_ON -q || rc=$?
+      else
+        echo "No baseline yet: this run is only analyzed. A passing run on the default branch becomes the baseline."
+        logfold analyze "$LOGFOLD_LOG" --examples "$LOGFOLD_EXAMPLES" --out .logfold/diff.html -q
+      fi
+      if [ "$rc" -eq 0 ] && [ "${CI_COMMIT_BRANCH:-}" = "$CI_DEFAULT_BRANCH" ]; then
+        cp .logfold/current.json .logfold/baseline.json
+      fi
+      exit "$rc"
+  artifacts:
+    when: always
+    paths:
+      - .logfold/diff.html
+    reports:
+      junit: .logfold/junit.xml

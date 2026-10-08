@@ -1,0 +1,199 @@
+name: logfold
+description: Fold a log into templates, compare it with the last good run, show what is new in the job summary and fail on new alerts.
+author: Andrey Kilanov
+branding:
+  icon: search
+  color: blue
+
+inputs:
+  log:
+    description: Log file of this run (the path is relative to the workspace).
+    required: true
+  baseline:
+    description: >-
+      Baseline: a log file or a saved analysis (.json). Empty means the analysis of the last good run, which the action
+      keeps in the cache of the repository.
+    default: ""
+  fail-on:
+    description: "Gate: new-alerts (a new WARN, ERROR or FATAL template), new (any new template) or none."
+    default: new-alerts
+  level:
+    description: Keep only templates of this level and above, for example ERROR.
+    default: ""
+  format:
+    description: Log format, see `logfold formats`.
+    default: auto
+  examples:
+    description: "Example lines in saved results and reports: masked, none or raw. The summary of a job is visible to everyone who can read the repository."
+    default: masked
+  html-report:
+    description: Name of an artifact with the full HTML report; empty means no report.
+    default: ""
+  save-baseline:
+    description: "Keep this run as the next baseline when it passes: true, false or auto (the default branch only)."
+    default: auto
+  baseline-key:
+    description: Name of the baseline in the cache (letters, digits, underscore and dot); use different names for different logs of one repository.
+    default: default
+  version:
+    description: logfold version to install. Empty means the version of the action tag (v0.5.0 installs 0.5.0), or the latest release.
+    default: ""
+  python-version:
+    description: Python to run logfold with (3.11 or newer).
+    default: "3.13"
+
+outputs:
+  exit-code:
+    description: "0 nothing requested was found, 2 the gate found something, 1 an error."
+    value: ${{ steps.diff.outputs.exit-code }}
+  status:
+    description: first-run (no baseline yet), ok or found.
+    value: ${{ steps.diff.outputs.status }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check the inputs
+      shell: bash
+      env:
+        INPUT_BASELINE_KEY: ${{ inputs.baseline-key }}
+        INPUT_SAVE: ${{ inputs.save-baseline }}
+      run: |
+        case "$INPUT_BASELINE_KEY" in
+          ""|*[!0-9A-Za-z_.]*) echo "::error::baseline-key has letters, digits, underscore and dot only (a dash would let two names share a cache prefix)"; exit 1 ;;
+        esac
+        case "$INPUT_SAVE" in
+          true|false|auto) ;;
+          *) echo "::error::save-baseline is true, false or auto"; exit 1 ;;
+        esac
+
+    - uses: actions/setup-python@v7
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install logfold
+      shell: bash
+      env:
+        INPUT_VERSION: ${{ inputs.version }}
+        ACTION_REF: ${{ github.action_ref }}
+      run: |
+        spec="logfold[cli]"
+        if [ -n "$INPUT_VERSION" ]; then
+          case "$INPUT_VERSION" in
+            *[!0-9A-Za-z.+!-]*) echo "::error::version has characters that a version cannot have"; exit 1 ;;
+          esac
+          spec="logfold[cli]==$INPUT_VERSION"
+        elif [[ "$ACTION_REF" =~ ^v([0-9]+[.][0-9]+[.][0-9]+)$ ]]; then
+          spec="logfold[cli]==${BASH_REMATCH[1]}"
+        fi
+        python -m pip install --quiet --disable-pip-version-check "$spec"
+
+    - name: Restore the baseline
+      id: cache
+      if: inputs.baseline == ''
+      uses: actions/cache/restore@v6
+      with:
+        path: ${{ runner.temp }}/logfold-baseline/baseline.json
+        key: logfold-baseline-${{ inputs.baseline-key }}-none
+        restore-keys: logfold-baseline-${{ inputs.baseline-key }}-
+
+    - name: Compare with the baseline
+      id: diff
+      shell: bash
+      env:
+        INPUT_LOG: ${{ inputs.log }}
+        INPUT_BASELINE: ${{ inputs.baseline }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_LEVEL: ${{ inputs.level }}
+        INPUT_FORMAT: ${{ inputs.format }}
+        INPUT_EXAMPLES: ${{ inputs.examples }}
+        INPUT_HTML: ${{ inputs.html-report }}
+        CACHED_BASELINE: ${{ runner.temp }}/logfold-baseline/baseline.json
+        WORK: ${{ runner.temp }}/logfold-work
+      run: |
+        mkdir -p "$WORK"
+        gate=()
+        case "$INPUT_FAIL_ON" in
+          new-alerts) gate=(--fail-on-new-alerts) ;;
+          new) gate=(--fail-on-new) ;;
+          none) ;;
+          *) echo "::error::fail-on is new-alerts, new or none"; exit 1 ;;
+        esac
+        if [ -n "$INPUT_LEVEL" ]; then gate=("${gate[@]+"${gate[@]}"}" --level "$INPUT_LEVEL"); fi
+
+        current="$WORK/current.json"
+        logfold analyze "$INPUT_LOG" --format "$INPUT_FORMAT" --examples "$INPUT_EXAMPLES" --out "$current" -q
+
+        baseline="$INPUT_BASELINE"
+        if [ -z "$baseline" ] && [ -f "$CACHED_BASELINE" ]; then baseline="$CACHED_BASELINE"; fi
+
+        if [ -z "$baseline" ]; then
+          logfold analyze "$INPUT_LOG" --format "$INPUT_FORMAT" --examples "$INPUT_EXAMPLES" \
+            --report github-summary --out "$GITHUB_STEP_SUMMARY" --append -q
+          echo "No baseline yet: this run is only analyzed. A run on the default branch that passes becomes the baseline."
+          echo "exit-code=0" >> "$GITHUB_OUTPUT"
+          echo "status=first-run" >> "$GITHUB_OUTPUT"
+          echo "after=$current" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        # a saved analysis is compared with a saved analysis, a log with a log
+        after="$current"
+        case "$baseline" in *.json) ;; *) after="$INPUT_LOG" ;; esac
+
+        rc=0
+        logfold diff "$baseline" "$after" --format "$INPUT_FORMAT" \
+          --report github-summary --out "$GITHUB_STEP_SUMMARY" --append \
+          ${gate[@]+"${gate[@]}"} -q || rc=$?
+
+        if [ -n "$INPUT_HTML" ]; then
+          logfold diff "$baseline" "$after" --format "$INPUT_FORMAT" --out "$WORK/diff.html" -q || true
+          if [ -f "$WORK/diff.html" ]; then echo "html=true" >> "$GITHUB_OUTPUT"; fi
+        fi
+
+        echo "exit-code=$rc" >> "$GITHUB_OUTPUT"
+        if [ "$rc" -eq 0 ]; then echo "status=ok" >> "$GITHUB_OUTPUT"; else echo "status=found" >> "$GITHUB_OUTPUT"; fi
+        echo "after=$current" >> "$GITHUB_OUTPUT"
+
+    - name: Upload the HTML report
+      if: always() && steps.diff.outputs.html == 'true'
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.html-report }}
+        path: ${{ runner.temp }}/logfold-work/diff.html
+
+    - name: Decide whether this run becomes the baseline
+      id: save
+      if: steps.diff.outputs.exit-code == '0'
+      shell: bash
+      env:
+        INPUT_SAVE: ${{ inputs.save-baseline }}
+        REF: ${{ github.ref }}
+        DEFAULT_REF: refs/heads/${{ github.event.repository.default_branch }}
+        CURRENT: ${{ steps.diff.outputs.after }}
+        TARGET: ${{ runner.temp }}/logfold-baseline/baseline.json
+      run: |
+        save=false
+        case "$INPUT_SAVE" in
+          true) save=true ;;
+          auto) if [ "$REF" = "$DEFAULT_REF" ]; then save=true; fi ;;
+        esac
+        if [ "$save" = true ]; then
+          mkdir -p "$(dirname "$TARGET")"
+          cp "$CURRENT" "$TARGET"
+        fi
+        echo "save=$save" >> "$GITHUB_OUTPUT"
+
+    - name: Keep this run as the baseline
+      if: steps.save.outputs.save == 'true'
+      uses: actions/cache/save@v6
+      with:
+        path: ${{ runner.temp }}/logfold-baseline/baseline.json
+        key: logfold-baseline-${{ inputs.baseline-key }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+    - name: Fail when the gate found something
+      if: steps.diff.outputs.exit-code != '' && steps.diff.outputs.exit-code != '0'
+      shell: bash
+      env:
+        CODE: ${{ steps.diff.outputs.exit-code }}
+      run: exit "$CODE"
