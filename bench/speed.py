@@ -24,7 +24,7 @@ git-ignored and created on demand); ``--out FILE`` chooses another file and ``--
 
     python bench/speed.py matchers --sizes 5000 20000 100000
 
-Inputs come from ``bench/data.py``. The speed of the pure-Python reference engine is not measured.
+Inputs come from ``bench/data.py``.
 """
 
 from __future__ import annotations

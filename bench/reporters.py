@@ -59,8 +59,8 @@ def synthetic_results(size: int) -> tuple[AnalysisResult, DiffResult]:
         before, after = Path(folder) / "a.log", Path(folder) / "b.log"
         before.write_text("2026-10-04T12:00:00Z INFO a" + chr(10), encoding="utf-8")
         after.write_text("2026-10-04T12:00:00Z INFO b" + chr(10), encoding="utf-8")
-        diff_base = logfold.diff(before, after, format="app", engine="python")
-        analysis_base = logfold.analyze(before, format="app", engine="python")
+        diff_base = logfold.diff(before, after, format="app")
+        analysis_base = logfold.analyze(before, format="app")
     rng = random.Random(size)
     texts = template_texts(rng, size)
     levels = [rng.choice(["ERROR", "WARN"] + ["INFO"] * 4 + ["DEBUG"] * 5) for _ in texts]
