@@ -92,7 +92,7 @@ LoadState = Annotated[
         "--load-state",
         metavar="FILE",
         help="Continue from the miner that an earlier run saved (same masks and parameters); the report counts only "
-        "this run, and the run is sequential.",
+        "this run. Sequential unless --strategy chunked.",
         rich_help_panel=PANEL_INPUT,
     ),
 ]

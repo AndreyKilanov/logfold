@@ -87,7 +87,8 @@ def analyze(
         until: Keep only records before this time; see ``since``.
         load_state: A state file of an earlier run to continue from: the templates it holds are the start of the tree,
             the result counts only the records of this run, and the file must have been mined with the same masks and
-            parameters. Needs the native engine; the run is sequential.
+            parameters. Needs the native engine. The run is sequential (exact) unless ``strategy='chunked'`` is given:
+            then every chunk starts from a copy of the loaded tree.
         save_state: Write the trained miner to this file (a path that ends in ``.gz`` is compressed), so that a later
             run can continue from it. The file holds templates and counts, never example lines.
         state_format: ``json`` (readable, the default) or ``binary`` (compact, for very large states).

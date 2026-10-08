@@ -146,12 +146,7 @@ def _resolve_strategy(
     runs: tuple[tuple[str, ...], ...],
     state: StateRequest | None = None,
 ) -> str:
-    if state is not None and state.load is not None:
-        if execution.strategy == "chunked" and engine.name != "python":
-            raise ConfigError(
-                "a saved state is continued by the sequential strategy only (the parallel one is not available yet)",
-                hint="leave out strategy='chunked', or train without load_state",
-            )
+    if state is not None and state.load is not None and execution.strategy == "auto":
         return "sequential"
     if engine.name == "python":
         if execution.strategy == "chunked":

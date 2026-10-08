@@ -24,6 +24,19 @@ pub use request::{
 use logfold_core::{DrainMiner, MinerConfig};
 use pipeline::Context;
 
+/// Memory that the copies of a loaded tree may take together: every worker holds a copy and the window of unmerged
+/// results holds more, so a large state gets fewer threads (about 300 bytes per template is the estimate).
+const SEED_COPIES_BUDGET_BYTES: usize = 2 << 30;
+const SEED_BYTES_PER_TEMPLATE: usize = 300;
+
+/// Threads that a parallel continuation of a loaded tree of `templates` templates may use: all the requested ones while
+/// their copies of the tree fit the budget, fewer (at least one) when the tree is large.
+pub fn threads_for_seed(templates: usize, requested: usize) -> usize {
+    let copy = templates.saturating_mul(SEED_BYTES_PER_TEMPLATE).max(1);
+    // at most 2 * threads copies are alive: one per worker and as many waiting to be merged
+    (SEED_COPIES_BUDGET_BYTES / copy / 2).clamp(1, requested.max(1))
+}
+
 /// Runs the mining pipeline described by `request`.
 pub fn mine(request: &MineRequest, observer: &dyn Observer) -> Result<MineOutput, EngineError> {
     let started = Instant::now();
@@ -55,25 +68,31 @@ pub fn mine(request: &MineRequest, observer: &dyn Observer) -> Result<MineOutput
     };
 
     let mine_started = Instant::now();
-    let (chunk_bytes, threads_requested, adaptive) = match (request.strategy, initial.is_some()) {
-        (Strategy::Sequential | Strategy::Adaptive { .. }, true) | (Strategy::Sequential, false) => (None, None, false),
-        (Strategy::Chunked { .. }, true) => {
-            return Err(EngineError::Config(
-                "a saved state is continued by the sequential strategy only (the parallel one is not available yet)"
-                    .into(),
-            ));
-        }
-        (Strategy::Chunked { chunk_bytes, threads }, false) => (Some(chunk_bytes), Some(threads), false),
-        (Strategy::Adaptive { chunk_bytes, threads }, false) => (Some(chunk_bytes), Some(threads), true),
+    let (chunk_bytes, threads_requested, adaptive) = match request.strategy {
+        Strategy::Sequential => (None, None, false),
+        Strategy::Chunked { chunk_bytes, threads } => (Some(chunk_bytes), Some(threads), false),
+        // a loaded tree is the seed of every chunk, so there is no first chunk to judge the diversity by
+        Strategy::Adaptive { chunk_bytes, threads } => (Some(chunk_bytes), Some(threads), initial.is_none()),
     };
     let planned = plan::plan(request, chunk_bytes)?;
     let mut chunks = planned.units.len();
-    let parallel_training = threads_requested.filter(|_| !adaptive || chunks > 1);
+    let threads_requested = match (&initial, threads_requested) {
+        (Some(seed), Some(requested)) => Some(threads_for_seed(seed.cluster_count(), requested)),
+        (_, requested) => requested,
+    };
+    // fewer threads never change the result: the chunks are merged in order, so one thread still mines in chunks
+    let parallel_training =
+        threads_requested.filter(|_| (!adaptive || chunks > 1) && (initial.is_none() || chunks > 1));
+    let (initial, seed) = match parallel_training {
+        Some(_) => (None, initial),
+        None => (initial, None),
+    };
     let trained = match parallel_training {
         None => None,
         Some(requested) => {
-            match chunked::train(&context, &miner_config, &planned, requested, adaptive, request.warm_start, observer)?
-            {
+            let options =
+                chunked::ChunkOptions { threads: requested, adaptive, warm: request.warm_start, initial: seed };
+            match chunked::train(&context, &miner_config, &planned, options, observer)? {
                 chunked::Trained::Merged(miner, counters, threads, merge_seconds) => {
                     Some((*miner, counters, threads, merge_seconds, "chunked"))
                 }

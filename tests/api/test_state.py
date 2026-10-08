@@ -111,14 +111,51 @@ def test_the_format_is_not_part_of_the_check(tmp_path: Path, stream: list[str]) 
     assert result.run.records > 0
 
 
-def test_a_saved_state_is_continued_sequentially(tmp_path: Path, stream: list[str]) -> None:
+def test_a_saved_state_can_be_continued_in_parallel(tmp_path: Path, stream: list[str]) -> None:
+    """Every chunk starts from a copy of the loaded tree; the result is deterministic and counts every record."""
     _, first, second = split(tmp_path, stream, 1500)
     mine(first, save_state=tmp_path / "s.json")
-    auto = logfold.analyze(str(second), format="app", load_state=tmp_path / "s.json", chunk_bytes=2048)
-    assert auto.metrics.strategy == "sequential"
-    with pytest.raises(ConfigError, match="sequential strategy only") as caught:
-        logfold.analyze(str(second), format="app", strategy="chunked", load_state=tmp_path / "s.json")
-    assert caught.value.hint
+    sequential = mine(second, load_state=tmp_path / "s.json")
+    outcomes = []
+    for strategy, threads in (("chunked", 1), ("chunked", 4)):
+        parallel = logfold.analyze(
+            str(second),
+            format="app",
+            strategy=strategy,
+            threads=threads,
+            chunk_bytes=8192,
+            load_state=tmp_path / "s.json",
+        )
+        assert parallel.metrics.strategy == "chunked"
+        assert parallel.run.records == sequential.run.records
+        assert sum(t.count for t in parallel.templates) == sequential.run.records
+        outcomes.append([(t.id, t.count) for t in parallel.templates])
+    assert outcomes[0] == outcomes[1], "the number of threads does not change the result"
+    shared = {t.text for t in sequential.templates} & {t.text for t in parallel.templates}
+    assert len(shared) >= 0.9 * len(sequential.templates)
+
+
+def test_auto_continues_a_state_sequentially_and_exactly(tmp_path: Path, stream: list[str]) -> None:
+    _, first, second = split(tmp_path, stream, 1500)
+    mine(first, save_state=tmp_path / "s.json")
+    result = logfold.analyze(str(second), format="app", load_state=tmp_path / "s.json", chunk_bytes=8192)
+    assert result.metrics.strategy == "sequential"
+
+
+def test_a_parallel_resume_saves_a_state_that_loads_again(tmp_path: Path, stream: list[str]) -> None:
+    first = write(tmp_path / "a.log", stream[:1000])
+    second = write(tmp_path / "b.log", stream[1000:2000])
+    third = write(tmp_path / "c.log", stream[2000:])
+    mine(first, save_state=tmp_path / "s.json")
+    logfold.analyze(
+        str(second),
+        format="app",
+        strategy="chunked",
+        chunk_bytes=8192,
+        load_state=tmp_path / "s.json",
+        save_state=tmp_path / "s.json",
+    )
+    assert mine(third, load_state=tmp_path / "s.json").run.records == len(stream) - 2000
 
 
 def test_the_pure_python_engine_cannot_use_state_files_yet(tmp_path: Path, stream: list[str]) -> None:

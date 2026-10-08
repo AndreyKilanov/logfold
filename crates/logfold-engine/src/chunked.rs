@@ -112,6 +112,14 @@ fn ordered_reduce<R: Send>(
     }
 }
 
+/// How [`train`] runs: the worker threads, the adaptive probe, the warm start and the loaded miner to seed from.
+pub(crate) struct ChunkOptions {
+    pub(crate) threads: usize,
+    pub(crate) adaptive: bool,
+    pub(crate) warm: bool,
+    pub(crate) initial: Option<DrainMiner>,
+}
+
 /// What [`train`] produced.
 pub(crate) enum Trained {
     /// The merged tree, the counters per run, the threads used and the time spent merging.
@@ -128,23 +136,32 @@ pub(crate) enum Trained {
 /// With `warm` the first unit is trained alone and every other unit starts from a copy of its tree (see
 /// `docs/ALGORITHM.md` §6): the units do not begin with an empty tree, so they produce fewer stray templates, at the
 /// price of a serial prefix of one chunk.
+///
+/// With `initial`, a miner loaded from a state, every unit starts from a copy of its tree and nothing is trained
+/// alone first: the loaded tree is the seed (`adaptive` is not used then, there is no first chunk to judge by). The
+/// caller passes it only when there is more than one unit.
 pub(crate) fn train(
     context: &Context,
     config: &MinerConfig,
     plan: &Plan,
-    threads: usize,
-    adaptive: bool,
-    warm: bool,
+    options: ChunkOptions,
     observer: &dyn Observer,
 ) -> Result<Trained, EngineError> {
+    let ChunkOptions { threads, adaptive, warm, initial } = options;
     let n_runs = plan.run_bytes.len();
     let mut accumulator = crate::empty_miner(config, n_runs);
     let mut counters = vec![Counters::default(); n_runs];
     let tally = Tally::new(observer);
     let workers: &dyn Observer = if adaptive { &tally } else { observer };
-    let warm = warm && plan.units.len() > 1;
+    let seeded = initial.is_some();
+    let warm = warm && !seeded && plan.units.len() > 1;
     let mut template: Option<DrainMiner> = None;
     let mut seed_len = 0;
+    if let Some(loaded) = initial {
+        seed_len = loaded.cluster_count();
+        template = Some(loaded.warm_copy());
+        accumulator = loaded;
+    }
     if warm {
         let mut seed = crate::empty_miner(config, n_runs);
         let scanned = if adaptive {
@@ -164,6 +181,7 @@ pub(crate) fn train(
         accumulator = seed;
     }
     let first = usize::from(warm);
+    let warm = warm || seeded;
     let work = |index: usize| -> Result<(DrainMiner, Counters), EngineError> {
         let mut miner = match &template {
             Some(seed) => seed.clone(),

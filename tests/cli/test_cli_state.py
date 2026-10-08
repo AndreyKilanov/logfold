@@ -84,13 +84,24 @@ def test_a_missing_or_damaged_state_is_an_error(logs: tuple[Path, Path, Path], t
     assert "not a logfold state file" in output
 
 
-def test_a_chunked_run_cannot_continue_a_state(logs: tuple[Path, Path, Path], tmp_path: Path) -> None:
+def test_a_chunked_run_can_continue_a_state(logs: tuple[Path, Path, Path], tmp_path: Path) -> None:
     assert analyze(str(logs[1]), "--save-state", str(tmp_path / "s.json"))[0] == exit_codes.OK
     result = runner.invoke(
-        app, ["analyze", str(logs[2]), "-f", "app", "--strategy", "chunked", "--load-state", str(tmp_path / "s.json")]
+        app,
+        [
+            "analyze",
+            str(logs[2]),
+            "-f",
+            "app",
+            "--strategy",
+            "chunked",
+            "--chunk-mb",
+            "1",
+            "--load-state",
+            str(tmp_path / "s.json"),
+        ],
     )
-    assert result.exit_code == exit_codes.ERROR
-    assert "sequential strategy only" in result.output
+    assert result.exit_code == exit_codes.OK, result.output
 
 
 def test_an_unknown_state_format_is_an_error(logs: tuple[Path, Path, Path], tmp_path: Path) -> None:
