@@ -44,6 +44,23 @@ impl Recount {
         update_stats(&mut slot[run], rec);
     }
 
+    /// Takes the records that matched no cluster out of the statistics: for every run, the pairs `(token count,
+    /// records)` sorted by token count, and none for a length that the run did not meet.
+    ///
+    /// The records are no longer counted by [`DrainMiner::freeze_recounted`], which would turn them into wildcard
+    /// templates.
+    pub fn take_unmatched(&mut self) -> Vec<Vec<(usize, u64)>> {
+        let mut per_run = vec![Vec::new(); self.n_runs];
+        for (length, run_stats) in std::mem::take(&mut self.unmatched) {
+            for (item, lengths) in run_stats.iter().zip(per_run.iter_mut()) {
+                if item.count > 0 {
+                    lengths.push((length, item.count));
+                }
+            }
+        }
+        per_run
+    }
+
     /// Merges the statistics of a later part of the input into `self`.
     pub fn merge(&mut self, other: Recount) {
         for (index, run_stats) in other.stats {

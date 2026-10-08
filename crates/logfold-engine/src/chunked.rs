@@ -215,20 +215,22 @@ pub(crate) fn train(
     Ok(TrainingOutcome::Merged(Box::new(accumulator), counters, used, merge_seconds))
 }
 
-/// Assigns the records of every unit to the clusters of `miner` in parallel and merges the statistics in unit order.
+/// Assigns the records of every unit to the clusters of `miner` in parallel and merges the statistics and the counters
+/// in unit order.
 pub(crate) fn recount(
     context: &PipelineContext,
     miner: &DrainMiner,
     plan: &ChunkPlan,
     threads: usize,
     observer: &dyn ProgressObserver,
-) -> Result<Recount, EngineError> {
+) -> Result<(Recount, Vec<Counters>), EngineError> {
     let n_runs = plan.run_bytes.len();
     let mut accumulator = Recount::new(n_runs);
-    let work = |index: usize| -> Result<Recount, EngineError> {
+    let mut counters = vec![Counters::default(); n_runs];
+    let work = |index: usize| -> Result<(Recount, Counters), EngineError> {
         let mut partial = Recount::new(n_runs);
-        recount_unit(context, &plan.units[index], miner, &mut partial, observer)?;
-        Ok(partial)
+        let unit_counters = recount_unit(context, &plan.units[index], miner, &mut partial, observer)?;
+        Ok((partial, unit_counters))
     };
     ordered_reduce(
         plan.units.len(),
@@ -236,9 +238,10 @@ pub(crate) fn recount(
         observer,
         &work,
         || false,
-        |_index, partial| {
+        |index, (partial, unit_counters)| {
             accumulator.merge(partial);
+            counters[plan.units[index].run].add(&unit_counters);
         },
     )?;
-    Ok(accumulator)
+    Ok((accumulator, counters))
 }

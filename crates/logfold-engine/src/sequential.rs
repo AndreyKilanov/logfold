@@ -24,16 +24,19 @@ pub(crate) fn train(
     Ok((miner, counters))
 }
 
-/// Assigns the records of all units to the clusters of `miner`, in plan order.
+/// Assigns the records of all units to the clusters of `miner`, in plan order; returns the counters of the scan too.
 pub(crate) fn recount(
     context: &PipelineContext,
     miner: &DrainMiner,
     plan: &ChunkPlan,
     observer: &dyn ProgressObserver,
-) -> Result<Recount, EngineError> {
-    let mut recount = Recount::new(plan.run_bytes.len());
+) -> Result<(Recount, Vec<Counters>), EngineError> {
+    let n_runs = plan.run_bytes.len();
+    let mut recount = Recount::new(n_runs);
+    let mut counters = vec![Counters::default(); n_runs];
     for unit in &plan.units {
-        recount_unit(context, unit, miner, &mut recount, observer)?;
+        let unit_counters = recount_unit(context, unit, miner, &mut recount, observer)?;
+        counters[unit.run].add(&unit_counters);
     }
-    Ok(recount)
+    Ok((recount, counters))
 }

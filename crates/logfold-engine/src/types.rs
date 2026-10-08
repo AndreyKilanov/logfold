@@ -158,6 +158,9 @@ pub struct MineOutput {
     pub templates: Vec<FrozenTemplate>,
     /// The trained miner, when the request asked for it.
     pub snapshot: Option<MinerSnapshot>,
+    /// Set by [`crate::match_records`]: for every run, the records that matched no template as pairs `(token count,
+    /// records)` sorted by token count. `None` when the run was trained.
+    pub unmatched: Option<Vec<Vec<(usize, u64)>>>,
     /// Timings.
     pub metrics: RunMetrics,
 }

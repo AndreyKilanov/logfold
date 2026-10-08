@@ -10,6 +10,7 @@ mod adaptive;
 mod chunked;
 mod error;
 mod inspect;
+mod matching;
 mod pipeline;
 mod plan;
 mod sequential;
@@ -19,6 +20,7 @@ use std::time::Instant;
 
 pub use error::EngineError;
 pub use inspect::{SampleRecord, SampleReport, inspect_sample};
+pub use matching::match_records;
 pub use types::{
     DEFAULT_CHUNK_BYTES, ExecutionStrategy, MineOutput, MineRequest, MiningConfig, NullObserver, ProgressObserver,
     RunMetrics, RunSummary,
@@ -44,35 +46,11 @@ pub fn threads_for_seed(templates: usize, requested: usize) -> usize {
 /// Runs the mining pipeline described by `request`.
 pub fn mine(request: &MineRequest, observer: &dyn ProgressObserver) -> Result<MineOutput, EngineError> {
     let started = Instant::now();
-    if request.runs.is_empty() || request.runs.iter().any(|files| files.is_empty()) {
-        return Err(EngineError::Config("every run needs at least one input".into()));
-    }
-    if !request.windows.is_empty() && request.windows.len() != request.runs.len() {
-        return Err(EngineError::Config("there must be one time window per run".into()));
-    }
+    validate_request(request)?;
     let context = PipelineContext::new(request)?;
-    let miner_config = MinerConfig::new(
-        request.mining.depth,
-        request.mining.sim_th,
-        request.mining.max_children,
-        request.mining.max_templates,
-    )?;
+    let miner_config = miner_config(request)?;
     let n_runs = request.runs.len();
-    let initial = match &request.initial {
-        Some(snapshot) => {
-            if !snapshot.has_config(&miner_config) {
-                return Err(EngineError::Config(
-                    "the saved state was mined with other parameters (depth, sim_th, max_children or max_templates)"
-                        .into(),
-                ));
-            }
-            Some(DrainMiner::from_snapshot(snapshot.clone(), n_runs).map_err(|error| match error {
-                CoreError::InvalidState(message) => EngineError::State(StateError::Damaged(message)),
-                other => EngineError::Core(other),
-            })?)
-        }
-        None => None,
-    };
+    let initial = load_initial(request, &miner_config)?;
 
     let mine_started = Instant::now();
     let (chunk_bytes, threads_requested, adaptive) = match request.strategy {
@@ -125,8 +103,8 @@ pub fn mine(request: &MineRequest, observer: &dyn ProgressObserver) -> Result<Mi
     let recount_started = Instant::now();
     let recounted = if request.recount {
         Some(match threads_requested {
-            None => sequential::recount(&context, &miner, &planned, observer)?,
-            Some(requested) => chunked::recount(&context, &miner, &planned, requested, observer)?,
+            None => sequential::recount(&context, &miner, &planned, observer)?.0,
+            Some(requested) => chunked::recount(&context, &miner, &planned, requested, observer)?.0,
         })
     } else {
         None
@@ -170,7 +148,40 @@ pub fn mine(request: &MineRequest, observer: &dyn ProgressObserver) -> Result<Mi
         wall_recount_s: recount_seconds,
         wall_freeze_s: freeze_seconds,
     };
-    Ok(MineOutput { runs, templates, snapshot, metrics })
+    Ok(MineOutput { runs, templates, snapshot, unmatched: None, metrics })
+}
+
+pub(crate) fn validate_request(request: &MineRequest) -> Result<(), EngineError> {
+    if request.runs.is_empty() || request.runs.iter().any(|files| files.is_empty()) {
+        return Err(EngineError::Config("every run needs at least one input".into()));
+    }
+    if !request.windows.is_empty() && request.windows.len() != request.runs.len() {
+        return Err(EngineError::Config("there must be one time window per run".into()));
+    }
+    Ok(())
+}
+
+pub(crate) fn miner_config(request: &MineRequest) -> Result<MinerConfig, EngineError> {
+    Ok(MinerConfig::new(
+        request.mining.depth,
+        request.mining.sim_th,
+        request.mining.max_children,
+        request.mining.max_templates,
+    )?)
+}
+
+/// Builds the miner of the saved state of `request`, after checking that it was mined with the same parameters.
+pub(crate) fn load_initial(request: &MineRequest, config: &MinerConfig) -> Result<Option<DrainMiner>, EngineError> {
+    let Some(snapshot) = &request.initial else { return Ok(None) };
+    if !snapshot.has_config(config) {
+        return Err(EngineError::Config(
+            "the saved state was mined with other parameters (depth, sim_th, max_children or max_templates)".into(),
+        ));
+    }
+    DrainMiner::from_snapshot(snapshot.clone(), request.runs.len()).map(Some).map_err(|error| match error {
+        CoreError::InvalidState(message) => EngineError::State(StateError::Damaged(message)),
+        other => EngineError::Core(other),
+    })
 }
 
 pub(crate) fn empty_miner(config: &MinerConfig, n_runs: usize) -> DrainMiner {
