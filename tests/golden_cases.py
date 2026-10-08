@@ -155,7 +155,7 @@ def diff_case(**options: Any) -> Case:
 def long_example(_corpus: Path, work: Path, engine: str) -> Any:
     """Analyse a record with a 3000-character word, whose example is cut on a character boundary."""
     path = work / "long_example.log"
-    path.write_text("start " + "é" * 3000 + "\n", encoding="utf-8")
+    path.write_bytes(("start " + "é" * 3000 + "\n").encode("utf-8"))
     result = logfold.analyze(str(path), engine=engine, strategy="sequential", format="plain")
     return analysis_payload(result)
 
