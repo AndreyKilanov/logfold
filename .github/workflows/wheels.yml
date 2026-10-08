@@ -26,7 +26,7 @@ jobs:
           - { name: macos-x86_64, runner: macos-15-intel, target: x86_64, manylinux: auto }
           - { name: macos-arm64, runner: macos-14, target: aarch64, manylinux: auto }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
@@ -34,7 +34,7 @@ jobs:
           rust-toolchain: "1.99.0"
           args: --release --out dist
           sccache: true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels-${{ matrix.name }}
           path: dist
@@ -51,11 +51,11 @@ jobs:
           - { os: windows-latest, wheels: wheels-windows-x86_64 }
           - { os: macos-14, wheels: wheels-macos-arm64 }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: ${{ matrix.wheels }}
           path: dist
@@ -73,12 +73,28 @@ jobs:
   sdist:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: PyO3/maturin-action@v1
         with:
           command: sdist
           args: --out dist
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sdist
           path: dist
+
+  publish-check:
+    name: Publish download and metadata
+    needs: [build, sdist]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: "{wheels-*,sdist}"
+          path: dist
+          merge-multiple: true
+      - name: Expect six wheels and one source archive with valid metadata
+        run: |
+          ls -l dist
+          test "$(ls dist | wc -l)" -eq 7
+          pipx run twine check --strict dist/*

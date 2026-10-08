@@ -24,8 +24,8 @@ jobs:
   logs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
       - run: pip install "logfold[cli]"
@@ -52,7 +52,7 @@ A new WARN+ template as a failed test, for every tool that reads JUnit XML (a te
 
 ```yaml
       - run: logfold diff good/app.log current.log --out logfold.xml --fail-on-new-alerts -q
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: logfold-junit
@@ -73,7 +73,7 @@ A full HTML report for people to download goes to a separate step, as an artifac
 ```yaml
       - run: logfold diff good/app.log current.log --out diff.html --examples masked -q
         if: always()
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: logfold-diff
