@@ -126,6 +126,19 @@ def write_report(
         stderr_console().print(f"{verb} {escape(printable(str(out)))}{opener}", highlight=False, soft_wrap=True)
 
 
+def write_stdout(text: str) -> None:
+    """Write report text to standard output; into a pipe or a file the line breaks stay line feeds on Windows too.
+
+    Args:
+        text: The text to write.
+    """
+    stream = sys.stdout
+    reconfigure = getattr(stream, "reconfigure", None)
+    if reconfigure is not None and not stream.isatty():
+        reconfigure(newline="\n")
+    stream.write(text)
+
+
 def emit(result: AnalysisResult | DiffResult, top: int, reporter: str | None) -> None:
     """Print a result to standard output: a reporter's text, rich tables on a terminal or plain text otherwise.
 
@@ -136,7 +149,7 @@ def emit(result: AnalysisResult | DiffResult, top: int, reporter: str | None) ->
     """
     if reporter is not None:
         text = render_report(result, reporter, top)
-        sys.stdout.write(printable(text) if sys.stdout.isatty() else text)
+        write_stdout(printable(text) if sys.stdout.isatty() else text)
         return
     if sys.stdout.isatty():
         console = stdout_console()
@@ -145,4 +158,4 @@ def emit(result: AnalysisResult | DiffResult, top: int, reporter: str | None) ->
         else:
             print_analysis(console, result, top)
         return
-    sys.stdout.write(result.render("text", top=top))
+    write_stdout(result.render("text", top=top))

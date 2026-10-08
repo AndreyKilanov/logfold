@@ -15,6 +15,11 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 - Python 3.11 or newer is required; Python 3.10 is no longer supported (0.4.0 is the last release for it). The wheels are
   tagged `cp311-abi3`.
 
+### Fixed
+
+- Reports written with `--out` or `save()` have line feeds only on Windows too (they had carriage returns, which made
+  `promtool` and the node exporter reject a `.prom` file).
+
 ## [0.4.0] - 2026-10-07
 
 ### Added

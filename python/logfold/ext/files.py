@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 
 from logfold.errors import ConfigError
 
@@ -40,7 +39,9 @@ def _separator(path: str | os.PathLike[str]) -> str:
 
 
 def write_text(path: str | os.PathLike[str], text: str, append: bool = False) -> None:
-    """Write UTF-8 text to a file.
+    """Write UTF-8 text to a file with line feeds only, on every platform.
+
+    A report has the same bytes everywhere; the Prometheus text format, for one, does not allow a carriage return.
 
     Appended text starts on a new line after a blank line, so that several reports written to one file (for example
     ``$GITHUB_STEP_SUMMARY``, which collects the output of every step) stay separate Markdown sections, and always
@@ -55,10 +56,11 @@ def write_text(path: str | os.PathLike[str], text: str, append: bool = False) ->
         OSError: If the file cannot be written.
     """
     if not append:
-        Path(path).write_text(text, encoding="utf-8")
+        with open(path, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(text)
         return
     if text and not text.endswith("\n"):
         text += "\n"
     separator = _separator(path)
-    with open(path, "a", encoding="utf-8") as handle:
+    with open(path, "a", encoding="utf-8", newline="\n") as handle:
         handle.write(separator + text)
