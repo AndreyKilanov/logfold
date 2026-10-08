@@ -19,7 +19,9 @@ from logfold.cli.info_cmd import formats, info
 from logfold.cli.match_cmd import match
 from logfold.cli.plugins_cmd import plugins_app
 from logfold.cli.runtime import stderr_console
+from logfold.errors import LogfoldError
 from logfold.ext import registry
+from logfold.settings import Settings
 
 app = typer.Typer(
     name="logfold",
@@ -39,6 +41,7 @@ def _version(value: bool) -> None:
 
 @app.callback()
 def root(
+    ctx: typer.Context,
     version: Annotated[
         bool, typer.Option("--version", callback=_version, is_eager=True, help="Show the version.")
     ] = False,
@@ -46,10 +49,29 @@ def root(
         list[Path] | None,
         typer.Option("--plugins-dir", help="Also load plugins from this folder (repeatable)."),
     ] = None,
+    config: Annotated[
+        Path | None,
+        typer.Option(
+            "--config",
+            metavar="FILE",
+            help="Read the settings from this logfold.toml; without it the first logfold.toml from the current folder "
+            "up to the repository root is used (LOGFOLD_CONFIG names one too).",
+        ),
+    ] = None,
+    no_config: Annotated[bool, typer.Option("--no-config", help="Do not read any logfold.toml.")] = False,
 ) -> None:
     """Fold large logs into templates and compare two runs."""
     for folder in plugins_dir or ():
         registry.add_plugin_directory(folder)
+    try:
+        if config is not None and no_config:
+            raise logfold.ConfigError("--config and --no-config exclude each other")
+        settings = Settings() if no_config else logfold.load_config(config)
+    except LogfoldError as error:
+        ctx.obj = error
+        return
+    ctx.obj = settings
+    ctx.default_map = settings.command_defaults()
 
 
 app.command(cls=AvailableHelpCommand, epilog=analyze_cmd.EXAMPLES)(analyze)
