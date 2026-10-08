@@ -10,6 +10,7 @@ from logfold.api._baselines import baseline_warnings, pool_baselines, required_b
 from logfold.api._common import (
     PathLike,
     Progress,
+    _apply_settings,
     _example,
     _execution,
     _meta,
@@ -48,6 +49,7 @@ from logfold.model import (
     AnalysisResult,
     DiffResult,
 )
+from logfold.settings import Settings
 
 
 def _diff_config(
@@ -99,7 +101,7 @@ def diff(
     before: PathLike | Sequence[PathLike] | AnalysisResult,
     after: PathLike | Sequence[PathLike] | AnalysisResult | None = None,
     *,
-    format: str | FormatSpec | Format = "auto",
+    format: str | FormatSpec | Format | None = None,
     multiline: bool | None = None,
     threshold_ratio: float | None = None,
     min_count: int | None = None,
@@ -127,6 +129,7 @@ def diff(
     since: TimeBound = None,
     until: TimeBound = None,
     split_at: TimeBound = None,
+    config: Settings | None = None,
     progress: Progress | None = None,
 ) -> DiffResult:
     """Compare two runs of a log: what appeared, disappeared or changed its share.
@@ -177,6 +180,9 @@ def diff(
         split_at: Compare two parts of one input: ``before`` is the only input, the records before this time are the
             first run and the records from this time on are the second run (``after`` is left out). The input is read
             once for each run and one template tree is shared, as for two inputs.
+        config: Settings from a ``logfold.toml`` (:func:`logfold.load_config`): they give the format, ``multiline``, the
+            mining and execution configuration and, for ``diff``, the comparison configuration, wherever the call does
+            not name them itself.
         progress: Optional callback receiving consumed input byte counts.
 
     Returns:
@@ -188,10 +194,17 @@ def diff(
         SourceError: If an input cannot be read.
         EngineError: If the requested engine is unavailable.
     """
-    config = _diff_config(
-        diff_config, threshold_ratio, min_count, min_new_count, recount, matcher, significance, min_baselines
+    compare = _diff_config(
+        diff_config if diff_config is not None or config is None else config.diff,
+        threshold_ratio,
+        min_count,
+        min_new_count,
+        recount,
+        matcher,
+        significance,
+        min_baselines,
     )
-    resolved_matcher = resolve_matcher(config.matcher)
+    resolved_matcher = resolve_matcher(compare.matcher)
     if after is None:
         if split_at is None:
             raise ConfigError("diff() needs two inputs, or one input and split_at")
@@ -201,17 +214,22 @@ def diff(
     if isinstance(before, AnalysisResult) or isinstance(after, AnalysisResult):
         if baselines:
             raise ConfigError("baselines can only be used with logs, not with saved analysis results")
-        if config.min_baselines is not None:
+        if compare.min_baselines is not None:
             raise ConfigError("min_baselines can only be used with baselines")
         if not (isinstance(before, AnalysisResult) and isinstance(after, AnalysisResult)):
             raise ConfigError("diff() compares two analysis results or two sets of inputs, not one of each")
         given = locals()
-        ignored = [name for name, default in MINING_ONLY_DEFAULTS.items() if given[name] != default]
+        ignored = [
+            name
+            for name, default in MINING_ONLY_DEFAULTS.items()
+            if given[name] != default and not (name == "format" and given[name] is None)
+        ]
         if ignored:
             raise ConfigError(f"{', '.join(ignored)} cannot be used when comparing saved analysis results")
-        return diff_saved(before, after, config, examples)
+        return diff_saved(before, after, compare, examples)
     first = _paths(before, "diff() before")
     second = _paths(after, "diff() after")
+    format, multiline, mining, execution = _apply_settings(config, format, multiline, mining, execution)
     resolved = resolve_format(format, first, multiline)
     spec = resolved.spec
     runs = (*_baselines(first, baselines, split_at), second)
@@ -224,8 +242,8 @@ def diff(
         )
     mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks, high_cardinality)
     exec_config = _execution(execution, engine, strategy, threads, chunk_bytes, high_cardinality, warm_start)
-    mined = _mine(runs, spec, mining_config, exec_config, progress, config.recount, windows)
-    pooled = pool_baselines(mined, len(runs) - 1, required_baselines(len(runs) - 1, config.min_baselines))
+    mined = _mine(runs, spec, mining_config, exec_config, progress, compare.recount, windows)
+    pooled = pool_baselines(mined, len(runs) - 1, required_baselines(len(runs) - 1, compare.min_baselines))
     table = pooled.table
     before_names = tuple(name for run in runs[:-1] for name in run)
     before_summary = labeled(_summary(before_names, pooled.before), windows[0] if windows else OPEN)
@@ -237,7 +255,7 @@ def diff(
         classification = classify_native(
             table_side(table, 0, before_summary),
             table_side(table, 1, after_summary),
-            config,
+            compare,
             native_matcher,
             lambda text: _example(text, examples, masker),
         )
@@ -247,7 +265,7 @@ def diff(
             list(table),
             before_summary,
             after_summary,
-            config,
+            compare,
             resolved_matcher,
         )
 
@@ -266,7 +284,7 @@ def diff(
         unchanged=unchanged,
         before=before_summary,
         after=after_summary,
-        config=config,
+        config=compare,
         metrics=mined.metrics,
         meta=_meta(spec, mining_config),
         warnings=(

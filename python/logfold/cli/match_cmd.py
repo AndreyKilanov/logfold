@@ -37,7 +37,7 @@ from logfold.cli.options import (
     mining_options,
 )
 from logfold.cli.output import resolve_outputs
-from logfold.cli.runtime import emit, fail, note, progress_reporter, write_report
+from logfold.cli.runtime import config_note, emit, fail, note, progress_reporter, settings_of, write_report
 from logfold.errors import LogfoldError
 
 EXAMPLES = """Examples:
@@ -54,6 +54,7 @@ NOT_FOR_MATCH = ("engine", "high_cardinality", "warm_start")
 
 
 def match(
+    ctx: typer.Context,
     state: Annotated[
         Path,
         typer.Argument(
@@ -97,6 +98,8 @@ def match(
 ) -> None:
     """Assign FILES to the templates of a saved STATE and count the records that fit none; nothing is learned."""
     try:
+        settings = settings_of(ctx)
+        config_note(settings, quiet)
         outputs = resolve_outputs("analysis", out, report, as_json, append)
         threshold = resolve_level(level, only_alerts)
         options = mining_options(
@@ -114,6 +117,7 @@ def match(
                 until=until,
                 examples=examples,  # type: ignore[arg-type]
                 progress=progress,
+                config=settings,
                 **options,
             )
         shown = result

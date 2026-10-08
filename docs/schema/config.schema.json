@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/AndreyKilanov/logfold/blob/main/docs/schema/config.schema.json",
+  "title": "logfold.toml",
+  "description": "The settings file of logfold, as a JSON document (the TOML file parsed). Every key is optional; unknown keys are an error.",
+  "type": "object",
+  "properties": {
+    "format": { "type": "string", "description": "Default log format: auto, a registered name, regex:<pattern> or log4j:<pattern>." },
+    "multiline": { "type": "boolean", "description": "Join continuation lines to the previous record." },
+    "mining": {
+      "type": "object",
+      "properties": {
+        "depth": { "type": "integer", "minimum": 3 },
+        "sim_th": { "type": "number", "minimum": 0, "maximum": 1 },
+        "max_children": { "type": "integer", "minimum": 1 },
+        "max_templates": { "type": "integer", "minimum": 1 },
+        "masks": {
+          "oneOf": [
+            { "enum": ["default", "none"] },
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["name", "pattern", "token"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "pattern": { "type": "string" },
+                  "token": { "type": "string" },
+                  "ascii": { "type": "boolean" }
+                },
+                "additionalProperties": false
+              }
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "execution": {
+      "type": "object",
+      "properties": {
+        "strategy": { "enum": ["auto", "sequential", "chunked"] },
+        "threads": { "type": "integer", "minimum": 1, "maximum": 1024 },
+        "chunk_mb": { "type": "integer", "minimum": 1 },
+        "warm_start": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "top": { "type": "integer", "minimum": 1 },
+        "examples": { "enum": ["raw", "masked", "none"] },
+        "report": { "type": "string" },
+        "level": { "type": "string" },
+        "only_alerts": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "analyze": {
+      "type": "object",
+      "properties": {
+        "min_count": { "type": "integer", "minimum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "diff": {
+      "type": "object",
+      "properties": {
+        "threshold_ratio": { "type": "number", "minimum": 1 },
+        "min_count": { "type": "integer", "minimum": 0 },
+        "min_new_count": { "type": "integer", "minimum": 0 },
+        "significance": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "matcher": { "type": "string" },
+        "recount": { "type": "boolean" },
+        "fail_on_new": { "type": "boolean" },
+        "fail_on_new_alerts": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

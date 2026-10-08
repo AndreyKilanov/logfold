@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from logfold.api._common import (
     PathLike,
     Progress,
+    _apply_settings,
     _execution,
     _meta,
     _mine,
@@ -25,13 +26,14 @@ from logfold.ext.formats import Format, FormatSpec
 from logfold.ext.masks import Masker
 from logfold.formats import resolve_format
 from logfold.model import AnalysisResult, Unmatched
+from logfold.settings import Settings
 
 
 def match(
     state: PathLike,
     path: PathLike | Sequence[PathLike],
     *,
-    format: str | FormatSpec | Format = "auto",
+    format: str | FormatSpec | Format | None = None,
     multiline: bool | None = None,
     depth: int | None = None,
     sim_th: float | None = None,
@@ -47,6 +49,7 @@ def match(
     examples: ExamplesMode = "raw",
     since: TimeBound = None,
     until: TimeBound = None,
+    config: Settings | None = None,
     progress: Progress | None = None,
 ) -> AnalysisResult:
     """Assign the records of a log to the templates of a saved state, without learning anything.
@@ -76,6 +79,9 @@ def match(
         examples: ``raw`` keeps example messages, ``masked`` applies the masking rules to them, ``none`` drops them.
         since: Keep only records at or after this time; see :func:`logfold.analyze`.
         until: Keep only records before this time; see :func:`logfold.analyze`.
+        config: Settings from a ``logfold.toml`` (:func:`logfold.load_config`): they give the format, ``multiline``, the
+            mining and execution configuration and, for ``diff``, the comparison configuration, wherever the call does
+            not name them itself.
         progress: Optional callback receiving consumed input byte counts.
 
     Returns:
@@ -89,6 +95,7 @@ def match(
         StateError: If the state file is damaged, too large, newer than this logfold or mined with other settings.
     """
     run = _paths(path, "match()")
+    format, multiline, mining, execution = _apply_settings(config, format, multiline, mining, execution)
     resolved = resolve_format(format, run, multiline)
     spec = resolved.spec
     bounds = window(since, until)

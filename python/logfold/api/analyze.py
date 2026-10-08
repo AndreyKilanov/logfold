@@ -7,6 +7,7 @@ from collections.abc import Sequence
 from logfold.api._common import (
     PathLike,
     Progress,
+    _apply_settings,
     _execution,
     _meta,
     _mine,
@@ -30,12 +31,13 @@ from logfold.formats import resolve_format
 from logfold.model import (
     AnalysisResult,
 )
+from logfold.settings import Settings
 
 
 def analyze(
     path: PathLike | Sequence[PathLike],
     *,
-    format: str | FormatSpec | Format = "auto",
+    format: str | FormatSpec | Format | None = None,
     multiline: bool | None = None,
     depth: int | None = None,
     sim_th: float | None = None,
@@ -56,6 +58,7 @@ def analyze(
     load_state: PathLike | None = None,
     save_state: PathLike | None = None,
     state_format: str = "json",
+    config: Settings | None = None,
     progress: Progress | None = None,
 ) -> AnalysisResult:
     """Fold a log into templates.
@@ -93,6 +96,9 @@ def analyze(
         save_state: Write the trained miner to this file (a path that ends in ``.gz`` is compressed), so that a later
             run can continue from it. The file holds templates and counts, never example lines.
         state_format: ``json`` (readable, the default) or ``binary`` (compact, for very large states).
+        config: Settings from a ``logfold.toml`` (:func:`logfold.load_config`): they give the format, ``multiline``, the
+            mining and execution configuration and, for ``diff``, the comparison configuration, wherever the call does
+            not name them itself.
         progress: Optional callback receiving consumed input byte counts.
 
     Returns:
@@ -106,6 +112,7 @@ def analyze(
         StateError: If a state file is damaged, too large, newer than this logfold or mined with other settings.
     """
     run = _paths(path, "analyze()")
+    format, multiline, mining, execution = _apply_settings(config, format, multiline, mining, execution)
     resolved = resolve_format(format, run, multiline)
     spec = resolved.spec
     bounds = window(since, until)

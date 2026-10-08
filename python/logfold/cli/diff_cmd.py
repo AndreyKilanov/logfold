@@ -41,7 +41,16 @@ from logfold.cli.options import (
     mining_options,
 )
 from logfold.cli.output import resolve_outputs
-from logfold.cli.runtime import emit, fail, note, progress_reporter, write_report
+from logfold.cli.runtime import (
+    config_note,
+    emit,
+    fail,
+    given_on_command_line,
+    note,
+    progress_reporter,
+    settings_of,
+    write_report,
+)
 from logfold.errors import LogfoldError
 from logfold.model import DiffResult
 
@@ -72,6 +81,7 @@ EXAMPLES = """Examples:
 
 
 def diff(
+    ctx: typer.Context,
     before: Annotated[
         Path, typer.Argument(help="Log file of the first run, for example before a deploy, or a saved report.")
     ],
@@ -212,6 +222,8 @@ def diff(
     With --split-at TIME, give one log file: the records before TIME are compared with the records from TIME on.
     """
     try:
+        settings = settings_of(ctx)
+        config_note(settings, quiet)
         outputs = resolve_outputs("diff", out, report, as_json, append)
         threshold = resolve_level(level, only_alerts)
         if split_at is None and after is None:
@@ -233,9 +245,9 @@ def diff(
         if all(saved):
             _reject_mining_flags(
                 {
-                    "--format": format != "auto",
+                    "--format": given_on_command_line(ctx, "format"),
                     "--multiline/--no-multiline": multiline is not None,
-                    "--no-recount": not recount,
+                    "--no-recount": given_on_command_line(ctx, "recount") and not recount,
                     "--sim-th": sim_th is not None,
                     "--depth": depth is not None,
                     "--max-children": max_children is not None,
@@ -282,6 +294,7 @@ def diff(
                     recount=recount,
                     examples=examples,  # type: ignore[arg-type]
                     progress=progress,
+                    config=settings,
                     **mining_options(
                         sim_th,
                         depth,

@@ -22,7 +22,7 @@ from logfold.config import (
 from logfold.engines.base import MineRequest, MiningResult, RunCounters, StateRequest, TemplateTable
 from logfold.engines.select import select_engine
 from logfold.errors import ConfigError, read_error
-from logfold.ext.formats import FormatSpec
+from logfold.ext.formats import Format, FormatSpec
 from logfold.ext.masks import Masker, validate_masks
 from logfold.formats import ResolvedFormat
 from logfold.model import (
@@ -31,6 +31,7 @@ from logfold.model import (
     RunSummary,
     Template,
 )
+from logfold.settings import Settings
 from logfold.timestamps import micros_to_datetimes
 
 logger = logging.getLogger("logfold")
@@ -46,6 +47,22 @@ def _paths(value: PathLike | Sequence[PathLike], what: str) -> tuple[str, ...]:
     if not items:
         raise ConfigError(f"{what} needs at least one input")
     return tuple(os.fspath(item) for item in items)
+
+
+def _apply_settings(
+    config: Settings | None,
+    format: str | FormatSpec | Format | None,
+    multiline: bool | None,
+    mining: MiningConfig | None,
+    execution: ExecutionConfig | None,
+) -> tuple[str | FormatSpec | Format, bool | None, MiningConfig | None, ExecutionConfig | None]:
+    """Fill what a call left out from the settings of a ``logfold.toml``; what the call names itself wins."""
+    if config is not None:
+        format = config.format if format is None else format
+        multiline = config.multiline if multiline is None else multiline
+        mining = config.mining if mining is None else mining
+        execution = config.execution if execution is None else execution
+    return ("auto" if format is None else format), multiline, mining, execution
 
 
 def _mining(

@@ -42,6 +42,7 @@ from logfold.model import (
     Template,
     Unmatched,
 )
+from logfold.settings import Settings, load_config
 
 __version__ = get_version()
 
@@ -63,6 +64,7 @@ __all__ = [
     "ResultMeta",
     "RunMetrics",
     "RunSummary",
+    "Settings",
     "SourceError",
     "StateError",
     "Template",
@@ -74,5 +76,6 @@ __all__ = [
     "inspect_file",
     "is_saved_analysis",
     "load_analysis",
+    "load_config",
     "match",
 ]

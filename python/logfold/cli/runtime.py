@@ -23,10 +23,11 @@ from logfold.cli import exit_codes
 from logfold.cli.hints import hint_for
 from logfold.cli.output import render_report
 from logfold.cli.render import print_analysis, print_diff
-from logfold.errors import write_error
+from logfold.errors import LogfoldError, write_error
 from logfold.ext.files import write_text
 from logfold.ext.text import printable
 from logfold.model import AnalysisResult, DiffResult
+from logfold.settings import Settings
 
 
 def stdout_console() -> Console:
@@ -90,6 +91,36 @@ def fail(error: Exception, debug: bool) -> typer.Exit:
     if hint:
         console.print(f"[cyan]hint:[/cyan] {escape(printable(hint))}", soft_wrap=True)
     return typer.Exit(exit_codes.ERROR)
+
+
+def settings_of(ctx: typer.Context) -> Settings:
+    """Return the settings that the root command loaded for this run.
+
+    Args:
+        ctx: The context of a command.
+
+    Returns:
+        The settings of ``logfold.toml``, or the built-in defaults when none is used.
+
+    Raises:
+        LogfoldError: The error that reading the settings file raised; it is kept until a command needs the settings,
+            so that ``--help`` works whatever the file holds.
+    """
+    if isinstance(ctx.obj, LogfoldError):
+        raise ctx.obj
+    return ctx.obj if isinstance(ctx.obj, Settings) else Settings()
+
+
+def config_note(settings: Settings, quiet: bool) -> None:
+    """Say on standard error which settings file the run uses, unless quiet."""
+    if settings.source is not None:
+        note(f"config: {printable(settings.source)}", quiet)
+
+
+def given_on_command_line(ctx: typer.Context, name: str) -> bool:
+    """Tell whether the user typed the option ``name`` (and it did not come from the settings file or a default)."""
+    source = ctx.get_parameter_source(name)
+    return source is not None and source.name == "COMMANDLINE"
 
 
 def note(message: str, quiet: bool) -> None:
