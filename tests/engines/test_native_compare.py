@@ -7,7 +7,7 @@ matcher and random thresholds. The entries must be equal, field by field, includ
 from __future__ import annotations
 
 import random
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from hypothesis import HealthCheck, given, settings
@@ -122,7 +122,7 @@ def test_native_classification_equals_the_reference_for_engine_results(
 def moment(value: int | None, aware: bool) -> datetime | None:
     if value is None:
         return None
-    instant = datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(microseconds=value)
+    instant = datetime(1970, 1, 1, tzinfo=UTC) + timedelta(microseconds=value)
     return instant if aware else instant.replace(tzinfo=None)
 
 

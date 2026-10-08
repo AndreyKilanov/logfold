@@ -10,7 +10,7 @@ pip install "logfold[cli]"        # library, native engine and the `logfold` com
 pipx install "logfold[cli]"       # just the command
 ```
 
-The core library has no dependencies. The `cli` extra adds `typer` and `rich`. Python 3.10 or newer.
+The core library has no dependencies. The `cli` extra adds `typer` and `rich`. Python 3.11 or newer.
 
 ## Fold a log into templates
 

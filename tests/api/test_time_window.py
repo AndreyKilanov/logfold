@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -65,14 +65,14 @@ def table(result: logfold.AnalysisResult) -> list[tuple[str, int]]:
         ("2026-10-06", datetime(2026, 10, 6)),
         ("2026-10-06T12:30:00", datetime(2026, 10, 6, 12, 30)),
         ("2026-10-06 12:30:00", datetime(2026, 10, 6, 12, 30)),
-        ("2026-10-06T12:30:00Z", datetime(2026, 10, 6, 12, 30, tzinfo=timezone.utc)),
-        ("2026-10-06T15:30:00+03:00", datetime(2026, 10, 6, 12, 30, tzinfo=timezone.utc)),
+        ("2026-10-06T12:30:00Z", datetime(2026, 10, 6, 12, 30, tzinfo=UTC)),
+        ("2026-10-06T15:30:00+03:00", datetime(2026, 10, 6, 12, 30, tzinfo=UTC)),
         ("  2026-10-06T12:30:00.250  ", datetime(2026, 10, 6, 12, 30, 0, 250_000)),
     ],
 )
 def test_times_are_read_as_iso_8601(text: str, expected: datetime) -> None:
-    epoch = datetime(1970, 1, 1, tzinfo=timezone.utc)
-    aware = expected if expected.tzinfo else expected.replace(tzinfo=timezone.utc)
+    epoch = datetime(1970, 1, 1, tzinfo=UTC)
+    aware = expected if expected.tzinfo else expected.replace(tzinfo=UTC)
     assert to_micros(text, "since") == (aware - epoch) // timedelta(microseconds=1)
 
 

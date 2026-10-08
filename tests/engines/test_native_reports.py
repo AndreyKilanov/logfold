@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import cache
 from pathlib import Path
 
@@ -47,7 +47,7 @@ RATIO = st.one_of(st.none(), st.floats(0.0, 1e9, allow_nan=False), st.just(2.0))
 MOMENT = st.one_of(
     st.none(),
     st.datetimes(min_value=datetime(2000, 1, 1), max_value=datetime(2100, 1, 1)),
-    st.datetimes(min_value=datetime(2000, 1, 1), max_value=datetime(2100, 1, 1), timezones=st.just(timezone.utc)),
+    st.datetimes(min_value=datetime(2000, 1, 1), max_value=datetime(2100, 1, 1), timezones=st.just(UTC)),
 )
 SETTINGS = settings(max_examples=300, deadline=None, suppress_health_check=[HealthCheck.too_slow])
 
