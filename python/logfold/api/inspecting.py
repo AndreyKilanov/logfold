@@ -3,17 +3,16 @@
 from __future__ import annotations
 
 import os
-from collections import Counter
-from collections.abc import Iterator, Mapping
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
 
-from logfold.engines.python import RecordParser
+from logfold import _bridge
+from logfold.engines.native import format_to_dict
 from logfold.errors import read_error
 from logfold.ext.formats import FormatSpec
 from logfold.formats import resolve_format
 from logfold.formats.auto import read_sample
-from logfold.levels import LEVEL_NAMES
 from logfold.model import micros_to_datetimes
 
 SAMPLE_LINES = 1000
@@ -77,25 +76,6 @@ class Inspection:
     last_time: datetime | None
 
 
-def _records(lines: list[str], parser: RecordParser) -> Iterator[tuple[str, str, int] | None]:
-    """Group sampled lines into records the way the engines do; ``None`` stands for an unparsed line."""
-    first, rest, count = "", "", 0
-    for line in lines:
-        if not parser.multiline:
-            yield line, "", 1
-        elif parser.starts_record(line):
-            if count:
-                yield first, rest, count
-            first, rest, count = line, "", 1
-        elif count:
-            rest += "\n" + line
-            count += 1
-        else:
-            yield None
-    if count:
-        yield first, rest, count
-
-
 def inspect_file(
     path: str | os.PathLike[str],
     *,
@@ -122,7 +102,6 @@ def inspect_file(
     """
     name = os.fspath(path)
     resolved = resolve_format(format, [name], multiline)
-    parser = RecordParser(resolved.spec)
     lines = read_sample(name, sample_lines + 1)
     truncated = len(lines) > sample_lines
     lines = lines[:sample_lines]
@@ -133,31 +112,15 @@ def inspect_file(
     except OSError as error:
         raise read_error(name, error) from error
 
-    shown: list[InspectedRecord] = []
-    levels: Counter[int] = Counter()
-    times: list[int] = []
-    aware = False
-    records = unparsed = no_level = 0
-    for grouped in _records(lines, parser):
-        parsed = None if grouped is None else parser.parse(grouped[0], grouped[1])
-        if grouped is None or parsed is None:
-            unparsed += 1 if grouped is None else grouped[2]
-            continue
-        message, micros, tz_aware, rank = parsed
-        records += 1
-        aware = aware or tz_aware
-        if rank is None:
-            no_level += 1
-        else:
-            levels[rank] += 1
-        if micros is not None:
-            times.append(micros)
-        if len(shown) < limit:
-            (moment,) = micros_to_datetimes([micros], tz_aware)
-            shown.append(InspectedRecord(message, moment, None if rank is None else LEVEL_NAMES[rank], grouped[2]))
+    sample = "\n".join(lines)
+    answer = _bridge.inspect_sample(sample.encode("utf-8"), format_to_dict(resolved.spec), limit)
+    shown = []
+    for record in answer["shown"]:
+        (moment,) = micros_to_datetimes([record["time"]], record["tz_aware"])
+        shown.append(InspectedRecord(record["message"], moment, record["level"], record["lines"]))
     first = last = None
-    if times:
-        first, last = micros_to_datetimes([min(times), max(times)], aware)
+    if answer["first"] is not None:
+        first, last = micros_to_datetimes([answer["first"], answer["last"]], answer["tz_aware"])
     return Inspection(
         path=name,
         size=size,
@@ -166,12 +129,12 @@ def inspect_file(
         confidence=resolved.confidence,
         multiline_auto=resolved.multiline_auto,
         lines=len(lines),
-        records=records,
-        unparsed=unparsed,
+        records=answer["records"],
+        unparsed=answer["unparsed"],
         truncated=truncated,
         shown=tuple(shown),
-        levels={LEVEL_NAMES[rank]: levels[rank] for rank in sorted(levels)},
-        no_level=no_level,
+        levels=answer["levels"],
+        no_level=answer["no_level"],
         first_time=first,
         last_time=last,
     )

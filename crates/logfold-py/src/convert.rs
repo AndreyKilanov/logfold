@@ -26,7 +26,7 @@ pub(crate) fn sub_dict<'py>(dict: &Bound<'py, PyDict>, key: &str) -> PyResult<Bo
     Ok(required(dict, key)?.cast_into::<PyDict>()?)
 }
 
-fn parse_format(dict: &Bound<'_, PyDict>) -> PyResult<FormatConfig> {
+pub(crate) fn parse_format(dict: &Bound<'_, PyDict>) -> PyResult<FormatConfig> {
     let kind: String = required(dict, "kind")?.extract()?;
     let spec = match kind.as_str() {
         "plain" => FormatSpec::Plain { record_start: optional_string(dict, "record_start")? },

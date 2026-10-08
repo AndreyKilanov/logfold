@@ -17,7 +17,7 @@ try:
 except ImportError:
     _core = None  # type: ignore[assignment]
 
-EXPECTED_CORE_API_VERSION = 8
+EXPECTED_CORE_API_VERSION = 9
 
 
 def is_available() -> bool:
@@ -153,6 +153,33 @@ def compare_runs(
         )  # fmt: skip
     except _core.CoreConfigError as error:
         raise ConfigError(str(error)) from error
+
+
+def inspect_sample(sample: bytes, format: dict[str, Any], keep: int) -> dict[str, Any]:
+    """Read the start of a log with a format in the extension, the way a run reads it.
+
+    Args:
+        sample: The lines of the sample, joined with line feeds.
+        format: The plain-data format, see ``crates/logfold-py/src/convert.rs``.
+        keep: The number of records to return in full.
+
+    Returns:
+        The counts of the sample (lines, records, unparsed, levels, first and last time) and the first records.
+
+    Raises:
+        EngineError: If the extension is unavailable.
+        ConfigError: If the format is invalid.
+        FormatError: If the format cannot be compiled.
+    """
+    if _core is None:
+        raise EngineError("the native extension is unavailable")
+    try:
+        answer: dict[str, Any] = _core.inspect_sample(sample, format, keep)
+    except _core.CoreConfigError as error:
+        raise ConfigError(str(error)) from None
+    except _core.CoreFormatError as error:
+        raise FormatError(str(error)) from None
+    return answer
 
 
 def supports_reports() -> bool:
