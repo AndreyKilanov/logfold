@@ -354,7 +354,27 @@ fn check_text(text: &str, what: &str) -> Result<(), StateError> {
     Ok(())
 }
 
+/// Longest header line; the header holds four short texts and a few numbers.
+const MAX_HEADER_LINE_BYTES: usize = 64 * 1024;
+
 pub(super) fn decode(bytes: &[u8], limits: &StateLimits) -> Result<State, StateError> {
+    let first_end = bytes.iter().position(|&byte| byte == b'\n').unwrap_or(bytes.len());
+    if first_end > MAX_HEADER_LINE_BYTES {
+        return Err(damaged("the header line is longer than 64 KiB"));
+    }
+    // the kind and the schema version first, so that a newer layout is reported as newer whatever else changed in it
+    let probe: serde_json::Value = serde_json::from_slice(&bytes[..first_end]).map_err(parse_error)?;
+    if probe.get("kind").and_then(serde_json::Value::as_str) != Some(STATE_KIND) {
+        return Err(StateError::NotState);
+    }
+    match probe.get("schema_version").and_then(serde_json::Value::as_u64) {
+        Some(found) if found > u64::from(STATE_SCHEMA_VERSION) => {
+            let found = u32::try_from(found).unwrap_or(u32::MAX);
+            return Err(StateError::Version { found, supported: STATE_SCHEMA_VERSION });
+        }
+        Some(_) => {}
+        None => return Err(damaged("the header has no schema version")),
+    }
     let lines: Vec<&[u8]> = bytes.split(|&byte| byte == b'\n').collect();
     if lines.len() != 4 || !lines[3].is_empty() {
         return Err(damaged("a JSON state file has three lines: the header, the body and the checksum"));

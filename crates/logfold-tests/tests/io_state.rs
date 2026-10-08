@@ -350,6 +350,79 @@ fn mutated_files_never_panic_and_never_build_a_broken_miner() {
     }
 }
 
+#[test]
+fn a_state_path_is_checked_before_a_run_and_leaves_nothing_behind() {
+    let directory = tempfile::tempdir().unwrap();
+    let good = directory.path().join("state.json");
+    check_state_writable(&good).unwrap();
+    assert_eq!(std::fs::read_dir(directory.path()).unwrap().count(), 0, "the staging file is removed");
+    let missing = directory.path().join("no-such-folder").join("state.json");
+    assert!(matches!(check_state_writable(&missing), Err(StateError::Write { .. })));
+}
+
+#[test]
+fn a_newer_layout_is_reported_as_newer_whatever_else_changed() {
+    let limits = StateLimits::default();
+    let json = b"{\"kind\":\"logfold-state\",\"schema_version\":9,\"a_field_of_the_future\":1}
+not the body of today
+";
+    assert!(matches!(decode_state(json, &limits), Err(StateError::Version { found: 9, supported: 1 })));
+    let mut binary = BINARY_MAGIC.to_vec();
+    binary.extend_from_slice(&[9, 0]);
+    binary.extend_from_slice(b"a layout that has no checksum at the end");
+    assert!(matches!(decode_state(&binary, &limits), Err(StateError::Version { found: 9, supported: 1 })));
+}
+
+#[test]
+fn a_header_line_that_is_too_long_is_refused() {
+    let mut bytes = b"{\"kind\":\"logfold-state\",\"x\":\"".to_vec();
+    bytes.extend(std::iter::repeat_n(b'a', 70_000));
+    bytes.extend_from_slice(
+        b"\"}
+",
+    );
+    assert!(matches!(decode_state(&bytes, &StateLimits::default()), Err(StateError::Damaged(_))));
+}
+
+#[test]
+fn a_gzip_file_is_found_by_its_content_not_by_its_name() {
+    let directory = tempfile::tempdir().unwrap();
+    let named = directory.path().join("state.json.gz");
+    write_state_file(&named, &small(), StateFormat::Json).unwrap();
+    let renamed = directory.path().join("model.bin");
+    std::fs::rename(&named, &renamed).unwrap();
+    assert_eq!(read_state_file(&renamed, &StateLimits::default()).unwrap(), small());
+    let compressed = std::fs::read(&renamed).unwrap();
+    let mut inside = Vec::new();
+    std::io::Read::read_to_end(&mut flate2::read::GzDecoder::new(compressed.as_slice()), &mut inside).unwrap();
+    assert_eq!(inside, encode_state(&small(), StateFormat::Json), "the bytes before compression are the plain file");
+}
+
+#[test]
+fn a_leftover_staging_file_is_replaced_and_never_written_through() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("state.json");
+    let staging = directory.path().join(format!("state.json.{}.part", std::process::id()));
+    std::fs::write(&staging, b"left by a crashed process").unwrap();
+    write_state_file(&path, &small(), StateFormat::Json).unwrap();
+    assert!(!staging.exists());
+    assert_eq!(read_state_file(&path, &StateLimits::default()).unwrap(), small());
+}
+
+#[cfg(unix)]
+#[test]
+fn a_link_in_the_place_of_the_staging_file_is_not_written_through() {
+    let directory = tempfile::tempdir().unwrap();
+    let victim = directory.path().join("victim.txt");
+    std::fs::write(&victim, b"must stay as it is").unwrap();
+    let path = directory.path().join("state.json");
+    let staging = directory.path().join(format!("state.json.{}.part", std::process::id()));
+    std::os::unix::fs::symlink(&victim, &staging).unwrap();
+    write_state_file(&path, &small(), StateFormat::Json).unwrap();
+    assert_eq!(std::fs::read(&victim).unwrap(), b"must stay as it is");
+    assert_eq!(read_state_file(&path, &StateLimits::default()).unwrap(), small());
+}
+
 /// A valid snapshot of `clusters` templates of six tokens in 100 leaves, built directly (no mining).
 fn synthetic(clusters: usize) -> MinerSnapshot {
     const WORDS: usize = 100;

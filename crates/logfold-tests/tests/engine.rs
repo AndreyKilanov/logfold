@@ -45,6 +45,8 @@ fn request(runs: Vec<Vec<PathBuf>>, strategy: Strategy) -> MineRequest {
         strategy,
         warm_start: false,
         recount: false,
+        initial: None,
+        keep_snapshot: false,
     }
 }
 

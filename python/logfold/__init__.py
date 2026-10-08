@@ -30,7 +30,7 @@ from logfold.api import (
     load_analysis,
 )
 from logfold.config import DiffConfig, ExecutionConfig, MaskRule, MiningConfig
-from logfold.errors import ConfigError, EngineError, FormatError, LogfoldError, SourceError
+from logfold.errors import ConfigError, EngineError, FormatError, LogfoldError, SourceError, StateError
 from logfold.model import AnalysisResult, DiffEntry, DiffResult, ResultMeta, RunMetrics, RunSummary, Template
 
 __version__ = get_version()
@@ -54,6 +54,7 @@ __all__ = [
     "RunMetrics",
     "RunSummary",
     "SourceError",
+    "StateError",
     "Template",
     "__version__",
     "analyze",

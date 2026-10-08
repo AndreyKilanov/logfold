@@ -86,6 +86,34 @@ Examples = Annotated[
         rich_help_panel=PANEL_OUTPUT,
     ),
 ]
+LoadState = Annotated[
+    Path | None,
+    typer.Option(
+        "--load-state",
+        metavar="FILE",
+        help="Continue from the miner that an earlier run saved (same masks and parameters); the report counts only "
+        "this run, and the run is sequential.",
+        rich_help_panel=PANEL_INPUT,
+    ),
+]
+SaveState = Annotated[
+    Path | None,
+    typer.Option(
+        "--save-state",
+        metavar="FILE",
+        help="Save the trained miner (templates and counts, no example lines) for a later run; a .gz path is "
+        "compressed.",
+        rich_help_panel=PANEL_OUTPUT,
+    ),
+]
+StateForm = Annotated[
+    str,
+    typer.Option(
+        "--state-format",
+        help="json (readable) or binary (compact, for very large states): the form of --save-state.",
+        rich_help_panel=PANEL_OUTPUT,
+    ),
+]
 AsJson = Annotated[
     bool, typer.Option("--json", help="Print JSON to stdout instead of tables.", rich_help_panel=PANEL_OUTPUT)
 ]

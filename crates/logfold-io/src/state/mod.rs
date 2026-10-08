@@ -10,7 +10,7 @@ mod json;
 mod wire;
 
 use std::fs;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 use flate2::Compression;
@@ -166,23 +166,53 @@ pub fn decode_state(bytes: &[u8], limits: &StateLimits) -> Result<State, StateEr
     }
 }
 
-/// Reads a state file; a gzip file is decompressed with the size limit applied to the decompressed bytes.
+/// Reads a state file. A gzip file is found by its first bytes, not by its name, and is decompressed with the size
+/// limit applied to the decompressed bytes as well as to the file.
 pub fn read_state_file(path: &Path, limits: &StateLimits) -> Result<State, StateError> {
     let read_error = |source| StateError::Read { path: path.to_path_buf(), source };
-    let raw = fs::metadata(path).map_err(read_error)?.len();
-    let gz = path.extension().is_some_and(|ext| ext.eq_ignore_ascii_case("gz"));
-    if raw > limits.max_file_bytes && !gz {
-        return Err(over(format!("{raw} bytes, at most {}", limits.max_file_bytes)));
-    }
-    let file = fs::File::open(path).map_err(read_error)?;
-    let mut bytes = Vec::new();
     let cap = limits.max_file_bytes + 1;
-    if gz {
-        GzDecoder::new(file).take(cap).read_to_end(&mut bytes).map_err(read_error)?;
-    } else {
-        file.take(cap).read_to_end(&mut bytes).map_err(read_error)?;
+    let mut bytes = Vec::new();
+    fs::File::open(path).map_err(read_error)?.take(cap).read_to_end(&mut bytes).map_err(read_error)?;
+    if bytes.starts_with(&GZIP_MAGIC) {
+        if bytes.len() as u64 > limits.max_file_bytes {
+            return Err(over(format!("a file of more than {} bytes", limits.max_file_bytes)));
+        }
+        let mut plain = Vec::new();
+        GzDecoder::new(bytes.as_slice()).take(cap).read_to_end(&mut plain).map_err(read_error)?;
+        bytes = plain;
     }
     decode_state(&bytes, limits)
+}
+
+const GZIP_MAGIC: [u8; 2] = [0x1f, 0x8b];
+
+/// Creates the staging file of `path` and refuses one that exists, so that a file or a link put there beforehand
+/// (the name can be guessed) is never written through. A leftover of an earlier process with the same id is removed.
+fn create_staging(staging: &Path) -> std::io::Result<fs::File> {
+    let create = || fs::OpenOptions::new().write(true).create_new(true).open(staging);
+    match create() {
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+            fs::remove_file(staging)?;
+            create()
+        }
+        other => other,
+    }
+}
+
+/// The file a state is written to first, next to the target; the process id keeps two writers apart.
+fn staging_path(path: &Path) -> PathBuf {
+    let mut staging = path.as_os_str().to_owned();
+    staging.push(format!(".{}.part", std::process::id()));
+    PathBuf::from(staging)
+}
+
+/// Checks that a state can be written to `path`, by creating and removing its staging file. A long run asks for this
+/// before it starts, so that a mistyped folder does not cost the whole run.
+pub fn check_state_writable(path: &Path) -> Result<(), StateError> {
+    let staging = staging_path(path);
+    let write_error = |source| StateError::Write { path: path.to_path_buf(), source };
+    create_staging(&staging).map_err(write_error)?;
+    fs::remove_file(&staging).map_err(write_error)
 }
 
 /// Writes a state file; a path that ends in `.gz` is compressed. The file appears whole or not at all.
@@ -190,17 +220,20 @@ pub fn write_state_file(path: &Path, state: &State, format: StateFormat) -> Resu
     let write_error = |source| StateError::Write { path: path.to_path_buf(), source };
     let bytes = encode_state(state, format);
     let bytes = if path.extension().is_some_and(|ext| ext.eq_ignore_ascii_case("gz")) {
-        use std::io::Write;
         let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
         encoder.write_all(&bytes).map_err(write_error)?;
         encoder.finish().map_err(write_error)?
     } else {
         bytes
     };
-    let mut staging = path.as_os_str().to_owned();
-    staging.push(".part");
-    let staging = PathBuf::from(staging);
-    fs::write(&staging, &bytes).map_err(write_error)?;
+    let staging = staging_path(path);
+    let mut file = create_staging(&staging).map_err(write_error)?;
+    if let Err(source) = file.write_all(&bytes).and_then(|()| file.flush()) {
+        drop(file);
+        let _ = fs::remove_file(&staging);
+        return Err(StateError::Write { path: path.to_path_buf(), source });
+    }
+    drop(file);
     fs::rename(&staging, path).map_err(|source| {
         let _ = fs::remove_file(&staging);
         StateError::Write { path: path.to_path_buf(), source }

@@ -18,6 +18,29 @@ from logfold.model import RunMetrics
 
 
 @dataclass(frozen=True, slots=True)
+class StateRequest:
+    """The state files of a run: the state to continue from and the state to write (see ADR-011).
+
+    Attributes:
+        load: Path of a state file to continue from, or ``None``.
+        save: Path of the state file to write after the run, or ``None``.
+        format: ``json`` or ``binary``.
+        config_hash: Fingerprint of the mining parameters and the masks; a loaded state must carry the same one.
+        masks: Identity of the mask set, for the header of a saved state.
+        logfold_version: Version of this logfold, for the header of a saved state.
+        log_format: Name of the log format, for the header of a saved state.
+    """
+
+    load: str | None
+    save: str | None
+    format: str
+    config_hash: str
+    masks: str
+    logfold_version: str
+    log_format: str
+
+
+@dataclass(frozen=True, slots=True)
 class MineRequest:
     """Everything an engine needs to mine one or more runs.
 
@@ -32,6 +55,7 @@ class MineRequest:
         warm_start: ``chunked`` only: start every chunk but the first from a copy of the tree of the first.
         recount: Re-assign every record to the finished tree after training; gives consistent assignments
             across runs at the cost of a second pass.
+        state: State files to load and save, or ``None``. Only the sequential strategy continues a loaded state.
         windows: One time window per run, or empty for none. A window is ``(since, until)`` in microseconds since the
             Unix epoch, each bound ``None`` when open: a record is mined when ``since <= timestamp < until``. A record
             without a timestamp is left out of a run whose window has a bound.
@@ -46,6 +70,7 @@ class MineRequest:
     warm_start: bool = False
     recount: bool = False
     windows: tuple[tuple[int | None, int | None], ...] = ()
+    state: StateRequest | None = None
 
 
 @dataclass(frozen=True, slots=True)

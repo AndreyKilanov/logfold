@@ -7,6 +7,10 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ### Added
 
+- State files: `analyze --save-state FILE` saves the trained miner and `--load-state FILE` continues from it (library: `save_state`,
+  `load_state`, `state_format`; JSON or `--state-format binary`; the report counts only the new run, no example line is
+  saved). Continuing gives the same state as one run over both logs. Error `StateError`; extension contract version 8.
+  See `docs/cli.md`.
 - A GitHub Action (`uses: AndreyKilanov/logfold@<tag>`) and a GitLab CI template (`ci/gitlab/logfold.yml`): analyze the
   log, compare it with the baseline of the last good run, write the summary and fail on new alerts; see `docs/ci.md`.
 

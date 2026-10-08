@@ -11,6 +11,7 @@ use crate::level::LEVEL_COUNT;
 use crate::stats::RunStats;
 
 use super::leaf::{INDEX_MIN_CLUSTERS, LeafIndex, Node};
+use super::matching::has_digit;
 use super::{Cluster, DrainMiner, MinerConfig, WILDCARD};
 
 /// Counts of the runs that were saved with a cluster; the example line of a run is never kept.
@@ -81,6 +82,16 @@ pub struct MinerSnapshot {
     pub clusters: Vec<ClusterSnapshot>,
     /// Overflow template of every message length, ordered by length.
     pub overflow: Vec<(usize, ClusterSnapshot)>,
+}
+
+impl MinerSnapshot {
+    /// Tells whether the snapshot was mined with the parameters of `config`.
+    pub fn has_config(&self, config: &MinerConfig) -> bool {
+        self.depth == config.depth
+            && self.threshold_micro == config.threshold_micro
+            && self.max_children == config.max_children
+            && self.max_templates == config.max_templates
+    }
 }
 
 fn invalid(message: impl Into<String>) -> CoreError {
@@ -210,10 +221,6 @@ fn checked_config(snapshot: &MinerSnapshot) -> Result<MinerConfig, CoreError> {
         max_templates: snapshot.max_templates,
         threshold_micro: snapshot.threshold_micro,
     })
-}
-
-fn has_digit(token: &[u8]) -> bool {
-    token.iter().any(u8::is_ascii_digit)
 }
 
 /// Checks that the nodes form a forest of the shape the miner builds, and that every cluster sits in exactly one leaf of

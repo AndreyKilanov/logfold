@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use logfold_core::{FrozenTemplate, MaskRule};
+use logfold_core::{FrozenTemplate, MaskRule, MinerSnapshot};
 use logfold_io::{FormatConfig, TimeWindow};
 
 /// Default size of a chunk of the chunked strategy.
@@ -77,6 +77,12 @@ pub struct MineRequest {
     /// Re-assign every record to the finished tree after training (see `docs/ALGORITHM.md` §9). Gives a
     /// consistent assignment across runs and costs a second pass over the inputs.
     pub recount: bool,
+    /// A saved miner to continue from: the new records are mined on top of its tree with empty statistics, and the
+    /// counts of the earlier runs stay in its history. Only the sequential strategy continues a saved tree; the
+    /// adaptive strategy then mines sequentially and the chunked one is refused.
+    pub initial: Option<MinerSnapshot>,
+    /// Return a snapshot of the trained miner in [`MineOutput::snapshot`].
+    pub keep_snapshot: bool,
 }
 
 /// Counters of one run.
@@ -128,8 +134,11 @@ pub struct Metrics {
 pub struct MineOutput {
     /// Per-run counters.
     pub runs: Vec<RunSummary>,
-    /// Unique templates sorted by total count.
+    /// Unique templates sorted by total count. When the request continues a saved miner, templates with no record in
+    /// these runs are left out.
     pub templates: Vec<FrozenTemplate>,
+    /// The trained miner, when the request asked for it.
+    pub snapshot: Option<MinerSnapshot>,
     /// Timings.
     pub metrics: Metrics,
 }
