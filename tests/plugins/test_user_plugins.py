@@ -19,7 +19,7 @@ from logfold.cli import exit_codes
 from logfold.cli.app import app
 from logfold.errors import ConfigError
 from logfold.ext import registry
-from logfold.plugins import templates
+from logfold.plugins import scaffold
 
 runner = CliRunner()
 
@@ -267,9 +267,9 @@ def test_group_write_access_is_allowed(plugin_dir: Path) -> None:
     assert "mine" in registry.format_names()
 
 
-@pytest.mark.parametrize("kind", templates.KINDS)
+@pytest.mark.parametrize("kind", scaffold.KINDS)
 def test_every_template_loads_and_is_usable(plugin_dir: Path, kind: str, tmp_path: Path) -> None:
-    write(plugin_dir, "my_thing.py", templates.render_template(kind, "my-thing"))
+    write(plugin_dir, "my_thing.py", scaffold.render_template(kind, "my-thing"))
     registry.load_plugins(force=True)
     log = tmp_path / "a.log"
     log.write_text(LOG, encoding="utf-8")
@@ -290,7 +290,7 @@ def test_every_template_loads_and_is_usable(plugin_dir: Path, kind: str, tmp_pat
 )
 def test_templates_reject_bad_kinds_and_names(kind: str, name: str) -> None:
     with pytest.raises(ConfigError):
-        templates.render_template(kind, name)
+        scaffold.render_template(kind, name)
 
 
 def test_cli_dir_and_new_write_into_the_plugin_folder(home: Path) -> None:

@@ -11,7 +11,7 @@ from hypothesis import strategies as st
 
 from conftest import requires_native
 from logfold import _bridge as native
-from logfold.api.matching import native_spec
+from logfold.api._matching import native_spec
 from logfold.plugins.matchers import JaccardIdfMatcher, OverlapMatcher, RulesMatcher
 from oracles import quadratic_jaccard_idf, quadratic_overlap, reference_rules
 

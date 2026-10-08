@@ -14,11 +14,11 @@ import re
 import time
 from typing import Any
 
-from logfold.api.comparing import classify_native, result_side
-from logfold.api.matching import native_spec, resolve_matcher
+from logfold.api._matching import native_spec, resolve_matcher
+from logfold.api._native_classify import classify_native, result_side
 from logfold.comparison import classify
 from logfold.config import DiffConfig, ExamplesMode
-from logfold.engines.base import RunStatsData, TemplateStats
+from logfold.engines.base import RunStats, TemplateStats
 from logfold.errors import ConfigError, SourceError
 from logfold.levels import LEVEL_NAMES
 from logfold.model import (
@@ -120,10 +120,10 @@ MINING_ONLY_DEFAULTS: dict[str, Any] = {
 }
 
 
-def _saved_stats(template: Template | None) -> RunStatsData:
+def _saved_stats(template: Template | None) -> RunStats:
     if template is None:
-        return RunStatsData(0, None, None, (0,) * len(LEVEL_NAMES), None)
-    return RunStatsData(
+        return RunStats(0, None, None, (0,) * len(LEVEL_NAMES), None)
+    return RunStats(
         count=template.count,
         first=datetime_to_micros(template.first_seen),
         last=datetime_to_micros(template.last_seen),

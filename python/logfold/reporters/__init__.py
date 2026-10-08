@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from logfold.ext.registry import register_reporter
-from logfold.reporters.html_report import HtmlReporter
-from logfold.reporters.json_report import JsonReporter
-from logfold.reporters.text_report import TextReporter
+from logfold.reporters.html import HtmlReporter
+from logfold.reporters.json import JsonReporter
+from logfold.reporters.text import TextReporter
 
 register_reporter(JsonReporter())
 register_reporter(HtmlReporter())

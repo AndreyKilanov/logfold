@@ -10,12 +10,12 @@ from conftest import requires_native
 from corpora import synthetic_pair
 from logfold import DiffConfig
 from logfold.comparison import ExactMatcher, TokenSubsetMatcher, classify
-from logfold.engines.base import RunStatsData, TemplateStats
+from logfold.engines.base import RunStats, TemplateStats
 from logfold.model import RunSummary
 
 
-def stats(count: int, levels: tuple[int, ...] = (0, 0, 0, 0, 0, 0)) -> RunStatsData:
-    return RunStatsData(count, None, None, levels, "example")
+def stats(count: int, levels: tuple[int, ...] = (0, 0, 0, 0, 0, 0)) -> RunStats:
+    return RunStats(count, None, None, levels, "example")
 
 
 def template(text: str, before: int, after: int, levels: tuple[int, ...] = (0, 0, 0, 0, 0, 0)) -> TemplateStats:

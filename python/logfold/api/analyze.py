@@ -17,7 +17,7 @@ from logfold.api._common import (
     _templates,
     _warnings,
 )
-from logfold.api.windows import OPEN, TimeBound, labeled, require_time, window, window_warnings
+from logfold.api._windows import OPEN, TimeBound, labeled, require_time, window, window_warnings
 from logfold.config import (
     ExamplesMode,
     ExecutionConfig,

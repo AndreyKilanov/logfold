@@ -14,13 +14,13 @@ from __future__ import annotations
 
 from logfold.ext.registry import register_format, register_matcher, register_reporter
 from logfold.plugins.formats import LOGFMT, SERILOG_CLEF
-from logfold.plugins.formats_infra import DOCKER_JSON, GITHUB_ACTIONS, HAPROXY, LOG4J, POSTGRESQL, POSTGRESQL_CSV
+from logfold.plugins.formats_servers import DOCKER_JSON, GITHUB_ACTIONS, HAPROXY, LOG4J, POSTGRESQL, POSTGRESQL_CSV
 from logfold.plugins.listing import PluginInfo, closest, list_plugins, plugin_info, unknown_name_hint
 from logfold.plugins.matchers import JaccardIdfMatcher, JaccardMatcher, OverlapMatcher, RulesMatcher
 from logfold.plugins.reporters import CsvReporter, MarkdownReporter
 from logfold.plugins.reporters_ci import GithubSummaryReporter, JunitReporter
 from logfold.plugins.reporters_feeds import ChatMessageReporter, PrometheusReporter
-from logfold.plugins.templates import write_template
+from logfold.plugins.scaffold import write_template
 
 register_format(LOGFMT.name, LOGFMT)
 register_format(SERILOG_CLEF.name, SERILOG_CLEF)

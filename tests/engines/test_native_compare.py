@@ -17,11 +17,11 @@ from hypothesis import strategies as st
 import logfold
 from conftest import requires_native
 from logfold import DiffConfig
-from logfold.api.comparing import classify_native, result_side, table_side
-from logfold.api.matching import native_spec
+from logfold.api._matching import native_spec
+from logfold.api._native_classify import classify_native, result_side, table_side
 from logfold.api.saved import _join_saved
 from logfold.comparison import ExactMatcher, TokenSubsetMatcher, classify
-from logfold.engines.base import RunStatsData, TemplateStats, TemplateTable
+from logfold.engines.base import RunStats, TemplateStats, TemplateTable
 from logfold.levels import summarize_levels
 from logfold.model import AnalysisResult, ResultMeta, RunMetrics, RunSummary, Template
 from logfold.plugins.matchers import JaccardIdfMatcher, JaccardMatcher, OverlapMatcher, RulesMatcher
@@ -57,17 +57,15 @@ def summary(records: int, aware: bool) -> RunSummary:
     return RunSummary("run", 1, records, records, 0, 0, aware, False)
 
 
-def random_stats(rng: random.Random, count: int) -> RunStatsData:
+def random_stats(rng: random.Random, count: int) -> RunStats:
     if count == 0:
-        return RunStatsData(0, None, None, (0,) * 6, None)
+        return RunStats(0, None, None, (0,) * 6, None)
     levels = [0] * 6
     for _ in range(min(count, 5)):
         levels[rng.randrange(6)] += 1
     first = EPOCH_US + rng.randrange(10**9) if rng.random() < 0.8 else None
     last = first + rng.randrange(10**6) if first is not None else None
-    return RunStatsData(
-        count, first, last, tuple(levels), f"example {rng.randrange(100)}" if rng.random() < 0.9 else None
-    )
+    return RunStats(count, first, last, tuple(levels), f"example {rng.randrange(100)}" if rng.random() < 0.9 else None)
 
 
 def random_templates(rng: random.Random, size: int) -> list[TemplateStats]:
