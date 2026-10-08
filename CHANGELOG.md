@@ -12,8 +12,10 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   saved). Continuing gives the same state as one run over both logs; a big input is continued in parallel from
   the loaded tree by default (deterministic; on logs of many rare messages it has more templates, and a warning says so),
   `--strategy sequential` is the exact continuation. Error `StateError`; extension contract
-  version 9.
+  version 10.
   See `docs/cli.md`.
+- `logfold match STATE FILE` and `logfold.match(state, path)` assign a log to the templates of a saved state without
+  learning anything and count the records that fit none (`run.unmatched`, an additive field of the JSON report). See `docs/cli.md`.
 - A GitHub Action (`uses: AndreyKilanov/logfold@<tag>`) and a GitLab CI template (`ci/gitlab/logfold.yml`): analyze the
   log, compare it with the baseline of the last good run, write the summary and fail on new alerts; see `docs/ci.md`.
 

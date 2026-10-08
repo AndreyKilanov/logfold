@@ -201,6 +201,20 @@ Run counters (`lines`, `records`, `unparsed`) come from the training pass. In th
 shared read-only by all workers, per-chunk statistics are merged in chunk order (the earlier `example` wins), so the
 result stays independent of the thread count. Identical inputs therefore produce identical counts in both runs.
 
+### Match mode
+
+`match` is this pass alone, against the tree of a saved state, with no training before it (`logfold.match`,
+`logfold match STATE FILE`). The assignment is steps 1 and 3 above, so a record gets the cluster that §9 gives it and the
+result does not depend on the strategy or the thread count. The differences are in step 2 and in the counters:
+
+- A record that matches nothing is **not** turned into a template and the run is **not** flagged `overflowed`; it is
+  counted by its token count in `run.unmatched` (`records`, and `by_length` as `(token count, records)` pairs sorted by
+  token count). The text of an unmatched record is not kept.
+- The run counters (`lines`, `records`, `unparsed`, `out_of_range`, `untimed`) come from this pass, so `records` is the
+  sum of the counts of the templates and of `unmatched.records`.
+- The state is only read. A state mined with another algorithm version, other masks or other parameters is refused, as
+  for `--load-state`. `ALGO_VERSION` does not change: the tree and its assignment are the same.
+
 
 ## 10. Diff matchers
 
