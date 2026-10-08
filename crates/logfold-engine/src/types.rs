@@ -8,7 +8,7 @@ pub const DEFAULT_CHUNK_BYTES: u64 = 64 << 20;
 
 /// Mining parameters (see `docs/ALGORITHM.md` §3 and §4).
 #[derive(Clone, Debug)]
-pub struct MiningParams {
+pub struct MiningConfig {
     /// Tree depth, at least 3.
     pub depth: usize,
     /// Similarity threshold in `[0, 1]`.
@@ -21,9 +21,9 @@ pub struct MiningParams {
     pub delimiters: Vec<u8>,
 }
 
-impl Default for MiningParams {
+impl Default for MiningConfig {
     fn default() -> Self {
-        MiningParams {
+        MiningConfig {
             depth: 4,
             sim_th: 0.4,
             max_children: 100,
@@ -35,7 +35,7 @@ impl Default for MiningParams {
 
 /// How the work is executed.
 #[derive(Clone, Copy, Debug)]
-pub enum Strategy {
+pub enum ExecutionStrategy {
     /// One tree for the whole input.
     Sequential,
     /// Fixed-size chunks mined in parallel and merged in order.
@@ -46,7 +46,7 @@ pub enum Strategy {
         threads: usize,
     },
     /// The chunked strategy, unless the first chunk shows that almost every record opens a new template; then one
-    /// tree for the whole input, as with [`Strategy::Sequential`].
+    /// tree for the whole input, as with [`ExecutionStrategy::Sequential`].
     Adaptive {
         /// Chunk size in bytes.
         chunk_bytes: u64,
@@ -68,9 +68,9 @@ pub struct MineRequest {
     /// Masking rules, applied in order.
     pub masks: Vec<MaskRule>,
     /// Mining parameters.
-    pub mining: MiningParams,
+    pub mining: MiningConfig,
     /// Execution strategy.
-    pub strategy: Strategy,
+    pub strategy: ExecutionStrategy,
     /// Chunked mining only: train the first chunk alone and start every other chunk from a copy of its tree (see
     /// `docs/ALGORITHM.md` §6). Fewer stray templates, at the price of a serial prefix of one chunk.
     pub warm_start: bool,
@@ -110,7 +110,7 @@ pub struct RunSummary {
 
 /// Timings and execution facts.
 #[derive(Clone, Debug)]
-pub struct Metrics {
+pub struct RunMetrics {
     /// `sequential` or `chunked`: the strategy that mined the input (an adaptive request reports what it chose).
     pub strategy: &'static str,
     /// Worker threads used.
@@ -140,11 +140,11 @@ pub struct MineOutput {
     /// The trained miner, when the request asked for it.
     pub snapshot: Option<MinerSnapshot>,
     /// Timings.
-    pub metrics: Metrics,
+    pub metrics: RunMetrics,
 }
 
 /// Receives progress and can cancel a run. Called from worker threads.
-pub trait Observer: Sync {
+pub trait ProgressObserver: Sync {
     /// Called with the number of input bytes consumed since the previous call.
     fn on_bytes(&self, _consumed: u64) {}
 
@@ -154,7 +154,7 @@ pub trait Observer: Sync {
     }
 }
 
-/// Observer that ignores everything.
-pub struct NoObserver;
+/// ProgressObserver that ignores everything.
+pub struct NullObserver;
 
-impl Observer for NoObserver {}
+impl ProgressObserver for NullObserver {}

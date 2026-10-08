@@ -1,6 +1,6 @@
 //! Application layer of logfold: the mining pipeline and its execution strategies.
 //!
-//! [`mine`] is the single entry point. It plans the work, runs it with the requested [`Strategy`] and returns the
+//! [`mine`] is the single entry point. It plans the work, runs it with the requested [`ExecutionStrategy`] and returns the
 //! frozen templates together with per-run counters. Parallelism is deterministic: for a fixed chunk size the result
 //! does not depend on the number of threads.
 
@@ -12,19 +12,20 @@ mod error;
 mod inspect;
 mod pipeline;
 mod plan;
-mod request;
 mod sequential;
+mod types;
 
 use std::time::Instant;
 
 pub use error::EngineError;
 pub use inspect::{SampleRecord, SampleReport, inspect_sample};
-pub use request::{
-    DEFAULT_CHUNK_BYTES, Metrics, MineOutput, MineRequest, MiningParams, NoObserver, Observer, RunSummary, Strategy,
+pub use types::{
+    DEFAULT_CHUNK_BYTES, ExecutionStrategy, MineOutput, MineRequest, MiningConfig, NullObserver, ProgressObserver,
+    RunMetrics, RunSummary,
 };
 
 use logfold_core::{DrainMiner, MinerConfig};
-use pipeline::Context;
+use pipeline::PipelineContext;
 
 /// Memory that the copies of a loaded tree may take together: every worker holds a copy and the window of unmerged
 /// results holds more, so a large state gets fewer threads (about 300 bytes per template is the estimate).
@@ -40,7 +41,7 @@ pub fn threads_for_seed(templates: usize, requested: usize) -> usize {
 }
 
 /// Runs the mining pipeline described by `request`.
-pub fn mine(request: &MineRequest, observer: &dyn Observer) -> Result<MineOutput, EngineError> {
+pub fn mine(request: &MineRequest, observer: &dyn ProgressObserver) -> Result<MineOutput, EngineError> {
     let started = Instant::now();
     if request.runs.is_empty() || request.runs.iter().any(|files| files.is_empty()) {
         return Err(EngineError::Config("every run needs at least one input".into()));
@@ -48,7 +49,7 @@ pub fn mine(request: &MineRequest, observer: &dyn Observer) -> Result<MineOutput
     if !request.windows.is_empty() && request.windows.len() != request.runs.len() {
         return Err(EngineError::Config("there must be one time window per run".into()));
     }
-    let context = Context::new(request)?;
+    let context = PipelineContext::new(request)?;
     let miner_config = MinerConfig::new(
         request.mining.depth,
         request.mining.sim_th,
@@ -71,10 +72,10 @@ pub fn mine(request: &MineRequest, observer: &dyn Observer) -> Result<MineOutput
 
     let mine_started = Instant::now();
     let (chunk_bytes, threads_requested, adaptive) = match request.strategy {
-        Strategy::Sequential => (None, None, false),
-        Strategy::Chunked { chunk_bytes, threads } => (Some(chunk_bytes), Some(threads), false),
+        ExecutionStrategy::Sequential => (None, None, false),
+        ExecutionStrategy::Chunked { chunk_bytes, threads } => (Some(chunk_bytes), Some(threads), false),
         // a loaded tree is the seed of every chunk, so there is no first chunk to judge the diversity by
-        Strategy::Adaptive { chunk_bytes, threads } => (Some(chunk_bytes), Some(threads), initial.is_none()),
+        ExecutionStrategy::Adaptive { chunk_bytes, threads } => (Some(chunk_bytes), Some(threads), initial.is_none()),
     };
     let planned = plan::plan(request, chunk_bytes)?;
     let mut chunks = planned.units.len();
@@ -95,13 +96,13 @@ pub fn mine(request: &MineRequest, observer: &dyn Observer) -> Result<MineOutput
             let options =
                 chunked::ChunkOptions { threads: requested, adaptive, warm: request.warm_start, initial: seed };
             match chunked::train(&context, &miner_config, &planned, options, observer)? {
-                chunked::Trained::Merged(miner, counters, threads, merge_seconds) => {
+                chunked::TrainingOutcome::Merged(miner, counters, threads, merge_seconds) => {
                     Some((*miner, counters, threads, merge_seconds, "chunked"))
                 }
-                chunked::Trained::TooDiverse { consumed } => {
+                chunked::TrainingOutcome::TooDiverse { consumed } => {
                     let whole = plan::plan(request, None)?;
                     chunks = whole.units.len();
-                    let again = adaptive::Skip::new(observer, consumed);
+                    let again = adaptive::SkippingObserver::new(observer, consumed);
                     let (miner, counters) = sequential::train(&context, &miner_config, &whole, &again, None)?;
                     Some((miner, counters, 1, 0.0, "sequential"))
                 }
@@ -155,7 +156,7 @@ pub fn mine(request: &MineRequest, observer: &dyn Observer) -> Result<MineOutput
             overflowed: overflowed[run],
         })
         .collect();
-    let metrics = Metrics {
+    let metrics = RunMetrics {
         strategy: strategy_name,
         threads,
         chunks,

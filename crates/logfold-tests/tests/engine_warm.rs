@@ -4,7 +4,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use logfold_core::default_mask_rules;
-use logfold_engine::{MineOutput, MineRequest, MiningParams, NoObserver, Strategy, mine};
+use logfold_engine::{ExecutionStrategy, MineOutput, MineRequest, MiningConfig, NullObserver, mine};
 use logfold_io::{FormatConfig, FormatSpec};
 
 const MIB: u64 = 1024 * 1024;
@@ -52,13 +52,13 @@ fn write_log(dir: &tempfile::TempDir, lines: usize) -> PathBuf {
     path
 }
 
-fn request(path: &Path, strategy: Strategy, warm_start: bool) -> MineRequest {
+fn request(path: &Path, strategy: ExecutionStrategy, warm_start: bool) -> MineRequest {
     MineRequest {
         windows: Vec::new(),
         runs: vec![vec![path.to_path_buf()]],
         format: FormatConfig { spec: FormatSpec::Plain { record_start: None }, ts_format: None, multiline: false },
         masks: default_mask_rules(),
-        mining: MiningParams::default(),
+        mining: MiningConfig::default(),
         strategy,
         warm_start,
         recount: false,
@@ -76,7 +76,8 @@ fn a_warm_start_is_deterministic_across_thread_counts() {
     let dir = tempfile::tempdir().unwrap();
     let path = write_log(&dir, 60_000);
     let run = |threads| {
-        mine(&request(&path, Strategy::Chunked { chunk_bytes: 128 * 1024, threads }, true), &NoObserver).unwrap()
+        mine(&request(&path, ExecutionStrategy::Chunked { chunk_bytes: 128 * 1024, threads }, true), &NullObserver)
+            .unwrap()
     };
     let baseline = run(1);
     assert!(baseline.metrics.chunks > 4);
@@ -91,7 +92,8 @@ fn a_warm_start_counts_every_record_once() {
     let dir = tempfile::tempdir().unwrap();
     let path = write_log(&dir, 60_000);
     let output =
-        mine(&request(&path, Strategy::Chunked { chunk_bytes: 128 * 1024, threads: 4 }, true), &NoObserver).unwrap();
+        mine(&request(&path, ExecutionStrategy::Chunked { chunk_bytes: 128 * 1024, threads: 4 }, true), &NullObserver)
+            .unwrap();
     assert_eq!(output.runs[0].records, 60_000);
     let total: u64 = output.templates.iter().map(|t| t.total()).sum();
     assert_eq!(total, 60_000);
@@ -101,9 +103,9 @@ fn a_warm_start_counts_every_record_once() {
 fn a_warm_start_changes_nothing_for_one_chunk() {
     let dir = tempfile::tempdir().unwrap();
     let path = write_log(&dir, 5000);
-    let strategy = Strategy::Chunked { chunk_bytes: 64 * MIB, threads: 4 };
-    let cold = mine(&request(&path, strategy, false), &NoObserver).unwrap();
-    let warm = mine(&request(&path, strategy, true), &NoObserver).unwrap();
+    let strategy = ExecutionStrategy::Chunked { chunk_bytes: 64 * MIB, threads: 4 };
+    let cold = mine(&request(&path, strategy, false), &NullObserver).unwrap();
+    let warm = mine(&request(&path, strategy, true), &NullObserver).unwrap();
     assert_eq!(summary(&cold), summary(&warm));
 }
 
@@ -141,9 +143,9 @@ fn write_stray(dir: &tempfile::TempDir, lines: usize) -> PathBuf {
 fn a_warm_start_gives_fewer_stray_templates_than_a_cold_one() {
     let dir = tempfile::tempdir().unwrap();
     let path = write_stray(&dir, 300_000);
-    let strategy = Strategy::Chunked { chunk_bytes: MIB, threads: 4 };
-    let cold = mine(&request(&path, strategy, false), &NoObserver).unwrap();
-    let warm = mine(&request(&path, strategy, true), &NoObserver).unwrap();
+    let strategy = ExecutionStrategy::Chunked { chunk_bytes: MIB, threads: 4 };
+    let cold = mine(&request(&path, strategy, false), &NullObserver).unwrap();
+    let warm = mine(&request(&path, strategy, true), &NullObserver).unwrap();
     eprintln!("cold {} warm {}", cold.templates.len(), warm.templates.len());
     assert!(warm.templates.len() < cold.templates.len(), "{} against {}", warm.templates.len(), cold.templates.len());
 }
@@ -158,9 +160,9 @@ fn an_adaptive_run_with_a_warm_start_still_gives_up_on_unique_messages() {
         writeln!(file, "INFO {}", words.join(" ")).unwrap();
     }
     drop(file);
-    let strategy = Strategy::Adaptive { chunk_bytes: MIB, threads: 4 };
-    let adaptive = mine(&request(&path, strategy, true), &NoObserver).unwrap();
-    let sequential = mine(&request(&path, Strategy::Sequential, false), &NoObserver).unwrap();
+    let strategy = ExecutionStrategy::Adaptive { chunk_bytes: MIB, threads: 4 };
+    let adaptive = mine(&request(&path, strategy, true), &NullObserver).unwrap();
+    let sequential = mine(&request(&path, ExecutionStrategy::Sequential, false), &NullObserver).unwrap();
     assert_eq!(adaptive.metrics.strategy, "sequential");
     assert_eq!(summary(&adaptive), summary(&sequential));
 }
@@ -169,10 +171,11 @@ fn an_adaptive_run_with_a_warm_start_still_gives_up_on_unique_messages() {
 fn an_adaptive_run_with_a_warm_start_keeps_repetitive_logs_chunked() {
     let dir = tempfile::tempdir().unwrap();
     let path = write_log(&dir, 80_000);
-    let strategy = Strategy::Adaptive { chunk_bytes: 256 * 1024, threads: 4 };
-    let adaptive = mine(&request(&path, strategy, true), &NoObserver).unwrap();
+    let strategy = ExecutionStrategy::Adaptive { chunk_bytes: 256 * 1024, threads: 4 };
+    let adaptive = mine(&request(&path, strategy, true), &NullObserver).unwrap();
     let chunked =
-        mine(&request(&path, Strategy::Chunked { chunk_bytes: 256 * 1024, threads: 4 }, true), &NoObserver).unwrap();
+        mine(&request(&path, ExecutionStrategy::Chunked { chunk_bytes: 256 * 1024, threads: 4 }, true), &NullObserver)
+            .unwrap();
     assert_eq!(adaptive.metrics.strategy, "chunked");
     assert_eq!(summary(&adaptive), summary(&chunked));
 }

@@ -4,7 +4,7 @@ use std::io::Write;
 use std::path::PathBuf;
 
 use logfold_core::default_mask_rules;
-use logfold_engine::{EngineError, MineOutput, MineRequest, MiningParams, NoObserver, Strategy, mine};
+use logfold_engine::{EngineError, ExecutionStrategy, MineOutput, MineRequest, MiningConfig, NullObserver, mine};
 use logfold_io::{FormatConfig, FormatSpec, TimeWindow, parse_iso};
 
 const SECOND: i64 = 1_000_000;
@@ -43,7 +43,7 @@ fn at(second: usize) -> i64 {
     base() + second as i64 * SECOND
 }
 
-fn request(runs: Vec<Vec<PathBuf>>, windows: Vec<TimeWindow>, strategy: Strategy) -> MineRequest {
+fn request(runs: Vec<Vec<PathBuf>>, windows: Vec<TimeWindow>, strategy: ExecutionStrategy) -> MineRequest {
     MineRequest {
         runs,
         windows,
@@ -58,7 +58,7 @@ fn request(runs: Vec<Vec<PathBuf>>, windows: Vec<TimeWindow>, strategy: Strategy
             multiline: false,
         },
         masks: default_mask_rules(),
-        mining: MiningParams::default(),
+        mining: MiningConfig::default(),
         strategy,
         warm_start: false,
         recount: true,
@@ -80,7 +80,7 @@ fn a_window_keeps_only_the_records_inside_it() {
     let dir = tempfile::tempdir().unwrap();
     let path = write_log(&dir);
     let window = TimeWindow { since: Some(at(1000)), until: Some(at(2500)) };
-    let output = mine(&request(vec![vec![path]], vec![window], Strategy::Sequential), &NoObserver).unwrap();
+    let output = mine(&request(vec![vec![path]], vec![window], ExecutionStrategy::Sequential), &NullObserver).unwrap();
     let run = &output.runs[0];
     assert_eq!(run.records, inside(1000, 2500));
     let untimed = (0..RECORDS).filter(|&i| is_untimed(i)).count() as u64;
@@ -95,7 +95,7 @@ fn a_window_keeps_only_the_records_inside_it() {
 fn without_a_window_nothing_is_left_out_and_untimed_records_stay() {
     let dir = tempfile::tempdir().unwrap();
     let path = write_log(&dir);
-    let output = mine(&request(vec![vec![path]], Vec::new(), Strategy::Sequential), &NoObserver).unwrap();
+    let output = mine(&request(vec![vec![path]], Vec::new(), ExecutionStrategy::Sequential), &NullObserver).unwrap();
     assert_eq!(output.runs[0].records, RECORDS as u64);
     assert_eq!((output.runs[0].out_of_range, output.runs[0].untimed), (0, 0));
 }
@@ -104,9 +104,11 @@ fn without_a_window_nothing_is_left_out_and_untimed_records_stay() {
 fn an_open_window_equals_no_window() {
     let dir = tempfile::tempdir().unwrap();
     let path = write_log(&dir);
-    let none = mine(&request(vec![vec![path.clone()]], Vec::new(), Strategy::Sequential), &NoObserver).unwrap();
+    let none =
+        mine(&request(vec![vec![path.clone()]], Vec::new(), ExecutionStrategy::Sequential), &NullObserver).unwrap();
     let open =
-        mine(&request(vec![vec![path]], vec![TimeWindow::default()], Strategy::Sequential), &NoObserver).unwrap();
+        mine(&request(vec![vec![path]], vec![TimeWindow::default()], ExecutionStrategy::Sequential), &NullObserver)
+            .unwrap();
     assert_eq!(summary(&none), summary(&open));
     assert_eq!(open.runs[0].records, RECORDS as u64);
 }
@@ -116,10 +118,11 @@ fn chunked_and_sequential_agree_with_a_window() {
     let dir = tempfile::tempdir().unwrap();
     let path = write_log(&dir);
     let window = TimeWindow { since: Some(at(700)), until: Some(at(3100)) };
-    let sequential = mine(&request(vec![vec![path.clone()]], vec![window], Strategy::Sequential), &NoObserver).unwrap();
+    let sequential =
+        mine(&request(vec![vec![path.clone()]], vec![window], ExecutionStrategy::Sequential), &NullObserver).unwrap();
     for threads in [1, 4] {
-        let strategy = Strategy::Chunked { chunk_bytes: 2048, threads };
-        let chunked = mine(&request(vec![vec![path.clone()]], vec![window], strategy), &NoObserver).unwrap();
+        let strategy = ExecutionStrategy::Chunked { chunk_bytes: 2048, threads };
+        let chunked = mine(&request(vec![vec![path.clone()]], vec![window], strategy), &NullObserver).unwrap();
         assert!(chunked.metrics.chunks > 1);
         let (a, b) = (&sequential.runs[0], &chunked.runs[0]);
         assert_eq!((a.records, a.out_of_range, a.untimed, a.lines), (b.records, b.out_of_range, b.untimed, b.lines));
@@ -135,7 +138,8 @@ fn two_windows_of_one_file_split_it_into_two_runs() {
     let split = at(2000);
     let windows = vec![TimeWindow { since: None, until: Some(split) }, TimeWindow { since: Some(split), until: None }];
     let output =
-        mine(&request(vec![vec![path.clone()], vec![path]], windows, Strategy::Sequential), &NoObserver).unwrap();
+        mine(&request(vec![vec![path.clone()], vec![path]], windows, ExecutionStrategy::Sequential), &NullObserver)
+            .unwrap();
     let (before, after) = (&output.runs[0], &output.runs[1]);
     assert_eq!(before.records, inside(0, 2000));
     assert_eq!(after.records, inside(2000, RECORDS));
@@ -152,7 +156,7 @@ fn a_window_that_matches_nothing_gives_an_empty_run() {
     let dir = tempfile::tempdir().unwrap();
     let path = write_log(&dir);
     let window = TimeWindow { since: Some(at(86_000)), until: None };
-    let output = mine(&request(vec![vec![path]], vec![window], Strategy::Sequential), &NoObserver).unwrap();
+    let output = mine(&request(vec![vec![path]], vec![window], ExecutionStrategy::Sequential), &NullObserver).unwrap();
     assert_eq!(output.runs[0].records, 0);
     assert!(output.templates.is_empty());
 }
@@ -162,6 +166,6 @@ fn the_number_of_windows_must_match_the_number_of_runs() {
     let dir = tempfile::tempdir().unwrap();
     let path = write_log(&dir);
     let windows = vec![TimeWindow::default(), TimeWindow::default()];
-    let result = mine(&request(vec![vec![path]], windows, Strategy::Sequential), &NoObserver);
+    let result = mine(&request(vec![vec![path]], windows, ExecutionStrategy::Sequential), &NullObserver);
     assert!(matches!(result, Err(EngineError::Config(_))));
 }

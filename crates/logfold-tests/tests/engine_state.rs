@@ -6,7 +6,7 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use logfold_core::{DrainMiner, MinerSnapshot, default_mask_rules};
-use logfold_engine::{MineOutput, MineRequest, MiningParams, NoObserver, Strategy, mine, threads_for_seed};
+use logfold_engine::{ExecutionStrategy, MineOutput, MineRequest, MiningConfig, NullObserver, mine, threads_for_seed};
 use logfold_io::{FormatConfig, FormatSpec};
 
 fn write_log(dir: &tempfile::TempDir, name: &str, range: std::ops::Range<usize>) -> PathBuf {
@@ -45,13 +45,18 @@ fn write_log(dir: &tempfile::TempDir, name: &str, range: std::ops::Range<usize>)
     path
 }
 
-fn request(path: &Path, strategy: Strategy, initial: Option<MinerSnapshot>, keep_snapshot: bool) -> MineRequest {
+fn request(
+    path: &Path,
+    strategy: ExecutionStrategy,
+    initial: Option<MinerSnapshot>,
+    keep_snapshot: bool,
+) -> MineRequest {
     MineRequest {
         windows: Vec::new(),
         runs: vec![vec![path.to_path_buf()]],
         format: FormatConfig { spec: FormatSpec::Plain { record_start: None }, ts_format: None, multiline: false },
         masks: default_mask_rules(),
-        mining: MiningParams::default(),
+        mining: MiningConfig::default(),
         strategy,
         warm_start: false,
         recount: false,
@@ -60,12 +65,12 @@ fn request(path: &Path, strategy: Strategy, initial: Option<MinerSnapshot>, keep
     }
 }
 
-fn chunked(threads: usize) -> Strategy {
-    Strategy::Chunked { chunk_bytes: 16 * 1024, threads }
+fn chunked(threads: usize) -> ExecutionStrategy {
+    ExecutionStrategy::Chunked { chunk_bytes: 16 * 1024, threads }
 }
 
 fn saved(first: &Path) -> MinerSnapshot {
-    mine(&request(first, Strategy::Sequential, None, true), &NoObserver).unwrap().snapshot.unwrap()
+    mine(&request(first, ExecutionStrategy::Sequential, None, true), &NullObserver).unwrap().snapshot.unwrap()
 }
 
 fn records(output: &MineOutput) -> u64 {
@@ -82,7 +87,7 @@ fn a_loaded_tree_seeds_every_chunk_and_every_record_is_counted() {
     let first = write_log(&dir, "a.log", 0..4000);
     let second = write_log(&dir, "b.log", 4000..24000);
     let state = saved(&first);
-    let output = mine(&request(&second, chunked(4), Some(state), false), &NoObserver).unwrap();
+    let output = mine(&request(&second, chunked(4), Some(state), false), &NullObserver).unwrap();
     assert_eq!(output.metrics.strategy, "chunked");
     assert!(output.metrics.chunks > 4, "the log must be cut into many chunks ({})", output.metrics.chunks);
     assert_eq!(output.runs[0].records, 20000);
@@ -95,9 +100,9 @@ fn the_parallel_resume_does_not_depend_on_the_number_of_threads() {
     let first = write_log(&dir, "a.log", 0..4000);
     let second = write_log(&dir, "b.log", 4000..24000);
     let state = saved(&first);
-    let one = mine(&request(&second, chunked(1), Some(state.clone()), true), &NoObserver).unwrap();
+    let one = mine(&request(&second, chunked(1), Some(state.clone()), true), &NullObserver).unwrap();
     for threads in [2, 5, 16] {
-        let many = mine(&request(&second, chunked(threads), Some(state.clone()), true), &NoObserver).unwrap();
+        let many = mine(&request(&second, chunked(threads), Some(state.clone()), true), &NullObserver).unwrap();
         assert_eq!(texts(&many), texts(&one), "{threads} threads");
         assert_eq!(many.snapshot, one.snapshot, "{threads} threads: the saved state too");
     }
@@ -109,8 +114,9 @@ fn the_parallel_resume_finds_the_templates_of_the_sequential_one() {
     let first = write_log(&dir, "a.log", 0..4000);
     let second = write_log(&dir, "b.log", 4000..24000);
     let state = saved(&first);
-    let sequential = mine(&request(&second, Strategy::Sequential, Some(state.clone()), false), &NoObserver).unwrap();
-    let parallel = mine(&request(&second, chunked(4), Some(state), false), &NoObserver).unwrap();
+    let sequential =
+        mine(&request(&second, ExecutionStrategy::Sequential, Some(state.clone()), false), &NullObserver).unwrap();
+    let parallel = mine(&request(&second, chunked(4), Some(state), false), &NullObserver).unwrap();
     assert_eq!(records(&sequential), records(&parallel));
     let wanted = texts(&sequential);
     let found = texts(&parallel);
@@ -128,7 +134,8 @@ fn the_state_saved_after_a_parallel_resume_loads_and_keeps_the_history() {
     let dir = tempfile::tempdir().unwrap();
     let first = write_log(&dir, "a.log", 0..4000);
     let second = write_log(&dir, "b.log", 4000..24000);
-    let after = mine(&request(&second, chunked(4), Some(saved(&first)), true), &NoObserver).unwrap().snapshot.unwrap();
+    let after =
+        mine(&request(&second, chunked(4), Some(saved(&first)), true), &NullObserver).unwrap().snapshot.unwrap();
     let all: u64 = after.clusters.iter().map(|c| c.history.count).sum::<u64>()
         + after.overflow.iter().map(|(_, c)| c.history.count).sum::<u64>();
     assert_eq!(all, 24000, "the history holds the records of both runs");
@@ -141,9 +148,9 @@ fn a_loaded_state_with_one_chunk_is_continued_sequentially() {
     let first = write_log(&dir, "a.log", 0..4000);
     let second = write_log(&dir, "b.log", 4000..4100);
     let state = saved(&first);
-    let one_chunk = Strategy::Chunked { chunk_bytes: 64 << 20, threads: 4 };
-    let output = mine(&request(&second, one_chunk, Some(state.clone()), true), &NoObserver).unwrap();
-    let sequential = mine(&request(&second, Strategy::Sequential, Some(state), true), &NoObserver).unwrap();
+    let one_chunk = ExecutionStrategy::Chunked { chunk_bytes: 64 << 20, threads: 4 };
+    let output = mine(&request(&second, one_chunk, Some(state.clone()), true), &NullObserver).unwrap();
+    let sequential = mine(&request(&second, ExecutionStrategy::Sequential, Some(state), true), &NullObserver).unwrap();
     assert_eq!(output.snapshot, sequential.snapshot, "one chunk is the same as one tree");
     assert_eq!(output.metrics.strategy, "sequential");
 }
@@ -153,8 +160,8 @@ fn adaptive_with_a_loaded_state_goes_parallel_without_judging_the_first_chunk() 
     let dir = tempfile::tempdir().unwrap();
     let first = write_log(&dir, "a.log", 0..4000);
     let second = write_log(&dir, "b.log", 4000..24000);
-    let adaptive = Strategy::Adaptive { chunk_bytes: 16 * 1024, threads: 4 };
-    let output = mine(&request(&second, adaptive, Some(saved(&first)), false), &NoObserver).unwrap();
+    let adaptive = ExecutionStrategy::Adaptive { chunk_bytes: 16 * 1024, threads: 4 };
+    let output = mine(&request(&second, adaptive, Some(saved(&first)), false), &NullObserver).unwrap();
     assert_eq!(output.metrics.strategy, "chunked");
     assert_eq!(records(&output), 20000);
 }
