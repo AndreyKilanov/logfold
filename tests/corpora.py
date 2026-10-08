@@ -169,6 +169,18 @@ def write(path: Path, lines: list[str], *, crlf: bool = False, final_newline: bo
     return path
 
 
+def write_corpus_dir(directory: Path) -> None:
+    """Write every corpus and its variants (line endings, a before/after pair) into ``directory``."""
+    for name, (generate, _format, _multiline) in CORPORA.items():
+        write(directory / f"{name}.log", generate(1500))
+    write(directory / "app_crlf.log", CORPORA["app"][0](400), crlf=True)
+    write(directory / "app_nonl.log", CORPORA["app"][0](400), final_newline=False)
+    write(directory / "app_before.log", CORPORA["app"][0](1200, 11))
+    burst = [f"2026-10-04T23:59:{i % 60:02d}Z ERROR database connection lost to replica-{i % 3}" for i in range(80)]
+    storm = [f"2026-10-04T23:58:{i % 60:02d}Z INFO cache miss for key k{i}" for i in range(500)]
+    write(directory / "app_after.log", CORPORA["app"][0](1800, 12) + burst + storm)
+
+
 def synthetic_pair(tmp_path: Path, seed: int) -> tuple[Path, Path, dict[str, set[str]]]:
     rng = random.Random(seed)
     base = [
