@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 
+from logfold import _bridge
 from logfold.config import ExecutionConfig
 from logfold.engines import native
 from logfold.engines.base import Engine
@@ -41,7 +42,7 @@ def select_engine(config: ExecutionConfig) -> Engine:
         return PythonEngine()
     if choice == "native":
         return native.NativeEngine()
-    if native.is_available():
+    if _bridge.is_available():
         return native.NativeEngine()
     logger.warning("native extension unavailable; falling back to the slow pure-Python engine")
     return PythonEngine()

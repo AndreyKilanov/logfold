@@ -10,7 +10,7 @@ from collections.abc import Sequence
 from operator import attrgetter
 from typing import Any
 
-from logfold.ext.native_reports import get_renderer
+from logfold import _bridge
 from logfold.levels import LEVEL_NAMES
 from logfold.model import AnalysisResult, DiffEntry, DiffResult, Template
 
@@ -140,13 +140,12 @@ def native_text(
     Raises:
         ConfigError: If the extension rejects the data.
     """
-    render = get_renderer()
-    if render is None:
+    if not _bridge.supports_reports():
         return None
     if rows is not None and (rows[0] < MIN_LISTED or rows[0] * LISTED_FRACTION < rows[1]):
         return None
     try:
-        return render(
+        return _bridge.render_report(
             name, _data(result, frozenset(fields), list(levels)), {k: min(v, _LARGEST) for k, v in options.items()}
         )
     except (UnicodeError, OverflowError):

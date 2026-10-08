@@ -10,8 +10,8 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 
+from logfold import _bridge
 from logfold.comparison import ExactMatcher, TokenSubsetMatcher
-from logfold.engines import native
 from logfold.errors import ConfigError
 from logfold.ext import registry
 from logfold.ext.matchers import DiffMatcher
@@ -44,7 +44,7 @@ class _NativeMatcher:
             Index pairs, identical to those of the wrapped Python matcher.
         """
         try:
-            return native.match_templates(self._kind, before_only, after_only, self._threshold, self._rules)
+            return _bridge.match_templates(self._kind, before_only, after_only, self._threshold, self._rules)
         except (UnicodeError, ValueError):
             return self._base.match(before_only, after_only)
 
@@ -106,7 +106,7 @@ def accelerated(matcher: DiffMatcher, enabled: bool = True) -> DiffMatcher:
         A matcher with the same name and the same results. A threshold that is not a positive number keeps the Python
         implementation: zero or less scores every pair, ``nan`` and infinity are reached by no pair.
     """
-    if not enabled or not native.supports_matching():
+    if not enabled or not _bridge.supports_matching():
         return matcher
     spec = native_spec(matcher)
     if spec is None or spec[0] == "exact":

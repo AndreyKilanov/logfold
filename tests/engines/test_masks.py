@@ -73,7 +73,7 @@ NATIVE_SAMPLES = [
 @pytest.mark.parametrize("text", NATIVE_SAMPLES)
 def test_native_masking_matches_the_python_masker(text: str, tmp_path: pytest.TempPathFactory) -> None:
     import logfold
-    from logfold.engines import native
+    from logfold import _bridge as native
 
     if not native.is_available():
         pytest.skip("native extension is not built")

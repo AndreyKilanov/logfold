@@ -7,7 +7,7 @@ import pytest
 import logfold
 from conftest import requires_native
 from logfold import ConfigError, FormatError, MaskRule, MiningConfig, SourceError
-from logfold.engines import native
+from logfold import _bridge as native
 from logfold.errors import EngineError
 
 

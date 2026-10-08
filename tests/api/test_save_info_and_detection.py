@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 import logfold
-from logfold.engines import native
+from logfold import _bridge as native
 from logfold.errors import ConfigError, UnknownSuffixError
 from logfold.ext import registry
 

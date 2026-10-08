@@ -14,11 +14,11 @@ import re
 import time
 from typing import Any
 
+from logfold import _bridge
 from logfold.api.comparing import classify_native, result_side
 from logfold.api.matching import accelerated, native_spec, resolve_matcher
 from logfold.comparison import classify
 from logfold.config import DiffConfig, ExamplesMode
-from logfold.engines import native
 from logfold.engines.base import RunStatsData, TemplateStats
 from logfold.errors import ConfigError, SourceError
 from logfold.levels import LEVEL_NAMES
@@ -194,7 +194,7 @@ def diff_saved(before: AnalysisResult, after: AnalysisResult, config: DiffConfig
         )
     config = dataclasses.replace(config, recount=False)
     matcher = resolve_matcher(config.matcher)
-    spec = native_spec(matcher) if native.supports_comparison() else None
+    spec = native_spec(matcher) if _bridge.supports_comparison() else None
     classification = None
     if spec is not None:
         classification = classify_native(

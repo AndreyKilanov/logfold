@@ -10,8 +10,8 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 from conftest import requires_native
+from logfold import _bridge as native
 from logfold.api.matching import accelerated, native_spec
-from logfold.engines import native
 from logfold.plugins.matchers import JaccardIdfMatcher, OverlapMatcher, RulesMatcher
 from oracles import quadratic_jaccard_idf, quadratic_overlap
 

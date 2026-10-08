@@ -13,9 +13,9 @@ from hypothesis import strategies as st
 import logfold
 from conftest import requires_native
 from corpora import synthetic_pair
+from logfold import _bridge as native
 from logfold.api.matching import accelerated
 from logfold.comparison import ExactMatcher, TokenSubsetMatcher
-from logfold.engines import native
 from logfold.errors import ConfigError
 from logfold.plugins.matchers import JaccardMatcher
 from oracles import quadratic_jaccard, quadratic_token_subset

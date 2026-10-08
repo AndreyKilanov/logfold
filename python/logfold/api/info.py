@@ -5,8 +5,8 @@ from __future__ import annotations
 import sys
 from dataclasses import dataclass
 
+from logfold import _bridge
 from logfold._version import get_version
-from logfold.engines import native
 from logfold.ext import registry
 
 
@@ -43,7 +43,7 @@ def info() -> Info:
     Returns:
         The facts. Registered plugins are loaded first, so their names are included.
     """
-    versions = native.core_versions() if native.is_available() else None
+    versions = _bridge.core_versions() if _bridge.is_available() else None
     return Info(
         version=get_version(),
         python=sys.version.split()[0],

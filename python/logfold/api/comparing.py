@@ -13,9 +13,9 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 
+from logfold import _bridge
 from logfold.comparison import Classification, apply_significance
 from logfold.config import DiffConfig
-from logfold.engines import native
 from logfold.engines.base import TemplateTable
 from logfold.levels import LEVEL_NAMES
 from logfold.model import (
@@ -155,7 +155,7 @@ def classify_native(
     if len(set(before.texts)) != len(before.texts) or len(set(after.texts)) != len(after.texts):
         return None
     try:
-        new, gone, changed, unchanged = native.compare_runs(
+        new, gone, changed, unchanged = _bridge.compare_runs(
             (before.texts, before.counts, before.total),
             (after.texts, after.counts, after.total),
             (config.threshold_ratio, config.min_count, config.min_new_count),

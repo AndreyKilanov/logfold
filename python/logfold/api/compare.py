@@ -6,6 +6,7 @@ import dataclasses
 from collections.abc import Sequence
 from typing import Any
 
+from logfold import _bridge
 from logfold.api._common import (
     PathLike,
     Progress,
@@ -40,7 +41,6 @@ from logfold.config import (
     MaskRule,
     MiningConfig,
 )
-from logfold.engines import native
 from logfold.errors import ConfigError
 from logfold.ext.formats import Format, FormatSpec
 from logfold.ext.masks import Masker
@@ -232,7 +232,7 @@ def diff(
     before_summary = labeled(_summary(before_names, pooled.before), windows[0] if windows else OPEN)
     after_summary = labeled(_summary(second, pooled.after), windows[-1] if windows else OPEN)
     masker = Masker(mining_config.masks)
-    native_matcher = native_spec(resolved_matcher) if used.name == "native" and native.supports_comparison() else None
+    native_matcher = native_spec(resolved_matcher) if used.name == "native" and _bridge.supports_comparison() else None
     classification = None
     if native_matcher is not None:
         classification = classify_native(

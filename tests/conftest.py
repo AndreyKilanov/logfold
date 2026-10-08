@@ -7,7 +7,7 @@ import pytest
 
 import logfold
 from corpora import write_corpus_dir
-from logfold.engines import native
+from logfold import _bridge as native
 
 os.environ.setdefault("LOGFOLD_NO_USER_PLUGINS", "1")  # the tests must not depend on the plugins of whoever runs them
 

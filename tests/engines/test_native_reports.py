@@ -14,7 +14,8 @@ from hypothesis import strategies as st
 import logfold
 from conftest import requires_native
 from corpora import hostile_pair
-from logfold.ext import get_reporter, native_reports
+from logfold import _bridge
+from logfold.ext import get_reporter
 from logfold.model import AnalysisResult, DiffEntry, DiffResult, RunSummary, Template
 from logfold.plugins import report_data
 
@@ -144,7 +145,7 @@ LIMITS = {"github-summary": "max_bytes", "chat-message": "max_chars"}
 
 def same(name: str, result: AnalysisResult | DiffResult, options: dict[str, int]) -> None:
     reporter = get_reporter(name)
-    assert native_reports.get_renderer() is not None
+    assert _bridge.supports_reports()
     keep = {"top", LIMITS.get(name, "top")}
     options = {key: value for key, value in options.items() if key in keep}
     assert reporter.render(result, **options) == reporter.render_reference(result, **options)  # type: ignore[attr-defined]
@@ -205,15 +206,13 @@ def test_the_size_limits_cut_at_the_same_place_at_every_boundary(tmp_path: Path)
 @pytest.fixture
 def native_calls(monkeypatch: pytest.MonkeyPatch) -> list[str]:
     calls: list[str] = []
-    real = native_reports.get_renderer()
-    assert real is not None
+    real = _bridge.render_report
 
     def spy(name: str, data: dict[str, object], options: dict[str, object]) -> str:
         calls.append(name)
         return real(name, data, options)
 
-    monkeypatch.setattr(native_reports, "get_renderer", lambda: spy)
-    monkeypatch.setattr(report_data, "get_renderer", lambda: spy)
+    monkeypatch.setattr(_bridge, "render_report", spy)
     return calls
 
 

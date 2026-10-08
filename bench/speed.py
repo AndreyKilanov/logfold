@@ -242,7 +242,7 @@ def templates(rng: random.Random, count: int, vocabulary: int) -> list[str]:
 
 def matchers(args: argparse.Namespace) -> None:
     """``matchers``: each native matcher alone on lists of one-sided templates."""
-    from logfold.engines import native
+    from logfold import _bridge as native
 
     if not native.supports_matching():
         sys.exit("the native extension is not built: run `maturin develop --release`")

@@ -8,6 +8,7 @@ import os
 from collections.abc import Callable, Sequence
 from typing import Any
 
+from logfold import _bridge
 from logfold._version import get_version
 from logfold.config import (
     DEFAULT_CHUNK_BYTES,
@@ -19,7 +20,6 @@ from logfold.config import (
     MiningConfig,
     config_fingerprint,
 )
-from logfold.engines import native
 from logfold.engines.base import Engine, MineRequest, MiningResult, RunInfo, StateRequest, TemplateTable
 from logfold.engines.select import select_engine
 from logfold.errors import ConfigError, EngineError, read_error
@@ -234,7 +234,7 @@ def _warnings(
     warnings: list[str] = []
     if strategy == "sequential":
         warnings.extend(_ignored_chunk_options(engine, execution, high_cardinality))
-    if engine.name == "python" and not native.is_available():
+    if engine.name == "python" and not _bridge.is_available():
         warnings.append("the native extension is unavailable; the slow pure-Python engine was used")
     for summary in summaries:
         if summary.lines and summary.unparsed_ratio > UNPARSED_WARNING_RATIO:
