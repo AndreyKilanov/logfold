@@ -7,7 +7,7 @@ import os
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from logfold.config import DiffConfig
 from logfold.errors import ConfigError, NoLevelsError
@@ -16,7 +16,7 @@ from logfold.ext.files import check_appendable, write_text
 from logfold.levels import LEVEL_NAMES, at_least, normalize_level
 
 SCHEMA_VERSION = 1
-_EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
+_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 
 
 def micros_to_datetime(micros: int | None, tz_aware: bool) -> datetime | None:
@@ -60,7 +60,7 @@ def datetime_to_micros(moment: datetime | None) -> int | None:
     """
     if moment is None:
         return None
-    aware = moment if moment.tzinfo is not None else moment.replace(tzinfo=timezone.utc)
+    aware = moment if moment.tzinfo is not None else moment.replace(tzinfo=UTC)
     return (aware - _EPOCH) // timedelta(microseconds=1)
 
 

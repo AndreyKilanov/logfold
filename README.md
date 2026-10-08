@@ -71,7 +71,7 @@ New templates (2)
 pip install "logfold[cli]"
 ```
 
-Python 3.10 or newer. PyPI has prebuilt packages for Linux (x86_64, aarch64, musl), macOS (x86_64, arm64) and Windows
+Python 3.11 or newer. PyPI has prebuilt packages for Linux (x86_64, aarch64, musl), macOS (x86_64, arm64) and Windows
 (x86_64), so pip installs without compiling and you do not need Rust. On any other platform pip builds the package from
 source, which needs a Rust compiler. Without `[cli]` you get the library only.
 

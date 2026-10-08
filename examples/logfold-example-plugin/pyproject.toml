@@ -7,7 +7,7 @@ name = "logfold-example-plugin"
 version = "0.1.0"
 description = "Example logfold plugins: three log formats, two reporters and two diff matchers."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = "MIT"
 dependencies = ["logfold>=0.1.0"]
 

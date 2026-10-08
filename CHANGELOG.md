@@ -5,6 +5,11 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ## [Unreleased]
 
+### Changed
+
+- Python 3.11 or newer is required; Python 3.10 is no longer supported (0.4.0 is the last release for it). The wheels are
+  tagged `cp311-abi3`.
+
 ## [0.4.0] - 2026-10-07
 
 ### Added
