@@ -98,7 +98,8 @@ def test_help_works_whatever_the_file_holds(folder: Path) -> None:
     for arguments in (["--help"], ["analyze", "--help"], ["diff", "--help"], ["match", "--help"]):
         result = runner.invoke(app, arguments)
         assert result.exit_code == exit_codes.OK, (arguments, result.output)
-    assert "--config" in runner.invoke(app, ["--help"]).output
+    options = {opt for param in get_command(app).params for opt in param.opts}  # type: ignore[attr-defined]
+    assert {"--config", "--no-config"} <= options
 
 
 def test_the_masks_of_the_file_reach_the_run(folder: Path) -> None:
