@@ -197,6 +197,9 @@ pub(crate) fn build_output<'py>(py: Python<'py>, output: &MineOutput) -> PyResul
     }
     result.set_item("runs", runs)?;
     result.set_item("templates", template_columns(py, output)?)?;
+    if let Some(unmatched) = &output.unmatched {
+        result.set_item("unmatched", unmatched)?;
+    }
     let metrics = PyDict::new(py);
     metrics.set_item("engine", "native")?;
     metrics.set_item("strategy", output.metrics.strategy)?;

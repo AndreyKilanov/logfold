@@ -17,7 +17,7 @@ use logfold_engine::{EngineError, MineRequest};
 use observer::PyObserver;
 
 /// Version of the Python <-> Rust data contract; bump on any incompatible change of the request or result layout.
-const CORE_API_VERSION: u32 = 9;
+const CORE_API_VERSION: u32 = 10;
 
 pyo3::create_exception!(_core, CoreConfigError, pyo3::exceptions::PyException, "Invalid configuration.");
 pyo3::create_exception!(_core, CoreFormatError, pyo3::exceptions::PyException, "Invalid or unusable log format.");
@@ -43,9 +43,33 @@ fn mine<'py>(
     request: &Bound<'py, PyDict>,
     progress: Option<Py<PyAny>>,
 ) -> PyResult<Bound<'py, PyDict>> {
+    execute(py, request, progress, logfold_engine::mine)
+}
+
+/// Assigns the records of one or more runs to the templates of the saved state of `request` and learns nothing. The
+/// request is the one of `mine` with a state to load; the result has the same layout plus `unmatched`.
+#[pyfunction]
+#[pyo3(signature = (request, progress=None))]
+fn match_state<'py>(
+    py: Python<'py>,
+    request: &Bound<'py, PyDict>,
+    progress: Option<Py<PyAny>>,
+) -> PyResult<Bound<'py, PyDict>> {
+    execute(py, request, progress, logfold_engine::match_records)
+}
+
+type EngineRun =
+    fn(&MineRequest, &dyn logfold_engine::ProgressObserver) -> Result<logfold_engine::MineOutput, EngineError>;
+
+fn execute<'py>(
+    py: Python<'py>,
+    request: &Bound<'py, PyDict>,
+    progress: Option<Py<PyAny>>,
+    engine: EngineRun,
+) -> PyResult<Bound<'py, PyDict>> {
     let (mut request, state): (MineRequest, _) = convert::parse_request(request)?;
     let observer = PyObserver::new(progress);
-    let result = py.detach(|| run(&mut request, state.as_ref(), &observer));
+    let result = py.detach(|| run(&mut request, state.as_ref(), &observer, engine));
     match result {
         Ok(output) => convert::build_output(py, &output),
         Err(EngineError::Cancelled) => Err(observer.take_error().unwrap_or_else(|| translate(EngineError::Cancelled))),
@@ -59,11 +83,12 @@ fn run(
     request: &mut MineRequest,
     state: Option<&state::StateIo>,
     observer: &PyObserver,
+    engine: EngineRun,
 ) -> Result<logfold_engine::MineOutput, EngineError> {
     if let Some(state) = state {
         state.before(request)?;
     }
-    let mut output = logfold_engine::mine(request, observer)?;
+    let mut output = engine(request, observer)?;
     if let Some(state) = state {
         state.after(&mut output)?;
     }
@@ -185,6 +210,7 @@ fn default_masks(py: Python<'_>) -> PyResult<Bound<'_, PyList>> {
 #[pymodule]
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(mine, m)?)?;
+    m.add_function(wrap_pyfunction!(match_state, m)?)?;
     m.add_function(wrap_pyfunction!(match_templates, m)?)?;
     m.add_function(wrap_pyfunction!(compare_runs, m)?)?;
     m.add_function(wrap_pyfunction!(render_report, m)?)?;
