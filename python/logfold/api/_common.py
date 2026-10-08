@@ -8,7 +8,6 @@ import os
 from collections.abc import Callable, Sequence
 from typing import Any
 
-from logfold import _bridge
 from logfold._version import get_version
 from logfold.config import (
     DEFAULT_CHUNK_BYTES,
@@ -20,9 +19,9 @@ from logfold.config import (
     MiningConfig,
     config_fingerprint,
 )
-from logfold.engines.base import Engine, MineRequest, MiningResult, RunInfo, StateRequest, TemplateTable
+from logfold.engines.base import MineRequest, MiningResult, RunInfo, StateRequest, TemplateTable
 from logfold.engines.select import select_engine
-from logfold.errors import ConfigError, EngineError, read_error
+from logfold.errors import ConfigError, read_error
 from logfold.ext.formats import FormatSpec
 from logfold.ext.masks import Masker, validate_masks
 from logfold.formats import ResolvedFormat
@@ -140,11 +139,7 @@ def _state(
     )
 
 
-def _resolve_strategy(engine: Engine, execution: ExecutionConfig, runs: tuple[tuple[str, ...], ...]) -> str:
-    if engine.name == "python":
-        if execution.strategy == "chunked":
-            logger.warning("the pure-Python engine is always sequential; ignoring strategy='chunked'")
-        return "sequential"
+def _resolve_strategy(execution: ExecutionConfig, runs: tuple[tuple[str, ...], ...]) -> str:
     if execution.strategy != "auto":
         return execution.strategy
     return "adaptive" if _total_size(runs) > execution.chunk_bytes else "sequential"
@@ -159,18 +154,13 @@ def _mine(
     recount: bool = False,
     windows: tuple[tuple[int | None, int | None], ...] = (),
     state: StateRequest | None = None,
-) -> tuple[MiningResult, Engine]:
+) -> MiningResult:
     engine = select_engine(execution)
-    if state is not None and engine.name == "python":
-        raise EngineError(
-            "state files need the native engine; the pure-Python engine cannot load or save them yet",
-            hint="install a wheel with the native extension, or leave out the state options",
-        )
     request = MineRequest(
         runs=runs,
         format=spec,
         mining=mining,
-        strategy=_resolve_strategy(engine, execution, runs),
+        strategy=_resolve_strategy(execution, runs),
         threads=execution.threads,
         chunk_bytes=execution.chunk_bytes,
         warm_start=execution.warm_start,
@@ -178,7 +168,7 @@ def _mine(
         windows=windows,
         state=state,
     )
-    return engine.mine(request, progress), engine
+    return engine.mine(request, progress)
 
 
 def _summary(paths: tuple[str, ...], info: RunInfo) -> RunSummary:
@@ -224,7 +214,6 @@ def _templates(
 
 def _warnings(
     summaries: Sequence[RunSummary],
-    engine: Engine,
     execution: ExecutionConfig,
     resolved: ResolvedFormat,
     mining: MiningConfig,
@@ -233,9 +222,7 @@ def _warnings(
 ) -> list[str]:
     warnings: list[str] = []
     if strategy == "sequential":
-        warnings.extend(_ignored_chunk_options(engine, execution, high_cardinality))
-    if engine.name == "python" and not _bridge.is_available():
-        warnings.append("the native extension is unavailable; the slow pure-Python engine was used")
+        warnings.extend(_ignored_chunk_options(execution, high_cardinality))
     for summary in summaries:
         if summary.lines and summary.unparsed_ratio > UNPARSED_WARNING_RATIO:
             warnings.append(
@@ -264,16 +251,14 @@ def _warnings(
     return warnings
 
 
-def _ignored_chunk_options(engine: Engine, execution: ExecutionConfig, high_cardinality: bool) -> list[str]:
+def _ignored_chunk_options(execution: ExecutionConfig, high_cardinality: bool) -> list[str]:
     """Name the options that only matter for the chunked strategy when the run was sequential.
 
     ``warm_start`` is always reported. ``chunk_bytes`` is reported only when something other than the input size made
     the run sequential, because with ``strategy="auto"`` it is also the size above which the input is chunked.
     """
     forced = True
-    if engine.name == "python":
-        reason = "the python engine is always sequential"
-    elif high_cardinality:
+    if high_cardinality:
         reason = "high_cardinality runs sequentially"
     elif execution.strategy == "sequential":
         reason = "strategy='sequential' was asked for"
@@ -291,12 +276,12 @@ def _ignored_chunk_options(engine: Engine, execution: ExecutionConfig, high_card
     ]
 
 
-def _meta(spec: FormatSpec, mining: MiningConfig, engine: Engine) -> ResultMeta:
+def _meta(spec: FormatSpec, mining: MiningConfig) -> ResultMeta:
     return ResultMeta(
         schema_version=SCHEMA_VERSION,
         algo_version=ALGO_VERSION,
         logfold_version=get_version(),
         config_hash=config_fingerprint(mining, spec),
         format=spec.name,
-        degraded=engine.name == "python",
+        degraded=False,
     )

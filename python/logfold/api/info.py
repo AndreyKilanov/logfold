@@ -17,7 +17,7 @@ class Info:
     Attributes:
         version: The logfold version.
         python: The Python version, for example ``3.13.1``.
-        native_available: Whether the native engine can be used; when ``False`` the slow pure-Python engine runs.
+        native_available: Whether the native engine can be used; when ``False`` mining raises ``EngineError``.
         core_version: Version of the native extension, or ``None`` when it is unavailable.
         contract_version: Version of the contract between the Python layer and the extension, or ``None``.
         algo_version: Version of the template algorithm, or ``None``.

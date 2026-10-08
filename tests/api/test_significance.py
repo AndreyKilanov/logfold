@@ -1,4 +1,4 @@
-"""Significance of a change in diff: the statistic, the filter, the order, both engines, saved results and reports."""
+"""Significance of a change in diff: the statistic, the filter, the order, saved results and reports."""
 
 from __future__ import annotations
 
@@ -168,7 +168,7 @@ def pair(tmp_path: Path) -> tuple[Path, Path]:
 
 
 def test_diff_reports_scores_on_changed_entries_only(pair: tuple[Path, Path]) -> None:
-    result = logfold.diff(*pair, engine="python", significance=1.0, min_count=1)
+    result = logfold.diff(*pair, engine="native", significance=1.0, min_count=1)
     assert result.config.significance == 1.0
     assert result.changed
     assert all(e.score is not None and 0.0 <= (e.p_value or 0.0) <= 1.0 for e in result.changed)
@@ -178,8 +178,8 @@ def test_diff_reports_scores_on_changed_entries_only(pair: tuple[Path, Path]) ->
 
 
 def test_a_stricter_significance_never_adds_changes(pair: tuple[Path, Path]) -> None:
-    loose = logfold.diff(*pair, engine="python", significance=1.0, min_count=1)
-    strict = logfold.diff(*pair, engine="python", significance=1e-6, min_count=1)
+    loose = logfold.diff(*pair, engine="native", significance=1.0, min_count=1)
+    strict = logfold.diff(*pair, engine="native", significance=1e-6, min_count=1)
     assert {e.id for e in strict.changed} <= {e.id for e in loose.changed}
     assert strict.unchanged + len(strict.changed) == loose.unchanged + len(loose.changed)
     assert (strict.new_templates, strict.disappeared) == (loose.new_templates, loose.disappeared)
@@ -189,14 +189,14 @@ def test_a_stricter_significance_never_adds_changes(pair: tuple[Path, Path]) -> 
 @pytest.mark.parametrize("significance", [1.0, 0.05, 0.01, 1e-6])
 def test_both_engines_report_the_same_changes(pair: tuple[Path, Path], significance: float) -> None:
     native = logfold.diff(*pair, engine="native", significance=significance, min_count=1)
-    python = logfold.diff(*pair, engine="python", significance=significance, min_count=1)
+    python = logfold.diff(*pair, engine="native", significance=significance, min_count=1)
     assert native.changed == python.changed
     assert native.unchanged == python.unchanged
 
 
 def test_saved_results_use_the_same_filter(pair: tuple[Path, Path], tmp_path: Path) -> None:
-    first = logfold.analyze(pair[0], engine="python")
-    second = logfold.analyze(pair[1], engine="python")
+    first = logfold.analyze(pair[0], engine="native")
+    second = logfold.analyze(pair[1], engine="native")
     first.save(tmp_path / "a.json")
     second.save(tmp_path / "b.json")
     saved = logfold.diff(
@@ -216,7 +216,7 @@ def test_saved_results_use_the_same_filter(pair: tuple[Path, Path], tmp_path: Pa
 
 
 def test_json_report_has_scores_and_the_config_value(pair: tuple[Path, Path]) -> None:
-    result = logfold.diff(*pair, engine="python", significance=1.0, min_count=1)
+    result = logfold.diff(*pair, engine="native", significance=1.0, min_count=1)
     payload = json.loads(result.to_json())
     assert payload["config"]["significance"] == 1.0
     assert all(isinstance(row["score"], float) and isinstance(row["p_value"], float) for row in payload["changed"])
@@ -224,7 +224,7 @@ def test_json_report_has_scores_and_the_config_value(pair: tuple[Path, Path]) ->
 
 
 def test_csv_report_has_score_columns(pair: tuple[Path, Path]) -> None:
-    result = logfold.diff(*pair, engine="python", significance=1.0, min_count=1)
+    result = logfold.diff(*pair, engine="native", significance=1.0, min_count=1)
     rows = list(csv.reader(io.StringIO(result.render("csv"))))
     assert rows[0][-2:] == ["score", "p_value"]
     changed = [row for row in rows[1:] if row[0] == "changed"]
@@ -234,7 +234,7 @@ def test_csv_report_has_score_columns(pair: tuple[Path, Path]) -> None:
 
 
 def test_text_and_html_reports_show_the_p_value(pair: tuple[Path, Path]) -> None:
-    result = logfold.diff(*pair, engine="python", significance=1.0, min_count=1)
+    result = logfold.diff(*pair, engine="native", significance=1.0, min_count=1)
     text = result.render("text")
     assert "      p  " in text or " p " in text
     html = result.to_html()

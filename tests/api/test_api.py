@@ -78,7 +78,7 @@ def test_config_hash_changes_with_masks(corpus_dir: Path) -> None:
     assert default.meta.config_hash != other.meta.config_hash
 
 
-@pytest.mark.parametrize("engine", ["python", pytest.param("native", marks=requires_native)])
+@pytest.mark.parametrize("engine", ["auto", pytest.param("native", marks=requires_native)])
 def test_errors_are_library_errors(tmp_path: Path, engine: str) -> None:
     with pytest.raises(SourceError):
         logfold.analyze(str(tmp_path / "missing.log"), format="plain", engine=engine)
@@ -118,29 +118,30 @@ def test_unknown_engine_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: P
         logfold.analyze(str(path), format="plain")
 
 
-UNAVAILABLE_WARNING = "the native extension is unavailable; the slow pure-Python engine was used"
-
-
-def test_python_engine_via_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+@requires_native
+def test_the_removed_python_engine_runs_the_native_one_with_a_warning(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     path = tmp_path / "a.log"
     path.write_text("hello world\n", encoding="utf-8")
+    with pytest.warns(DeprecationWarning, match="has been removed"):
+        asked = logfold.analyze(str(path), format="plain", engine="python")
     monkeypatch.setenv("LOGFOLD_ENGINE", "python")
-    result = logfold.analyze(str(path), format="plain")
-    assert result.metrics.engine == "python"
-    assert result.meta.degraded is True
-    expected = () if native.is_available() else (UNAVAILABLE_WARNING,)
-    assert result.warnings == expected
+    with pytest.warns(DeprecationWarning, match="has been removed"):
+        from_environment = logfold.analyze(str(path), format="plain")
+    for result in (asked, from_environment):
+        assert result.metrics.engine == "native"
+        assert result.meta.degraded is False
+        assert result.warnings == ()
 
 
-def test_native_unavailable_raises_for_explicit_choice(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_an_unavailable_extension_is_an_error_not_a_fallback(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setattr(native, "_core", None)
     path = tmp_path / "a.log"
     path.write_text("x\n", encoding="utf-8")
-    with pytest.raises(EngineError):
-        logfold.analyze(str(path), format="plain", engine="native")
-    fallback = logfold.analyze(str(path), format="plain")
-    assert fallback.metrics.engine == "python"
-    assert any("native extension is unavailable" in w for w in fallback.warnings)
+    for engine in ("native", "auto"):
+        with pytest.raises(EngineError, match="reinstall"):
+            logfold.analyze(str(path), format="plain", engine=engine)
 
 
 def test_gzip_input(tmp_path: Path) -> None:
@@ -149,7 +150,7 @@ def test_gzip_input(tmp_path: Path) -> None:
     path = tmp_path / "a.log.gz"
     with gzip.open(path, "wb") as stream:
         stream.write(b"2026-10-04T10:00:00Z INFO hello\n" * 50)
-    for engine in ("python", "auto"):
+    for engine in ("native", "auto"):
         result = logfold.analyze(str(path), format="auto", engine=engine)
         assert result.run.records == 50
 
@@ -219,6 +220,6 @@ def test_high_cardinality_engines_agree(tmp_path: Path) -> None:
         str(path), format="plain", high_cardinality=True, max_templates=400, engine="native"
     )
     python_result = logfold.analyze(
-        str(path), format="plain", high_cardinality=True, max_templates=400, engine="python"
+        str(path), format="plain", high_cardinality=True, max_templates=400, engine="native"
     )
     assert [(t.id, t.count) for t in native_result.templates] == [(t.id, t.count) for t in python_result.templates]

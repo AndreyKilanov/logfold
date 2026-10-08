@@ -2385,6 +2385,566 @@
    "templates": 12000,
    "sha256": "93b9804d6e5257aefa82e5c236e62220215ae525f65a65211c729dd2bb47ac9b"
   },
+  "timestamps/json": {
+   "run": {
+    "files": 1,
+    "lines": 23,
+    "records": 23,
+    "unparsed": 0,
+    "bytes": 1159,
+    "tz_aware": true,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "c88997f47f3c6182",
+     "text": "bool marker",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "bool marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "f9eb7b81e768cbbd",
+     "text": "float marker",
+     "count": 1,
+     "first_seen": "2026-09-21T14:13:20.500000+00:00",
+     "last_seen": "2026-09-21T14:13:20.500000+00:00",
+     "example": "float marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "330064c46c32ab47",
+     "text": "float-micros marker",
+     "count": 1,
+     "first_seen": "2026-09-21T14:13:20+00:00",
+     "last_seen": "2026-09-21T14:13:20+00:00",
+     "example": "float-micros marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "71febf51ec3cf1bf",
+     "text": "int-seconds marker",
+     "count": 1,
+     "first_seen": "2026-09-21T14:13:20+00:00",
+     "last_seen": "2026-09-21T14:13:20+00:00",
+     "example": "int-seconds marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "c69863a6451c54ac",
+     "text": "row0 marker",
+     "count": 1,
+     "first_seen": "2026-10-04T12:00:00+00:00",
+     "last_seen": "2026-10-04T12:00:00+00:00",
+     "example": "row0 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "553585bd38f5c624",
+     "text": "row1 marker",
+     "count": 1,
+     "first_seen": "2026-10-04T12:00:00+00:00",
+     "last_seen": "2026-10-04T12:00:00+00:00",
+     "example": "row1 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "26d7208621fdface",
+     "text": "row10 marker",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "row10 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "a93cff2795905e40",
+     "text": "row11 marker",
+     "count": 1,
+     "first_seen": "2026-09-21T14:13:20+00:00",
+     "last_seen": "2026-09-21T14:13:20+00:00",
+     "example": "row11 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "26e64b8c6ce22d43",
+     "text": "row12 marker",
+     "count": 1,
+     "first_seen": "2026-09-21T14:13:20.123000+00:00",
+     "last_seen": "2026-09-21T14:13:20.123000+00:00",
+     "example": "row12 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "2e36966129beec9a",
+     "text": "row13 marker",
+     "count": 1,
+     "first_seen": "2026-09-21T14:13:20.123456+00:00",
+     "last_seen": "2026-09-21T14:13:20.123456+00:00",
+     "example": "row13 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "d4bd158e25a90b09",
+     "text": "row14 marker",
+     "count": 1,
+     "first_seen": "2537-03-24T22:13:21.234567+00:00",
+     "last_seen": "2537-03-24T22:13:21.234567+00:00",
+     "example": "row14 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "d89320277ac046c9",
+     "text": "row15 marker",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "row15 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "6a65e42312cfc1dd",
+     "text": "row16 marker",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "row16 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "ac304626be2cd6f2",
+     "text": "row17 marker",
+     "count": 1,
+     "first_seen": "2026-10-04T12:00:00+00:00",
+     "last_seen": "2026-10-04T12:00:00+00:00",
+     "example": "row17 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "e8b4f17bc81d5d58",
+     "text": "row18 marker",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "row18 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "ff027a61f59ebf99",
+     "text": "row2 marker",
+     "count": 1,
+     "first_seen": "2026-10-04T12:00:00.123456+00:00",
+     "last_seen": "2026-10-04T12:00:00.123456+00:00",
+     "example": "row2 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "ff69f89a0c2898be",
+     "text": "row3 marker",
+     "count": 1,
+     "first_seen": "2026-10-04T06:30:00+00:00",
+     "last_seen": "2026-10-04T06:30:00+00:00",
+     "example": "row3 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "16b8f7dc690a57da",
+     "text": "row4 marker",
+     "count": 1,
+     "first_seen": "2026-10-04T20:00:00+00:00",
+     "last_seen": "2026-10-04T20:00:00+00:00",
+     "example": "row4 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "8e23bb280acbb5a1",
+     "text": "row5 marker",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "row5 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "95fdb8ca95c125e5",
+     "text": "row6 marker",
+     "count": 1,
+     "first_seen": "2024-02-29T23:59:59.500000+00:00",
+     "last_seen": "2024-02-29T23:59:59.500000+00:00",
+     "example": "row6 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "16e30eebd1b74394",
+     "text": "row7 marker",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "row7 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "04569ef1a2712f4b",
+     "text": "row8 marker",
+     "count": 1,
+     "first_seen": "2026-10-04T00:00:00+00:00",
+     "last_seen": "2026-10-04T00:00:00+00:00",
+     "example": "row8 marker",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "df560fc3f2997e19",
+     "text": "row9 marker",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "row9 marker",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "timestamps/strptime/%d/%b/%Y:%H:%M:%S %z": {
+   "run": {
+    "files": 1,
+    "lines": 3,
+    "records": 3,
+    "unparsed": 0,
+    "bytes": 114,
+    "tz_aware": true,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "a73b1bc07edae744",
+     "text": "case0 here",
+     "count": 1,
+     "first_seen": "2026-10-04T09:00:00+00:00",
+     "last_seen": "2026-10-04T09:00:00+00:00",
+     "example": "case0 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "59c53c07d944e529",
+     "text": "case1 here",
+     "count": 1,
+     "first_seen": "2026-10-04T13:00:00+00:00",
+     "last_seen": "2026-10-04T13:00:00+00:00",
+     "example": "case1 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "d3d0ef92c47bb986",
+     "text": "case2 here",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "case2 here",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "timestamps/strptime/%b %e %H:%M:%S": {
+   "run": {
+    "files": 1,
+    "lines": 4,
+    "records": 4,
+    "unparsed": 0,
+    "bytes": 105,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "a73b1bc07edae744",
+     "text": "case0 here",
+     "count": 1,
+     "first_seen": "1970-10-04T12:00:00",
+     "last_seen": "1970-10-04T12:00:00",
+     "example": "case0 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "59c53c07d944e529",
+     "text": "case1 here",
+     "count": 1,
+     "first_seen": "1970-10-14T12:00:00",
+     "last_seen": "1970-10-14T12:00:00",
+     "example": "case1 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "d3d0ef92c47bb986",
+     "text": "case2 here",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "case2 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "f49b62d9046b55cf",
+     "text": "case3 here",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "case3 here",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "timestamps/strptime/%Y/%m/%d %H:%M:%S": {
+   "run": {
+    "files": 1,
+    "lines": 3,
+    "records": 3,
+    "unparsed": 0,
+    "bytes": 79,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "a73b1bc07edae744",
+     "text": "case0 here",
+     "count": 1,
+     "first_seen": "2026-10-04T12:00:00",
+     "last_seen": "2026-10-04T12:00:00",
+     "example": "case0 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "59c53c07d944e529",
+     "text": "case1 here",
+     "count": 1,
+     "first_seen": "2026-01-04T01:02:03",
+     "last_seen": "2026-01-04T01:02:03",
+     "example": "case1 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "d3d0ef92c47bb986",
+     "text": "case2 here",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "case2 here",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "timestamps/strptime/%y%m%d %T": {
+   "run": {
+    "files": 1,
+    "lines": 3,
+    "records": 3,
+    "unparsed": 0,
+    "bytes": 81,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "a73b1bc07edae744",
+     "text": "case0 here",
+     "count": 1,
+     "first_seen": "2026-10-04T12:00:00",
+     "last_seen": "2026-10-04T12:00:00",
+     "example": "case0 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "59c53c07d944e529",
+     "text": "case1 here",
+     "count": 1,
+     "first_seen": "1999-12-31T23:59:59",
+     "last_seen": "1999-12-31T23:59:59",
+     "example": "case1 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "d3d0ef92c47bb986",
+     "text": "case2 here",
+     "count": 1,
+     "first_seen": "1969-01-01T00:00:00",
+     "last_seen": "1969-01-01T00:00:00",
+     "example": "case2 here",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "timestamps/strptime/%Y-%j": {
+   "run": {
+    "files": 1,
+    "lines": 4,
+    "records": 4,
+    "unparsed": 0,
+    "bytes": 78,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "a73b1bc07edae744",
+     "text": "case0 here",
+     "count": 1,
+     "first_seen": "2026-10-04T00:00:00",
+     "last_seen": "2026-10-04T00:00:00",
+     "example": "case0 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "59c53c07d944e529",
+     "text": "case1 here",
+     "count": 1,
+     "first_seen": "2024-12-31T00:00:00",
+     "last_seen": "2024-12-31T00:00:00",
+     "example": "case1 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "d3d0ef92c47bb986",
+     "text": "case2 here",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "case2 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "f49b62d9046b55cf",
+     "text": "case3 here",
+     "count": 1,
+     "first_seen": null,
+     "last_seen": null,
+     "example": "case3 here",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "timestamps/strptime/%B %d, %Y %H:%M:%S.%f": {
+   "run": {
+    "files": 1,
+    "lines": 2,
+    "records": 2,
+    "unparsed": 0,
+    "bytes": 86,
+    "tz_aware": false,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "a73b1bc07edae744",
+     "text": "case0 here",
+     "count": 1,
+     "first_seen": "2026-10-04T12:00:00.500000",
+     "last_seen": "2026-10-04T12:00:00.500000",
+     "example": "case0 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "59c53c07d944e529",
+     "text": "case1 here",
+     "count": 1,
+     "first_seen": "2026-10-04T12:00:00.123456",
+     "last_seen": "2026-10-04T12:00:00.123456",
+     "example": "case1 here",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
+  "timestamps/strptime/%Y%m%dT%H%M%S%z": {
+   "run": {
+    "files": 1,
+    "lines": 2,
+    "records": 2,
+    "unparsed": 0,
+    "bytes": 60,
+    "tz_aware": true,
+    "overflowed": false,
+    "out_of_range": 0,
+    "untimed": 0
+   },
+   "templates": [
+    {
+     "id": "a73b1bc07edae744",
+     "text": "case0 here",
+     "count": 1,
+     "first_seen": "2026-10-04T12:00:00+00:00",
+     "last_seen": "2026-10-04T12:00:00+00:00",
+     "example": "case0 here",
+     "level": null,
+     "levels": {}
+    },
+    {
+     "id": "59c53c07d944e529",
+     "text": "case1 here",
+     "count": 1,
+     "first_seen": "2026-10-04T11:00:00+00:00",
+     "last_seen": "2026-10-04T11:00:00+00:00",
+     "example": "case1 here",
+     "level": null,
+     "levels": {}
+    }
+   ]
+  },
   "diff/recount": {
    "new": [
     {

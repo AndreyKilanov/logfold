@@ -102,22 +102,6 @@ def test_diff_is_identical_with_and_without_the_native_matchers(
     assert fast.unchanged == slow.unchanged
 
 
-def test_python_engine_keeps_the_python_matchers(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    before, after, _truth = synthetic_pair(tmp_path, 6)
-    calls: list[str] = []
-    real = native.compare_runs
-
-    def spy(*args: object) -> object:
-        calls.append(str(args[3]))
-        return real(*args)  # type: ignore[arg-type]
-
-    monkeypatch.setattr(native, "compare_runs", spy)
-    logfold.diff(str(before), str(after), format="app", matcher="token_subset", engine="python")
-    assert calls == []
-    logfold.diff(str(before), str(after), format="app", matcher="token_subset", engine="native")
-    assert calls == ["token_subset"]
-
-
 def sparse(rng: random.Random, count: int) -> list[str]:
     words = [f"w{i}" for i in range(3000)]
     return [

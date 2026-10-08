@@ -81,7 +81,7 @@ def test_matcher_removes_false_new_and_disappeared() -> None:
     assert merged.unchanged == 1
 
 
-@pytest.mark.parametrize("engine", [pytest.param("native", marks=requires_native), "python"])
+@pytest.mark.parametrize("engine", [pytest.param("native", marks=requires_native), "auto"])
 def test_diff_finds_injected_changes(tmp_path: Path, engine: str) -> None:
     before, after, truth = synthetic_pair(tmp_path, 3)
     result = logfold.diff(str(before), str(after), format="app", engine=engine)

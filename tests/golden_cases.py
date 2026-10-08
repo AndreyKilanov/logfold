@@ -22,6 +22,7 @@ from typing import Any
 import logfold
 from corpora import CORPORA, write, write_corpus_dir
 from logfold import MaskRule, MiningConfig
+from logfold.ext.formats import RegexFormat
 
 GOLDEN = Path(__file__).parent / "fixtures" / "golden" / "sequential.json"
 MAX_KEPT_TEMPLATES = 100
@@ -159,6 +160,67 @@ def long_example(_corpus: Path, work: Path, engine: str) -> Any:
     return analysis_payload(result)
 
 
+TIMESTAMPS = [
+    "2026-10-04T12:00:00Z",
+    "2026-10-04 12:00:00",
+    "2026-10-04 12:00:00.123456789",
+    "2026-10-04T12:00:00+05:30",
+    "2026-10-04T12:00:00-0800",
+    "2026-02-29T00:00:00Z",
+    "2024-02-29T23:59:59,5Z",
+    "2026-13-01T00:00:00Z",
+    "2026-10-04",
+    "2026-10-04T25:00:00Z",
+    "2026-10-04T12:00:60Z",
+    "1790000000",
+    "1790000000123",
+    "1790000000123456",
+    "17900000001234567",
+    "garbage",
+    "",
+    " 2026-10-04T12:00:00Z ",
+    "2026-10-04T12:00:00+0530x",
+]
+STRPTIME_CASES = [
+    (
+        "%d/%b/%Y:%H:%M:%S %z",
+        ["04/Oct/2026:12:00:00 +0300", "04/oct/2026:12:00:00 -0100", "31/Feb/2026:00:00:00 +0000"],
+    ),
+    ("%b %e %H:%M:%S", ["Oct  4 12:00:00", "Oct 14 12:00:00", "Foo  4 12:00:00", "Oct  4 12:00"]),
+    ("%Y/%m/%d %H:%M:%S", ["2026/10/04 12:00:00", "2026/1/4 1:2:3", "2026/10/04"]),
+    ("%y%m%d %T", ["261004 12:00:00", "991231 23:59:59", "690101 00:00:00"]),
+    ("%Y-%j", ["2026-277", "2024-366", "2026-366", "2026-0"]),
+    ("%B %d, %Y %H:%M:%S.%f", ["October 04, 2026 12:00:00.5", "October 04, 2026 12:00:00.123456789"]),
+    ("%Y%m%dT%H%M%S%z", ["20261004T120000Z", "20261004T120000+0100"]),
+]
+
+
+def json_timestamps(_corpus: Path, work: Path, engine: str) -> Any:
+    """Analyse JSON records whose time is a string or a number of every shape the parser distinguishes."""
+    rows = [{"ts": value, "msg": f"row{index} marker"} for index, value in enumerate(TIMESTAMPS)]
+    rows += [{"ts": 1790000000, "msg": "int-seconds marker"}, {"ts": 1790000000.5, "msg": "float marker"}]
+    rows += [{"ts": 1.79e15, "msg": "float-micros marker"}, {"ts": True, "msg": "bool marker"}]
+    path = work / "timestamps.jsonl"
+    write(path, [json.dumps(row) for row in rows])
+    result = logfold.analyze(str(path), format="jsonl", sim_th=1.0, masks=[], engine=engine, strategy="sequential")
+    return analysis_payload(result)
+
+
+def strptime_case(index: int, ts_format: str, samples: list[str]) -> Case:
+    """Build a case that reads ``samples`` with a regex format whose time uses the strptime ``ts_format``."""
+
+    def run(_corpus: Path, work: Path, engine: str) -> Any:
+        spec = RegexFormat(
+            pattern=r"^(?P<ts>[^|]*)\|(?P<msg>.*)$", message_group="msg", time_group="ts", ts_format=ts_format
+        )
+        path = work / f"strptime_{index}.log"
+        write(path, [f"{sample}|case{number} here" for number, sample in enumerate(samples)])
+        result = logfold.analyze(str(path), format=spec, sim_th=1.0, masks=[], engine=engine, strategy="sequential")
+        return analysis_payload(result)
+
+    return run
+
+
 def build_cases() -> dict[str, Case]:
     """Return every golden case by name."""
     cases: dict[str, Case] = {}
@@ -195,6 +257,9 @@ def build_cases() -> dict[str, Case]:
         cases[f"crowded/{sim_th}"] = generated(
             f"crowded/{sim_th}", lambda path: crowded_log(path, 12000, 5), mining=MiningConfig(sim_th=sim_th), masks=()
         )
+    cases["timestamps/json"] = json_timestamps
+    for index, (ts_format, samples) in enumerate(STRPTIME_CASES):
+        cases[f"timestamps/strptime/{ts_format}"] = strptime_case(index, ts_format, samples)
     cases["diff/recount"] = diff_case()
     cases["diff/no_recount"] = diff_case(recount=False)
     return cases

@@ -8,7 +8,6 @@ from pathlib import Path
 import pytest
 
 import logfold
-from conftest import requires_native
 from logfold.errors import FormatError
 from logfold.ext import log4j_format
 from logfold.formats import resolve_format
@@ -41,24 +40,13 @@ def test_the_default_pattern_has_all_three_groups() -> None:
 def test_a_logback_pattern_reads_a_log(tmp_path: Path) -> None:
     spec = log4j_format("%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n")
     assert spec.ts_format == "%H:%M:%S.%f"
-    result = logfold.analyze(write(tmp_path, LOGBACK), format=spec, engine="python")
+    result = logfold.analyze(write(tmp_path, LOGBACK), format=spec, engine="native")
     assert (result.run.records, result.run.unparsed, result.run.untimed) == (3, 0, 0)
     assert {t.text: t.level for t in result.templates} == {
         "started in <NUM> s": "INFO",
         "order <NUM> failed": "ERROR",
         "evicted <NUM> keys": "WARN",
     }
-
-
-@requires_native
-def test_a_converted_pattern_gives_the_same_result_in_both_engines(tmp_path: Path) -> None:
-    path = write(tmp_path, LOGBACK)
-    spec = log4j_format("%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n")
-    native = logfold.analyze(path, format=spec, engine="native")
-    reference = logfold.analyze(path, format=spec, engine="python")
-    assert [(t.text, t.count, t.level) for t in native.templates] == [
-        (t.text, t.count, t.level) for t in reference.templates
-    ]
 
 
 def test_the_log4j_prefix_resolves_like_a_registered_format(tmp_path: Path) -> None:

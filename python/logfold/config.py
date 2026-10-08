@@ -89,7 +89,8 @@ class ExecutionConfig:
     """How the work is executed.
 
     Attributes:
-        engine: ``native`` (Rust), ``python`` (reference) or ``auto`` (native when importable).
+        engine: ``native`` (Rust) or ``auto`` (the same); ``python``, the removed reference engine, is deprecated and
+            runs the native engine with a warning.
         strategy: ``sequential``, ``chunked`` or ``auto`` (chunked for large inputs on the native engine, but
             sequential when the first chunk shows that almost every record opens a new template).
         threads: Worker threads for the chunked strategy; ``None`` means all cores.

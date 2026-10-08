@@ -51,7 +51,7 @@ def result(runs: dict[str, Path], **options: object) -> logfold.DiffResult:
         runs["after"],
         baselines=[runs["b2"], runs["b3"]],
         format="plain",
-        engine="python",
+        engine="native",
         min_count=1,
         significance=1.0,
         **options,  # type: ignore[arg-type]
@@ -59,7 +59,7 @@ def result(runs: dict[str, Path], **options: object) -> logfold.DiffResult:
 
 
 def test_new_needs_no_baseline_to_have_it(runs: dict[str, Path]) -> None:
-    single = logfold.diff(runs["b3"], runs["after"], format="plain", engine="python", min_count=1)
+    single = logfold.diff(runs["b3"], runs["after"], format="plain", engine="native", min_count=1)
     assert any("retry" in text for text in texts(single.new_templates))
     pooled = result(runs)
     assert not any("retry" in text for text in texts(pooled.new_templates))
@@ -90,7 +90,7 @@ def test_a_template_in_too_few_baselines_is_unstable_not_new_or_changed(runs: di
 
 def test_counts_and_records_are_pooled(runs: dict[str, Path]) -> None:
     pooled = result(runs, min_baselines=1)
-    singles = [logfold.analyze(runs[name], format="plain", engine="python") for name in ("b1", "b2", "b3")]
+    singles = [logfold.analyze(runs[name], format="plain", engine="native") for name in ("b1", "b2", "b3")]
     assert pooled.before.records == sum(s.run.records for s in singles)
     assert pooled.before.files == 3
     assert all(str(runs[name]) in pooled.before.name for name in ("b1", "b2", "b3"))
@@ -105,7 +105,7 @@ def test_pooling_with_min_one_equals_the_concatenated_baseline(runs: dict[str, P
         [runs["b1"], runs["b2"], runs["b3"]],
         runs["after"],
         format="plain",
-        engine="python",
+        engine="native",
         min_count=1,
         significance=1.0,
     )
@@ -116,20 +116,20 @@ def test_pooling_with_min_one_equals_the_concatenated_baseline(runs: dict[str, P
 
 
 def test_one_baseline_and_no_baselines_are_the_same(runs: dict[str, Path]) -> None:
-    plain = logfold.diff(runs["b1"], runs["after"], format="plain", engine="python")
-    empty = logfold.diff(runs["b1"], runs["after"], baselines=[], format="plain", engine="python")
+    plain = logfold.diff(runs["b1"], runs["after"], format="plain", engine="native")
+    empty = logfold.diff(runs["b1"], runs["after"], baselines=[], format="plain", engine="native")
     assert plain.new_templates == empty.new_templates
     assert plain.changed == empty.changed
     assert plain.unchanged == empty.unchanged
     assert (
-        logfold.diff(runs["b1"], runs["after"], min_baselines=1, format="plain", engine="python").changed
+        logfold.diff(runs["b1"], runs["after"], min_baselines=1, format="plain", engine="native").changed
         == plain.changed
     )
 
 
 def test_a_baseline_can_be_several_files(runs: dict[str, Path]) -> None:
     nested = logfold.diff(
-        runs["b1"], runs["after"], baselines=[[runs["b2"], runs["b3"]]], format="plain", engine="python", min_count=1
+        runs["b1"], runs["after"], baselines=[[runs["b2"], runs["b3"]]], format="plain", engine="native", min_count=1
     )
     assert nested.before.files == 3
 
@@ -190,15 +190,15 @@ def test_an_empty_baseline_is_warned_about(runs: dict[str, Path], tmp_path: Path
     empty = tmp_path / "empty.log"
     empty.write_text("", encoding="utf-8")
     pooled = logfold.diff(
-        runs["b1"], runs["after"], baselines=[empty], format="plain", engine="python", min_count=1, significance=1.0
+        runs["b1"], runs["after"], baselines=[empty], format="plain", engine="native", min_count=1, significance=1.0
     )
     assert any("empty.log has no records" in warning for warning in pooled.warnings)
-    quiet = logfold.diff(runs["b1"], runs["after"], baselines=[runs["b2"]], format="plain", engine="python")
+    quiet = logfold.diff(runs["b1"], runs["after"], baselines=[runs["b2"]], format="plain", engine="native")
     assert not any("no records" in warning for warning in quiet.warnings)
 
 
 def test_many_baselines_are_warned_about(runs: dict[str, Path]) -> None:
-    ten = logfold.diff(runs["b1"], runs["after"], baselines=[runs["b2"]] * 9, format="plain", engine="python")
+    ten = logfold.diff(runs["b1"], runs["after"], baselines=[runs["b2"]] * 9, format="plain", engine="native")
     assert not any("baselines were read" in warning for warning in ten.warnings)
-    eleven = logfold.diff(runs["b1"], runs["after"], baselines=[runs["b2"]] * 10, format="plain", engine="python")
+    eleven = logfold.diff(runs["b1"], runs["after"], baselines=[runs["b2"]] * 10, format="plain", engine="native")
     assert any("11 baselines were read" in warning for warning in eleven.warnings)

@@ -14,7 +14,6 @@ from types import ModuleType
 import pytest
 
 import logfold
-from conftest import requires_native
 from logfold.ext import DiffMatcher, Reporter, registry
 
 PLUGIN_DIR = Path(__file__).resolve().parents[2] / "examples" / "logfold-example-plugin"
@@ -48,7 +47,7 @@ def test_every_entry_point_of_the_example_resolves(plugin: ModuleType) -> None:
 
 
 def test_logfmt_format(plugin: ModuleType) -> None:
-    result = logfold.analyze(str(SAMPLES / "app.logfmt"), format=plugin.LOGFMT, engine="python")
+    result = logfold.analyze(str(SAMPLES / "app.logfmt"), format=plugin.LOGFMT, engine="native")
     assert result.run.unparsed == 0
     assert _templates(result) == {
         'msg="user <NUM> logged in" ip=<IP>': (3, "INFO"),
@@ -59,7 +58,7 @@ def test_logfmt_format(plugin: ModuleType) -> None:
 
 
 def test_serilog_clef_format(plugin: ModuleType) -> None:
-    result = logfold.analyze(str(SAMPLES / "serilog.jsonl"), format=plugin.SERILOG_CLEF, engine="python")
+    result = logfold.analyze(str(SAMPLES / "serilog.jsonl"), format=plugin.SERILOG_CLEF, engine="native")
     assert _templates(result) == {
         "Cache warmed <NUM> keys": (2, None),
         "Payment <NUM> failed": (1, "ERROR"),
@@ -68,27 +67,13 @@ def test_serilog_clef_format(plugin: ModuleType) -> None:
 
 
 def test_ci_blocks_format_joins_continuation_lines(plugin: ModuleType) -> None:
-    result = logfold.analyze(str(SAMPLES / "ci.log"), format=plugin.CI_BLOCKS, engine="python")
+    result = logfold.analyze(str(SAMPLES / "ci.log"), format=plugin.CI_BLOCKS, engine="native")
     assert result.run.records == 3
     assert "=== job test started running <NUM> tests FAILED test_login" in _templates(result)
 
 
-@requires_native
-@pytest.mark.parametrize(
-    ("name", "sample"),
-    [("LOGFMT", "app.logfmt"), ("SERILOG_CLEF", "serilog.jsonl"), ("CI_BLOCKS", "ci.log")],
-)
-def test_native_and_python_engines_agree_on_the_example_formats(plugin: ModuleType, name: str, sample: str) -> None:
-    spec = getattr(plugin, name)
-    native = logfold.analyze(str(SAMPLES / sample), format=spec, engine="native")
-    reference = logfold.analyze(str(SAMPLES / sample), format=spec, engine="python")
-    assert [(t.text, t.count, t.level) for t in native.templates] == [
-        (t.text, t.count, t.level) for t in reference.templates
-    ]
-
-
 def test_reporters_render_analysis_and_diff(plugin: ModuleType) -> None:
-    analysis = logfold.analyze(str(SAMPLES / "app.logfmt"), format=plugin.LOGFMT, engine="python")
+    analysis = logfold.analyze(str(SAMPLES / "app.logfmt"), format=plugin.LOGFMT, engine="native")
     markdown = plugin.MarkdownReporter().render(analysis)
     assert '| 3 | INFO | `msg="user <NUM> logged in" ip=<IP>` |' in markdown
     rows = list(csv.reader(io.StringIO(plugin.CsvReporter().render(analysis))))
@@ -100,7 +85,7 @@ def test_reporters_render_analysis_and_diff(plugin: ModuleType) -> None:
         str(SAMPLES / "before.logfmt"),
         str(SAMPLES / "after.logfmt"),
         format=plugin.LOGFMT,
-        engine="python",
+        engine="native",
         min_count=1,
         matcher="exact",
     )
@@ -131,7 +116,7 @@ def test_matcher_changes_the_diff_result(plugin: ModuleType, monkeypatch: pytest
     registry.register_matcher(plugin.FirstWordMatcher())
     registry.register_matcher(plugin.JaccardMatcher())
     arguments = (str(SAMPLES / "before.logfmt"), str(SAMPLES / "after.logfmt"))
-    options = {"format": plugin.LOGFMT, "engine": "python", "min_count": 1}
+    options = {"format": plugin.LOGFMT, "engine": "native", "min_count": 1}
     exact = logfold.diff(*arguments, matcher="exact", **options)
     assert (len(exact.new_templates), len(exact.disappeared)) == (1, 1)
     paired = logfold.diff(*arguments, matcher=matcher, **options)

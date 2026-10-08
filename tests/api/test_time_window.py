@@ -1,4 +1,4 @@
-"""Time windows: since, until and split_at on both engines, and the diff of two parts of one log."""
+"""Time windows: since, until and split_at, and the diff of two parts of one log."""
 
 from __future__ import annotations
 
@@ -101,54 +101,54 @@ def test_since_must_be_before_until() -> None:
 
 
 def test_the_window_is_half_open(log: Path) -> None:
-    result = logfold.analyze(log, format=FORMAT, since=at(100), until=at(200), engine="python")
+    result = logfold.analyze(log, format=FORMAT, since=at(100), until=at(200), engine="native")
     assert result.run.records == 100
     assert result.run.out_of_range == RECORDS - 100
-    inclusive_end = logfold.analyze(log, format=FORMAT, since=at(100), until=at(201), engine="python")
+    inclusive_end = logfold.analyze(log, format=FORMAT, since=at(100), until=at(201), engine="native")
     assert inclusive_end.run.records == 101
 
 
 def test_one_bound_is_enough(log: Path) -> None:
-    from_only = logfold.analyze(log, format=FORMAT, since=at(1000), engine="python")
-    until_only = logfold.analyze(log, format=FORMAT, until=at(1000), engine="python")
+    from_only = logfold.analyze(log, format=FORMAT, since=at(1000), engine="native")
+    until_only = logfold.analyze(log, format=FORMAT, until=at(1000), engine="native")
     assert from_only.run.records == RECORDS - 1000
     assert until_only.run.records == 1000
     assert from_only.run.records + until_only.run.records == RECORDS
 
 
 def test_no_bound_changes_nothing(log: Path) -> None:
-    plain = logfold.analyze(log, format=FORMAT, engine="python")
-    bounded = logfold.analyze(log, format=FORMAT, since="1999-01-01", until="2999-01-01", engine="python")
+    plain = logfold.analyze(log, format=FORMAT, engine="native")
+    bounded = logfold.analyze(log, format=FORMAT, since="1999-01-01", until="2999-01-01", engine="native")
     assert table(plain) == table(bounded)
     assert (bounded.run.out_of_range, bounded.run.untimed) == (0, 0)
 
 
 def test_records_outside_do_not_count_in_the_shares(log: Path) -> None:
-    result = logfold.analyze(log, format=FORMAT, since=at(0), until=at(400), engine="python")
+    result = logfold.analyze(log, format=FORMAT, since=at(0), until=at(400), engine="native")
     assert sum(t.count for t in result.templates) == result.run.records == 400
 
 
 def test_a_run_name_shows_the_window(log: Path) -> None:
-    result = logfold.analyze(log, format=FORMAT, since=at(0), until=at(60), engine="python")
+    result = logfold.analyze(log, format=FORMAT, since=at(0), until=at(60), engine="native")
     assert result.run.name.endswith("[2026-10-06T00:00:00, 2026-10-06T00:01:00)")
-    assert logfold.analyze(log, format=FORMAT, engine="python").run.name == str(log)
+    assert logfold.analyze(log, format=FORMAT, engine="native").run.name == str(log)
 
 
 def test_records_without_a_time_are_left_out_counted_and_warned_about(tmp_path: Path) -> None:
     path = write_log(tmp_path / "gaps.log", untimed_every=5)
-    result = logfold.analyze(path, format=FORMAT, since=at(0), until=at(RECORDS), engine="python")
+    result = logfold.analyze(path, format=FORMAT, since=at(0), until=at(RECORDS), engine="native")
     assert result.run.untimed == RECORDS // 5
     assert result.run.records == RECORDS - RECORDS // 5
     assert any("without a usable timestamp" in warning for warning in result.warnings)
-    unbounded = logfold.analyze(path, format=FORMAT, engine="python")
+    unbounded = logfold.analyze(path, format=FORMAT, engine="native")
     assert unbounded.run.records == RECORDS
     assert unbounded.run.untimed == 0
     assert not any("timestamp" in warning for warning in unbounded.warnings)
 
 
 def test_a_zone_in_the_bound_is_converted_to_utc(log: Path) -> None:
-    plus_three = logfold.analyze(log, format=FORMAT, since="2026-10-06T03:00:00+03:00", until=at(120), engine="python")
-    utc = logfold.analyze(log, format=FORMAT, since=at(0), until=at(120), engine="python")
+    plus_three = logfold.analyze(log, format=FORMAT, since="2026-10-06T03:00:00+03:00", until=at(120), engine="native")
+    utc = logfold.analyze(log, format=FORMAT, since=at(0), until=at(120), engine="native")
     assert counts(plus_three) == counts(utc)
 
 
@@ -156,11 +156,11 @@ def test_a_format_without_a_time_refuses_a_window(log: Path) -> None:
     with pytest.raises(ConfigError, match="no timestamp") as caught:
         logfold.analyze(log, format="plain", since=at(0))
     assert caught.value.hint
-    logfold.analyze(log, format="plain", engine="python")
+    logfold.analyze(log, format="plain", engine="native")
 
 
 def test_a_window_with_nothing_inside_is_an_empty_result_with_a_warning(log: Path) -> None:
-    result = logfold.analyze(log, format=FORMAT, since="2030-01-01", engine="python")
+    result = logfold.analyze(log, format=FORMAT, since="2030-01-01", engine="native")
     assert result.run.records == 0
     assert result.templates == ()
     assert any("no records" in warning for warning in result.warnings)
@@ -169,7 +169,7 @@ def test_a_window_with_nothing_inside_is_an_empty_result_with_a_warning(log: Pat
 @requires_native
 @pytest.mark.parametrize("strategy", ["sequential", "chunked"])
 def test_both_engines_agree(log: Path, strategy: str) -> None:
-    python = logfold.analyze(log, format=FORMAT, since=at(150), until=at(930), engine="python")
+    python = logfold.analyze(log, format=FORMAT, since=at(150), until=at(930), engine="native")
     native = logfold.analyze(
         log, format=FORMAT, since=at(150), until=at(930), engine="native", strategy=strategy, chunk_bytes=4096
     )
@@ -180,7 +180,7 @@ def test_both_engines_agree(log: Path, strategy: str) -> None:
 @requires_native
 def test_both_engines_agree_on_records_without_a_time(tmp_path: Path) -> None:
     path = write_log(tmp_path / "gaps.log", untimed_every=4)
-    python = logfold.analyze(path, format=FORMAT, since=at(300), engine="python")
+    python = logfold.analyze(path, format=FORMAT, since=at(300), engine="native")
     native = logfold.analyze(path, format=FORMAT, since=at(300), engine="native")
     assert counts(native) == counts(python)
     assert table(native) == table(python)
@@ -198,7 +198,7 @@ def test_any_window_gives_the_same_result_on_every_engine(
 ) -> None:
     since = None if start is None else at(start)
     until = None if span is None else at((start or 0) + span)
-    python = logfold.analyze(log, format=FORMAT, since=since, until=until, engine="python")
+    python = logfold.analyze(log, format=FORMAT, since=since, until=until, engine="native")
     native = logfold.analyze(
         log, format=FORMAT, since=since, until=until, engine="native", strategy="chunked", chunk_bytes=chunk
     )
@@ -216,7 +216,7 @@ def two_halves(tmp_path: Path, log: Path, cut: int) -> tuple[Path, Path]:
     return first, second
 
 
-@pytest.mark.parametrize("engine", ["python", "native"])
+@pytest.mark.parametrize("engine", ["auto", "native"])
 def test_split_at_equals_the_diff_of_two_hand_cut_files(tmp_path: Path, log: Path, engine: str) -> None:
     if engine == "native":
         pytest.importorskip("logfold._core")
@@ -232,7 +232,7 @@ def test_split_at_equals_the_diff_of_two_hand_cut_files(tmp_path: Path, log: Pat
 
 @requires_native
 def test_split_at_gives_the_same_result_on_both_engines(log: Path) -> None:
-    python = logfold.diff(log, split_at=at(700), format=FORMAT, engine="python", min_count=1)
+    python = logfold.diff(log, split_at=at(700), format=FORMAT, engine="native", min_count=1)
     native = logfold.diff(log, split_at=at(700), format=FORMAT, engine="native", min_count=1)
     assert (native.new_templates, native.disappeared, native.changed) == (
         python.new_templates,
@@ -242,13 +242,13 @@ def test_split_at_gives_the_same_result_on_both_engines(log: Path) -> None:
 
 
 def test_split_at_names_both_runs_by_their_window(log: Path) -> None:
-    result = logfold.diff(log, split_at=at(600), format=FORMAT, engine="python")
+    result = logfold.diff(log, split_at=at(600), format=FORMAT, engine="native")
     assert result.before.name.endswith("[..., 2026-10-06T00:10:00)")
     assert result.after.name.endswith("[2026-10-06T00:10:00, ...)")
 
 
 def test_since_and_until_bound_the_whole_range_of_a_split(log: Path) -> None:
-    result = logfold.diff(log, split_at=at(600), since=at(300), until=at(900), format=FORMAT, engine="python")
+    result = logfold.diff(log, split_at=at(600), since=at(300), until=at(900), format=FORMAT, engine="native")
     assert (result.before.records, result.after.records) == (300, 300)
 
 
@@ -260,7 +260,7 @@ def test_a_spike_inside_one_log_is_found(tmp_path: Path) -> None:
             lines.append(f"{stamp(i)} ERROR payment gateway timeout for order {i}")
     path = tmp_path / "incident.log"
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    result = logfold.diff(path, split_at=at(1000), format=FORMAT, engine="python")
+    result = logfold.diff(path, split_at=at(1000), format=FORMAT, engine="native")
     assert [e.text for e in result.new_templates] == ["payment gateway timeout for order <NUM>"]
     assert [e.text for e in result.new_alerts] == ["payment gateway timeout for order <NUM>"]
 
@@ -273,7 +273,7 @@ def test_split_at_needs_one_input_and_diff_needs_two_otherwise(log: Path) -> Non
 
 
 def test_split_at_cannot_be_used_with_saved_results(log: Path) -> None:
-    saved = logfold.analyze(log, format=FORMAT, engine="python")
+    saved = logfold.analyze(log, format=FORMAT, engine="native")
     with pytest.raises(ConfigError, match="split_at"):
         logfold.diff(saved, split_at=at(10))
     with pytest.raises(ConfigError, match="since"):
@@ -296,7 +296,7 @@ def test_a_format_without_a_time_refuses_a_split(log: Path) -> None:
 
 
 def test_the_counters_are_saved_and_loaded(log: Path, tmp_path: Path) -> None:
-    result = logfold.analyze(log, format=FORMAT, since=at(100), until=at(200), engine="python")
+    result = logfold.analyze(log, format=FORMAT, since=at(100), until=at(200), engine="native")
     payload = json.loads(result.to_json())
     assert (payload["run"]["out_of_range"], payload["run"]["untimed"]) == (RECORDS - 100, 0)
     result.save(tmp_path / "window.json")
@@ -305,7 +305,7 @@ def test_the_counters_are_saved_and_loaded(log: Path, tmp_path: Path) -> None:
 
 
 def test_a_result_saved_before_the_window_existed_still_loads(log: Path, tmp_path: Path) -> None:
-    result = logfold.analyze(log, format=FORMAT, engine="python")
+    result = logfold.analyze(log, format=FORMAT, engine="native")
     payload = json.loads(result.to_json())
     del payload["run"]["out_of_range"], payload["run"]["untimed"]
     old = tmp_path / "old.json"

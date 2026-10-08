@@ -93,7 +93,7 @@ def test_plugin_format_reporter_and_matcher_are_discovered(installed_plugin: Non
         "04/Oct/2026:12:00:00.123 ERROR backend app1 is down\n04/Oct/2026:12:00:01.456 ERROR backend app2 is down\n",
         encoding="utf-8",
     )
-    for engine in ("python", "auto"):
+    for engine in ("native", "auto"):
         result = logfold.analyze(str(path), format="traefik", engine=engine)
         assert [(t.text, t.count, t.level) for t in result.templates] == [("backend app<NUM> is down", 2, "ERROR")] or [
             (t.count, t.level) for t in result.templates

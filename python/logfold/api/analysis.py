@@ -114,7 +114,7 @@ def analyze(
     mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks, high_cardinality)
     exec_config = _execution(execution, engine, strategy, threads, chunk_bytes, high_cardinality, warm_start)
     state = _state(load_state, save_state, state_format, mining_config, spec)
-    mined, used = _mine(
+    mined = _mine(
         (run,), spec, mining_config, exec_config, progress, windows=(bounds,) if bounds != OPEN else (), state=state
     )
     summary = labeled(_summary(run, mined.runs[0]), bounds)
@@ -130,9 +130,9 @@ def analyze(
         templates=templates,
         run=summary,
         metrics=mined.metrics,
-        meta=_meta(spec, mining_config, used),
+        meta=_meta(spec, mining_config),
         warnings=(
-            *_warnings([summary], used, exec_config, resolved, mining_config, high_cardinality, mined.metrics.strategy),
+            *_warnings([summary], exec_config, resolved, mining_config, high_cardinality, mined.metrics.strategy),
             *window_warnings(summary),
             *notes,
         ),

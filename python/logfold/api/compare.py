@@ -225,14 +225,14 @@ def diff(
         )
     mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks, high_cardinality)
     exec_config = _execution(execution, engine, strategy, threads, chunk_bytes, high_cardinality, warm_start)
-    mined, used = _mine(runs, spec, mining_config, exec_config, progress, config.recount, windows)
+    mined = _mine(runs, spec, mining_config, exec_config, progress, config.recount, windows)
     pooled = pool_baselines(mined, len(runs) - 1, required_baselines(len(runs) - 1, config.min_baselines))
     table = pooled.table
     before_names = tuple(name for run in runs[:-1] for name in run)
     before_summary = labeled(_summary(before_names, pooled.before), windows[0] if windows else OPEN)
     after_summary = labeled(_summary(second, pooled.after), windows[-1] if windows else OPEN)
     masker = Masker(mining_config.masks)
-    native_matcher = native_spec(resolved_matcher) if used.name == "native" and _bridge.supports_comparison() else None
+    native_matcher = native_spec(resolved_matcher) if _bridge.supports_comparison() else None
     classification = None
     if native_matcher is not None:
         classification = classify_native(
@@ -249,7 +249,7 @@ def diff(
             before_summary,
             after_summary,
             config,
-            accelerated(resolved_matcher, used.name == "native"),
+            accelerated(resolved_matcher, True),
         )
 
         def scrub(entries: tuple) -> tuple:  # type: ignore[type-arg]
@@ -269,11 +269,10 @@ def diff(
         after=after_summary,
         config=config,
         metrics=mined.metrics,
-        meta=_meta(spec, mining_config, used),
+        meta=_meta(spec, mining_config),
         warnings=(
             *_warnings(
                 [before_summary, after_summary],
-                used,
                 exec_config,
                 resolved,
                 mining_config,

@@ -8,7 +8,6 @@ from pathlib import Path
 import pytest
 
 import logfold
-from conftest import requires_native
 from logfold.ext import registry
 
 BOM = "\N{ZERO WIDTH NO-BREAK SPACE}"
@@ -93,7 +92,7 @@ def write(tmp_path: Path, name: str, text: str) -> str:
     return str(path)
 
 
-def analyze(tmp_path: Path, name: str, engine: str = "python", **options: object) -> logfold.AnalysisResult:
+def analyze(tmp_path: Path, name: str, engine: str = "native", **options: object) -> logfold.AnalysisResult:
     path = write(tmp_path, name, SAMPLES[name])
     return logfold.analyze(path, format=name, engine=engine, **options)  # type: ignore[arg-type]
 
@@ -114,17 +113,6 @@ def test_every_line_parses_and_has_a_time(tmp_path: Path, name: str) -> None:
     assert result.run.unparsed == 0
     assert result.run.untimed == 0
     assert result.meta.format == name
-
-
-@requires_native
-@pytest.mark.parametrize("name", list(SAMPLES))
-def test_native_and_python_engines_agree(tmp_path: Path, name: str) -> None:
-    native = analyze(tmp_path, name, "native")
-    reference = analyze(tmp_path, name, "python")
-    assert [(t.text, t.count, t.level) for t in native.templates] == [
-        (t.text, t.count, t.level) for t in reference.templates
-    ]
-    assert native.run == reference.run
 
 
 def test_haproxy_with_and_without_the_syslog_prefix(tmp_path: Path) -> None:
@@ -194,7 +182,7 @@ def test_log4j_stack_trace_joins_its_record(tmp_path: Path) -> None:
 
 def test_log4j_without_multiline_leaves_the_trace_lines_unparsed(tmp_path: Path) -> None:
     path = write(tmp_path, "log4j", LOG4J)
-    result = logfold.analyze(path, format="log4j", engine="python", multiline=False)
+    result = logfold.analyze(path, format="log4j", engine="native", multiline=False)
     assert (result.run.records, result.run.unparsed) == (3, 3)
 
 
@@ -202,5 +190,5 @@ def test_diff_between_two_runs_of_a_new_format(tmp_path: Path) -> None:
     before = write(tmp_path, "before", POSTGRESQL)
     extra = "2026-10-06 12:00:09 UTC [1] ERROR:  deadlock detected\n"
     after = write(tmp_path, "after", POSTGRESQL + extra)
-    result = logfold.diff(before, after, format="postgresql", engine="python", min_count=1)
+    result = logfold.diff(before, after, format="postgresql", engine="native", min_count=1)
     assert [t.text for t in result.new_templates] == ["deadlock detected"]

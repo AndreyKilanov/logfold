@@ -1,8 +1,7 @@
 """Engine port: the contract between the public API and the code that mines templates.
 
 An engine receives plain data (:class:`MineRequest`) and returns plain data (:class:`MiningResult`). The native Rust
-engine and the pure-Python reference engine implement the same contract and must agree exactly for the sequential
-strategy (see ``docs/ALGORITHM.md``).
+engine is the only implementation; its behavior is the contract in ``docs/ALGORITHM.md``.
 """
 
 from __future__ import annotations

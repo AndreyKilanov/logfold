@@ -59,8 +59,8 @@ def bases() -> tuple[AnalysisResult, DiffResult]:
 
     with tempfile.TemporaryDirectory() as folder:
         before, after = hostile_pair(Path(folder))
-        diff = logfold.diff(str(before), str(after), format="app", engine="python")
-        analysis = logfold.analyze(str(after), format="app", engine="python")
+        diff = logfold.diff(str(before), str(after), format="app", engine="native")
+        analysis = logfold.analyze(str(after), format="app", engine="native")
     return analysis, diff
 
 
@@ -193,8 +193,8 @@ def test_a_lone_surrogate_falls_back_to_the_reference() -> None:
 
 def test_the_size_limits_cut_at_the_same_place_at_every_boundary(tmp_path: Path) -> None:
     before, after = hostile_pair(tmp_path)
-    diff = logfold.diff(str(before), str(after), format="app", engine="python")
-    analysis = logfold.analyze(str(after), format="app", engine="python")
+    diff = logfold.diff(str(before), str(after), format="app", engine="native")
+    analysis = logfold.analyze(str(after), format="app", engine="native")
     for limit in range(0, 1400, 3):
         same("chat-message", diff, {"top": 50, "max_chars": limit})
         same("chat-message", analysis, {"top": 50, "max_chars": limit})
@@ -232,7 +232,7 @@ def test_a_short_listing_is_rendered_in_python_and_a_long_one_in_rust(
 
 def test_a_huge_top_does_not_render_the_document_again_and_again(tmp_path: Path) -> None:
     before, after = hostile_pair(tmp_path)
-    diff = logfold.diff(str(before), str(after), format="app", engine="python")
+    diff = logfold.diff(str(before), str(after), format="app", engine="native")
     many = replace(diff, new_templates=diff.new_templates * 400)
     for top in (10**6, 10**30):
         same("github-summary", many, {"top": top, "max_bytes": 5000})

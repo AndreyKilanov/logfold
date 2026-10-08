@@ -77,7 +77,7 @@ def test_the_name_alone_needs_a_file_and_the_prefix_reads_one(tmp_path: Path) ->
     assert len(matcher.rules) == 1
 
 
-@pytest.mark.parametrize("engine", ["native", "python"])
+@pytest.mark.parametrize("engine", ["native", "auto"])
 def test_diff_pairs_the_reworded_message_with_the_rule_and_not_without_it(
     runs: tuple[Path, Path], tmp_path: Path, engine: str
 ) -> None:

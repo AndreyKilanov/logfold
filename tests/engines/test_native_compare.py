@@ -204,19 +204,6 @@ def test_unusable_values_fall_back_to_the_reference(tmp_path) -> None:  # type: 
     assert logfold.diff(first, odd, min_count=0).unchanged >= 0
 
 
-@pytest.mark.parametrize("matcher", ["exact", "token_subset", "jaccard"])
-def test_public_diff_matches_the_pure_python_engine(tmp_path, matcher: str) -> None:  # type: ignore[no-untyped-def]
-    from corpora import synthetic_pair
-
-    before, after, _truth = synthetic_pair(tmp_path, 12)
-    native_result = logfold.diff(str(before), str(after), format="app", matcher=matcher, engine="native")
-    python_result = logfold.diff(str(before), str(after), format="app", matcher=matcher, engine="python")
-    assert native_result.new_templates == python_result.new_templates
-    assert native_result.disappeared == python_result.disappeared
-    assert native_result.changed == python_result.changed
-    assert native_result.unchanged == python_result.unchanged
-
-
 def test_template_table_rows_reject_slices() -> None:
     table = TemplateTable.from_stats(random_templates(random.Random(1), 5), 2)
     assert table[-1] == list(table)[-1]

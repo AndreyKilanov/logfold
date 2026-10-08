@@ -47,13 +47,11 @@ def test_a_chunk_size_with_auto_is_a_threshold_not_an_ignored_option(small_log: 
 
 
 def test_both_are_reported_once_each(small_log: str) -> None:
-    result = logfold.analyze(small_log, format="app", warm_start=True, chunk_bytes=4 << 20, engine="python")
+    result = logfold.analyze(small_log, format="app", warm_start=True, chunk_bytes=4 << 20, strategy="sequential")
     assert [w.split(" was ignored")[0] for w in ignored(result)] == ["warm_start", "chunk_bytes"]
 
 
 def test_the_reason_names_the_cause(small_log: str) -> None:
-    python = logfold.analyze(small_log, format="app", warm_start=True, engine="python")
-    assert "the python engine is always sequential" in ignored(python)[0]
     sequential = logfold.analyze(small_log, format="app", warm_start=True, strategy="sequential")
     assert "strategy='sequential' was asked for" in ignored(sequential)[0]
     cardinality = logfold.analyze(small_log, format="app", warm_start=True, high_cardinality=True)
