@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use logfold_core::{FrozenTemplate, Level, MaskRule};
-use logfold_engine::{DEFAULT_CHUNK_BYTES, ExecutionStrategy, MineOutput, MineRequest, MiningConfig};
+use logfold_engine::{ExecutionStrategy, MineOutput, MineRequest, MiningConfig};
 use logfold_io::{FormatConfig, FormatSpec, TimeWindow};
 use pyo3::exceptions::PyKeyError;
 use pyo3::prelude::*;
@@ -84,25 +84,9 @@ fn parse_warm_start(dict: &Bound<'_, PyDict>) -> PyResult<bool> {
 
 fn parse_strategy(dict: &Bound<'_, PyDict>) -> PyResult<ExecutionStrategy> {
     let name: String = required(dict, "strategy")?.extract()?;
-    match name.as_str() {
-        "sequential" => Ok(ExecutionStrategy::Sequential),
-        "chunked" | "adaptive" => {
-            let chunk_bytes = match optional(dict, "chunk_bytes")? {
-                Some(value) => value.extract::<u64>()?,
-                None => DEFAULT_CHUNK_BYTES,
-            };
-            let threads = match optional(dict, "threads")? {
-                Some(value) => value.extract::<usize>()?,
-                None => std::thread::available_parallelism().map_or(1, |n| n.get()),
-            };
-            Ok(if name == "adaptive" {
-                ExecutionStrategy::Adaptive { chunk_bytes, threads }
-            } else {
-                ExecutionStrategy::Chunked { chunk_bytes, threads }
-            })
-        }
-        other => Err(CoreConfigError::new_err(format!("unknown strategy '{other}'"))),
-    }
+    let chunk_bytes = optional(dict, "chunk_bytes")?.map(|value| value.extract::<u64>()).transpose()?;
+    let threads = optional(dict, "threads")?.map(|value| value.extract::<usize>()).transpose()?;
+    ExecutionStrategy::from_name(&name, chunk_bytes, threads).map_err(crate::translate)
 }
 
 fn parse_windows(dict: &Bound<'_, PyDict>) -> PyResult<Vec<TimeWindow>> {

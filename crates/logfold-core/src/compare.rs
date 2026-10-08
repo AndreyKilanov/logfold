@@ -9,14 +9,16 @@
 mod classify;
 mod jaccard;
 mod jaccard_idf;
+mod matcher;
 mod overlap;
 mod rules;
 mod sets;
 mod token_subset;
 
-pub use classify::{Changed, Comparison, Matcher, Side, Thresholds, compare_runs};
+pub use classify::{Changed, Comparison, Side, Thresholds, compare_runs};
 pub use jaccard::jaccard_pairs;
 pub use jaccard_idf::jaccard_idf_pairs;
+pub use matcher::Matcher;
 pub use overlap::{MIN_WORDS, overlap_pairs};
 pub use rules::rules_pairs;
 pub use token_subset::token_subset_pairs;

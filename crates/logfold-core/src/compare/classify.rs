@@ -4,24 +4,7 @@ use std::collections::HashMap;
 
 use ahash::RandomState;
 
-use super::{jaccard_idf_pairs, jaccard_pairs, overlap_pairs, rules_pairs, token_subset_pairs};
-
-/// The matcher that pairs the templates that exist in one run only.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Matcher<'a> {
-    /// Pairs nothing: a template is the same only when its text is the same.
-    Exact,
-    /// See [`token_subset_pairs`].
-    TokenSubset,
-    /// See [`jaccard_pairs`], with this threshold.
-    Jaccard(f64),
-    /// See [`jaccard_idf_pairs`], with this threshold.
-    JaccardIdf(f64),
-    /// See [`overlap_pairs`], with this threshold.
-    Overlap(f64),
-    /// See [`rules_pairs`], with these rules.
-    Rules(&'a [(&'a str, &'a str)]),
-}
+use super::Matcher;
 
 /// When a template is reported.
 #[derive(Clone, Copy, Debug)]
@@ -118,14 +101,7 @@ pub fn compare_runs(before: &Side<'_>, after: &Side<'_>, thresholds: &Thresholds
     if !before_only.is_empty() && !after_only.is_empty() {
         let before_texts: Vec<&str> = before_only.iter().map(|&i| before.texts[i]).collect();
         let after_texts: Vec<&str> = after_only.iter().map(|&j| after.texts[j]).collect();
-        let pairs = match matcher {
-            Matcher::Exact => Vec::new(),
-            Matcher::TokenSubset => token_subset_pairs(&before_texts, &after_texts),
-            Matcher::Jaccard(threshold) => jaccard_pairs(&before_texts, &after_texts, threshold),
-            Matcher::JaccardIdf(threshold) => jaccard_idf_pairs(&before_texts, &after_texts, threshold),
-            Matcher::Overlap(threshold) => overlap_pairs(&before_texts, &after_texts, threshold),
-            Matcher::Rules(rules) => rules_pairs(&before_texts, &after_texts, rules),
-        };
+        let pairs = matcher.pairs(&before_texts, &after_texts);
         for (bi, aj) in pairs {
             let (i, j) = (before_only[bi], after_only[aj]);
             both.push((i, j));

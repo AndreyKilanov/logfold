@@ -3,6 +3,8 @@ use std::path::PathBuf;
 use logfold_core::{FrozenTemplate, MaskRule, MinerSnapshot};
 use logfold_io::{FormatConfig, TimeWindow};
 
+use crate::error::EngineError;
+
 /// Default size of a chunk of the chunked strategy.
 pub const DEFAULT_CHUNK_BYTES: u64 = 64 << 20;
 
@@ -53,6 +55,23 @@ pub enum ExecutionStrategy {
         /// Worker thread count.
         threads: usize,
     },
+}
+
+impl ExecutionStrategy {
+    /// Builds a strategy from its name: `sequential`, `chunked` or `adaptive`.
+    ///
+    /// `chunk_bytes` defaults to [`DEFAULT_CHUNK_BYTES`] and `threads` to the available parallelism; the sequential
+    /// strategy ignores both.
+    pub fn from_name(name: &str, chunk_bytes: Option<u64>, threads: Option<usize>) -> Result<Self, EngineError> {
+        let chunk_bytes = chunk_bytes.unwrap_or(DEFAULT_CHUNK_BYTES);
+        let threads = threads.unwrap_or_else(|| std::thread::available_parallelism().map_or(1, |n| n.get()));
+        match name {
+            "sequential" => Ok(ExecutionStrategy::Sequential),
+            "chunked" => Ok(ExecutionStrategy::Chunked { chunk_bytes, threads }),
+            "adaptive" => Ok(ExecutionStrategy::Adaptive { chunk_bytes, threads }),
+            other => Err(EngineError::Config(format!("unknown strategy '{other}'"))),
+        }
+    }
 }
 
 /// Everything needed to mine one or more runs.

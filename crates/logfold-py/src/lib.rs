@@ -80,9 +80,9 @@ fn run(
 
 /// Pairs templates that exist in one run only.
 ///
-/// `kind` is `token_subset`; `jaccard`, `jaccard_idf` or `overlap` (which need `threshold`); or `rules` (which needs
-/// `rules`, a list of `(left, right)` template texts). Returns `(before index, after index)` pairs, exactly as the
-/// pure-Python matchers do.
+/// `kind` is a matcher name of [`logfold_core::Matcher::from_name`]; `threshold` and `rules` (a list of
+/// `(left, right)` template texts) are the parameters that the matcher needs. Returns `(before index, after index)`
+/// pairs.
 #[pyfunction]
 #[pyo3(signature = (kind, before, after, threshold=None, rules=None))]
 fn match_templates(
@@ -95,35 +95,23 @@ fn match_templates(
 ) -> PyResult<Vec<(usize, usize)>> {
     let before: Vec<&str> = before.iter().map(String::as_str).collect();
     let after: Vec<&str> = after.iter().map(String::as_str).collect();
-    let need =
-        |kind: &str| threshold.ok_or_else(|| CoreConfigError::new_err(format!("the {kind} matcher needs a threshold")));
-    match kind {
-        "token_subset" => Ok(py.detach(|| logfold_core::token_subset_pairs(&before, &after))),
-        "jaccard" => {
-            let threshold = need("jaccard")?;
-            Ok(py.detach(|| logfold_core::jaccard_pairs(&before, &after, threshold)))
-        }
-        "jaccard_idf" => {
-            let threshold = need("jaccard_idf")?;
-            Ok(py.detach(|| logfold_core::jaccard_idf_pairs(&before, &after, threshold)))
-        }
-        "overlap" => {
-            let threshold = need("overlap")?;
-            Ok(py.detach(|| logfold_core::overlap_pairs(&before, &after, threshold)))
-        }
-        "rules" => {
-            let rules = rules.ok_or_else(|| CoreConfigError::new_err("the rules matcher needs rules"))?;
-            let rules: Vec<(&str, &str)> = rules.iter().map(|(a, b)| (a.as_str(), b.as_str())).collect();
-            Ok(py.detach(|| logfold_core::rules_pairs(&before, &after, &rules)))
-        }
-        other => Err(CoreConfigError::new_err(format!("unknown matcher {other:?}"))),
-    }
+    let rule_texts = rule_refs(rules.as_deref());
+    let matcher = logfold_core::Matcher::from_name(kind, threshold, rule_texts.as_deref()).map_err(translate_core)?;
+    Ok(py.detach(|| matcher.pairs(&before, &after)))
+}
+
+fn rule_refs(rules: Option<&[(String, String)]>) -> Option<Vec<(&str, &str)>> {
+    rules.map(|rules| rules.iter().map(|(a, b)| (a.as_str(), b.as_str())).collect())
+}
+
+fn translate_core(error: logfold_core::CoreError) -> PyErr {
+    translate(EngineError::Core(error))
 }
 
 /// Splits the templates of two runs into new, disappeared, changed and unchanged (`docs/ALGORITHM.md` §11).
 ///
-/// `matcher` is `exact`, `token_subset`, `jaccard`, `jaccard_idf` or `overlap` (the last three need `threshold`), or
-/// `rules` (which needs `rules`). Returns `(new, disappeared, changed, unchanged)`: indices into the passed columns, and for every changed template `(before index, after index, before
+/// `matcher` is a matcher name of [`logfold_core::Matcher::from_name`]. Returns `(new, disappeared, changed,
+/// unchanged)`: indices into the passed columns, and for every changed template `(before index, after index, before
 /// share, after share, ratio or None)`, each list sorted most significant first.
 #[pyfunction]
 #[pyo3(signature = (before_texts, before_counts, before_total, after_texts, after_counts, after_total, ratio,
@@ -147,22 +135,9 @@ fn compare_runs(
     if before_texts.len() != before_counts.len() || after_texts.len() != after_counts.len() {
         return Err(CoreConfigError::new_err("every template needs a text and a count"));
     }
-    let need =
-        |kind: &str| threshold.ok_or_else(|| CoreConfigError::new_err(format!("the {kind} matcher needs a threshold")));
-    let rule_texts: Vec<(&str, &str)> = match (matcher, &rules) {
-        ("rules", Some(rules)) => rules.iter().map(|(a, b)| (a.as_str(), b.as_str())).collect(),
-        ("rules", None) => return Err(CoreConfigError::new_err("the rules matcher needs rules")),
-        _ => Vec::new(),
-    };
-    let matcher = match matcher {
-        "exact" => logfold_core::Matcher::Exact,
-        "token_subset" => logfold_core::Matcher::TokenSubset,
-        "jaccard" => logfold_core::Matcher::Jaccard(need("jaccard")?),
-        "jaccard_idf" => logfold_core::Matcher::JaccardIdf(need("jaccard_idf")?),
-        "overlap" => logfold_core::Matcher::Overlap(need("overlap")?),
-        "rules" => logfold_core::Matcher::Rules(&rule_texts),
-        other => return Err(CoreConfigError::new_err(format!("unknown matcher {other:?}"))),
-    };
+    let rule_texts = rule_refs(rules.as_deref());
+    let matcher =
+        logfold_core::Matcher::from_name(matcher, threshold, rule_texts.as_deref()).map_err(translate_core)?;
     let before_refs: Vec<&str> = before_texts.iter().map(String::as_str).collect();
     let after_refs: Vec<&str> = after_texts.iter().map(String::as_str).collect();
     let thresholds = logfold_core::Thresholds { ratio, min_count, min_new_count };
