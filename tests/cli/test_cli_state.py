@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
@@ -99,6 +100,6 @@ def test_an_unknown_state_format_is_an_error(logs: tuple[Path, Path, Path], tmp_
 
 
 def test_the_options_are_in_the_help_panels() -> None:
-    output = runner.invoke(app, ["analyze", "--help"]).output
+    output = re.sub(r"\x1b\[[0-9;]*m", "", runner.invoke(app, ["analyze", "--help"]).output)
     for flag in ("--load-state", "--save-state", "--state-format"):
         assert flag in output
