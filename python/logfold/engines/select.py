@@ -40,7 +40,7 @@ def select_engine(config: ExecutionConfig) -> Engine:
         warnings.warn(
             "the pure-Python engine has been removed; engine='python' runs the native engine and will be refused "
             "in a later release",
-            DeprecationWarning,
+            FutureWarning,
             stacklevel=2,
         )
     return NativeEngine()

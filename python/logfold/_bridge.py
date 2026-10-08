@@ -171,14 +171,15 @@ def inspect_sample(sample: bytes, format: dict[str, Any], keep: int) -> dict[str
         ConfigError: If the format is invalid.
         FormatError: If the format cannot be compiled.
     """
-    if _core is None:
-        raise EngineError("the native extension is unavailable")
+    require()
     try:
         answer: dict[str, Any] = _core.inspect_sample(sample, format, keep)
     except _core.CoreConfigError as error:
         raise ConfigError(str(error)) from None
     except _core.CoreFormatError as error:
         raise FormatError(str(error)) from None
+    except _core.CoreSourceError as error:
+        raise SourceError(str(error)) from None
     return answer
 
 

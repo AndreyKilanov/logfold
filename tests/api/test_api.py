@@ -124,10 +124,10 @@ def test_the_removed_python_engine_runs_the_native_one_with_a_warning(
 ) -> None:
     path = tmp_path / "a.log"
     path.write_text("hello world\n", encoding="utf-8")
-    with pytest.warns(DeprecationWarning, match="has been removed"):
+    with pytest.warns(FutureWarning, match="has been removed"):
         asked = logfold.analyze(str(path), format="plain", engine="python")
     monkeypatch.setenv("LOGFOLD_ENGINE", "python")
-    with pytest.warns(DeprecationWarning, match="has been removed"):
+    with pytest.warns(FutureWarning, match="has been removed"):
         from_environment = logfold.analyze(str(path), format="plain")
     for result in (asked, from_environment):
         assert result.metrics.engine == "native"

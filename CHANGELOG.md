@@ -24,6 +24,8 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 - The slow pure-Python reference engine is removed: `engine="python"`, `--engine python` and `LOGFOLD_ENGINE=python` run
   the native engine with a `DeprecationWarning` and will be refused later. Without the extension, mining raises
   `EngineError` instead of falling back; `degraded` in a result is always `False`.
+- `inspect` reads the sample in the extension, so a format is read exactly as `analyze` reads it (a pattern that only
+  Python's `re` accepts, such as a lookahead, is now refused).
 
 ### Fixed
 

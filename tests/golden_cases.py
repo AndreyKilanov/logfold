@@ -282,7 +282,7 @@ def run_cases(engine: str) -> dict[str, Any]:
 def main() -> None:
     """Rewrite the golden file from ``--engine`` (the native engine by default)."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--engine", default="native", choices=("native", "python"))
+    parser.add_argument("--engine", default="native", choices=("native",))
     args = parser.parse_args()
     cases = run_cases(args.engine)
     GOLDEN.parent.mkdir(parents=True, exist_ok=True)

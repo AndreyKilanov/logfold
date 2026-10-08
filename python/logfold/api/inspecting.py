@@ -113,7 +113,7 @@ def inspect_file(
         raise read_error(name, error) from error
 
     sample = "\n".join(lines)
-    answer = _bridge.inspect_sample(sample.encode("utf-8"), format_to_dict(resolved.spec), limit)
+    answer = _bridge.inspect_sample(sample.encode("utf-8"), format_to_dict(resolved.spec), max(limit, 0))
     shown = []
     for record in answer["shown"]:
         (moment,) = micros_to_datetimes([record["time"]], record["tz_aware"])
