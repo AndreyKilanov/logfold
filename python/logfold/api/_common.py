@@ -30,8 +30,8 @@ from logfold.model import (
     ResultMeta,
     RunSummary,
     Template,
-    micros_to_datetimes,
 )
+from logfold.timestamps import micros_to_datetimes
 
 logger = logging.getLogger("logfold")
 

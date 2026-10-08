@@ -22,9 +22,8 @@ from logfold.model import (
     AnalysisResult,
     DiffEntry,
     RunSummary,
-    datetime_to_micros,
-    micros_to_datetime,
 )
+from logfold.timestamps import datetime_to_micros, micros_to_datetime
 
 Row = tuple[str, str, int, "datetime | None", "datetime | None", Mapping[str, int], "str | None"]
 Spec = tuple[str, "float | None", "Sequence[tuple[str, str]] | None"]

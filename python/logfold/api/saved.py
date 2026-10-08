@@ -26,9 +26,9 @@ from logfold.model import (
     DiffResult,
     RunMetrics,
     Template,
-    datetime_to_micros,
 )
 from logfold.reporters.payload import analysis_from_payload
+from logfold.timestamps import datetime_to_micros
 
 PathLike = str | os.PathLike[str]
 MAX_REPORT_BYTES = 256 << 20

@@ -5,9 +5,9 @@ from __future__ import annotations
 import dataclasses
 import os
 from collections import Counter
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
+from datetime import datetime
 
 from logfold.config import DiffConfig
 from logfold.errors import ConfigError, NoLevelsError
@@ -16,52 +16,6 @@ from logfold.ext.files import check_appendable, write_text
 from logfold.levels import LEVEL_NAMES, at_least, normalize_level
 
 SCHEMA_VERSION = 1
-_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
-
-
-def micros_to_datetime(micros: int | None, tz_aware: bool) -> datetime | None:
-    """Convert microseconds since the Unix epoch to a ``datetime``.
-
-    Args:
-        micros: Microseconds, or ``None``.
-        tz_aware: Return an aware UTC datetime when true, otherwise a naive one holding the same wall-clock time.
-
-    Returns:
-        The datetime, or ``None`` when ``micros`` is ``None``.
-    """
-    if micros is None:
-        return None
-    moment = _EPOCH + timedelta(microseconds=micros)
-    return moment if tz_aware else moment.replace(tzinfo=None)
-
-
-def micros_to_datetimes(values: Sequence[int | None], tz_aware: bool) -> list[datetime | None]:
-    """Convert a column of microsecond timestamps; the column form of :func:`micros_to_datetime`.
-
-    Args:
-        values: Microseconds since the Unix epoch, or ``None``.
-        tz_aware: Return aware UTC datetimes when true, otherwise naive ones holding the same wall-clock time.
-
-    Returns:
-        The datetimes, ``None`` where the value is ``None``.
-    """
-    epoch = _EPOCH if tz_aware else _EPOCH.replace(tzinfo=None)
-    return [None if value is None else epoch + timedelta(microseconds=value) for value in values]
-
-
-def datetime_to_micros(moment: datetime | None) -> int | None:
-    """Convert a ``datetime`` to microseconds since the Unix epoch; the inverse of :func:`micros_to_datetime`.
-
-    Args:
-        moment: An aware datetime, or a naive one that is interpreted as UTC; ``None`` is allowed.
-
-    Returns:
-        Microseconds, or ``None`` when ``moment`` is ``None``.
-    """
-    if moment is None:
-        return None
-    aware = moment if moment.tzinfo is not None else moment.replace(tzinfo=UTC)
-    return (aware - _EPOCH) // timedelta(microseconds=1)
 
 
 @dataclass(frozen=True, slots=True)
