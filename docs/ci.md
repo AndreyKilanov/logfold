@@ -143,7 +143,7 @@ line) were given to the programs that read them, in Docker. Command: `python ben
 | `prometheus` | `promtool check metrics` 3.15.0 | no problems, for a diff and for an analysis |
 | `prometheus` | node exporter 1.12.1, textfile collector | `node_textfile_scrape_error 0`, 25 `logfold_` series |
 | `junit` | `junit-10.xsd` of the Jenkins xunit plugin | valid, for a diff with new alerts and for a clean one |
-| `junit` | Jenkins 2.541.3 with the JUnit plugin 1434 | 8 failed of 8 cases and the build `UNSTABLE`; a clean diff: the build `SUCCESS`, 1 passed |
+| `junit` | Jenkins 2.580.1 LTS with the JUnit plugin 1434 | 8 failed of 8 cases and the build `UNSTABLE`; a clean diff: the build `SUCCESS`, 1 passed |
 
 Not checked: a GitLab server (the merge request widget reads the same file), other test report pages, and a Prometheus server
 that scrapes the node exporter. The check found that on Windows the files had carriage returns before the line feeds, which

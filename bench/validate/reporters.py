@@ -36,7 +36,7 @@ HERE = Path(__file__).resolve().parent
 DATA = HERE.parent / "data" / "validate"
 PROMETHEUS_IMAGE = "prom/prometheus:v3.15.0"
 NODE_EXPORTER_IMAGE = "prom/node-exporter:v1.12.1"
-JENKINS_IMAGE = "jenkins/jenkins:2.541.3-lts-jdk17"
+JENKINS_IMAGE = "jenkins/jenkins:2.580.1-lts-jdk21"
 JUNIT_PLUGIN = "junit:1434.vde2d24df0c4c"
 XSD_URL = (
     "https://raw.githubusercontent.com/jenkinsci/xunit-plugin/0afa700702a6617f483cfd9407711976dc0bd74a/"
