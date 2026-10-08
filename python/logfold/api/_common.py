@@ -140,19 +140,7 @@ def _state(
     )
 
 
-def _resolve_strategy(
-    engine: Engine,
-    execution: ExecutionConfig,
-    runs: tuple[tuple[str, ...], ...],
-    state: StateRequest | None = None,
-) -> str:
-    if state is not None and state.load is not None:
-        if execution.strategy == "chunked" and engine.name != "python":
-            raise ConfigError(
-                "a saved state is continued by the sequential strategy only (the parallel one is not available yet)",
-                hint="leave out strategy='chunked', or train without load_state",
-            )
-        return "sequential"
+def _resolve_strategy(engine: Engine, execution: ExecutionConfig, runs: tuple[tuple[str, ...], ...]) -> str:
     if engine.name == "python":
         if execution.strategy == "chunked":
             logger.warning("the pure-Python engine is always sequential; ignoring strategy='chunked'")
@@ -182,7 +170,7 @@ def _mine(
         runs=runs,
         format=spec,
         mining=mining,
-        strategy=_resolve_strategy(engine, execution, runs, state),
+        strategy=_resolve_strategy(engine, execution, runs),
         threads=execution.threads,
         chunk_bytes=execution.chunk_bytes,
         warm_start=execution.warm_start,

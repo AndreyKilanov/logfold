@@ -78,8 +78,12 @@ The second run reports only the records of `tuesday.log`, and `model.json` then 
 monday.log tuesday.log --save-state ...` would have written. A state holds the templates (after masking: a template seen once is
 its line with the values replaced), the shape of the tree and counts by level and time, never an example message. It must be
 used with the same masks and parameters (`--depth`, `--sim-th`, `--max-children`, `--max-templates`, `--no-masks`); otherwise
-the run stops with an error that says so. Continuing is sequential (`--strategy chunked` is refused, `auto` mines
-sequentially), and needs the native engine. The size of a state depends on the number of templates (kilobytes for a
+the run stops with an error that says so. Continuing needs the native engine. An input of more than one chunk (64 MiB by default,
+`--chunk-mb`) is continued **in parallel** by default: every chunk starts from a copy of the loaded tree, the result does not
+depend on the number of threads and, on six of seven 100 MB logs, has exactly the templates of the sequential run, 3 to 5 times
+faster; on a log of many rare messages (Thunderbird) it has more than twice the templates, in 0.5 percent of the records
+(`bench/docs/STATE_PARALLEL.md`), and a warning says that the continuation was parallel. `--strategy sequential` is the exact
+continuation: the same state as one run over both logs. A smaller input is continued in one piece. The size of a state depends on the number of templates (kilobytes for a
 typical application; for 100 thousand templates about 12 MB in JSON at the least, since real templates are longer than the
 short ones of that measurement, and about half of it in binary), not on the size of the logs. Treat a state like
 a report of the templates: a template seen once contains the words of its line.

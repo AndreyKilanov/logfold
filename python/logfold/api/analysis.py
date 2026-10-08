@@ -87,7 +87,9 @@ def analyze(
         until: Keep only records before this time; see ``since``.
         load_state: A state file of an earlier run to continue from: the templates it holds are the start of the tree,
             the result counts only the records of this run, and the file must have been mined with the same masks and
-            parameters. Needs the native engine; the run is sequential.
+            parameters. Needs the native engine. A big input is continued in parallel (every chunk starts from a copy of
+            the loaded tree; a warning says so); ``strategy='sequential'`` is the exact continuation, the same state as
+            one run over both logs.
         save_state: Write the trained miner to this file (a path that ends in ``.gz`` is compressed), so that a later
             run can continue from it. The file holds templates and counts, never example lines.
         state_format: ``json`` (readable, the default) or ``binary`` (compact, for very large states).
@@ -116,6 +118,12 @@ def analyze(
         (run,), spec, mining_config, exec_config, progress, windows=(bounds,) if bounds != OPEN else (), state=state
     )
     summary = labeled(_summary(run, mined.runs[0]), bounds)
+    notes = []
+    if state is not None and state.load is not None and mined.metrics.strategy == "chunked":
+        notes.append(
+            "continued in parallel from the loaded state: a log of many rare messages can have more templates than "
+            "with strategy='sequential', which is exact"
+        )
     masker = Masker(mining_config.masks)
     templates = _templates(mined.templates, 0, summary.tz_aware, examples, masker)
     return AnalysisResult(
@@ -126,5 +134,6 @@ def analyze(
         warnings=(
             *_warnings([summary], used, exec_config, resolved, mining_config, high_cardinality, mined.metrics.strategy),
             *window_warnings(summary),
+            *notes,
         ),
     )
