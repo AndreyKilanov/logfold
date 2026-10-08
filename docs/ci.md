@@ -123,6 +123,32 @@ spans, within 3000 characters); put it in the body of your webhook call, logfold
 `--out /var/lib/node_exporter/textfile/logfold.prom` writes gauges (records per level, new, disappeared and changed templates)
 for the node exporter textfile collector.
 
+The node exporter reads a `.prom` file whenever it is scraped, so it can read one that is half written, and then it reports
+`node_textfile_scrape_error 1` for that scrape. Write the file beside the final one and move it into place; the collector reads
+only files that end in `.prom`:
+
+```
+logfold diff good/app.log current.log --report prometheus --out /var/lib/node_exporter/textfile/.logfold.tmp -q
+mv /var/lib/node_exporter/textfile/.logfold.tmp /var/lib/node_exporter/textfile/logfold.prom
+```
+
+### Checked with the real tools
+
+The tests of the reporters parse the text themselves, so on 2026-10-08 the files of a diff (a baseline log and a run with
+hostile template text: markup, a CDATA end marker, label metacharacters, control and astral characters, a 5000 character
+line) were given to the programs that read them, in Docker. Command: `python bench/validate/reporters.py`.
+
+| Report | Tool | Result |
+|---|---|---|
+| `prometheus` | `promtool check metrics` 3.15.0 | no problems, for a diff and for an analysis |
+| `prometheus` | node exporter 1.12.1, textfile collector | `node_textfile_scrape_error 0`, 25 `logfold_` series |
+| `junit` | `junit-10.xsd` of the Jenkins xunit plugin | valid, for a diff with new alerts and for a clean one |
+| `junit` | Jenkins 2.580.1 LTS with the JUnit plugin 1434 | 8 failed of 8 cases and the build `UNSTABLE`; a clean diff: the build `SUCCESS`, 1 passed |
+
+Not checked: a GitLab server (the merge request widget reads the same file), other test report pages, and a Prometheus server
+that scrapes the node exporter. The check found that on Windows the files had carriage returns before the line feeds, which
+both Prometheus tools reject; reports are written with line feeds only since 0.5.0.
+
 A full HTML report for people to download goes to a separate step, as an artifact:
 
 ```yaml
