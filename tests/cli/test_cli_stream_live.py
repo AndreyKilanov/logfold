@@ -45,8 +45,6 @@ def test_a_new_template_is_printed_while_the_writer_is_still_running() -> None:
         process.stdin.flush()
         assert first_line(process).strip() == b"new  the disk caught fire"
     finally:
-        assert process.stdin is not None
-        process.stdin.close()
         process.communicate(timeout=DEADLINE)
     assert process.returncode == 0
 
@@ -63,8 +61,6 @@ def test_the_state_is_written_while_the_stream_runs(tmp_path: Path) -> None:
             time.sleep(0.2)
         assert state.exists(), "no state was written before the input ended"
     finally:
-        assert process.stdin is not None
-        process.stdin.close()
         process.communicate(timeout=DEADLINE)
     assert process.returncode == 0
 
