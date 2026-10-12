@@ -173,7 +173,7 @@ class Settings:
         if self.fail_on_new_alerts is not None:
             diff["fail_on_new_alerts"] = self.fail_on_new_alerts
         inspect: dict[str, object] = {name: shared[name] for name in ("format", "multiline") if name in shared}
-        return {"analyze": analyze, "match": dict(analyze), "diff": diff, "inspect": inspect}
+        return {"analyze": analyze, "match": dict(analyze), "stream": dict(shared), "diff": diff, "inspect": inspect}
 
 
 def _unknown(source: str, where: str, key: str, known: Mapping[str, object] | list[str]) -> ConfigError:
