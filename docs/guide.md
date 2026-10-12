@@ -214,6 +214,21 @@ format, so it is `plain` unless you name one (`logfold inspect FILE` finds the f
 [`bench/docs/STREAM.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/docs/STREAM.md); the options are in
 [the CLI reference](cli.md#logfold-stream) and [the API reference](api.md#miner).
 
+## Find the values of a message
+
+A template says that a part is variable; to see what it was in one message, pass the template (copy it from a report) and the
+message to `logfold params` or to `logfold.extract_parameters`:
+
+```python
+logfold.extract_parameters("user <NUM> logged in from <IP>", "user 42 logged in from 10.0.0.1:8080")
+# (Parameter(position=1, name='num', value='42'), Parameter(position=5, name='ip', value='10.0.0.1:8080'))
+```
+
+The names are those of the masking rules (`num`, `ip`, `ts`, ...) or `*` for a position the miner generalized, and the value is
+the text as it was written, not the masked token. A message that does not fit the template (another number of tokens, or a
+constant token that differs) gives `None`. Use the masks the template was mined with. See
+[the API reference](api.md#extract_parameters) and [the CLI reference](cli.md#logfold-params).
+
 ## Reports
 
 `--out FILE` writes a report; the suffix selects the format: `.html`, `.json`, `.txt` (plain text), `.md` (Markdown tables)

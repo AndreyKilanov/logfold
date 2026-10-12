@@ -407,3 +407,22 @@ A file written to a path that ends in `.gz` is compressed with gzip; a gzip file
 name, and read with the size limit applied to the decompressed bytes. The same state is the same bytes before
 compression (the compressed bytes depend on the compressor, only the content is promised); a change of this layout is a change of this section,
 of both implementations and of the contract tests in one change, and raises `schema_version`.
+
+## 14. Parameters of a message
+
+`extract_parameters(template, message)` (`logfold.extract_parameters`, `logfold params`) gives the values that a message has at the
+variable positions of a template. It adds no new behavior to mining: it repeats the masking of §2 and the tokenization of §3 and
+remembers where each replacement stood in the message.
+
+1. Mask the message as in §2, keeping for every match the rule and its span in the message. The matches are the ones that §2
+   replaces (the hand-written scanner of the default rules is tested against the regex engine, which gives the spans).
+2. Tokenize the masked text as in §3. The template is the list of its tokens (its text split at single spaces). The message fits
+   only if it has the same number of tokens; in the exact fit every constant token of the template must also equal the token of the
+   message, otherwise there is no result. (The by-position fit, which the core crate keeps for later use, ignores constants that differ.)
+3. For every position in order: a `<*>` token of the template gives one parameter, named `*`, whose value is the text of the message
+   that the token stands for (the text from the start of its first character to the end of its last character, with every replacement
+   inside it taken as it was written); the matches inside such a token give no parameter of their own. Any other token gives one
+   parameter for each match that starts inside it, named by the rule and valued by the text that the rule matched.
+4. A match whose replacement holds a delimiter belongs to the token in which it starts; a match with an empty replacement belongs to none.
+
+The values are slices of the message, never recomputed text, so they hold every character of the log as it was written.

@@ -26,6 +26,9 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   calls, and `logfold stream [FILE]` mines a log while it is written and prints each template when it first appears. Both read and
   write state files, and the result equals `analyze` over the same records. Extension contract version 11. See `docs/api.md`,
   `docs/cli.md`.
+- `logfold.extract_parameters(template, message)` and `logfold params TEMPLATE MESSAGE` give the values that a message has at the
+  variable parts of a template (`<*>` and masked values such as `<NUM>`), named by the rule or `*`, as written in the message;
+  also `Miner.extract_parameters` and `logfold.Parameter`. Extension contract version 12. See `docs/api.md`, `docs/cli.md`.
 
 ### Changed
 

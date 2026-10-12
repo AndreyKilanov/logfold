@@ -13,6 +13,7 @@ mod freeze;
 mod level;
 mod masker;
 mod miner;
+mod parameters;
 mod stats;
 mod tokenizer;
 
@@ -23,11 +24,12 @@ pub use compare::{
 pub use error::CoreError;
 pub use freeze::FrozenTemplate;
 pub use level::{LEVEL_COUNT, Level};
-pub use masker::{MaskRule, MaskScratch, RuleMasker, default_mask_rules};
+pub use masker::{MaskHit, MaskRule, MaskScratch, RuleMasker, default_mask_rules};
 pub use miner::{
     Assignment, ClusterHistory, ClusterSnapshot, DrainMiner, MAX_EXAMPLE_BYTES, MinerConfig, MinerSnapshot,
     NodeSnapshot, RecordMeta, Recount, WILDCARD,
 };
+pub use parameters::{Fit, Parameter, WILDCARD_NAME, extract_parameters};
 pub use stats::RunStats;
 pub use tokenizer::{TokenView, Tokenizer};
 

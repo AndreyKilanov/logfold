@@ -5,11 +5,11 @@ logfold [--version] <command> [options]
 ```
 
 Commands: [`analyze`](#logfold-analyze), [`match`](#logfold-match), [`stream`](#logfold-stream), [`diff`](#logfold-diff),
-[`inspect`](#logfold-inspect), [`formats`](#logfold-formats), [`info`](#logfold-info), [`plugins`](#logfold-plugins). Install the command with `pip install "logfold[cli]"`.
+[`params`](#logfold-params), [`inspect`](#logfold-inspect), [`formats`](#logfold-formats), [`info`](#logfold-info), [`plugins`](#logfold-plugins). Install the command with `pip install "logfold[cli]"`.
 
 `logfold --version` prints the version. `logfold <command> --help` prints the options of a command.
 
-**Settings file.** `analyze`, `match`, `stream`, `diff` and `inspect` read a [`logfold.toml`](config.md) for the options that you
+**Settings file.** `analyze`, `match`, `stream`, `diff`, `params` and `inspect` read a [`logfold.toml`](config.md) for the options that you
 do not give: `logfold --config FILE <command>` names the file, `logfold --no-config <command>` reads none, and without
 either the first `logfold.toml` from the current folder up to the repository root is used. A flag beats the file; the
 file beats the built-in default. A command that uses a file says so on standard error.
@@ -228,6 +228,29 @@ reports like `--min-count` does (a `.json` file from `--out` stays complete) and
 templates were hidden. In `diff` they filter the new, disappeared and changed lists, every report and the gates: `--fail-on-new
 --level ERROR` exits with code 2 only when a new template at ERROR or above exists. A format without levels (nginx, apache,
 plain) is an error with a hint, not an empty result.
+
+## `logfold params`
+
+```
+logfold params TEMPLATE MESSAGE [--no-masks] [--json]
+```
+
+Prints the values that one MESSAGE has at the variable parts of a TEMPLATE, one per line as `position`, the name of the masking
+rule or `*` (a position the miner generalized), and the value as it was written in the message:
+
+```
+$ logfold params "user <NUM> logged in from <IP>" "user 42 logged in from 10.0.0.1:8080"
+1	num	42
+5	ip	10.0.0.1:8080
+```
+
+Copy TEMPLATE from a report and MESSAGE from the log. The message is masked and tokenized as the miner does, so it needs the
+masks that the template was mined with: `--no-masks` for a run mined without them, and the masks of a `logfold.toml` apply as for
+the other commands. With `--json` the output is `{"parameters": [{"position": 1, "name": "num", "value": "42"}]}`. A message that
+does not fit the template (another number of tokens, or a constant token that differs) is an error with exit code 1 and a hint.
+A message that starts with a dash needs `--` before the arguments. Control characters of a value are shown as hexadecimal escapes
+instead of being acted on. The same is available in Python as
+[`logfold.extract_parameters`](api.md#extract_parameters).
 
 ## `logfold inspect`
 

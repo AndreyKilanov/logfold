@@ -74,6 +74,7 @@ mode over the same records in the same order, whatever the sizes of the batches.
   not reported.
 - `result() -> AnalysisResult` returns the templates and counters of what was mined so far, and the miner stays usable. The
   cost is proportional to the number of templates.
+- `extract_parameters(template, message)` is [`logfold.extract_parameters`](#extract_parameters) with the masks of this miner.
 - `save_state(path, state_format=None)` writes a state file that `analyze(load_state=...)`, `match` and `Miner(load_state=...)`
   read, and the other way round.
 
@@ -164,6 +165,37 @@ schema version 1, `SourceError` is raised.
 looks for the header `{"schema_version": N, "kind": "analysis"`. It is `False` for a log and for a file that cannot be read.
 A UTF-16 file (a PowerShell 5 `>` redirect) counts as a report, so that `load_analysis` can explain what is wrong with it.
 
+## `extract_parameters`
+
+```python
+extract_parameters(template, message, *, masks=None, mining=None, config=None) -> tuple[Parameter, ...] | None
+```
+
+Gives the values that a message has at the variable positions of a template. `template` is the text of a template (or a
+`Template` of a result), `message` is one record as it was written in the log. The message is masked and tokenized as the
+miner does, its tokens are aligned with the template, and every variable part is given as it was written, not as the masked
+token. The result is a tuple of `Parameter(position, name, value)` in the order of the positions, where `position` is the index
+of the token in the template and `name` is the name of the masking rule (`num`, `ip`, `ts`, ...) or `*` for a position that
+the miner generalized:
+
+```python
+>>> logfold.extract_parameters("user <NUM> logged in from <IP>", "user 42 logged in from 10.0.0.1:8080")
+(Parameter(position=1, name='num', value='42'), Parameter(position=5, name='ip', value='10.0.0.1:8080'))
+```
+
+- A `<*>` token gives one parameter with the whole token; the masked values inside it are not given again. A constant token that
+  holds a masked value (`id=<NUM>`) gives one parameter named by its rule, and a rule that spans several words (`ts` matches
+  `2026-10-04 12:00:01`) gives one parameter for all of them.
+- The result is `None` when the message does not fit the template: another number of tokens, or a constant token that differs.
+  A template without variable parts gives an empty tuple.
+- The masks and the delimiters must be the ones the template was mined with (`masks=`, `mining=` or the settings in `config=`,
+  as for `analyze`). The template text is split at its single spaces, as the miner joins its tokens, so the run must have used
+  the space among its delimiters (the default). The compiled masks are kept between calls, so calling the function for many
+  messages is cheap. `Miner.extract_parameters(template, message)` uses the masks of the miner. See
+  [`logfold params`](cli.md#logfold-params).
+
+Raises `ConfigError` for an invalid masking rule and `EngineError` when the native extension is unavailable.
+
 ## `inspect_file`
 
 ```python
@@ -239,6 +271,12 @@ registered `formats`, `reporters` and `matchers`. It is what `logfold info` prin
 `after_count`, `before_share`, `after_share`, `ratio` (`after_share / before_share`, `None` when either count is zero),
 `level`, `levels` (summed over both runs), `example`, `first_seen`, `last_seen`, and for `changed` entries `score` (the
 G statistic of the change of the share) and `p_value`; both are `None` for new and disappeared templates.
+
+### `Parameter`
+
+`position` (index of the token in the template), `name` (the name of the masking rule, or `*` for a generalized position) and
+`value` (the text as written in the message): one value that a message gave to a variable position of a template, from
+[`extract_parameters`](#extract_parameters).
 
 ### `RunSummary`, `RunMetrics`, `ResultMeta`
 
