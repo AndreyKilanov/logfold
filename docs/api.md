@@ -82,7 +82,9 @@ the format from (`logfold inspect FILE` finds it for a sample). The other option
 mining parameters must be the ones a loaded state was mined with. The miner is safe to share between threads and the native
 call releases the GIL, but records given by several threads are mined in the order in which the calls get the lock, so only
 a single feeder gives a repeatable result. Memory is bounded for any stream: a record is cut at 1 MiB, a line at 16 MiB,
-and the number of templates is limited by `max_templates`. See [`logfold stream`](cli.md#logfold-stream).
+and the number of templates is limited by `max_templates`. Speed on a 105 MB file: `add_lines` 103 MB/s, `add_many` 86 MB/s,
+`add_log_message` 34 MB/s, against 134 MB/s of `analyze` and 5 MB/s of a Drain3 loop (`bench/docs/STREAM.md`). See
+[`logfold stream`](cli.md#logfold-stream).
 
 ## `diff`
 
@@ -140,7 +142,7 @@ load_config(path=None) -> Settings
 
 Reads the settings file [`logfold.toml`](config.md): the file at `path`, or else the one named by `LOGFOLD_CONFIG`, or
 else the first `logfold.toml` from the current folder up to the repository root. Without any file it returns the
-built-in defaults. The result is passed to `analyze`, `match` and `diff` as `config=`; an argument of the call beats
+built-in defaults. The result is passed to `analyze`, `match`, `diff` and `Miner` as `config=`; an argument of the call beats
 it. `Settings` holds `format`, `multiline`, `mining` (`MiningConfig`), `execution` (`ExecutionConfig`) and `diff`
 (`DiffConfig`), and `source`, the path of the file that was read. Raises `ConfigError` when the file cannot be read, is
 larger than 64 KiB, is not valid TOML, or holds an unknown key, a value of the wrong type or a value out of range.

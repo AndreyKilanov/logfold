@@ -178,6 +178,33 @@ three differ most. The exit-code gates (`--fail-on-new`, `--fail-on-new-alerts`)
 `changed`, so use `--matcher exact` for a gate that must fail on every new text. Measurements on four large real logs, and how they were made, are in
 [`bench/docs/DIFF_MATCHERS.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/docs/DIFF_MATCHERS.md).
 
+## Mine a stream
+
+A program that produces records while it runs (a service, a test harness, `tail -F`, `kubectl logs -f`) does not need a
+file. `logfold stream` reads standard input and prints every template once, when it first appears:
+
+```
+kubectl logs -f deploy/api | logfold stream --format plain --save-state model.json --save-every 60
+```
+
+In Python, `logfold.Miner` keeps its templates between calls and takes records in batches:
+
+```python
+miner = logfold.Miner(format="app")
+for batch in batches_of_lines():
+    miner.add_many(batch)
+    for template in miner.new_templates():
+        print("new:", template)
+result = miner.result()  # the same result as analyze() over the same records
+miner.save_state("model.json")  # analyze(load_state=...), match() and Miner(load_state=...) read it
+```
+
+The result equals the one of `analyze` over the same records, whatever the size of the batches. `add_many` is the fast path
+(a batch is one native call); `add_log_message` is one call per record and about 2.6 times slower. A stream cannot detect its
+format, so it is `plain` unless you name one (`logfold inspect FILE` finds the format of a sample). Speed and memory:
+[`bench/docs/STREAM.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/docs/STREAM.md); the options are in
+[the CLI reference](cli.md#logfold-stream) and [the API reference](api.md#miner).
+
 ## Reports
 
 `--out FILE` writes a report; the suffix selects the format: `.html`, `.json`, `.txt` (plain text), `.md` (Markdown tables)

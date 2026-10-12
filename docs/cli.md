@@ -4,12 +4,12 @@
 logfold [--version] <command> [options]
 ```
 
-Commands: [`analyze`](#logfold-analyze), [`match`](#logfold-match), [`diff`](#logfold-diff), [`formats`](#logfold-formats),
-[`info`](#logfold-info), [`plugins`](#logfold-plugins). Install the command with `pip install "logfold[cli]"`.
+Commands: [`analyze`](#logfold-analyze), [`match`](#logfold-match), [`stream`](#logfold-stream), [`diff`](#logfold-diff),
+[`inspect`](#logfold-inspect), [`formats`](#logfold-formats), [`info`](#logfold-info), [`plugins`](#logfold-plugins). Install the command with `pip install "logfold[cli]"`.
 
 `logfold --version` prints the version. `logfold <command> --help` prints the options of a command.
 
-**Settings file.** `analyze`, `match`, `diff` and `inspect` read a [`logfold.toml`](config.md) for the options that you
+**Settings file.** `analyze`, `match`, `stream`, `diff` and `inspect` read a [`logfold.toml`](config.md) for the options that you
 do not give: `logfold --config FILE <command>` names the file, `logfold --no-config <command>` reads none, and without
 either the first `logfold.toml` from the current folder up to the repository root is used. A flag beats the file; the
 file beats the built-in default. A command that uses a file says so on standard error.
@@ -139,8 +139,9 @@ of a template is the one it had when it was created, with control characters sho
 
 The format is `plain` unless `--format` names another one; `auto` is refused, because a stream has no file to detect it
 from. With a multi-line format a record is mined when the next record starts, or after a second of silence. Bytes that are
-not UTF-8 become U+FFFD, a line longer than 1 MiB is read in pieces, and the lines that wait for the miner never take more
-than about 64 MiB.
+not UTF-8 become U+FFFD, a line longer than 1 Mi characters is read in pieces, and the lines that wait for the miner never
+take more than about 16 million characters. On a 105 MB file it mines about 94 MB/s, 1.4 times the time of `analyze`
+(`bench/docs/STREAM.md`).
 
 `--load-state FILE` continues from a state of `analyze`, `match` or an earlier `stream` (the templates it holds are not
 announced), `--save-state FILE` writes the state at the end, and `--save-every SECONDS` writes it while the stream runs too
