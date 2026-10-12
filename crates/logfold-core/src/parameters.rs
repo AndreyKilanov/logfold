@@ -55,20 +55,30 @@ fn mask_with_replacements(masker: &RuleMasker, message: &[u8]) -> (Vec<u8>, Vec<
     (masked, replacements)
 }
 
-/// Maps an offset of the masked text back into the message. An offset inside a replacement goes to the start (when `end`
-/// is false) or to the end (when `end` is true) of the text that the replacement stands for.
-fn original(offset: usize, replacements: &[Replacement], end: bool) -> usize {
-    let mut shift: isize = 0;
-    for replacement in replacements {
-        if offset < replacement.masked_start {
-            break;
+/// Maps offsets of the masked text back into the message, for offsets that never decrease from one call to the next.
+struct Mapper<'a> {
+    replacements: &'a [Replacement],
+    index: usize,
+    shift: isize,
+}
+
+impl Mapper<'_> {
+    /// An offset inside a replacement goes to the start (when `end` is false) or to the end (when `end` is true) of the
+    /// text that the replacement stands for. The replacements are passed once over all calls, so a message with many
+    /// matches costs time in proportion to their number.
+    fn original(&mut self, offset: usize, end: bool) -> usize {
+        while let Some(replacement) = self.replacements.get(self.index) {
+            if offset < replacement.masked_start {
+                break;
+            }
+            if offset < replacement.masked_end || (end && offset == replacement.masked_end) {
+                return if end { replacement.hit.end } else { replacement.hit.start };
+            }
+            self.shift = replacement.hit.end as isize - replacement.masked_end as isize;
+            self.index += 1;
         }
-        if offset < replacement.masked_end || (end && offset == replacement.masked_end) {
-            return if end { replacement.hit.end } else { replacement.hit.start };
-        }
-        shift = replacement.hit.end as isize - replacement.masked_end as isize;
+        offset.checked_add_signed(self.shift).unwrap_or(offset)
     }
-    offset.checked_add_signed(shift).unwrap_or(offset)
 }
 
 /// Gives the values that `message` has at the variable positions of `template`, in the order of the positions.
@@ -94,11 +104,12 @@ pub fn extract_parameters(
         return None;
     }
     let mut parameters = Vec::new();
+    let mut mapper = Mapper { replacements: &replacements, index: 0, shift: 0 };
     let mut next = 0;
     for (position, (&expected, &(start, end))) in template.iter().zip(&spans).enumerate() {
         let inside = |replacement: &Replacement| replacement.masked_start < end;
         if expected == WILDCARD {
-            let value = message[original(start, &replacements, false)..original(end, &replacements, true)].to_vec();
+            let value = message[mapper.original(start, false)..mapper.original(end, true)].to_vec();
             parameters.push(Parameter { position, name: WILDCARD_NAME.to_string(), value });
             while replacements.get(next).is_some_and(inside) {
                 next += 1;

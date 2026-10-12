@@ -149,3 +149,17 @@ proptest! {
         prop_assert_eq!(by_position, found);
     }
 }
+
+#[test]
+fn a_message_with_very_many_matches_is_aligned_in_linear_time() {
+    let count = 200_000;
+    let message = (0..count).map(|n| n.to_string()).collect::<Vec<_>>().join(" ");
+    let template = vec!["<*>"; count].join(" ");
+    let started = std::time::Instant::now();
+    let found = exact(&template, &message).unwrap();
+    assert_eq!(found.len(), count);
+    assert_eq!(found[count - 1], row(count - 1, "*", &(count - 1).to_string()));
+    let masked = vec!["<NUM>"; count].join(" ");
+    assert_eq!(exact(&masked, &message).unwrap().len(), count);
+    assert!(started.elapsed().as_secs() < 20, "alignment is not linear: {:?}", started.elapsed());
+}
