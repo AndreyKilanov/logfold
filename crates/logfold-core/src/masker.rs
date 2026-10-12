@@ -35,6 +35,17 @@ pub fn default_mask_rules() -> Vec<MaskRule> {
     ]
 }
 
+/// One match of a masking rule in a message.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct MaskHit {
+    /// Index of the rule in the rule list.
+    pub rule: usize,
+    /// Start of the match in the message, in bytes.
+    pub start: usize,
+    /// End of the match in the message, in bytes.
+    pub end: usize,
+}
+
 /// Reusable output buffer for [`RuleMasker::mask`].
 #[derive(Default, Debug)]
 pub struct MaskScratch {
@@ -49,6 +60,7 @@ pub struct MaskScratch {
 pub struct RuleMasker {
     regex: Option<Regex>,
     tokens: Vec<Vec<u8>>,
+    names: Vec<String>,
     default_rules: bool,
 }
 
@@ -96,6 +108,7 @@ impl RuleMasker {
         Ok(RuleMasker {
             regex,
             tokens: rules.iter().map(|r| r.token.as_bytes().to_vec()).collect(),
+            names: rules.iter().map(|r| r.name.clone()).collect(),
             default_rules: false,
         })
     }
@@ -103,6 +116,28 @@ impl RuleMasker {
     /// Tells whether the hand-written scanner of the default rules is used instead of the regex engine.
     pub fn uses_default_scanner(&self) -> bool {
         self.default_rules
+    }
+
+    /// Returns the matches that [`RuleMasker::mask`] replaces in `input`, in order, found by the regex engine.
+    ///
+    /// The default rules give the same matches here as with their hand-written scanner (that is what the scanner is tested
+    /// against), so the spans can be paired with the output of `mask`.
+    pub fn hits(&self, input: &[u8]) -> Vec<MaskHit> {
+        let Some(regex) = &self.regex else { return Vec::new() };
+        regex
+            .find_iter(input)
+            .map(|found| MaskHit { rule: found.pattern().as_usize(), start: found.start(), end: found.end() })
+            .collect()
+    }
+
+    /// The replacement text of rule `rule`.
+    pub fn token(&self, rule: usize) -> &[u8] {
+        &self.tokens[rule]
+    }
+
+    /// The name of rule `rule`.
+    pub fn name(&self, rule: usize) -> &str {
+        &self.names[rule]
     }
 
     /// Returns `input` with all rules applied. The result borrows either `input` or `scratch`.
