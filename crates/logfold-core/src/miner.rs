@@ -202,6 +202,29 @@ impl DrainMiner {
         freeze_clusters(ordered)
     }
 
+    /// Texts of the templates created at or after position `from` of the tree, in creation order.
+    ///
+    /// A text is the one that the template had when it was created; later records may turn tokens into wildcards.
+    pub fn template_texts_from(&self, from: usize) -> Vec<String> {
+        self.clusters
+            .iter()
+            .skip(from)
+            .map(|cluster| {
+                let tokens: Vec<&[u8]> = cluster.tokens.iter().map(|token| &**token).collect();
+                String::from_utf8_lossy(&tokens.join(&b' ')).into_owned()
+            })
+            .collect()
+    }
+
+    /// Returns the unique templates that [`Self::freeze`] would return, and leaves the miner ready for more records.
+    ///
+    /// Copies the clusters (not the tree), so it costs memory and time in proportion to the number of templates.
+    pub fn templates(&self) -> Vec<FrozenTemplate> {
+        let mut ordered: Vec<Cluster> = self.clusters.clone();
+        ordered.extend(self.overflow.values().cloned());
+        freeze_clusters(ordered)
+    }
+
     fn find_match<T: Tokens>(&self, tokens: &T) -> Option<usize> {
         let leaf = self.search(tokens)?;
         let node = &self.nodes[leaf as usize];

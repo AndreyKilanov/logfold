@@ -4,12 +4,12 @@
 logfold [--version] <command> [options]
 ```
 
-Commands: [`analyze`](#logfold-analyze), [`match`](#logfold-match), [`diff`](#logfold-diff), [`formats`](#logfold-formats),
-[`info`](#logfold-info), [`plugins`](#logfold-plugins). Install the command with `pip install "logfold[cli]"`.
+Commands: [`analyze`](#logfold-analyze), [`match`](#logfold-match), [`stream`](#logfold-stream), [`diff`](#logfold-diff),
+[`inspect`](#logfold-inspect), [`formats`](#logfold-formats), [`info`](#logfold-info), [`plugins`](#logfold-plugins). Install the command with `pip install "logfold[cli]"`.
 
 `logfold --version` prints the version. `logfold <command> --help` prints the options of a command.
 
-**Settings file.** `analyze`, `match`, `diff` and `inspect` read a [`logfold.toml`](config.md) for the options that you
+**Settings file.** `analyze`, `match`, `stream`, `diff` and `inspect` read a [`logfold.toml`](config.md) for the options that you
 do not give: `logfold --config FILE <command>` names the file, `logfold --no-config <command>` reads none, and without
 either the first `logfold.toml` from the current folder up to the repository root is used. A flag beats the file; the
 file beats the built-in default. A command that uses a file says so on standard error.
@@ -118,6 +118,41 @@ Options: `--format`, `--multiline`, `--since`, `--until`, `--top`, `--min-count`
 `--append`, `--report`, `--json`, `--examples`, `--quiet`, `--debug` as for [`analyze`](#logfold-analyze), and the mining
 and execution options listed there (`--sim-th`, `--depth`, `--max-children`, `--max-templates`, `--no-masks`, `--strategy`,
 `--threads`, `--chunk-mb`). There is no `--save-state`, `--load-state`, `--high-cardinality`, `--warm-start` or `--engine`.
+
+## `logfold stream`
+
+```
+logfold stream [FILE] [options]
+```
+
+Mines a log while it is written: reads FILE (standard input when it is missing or `-`), prints every template once, on a line
+that starts with `new`, when it first appears, and writes the usual report when the input ends:
+
+```
+kubectl logs -f deploy/api | logfold stream --format plain
+tail -F app.log | logfold stream -f app --save-state model.json --save-every 60
+```
+
+The result is the one of `logfold analyze` over the same lines, whatever the batch size. A line is read as soon as it
+arrives; `--batch-size` (1000) is the most lines mined in one step, and a quiet stream is mined after a second. The text
+of a template is the one it had when it was created, with control characters shown instead of acted on.
+
+The format is `plain` unless `--format` names another one; `auto` is refused, because a stream has no file to detect it
+from. With a multi-line format a record is mined when the next record starts, or after a second of silence. Bytes that are
+not UTF-8 become U+FFFD, a line longer than 1 Mi characters is read in pieces, and the lines that wait for the miner never
+take more than about 16 million characters. On a 105 MB file it mines about 94 MB/s, 1.4 times the time of `analyze`
+(`bench/docs/STREAM.md`).
+
+`--load-state FILE` continues from a state of `analyze`, `match` or an earlier `stream` (the templates it holds are not
+announced), `--save-state FILE` writes the state at the end, and `--save-every SECONDS` writes it while the stream runs too
+(the old file stays until the new one is complete). Ctrl+C ends the input: the state is saved, the report is written for what
+was read, and the exit code is 130.
+
+Options: `--format`, `--multiline`, `--top`, `--level`, `--only-alerts`, `--out`, `--append`, `--report`, `--json`,
+`--examples`, `--quiet`, `--debug`, `--state-format` as for [`analyze`](#logfold-analyze), and `--sim-th`, `--depth`,
+`--max-children`, `--max-templates`, `--no-masks`. With `--json`, or `--report` without `--out`, the `new`
+lines are not printed, so that standard output holds only the report. There is no `--since`, `--until`, `--strategy` or
+`--threads`: a stream is mined by one tree, in the order it arrives.
 
 ## `logfold diff`
 
@@ -278,7 +313,7 @@ catalog or a failed pip run exit with code 1.
 | 0 | success |
 | 1 | error: invalid option, unreadable input, unknown or undetected format, engine unavailable |
 | 2 | `diff` with `--fail-on-new` found new templates, or with `--fail-on-new-alerts` found new WARN/ERROR/FATAL templates |
-| 130 | interrupted (Ctrl+C) |
+| 130 | interrupted (Ctrl+C); `stream` first saves the state and writes the report for what it read |
 
 Errors are printed on standard error as `error: ...`, followed by a `hint: ...` line when there is a next step: the
 closest known name for a misspelled format, reporter or diff matcher (`did you mean 'nginx'?`) with the command that lists

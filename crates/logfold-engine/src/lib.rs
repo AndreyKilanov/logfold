@@ -14,6 +14,7 @@ mod matching;
 mod pipeline;
 mod plan;
 mod sequential;
+mod session;
 mod types;
 
 use std::time::Instant;
@@ -21,12 +22,13 @@ use std::time::Instant;
 pub use error::EngineError;
 pub use inspect::{SampleRecord, SampleReport, inspect_sample};
 pub use matching::match_records;
+pub use session::{Session, SessionConfig};
 pub use types::{
     DEFAULT_CHUNK_BYTES, ExecutionStrategy, MineOutput, MineRequest, MiningConfig, NullObserver, ProgressObserver,
     RunMetrics, RunSummary,
 };
 
-use logfold_core::{CoreError, DrainMiner, MinerConfig};
+use logfold_core::{CoreError, DrainMiner, MinerConfig, MinerSnapshot};
 use logfold_io::StateError;
 use pipeline::PipelineContext;
 
@@ -162,23 +164,30 @@ pub(crate) fn validate_request(request: &MineRequest) -> Result<(), EngineError>
 }
 
 pub(crate) fn miner_config(request: &MineRequest) -> Result<MinerConfig, EngineError> {
-    Ok(MinerConfig::new(
-        request.mining.depth,
-        request.mining.sim_th,
-        request.mining.max_children,
-        request.mining.max_templates,
-    )?)
+    mining_config(&request.mining)
+}
+
+pub(crate) fn mining_config(mining: &MiningConfig) -> Result<MinerConfig, EngineError> {
+    Ok(MinerConfig::new(mining.depth, mining.sim_th, mining.max_children, mining.max_templates)?)
 }
 
 /// Builds the miner of the saved state of `request`, after checking that it was mined with the same parameters.
 pub(crate) fn load_initial(request: &MineRequest, config: &MinerConfig) -> Result<Option<DrainMiner>, EngineError> {
-    let Some(snapshot) = &request.initial else { return Ok(None) };
+    load_snapshot(request.initial.as_ref(), config, request.runs.len())
+}
+
+pub(crate) fn load_snapshot(
+    snapshot: Option<&MinerSnapshot>,
+    config: &MinerConfig,
+    n_runs: usize,
+) -> Result<Option<DrainMiner>, EngineError> {
+    let Some(snapshot) = snapshot else { return Ok(None) };
     if !snapshot.has_config(config) {
         return Err(EngineError::Config(
             "the saved state was mined with other parameters (depth, sim_th, max_children or max_templates)".into(),
         ));
     }
-    DrainMiner::from_snapshot(snapshot.clone(), request.runs.len()).map(Some).map_err(|error| match error {
+    DrainMiner::from_snapshot(snapshot.clone(), n_runs).map(Some).map_err(|error| match error {
         CoreError::InvalidState(message) => EngineError::State(StateError::Damaged(message)),
         other => EngineError::Core(other),
     })

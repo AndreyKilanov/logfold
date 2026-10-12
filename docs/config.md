@@ -1,7 +1,7 @@
 # Settings file `logfold.toml`
 
 Put the settings that you repeat in every command into a `logfold.toml` file at the root of your repository. The commands
-`analyze`, `match`, `diff` and `inspect` read it, and so do the library functions when you pass `config=`.
+`analyze`, `match`, `stream`, `diff` and `inspect` read it, and so do the library functions when you pass `config=`.
 
 ```toml
 format = "app"                  # the default of --format
@@ -79,5 +79,6 @@ result = logfold.analyze("app.log", config=settings)
 result = logfold.analyze("app.log", config=settings, sim_th=0.6)  # the argument wins
 ```
 
-`load_config(path=None)` returns a `Settings`. It gives `analyze`, `match` and `diff` the format, `multiline`, the mining and
-execution configuration and, for `diff`, the comparison configuration, wherever the call does not name them.
+`load_config(path=None)` returns a `Settings`. It gives `analyze`, `match`, `Miner` and `diff` the format, `multiline`, the mining and
+execution configuration and, for `diff`, the comparison configuration, wherever the call does not name them. A stream cannot detect
+its format, so `Miner` and `logfold stream` read `format = "auto"` of the file as `plain`.

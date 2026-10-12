@@ -52,6 +52,42 @@ no template) and `by_length` (`(token count, records)` pairs sorted by token cou
 `threads` only decide whether the files are read in parallel: the answer is the same. See
 [`logfold match`](cli.md#logfold-match).
 
+## `Miner`
+
+```python
+Miner(*, format=None, multiline=None, depth=None, sim_th=None, max_children=None, max_templates=None, masks=None,
+      mining=None, load_state=None, state_format="json", examples="raw", config=None)
+```
+
+A template miner that takes records as they come, instead of reading a file: a service that feeds its own messages, a
+test harness, or a pipe. It keeps its templates between calls, and the result is the one that `analyze` gives in sequential
+mode over the same records in the same order, whatever the sizes of the batches.
+
+- `add_many(records) -> int` mines a batch of complete records, one string each (a record may hold several lines), in one
+  native call, and returns how many were mined. This is the fast path.
+- `add_log_message(message) -> int` mines one record. It crosses the native boundary once per message, so use it only for
+  code that was written one message at a time.
+- `add_lines(lines) -> int` and `flush() -> int` take physical lines and join continuation lines to the record before them
+  as a file would be read. A record of a multi-line format stays open until the line that starts the next record arrives or
+  `flush()` is called.
+- `new_templates() -> list[str]` returns the templates created since the previous call; a template of a loaded state is
+  not reported.
+- `result() -> AnalysisResult` returns the templates and counters of what was mined so far, and the miner stays usable. The
+  cost is proportional to the number of templates.
+- `save_state(path, state_format=None)` writes a state file that `analyze(load_state=...)`, `match` and `Miner(load_state=...)`
+  read, and the other way round.
+
+The `format` is `plain` by default (the whole record is the message), and `"auto"` is refused: a stream has no file to detect
+the format from (`logfold inspect FILE` finds it for a sample). The other options are those of `analyze`; the masks and the
+mining parameters must be the ones a loaded state was mined with. The miner is safe to share between threads and the native
+call releases the GIL, but records given by several threads are mined in the order in which the calls get the lock, so only
+a single feeder gives a repeatable result, and a shared miner mines in one thread at a time. To use several cores, give every
+source its own `Miner`: they run in parallel (4 miners in 4 threads: 3.3 times the lines per second of one,
+`bench/docs/STREAM.md`). Memory is bounded for any stream: a record is cut at 1 MiB, a line at 16 MiB,
+and the number of templates is limited by `max_templates`. Speed on a 105 MB file: `add_lines` 103 MB/s, `add_many` 86 MB/s,
+`add_log_message` 34 MB/s, against 134 MB/s of `analyze` and 5 MB/s of a Drain3 loop (`bench/docs/STREAM.md`). See
+[`logfold stream`](cli.md#logfold-stream).
+
 ## `diff`
 
 ```python
@@ -108,7 +144,7 @@ load_config(path=None) -> Settings
 
 Reads the settings file [`logfold.toml`](config.md): the file at `path`, or else the one named by `LOGFOLD_CONFIG`, or
 else the first `logfold.toml` from the current folder up to the repository root. Without any file it returns the
-built-in defaults. The result is passed to `analyze`, `match` and `diff` as `config=`; an argument of the call beats
+built-in defaults. The result is passed to `analyze`, `match`, `diff` and `Miner` as `config=`; an argument of the call beats
 it. `Settings` holds `format`, `multiline`, `mining` (`MiningConfig`), `execution` (`ExecutionConfig`) and `diff`
 (`DiffConfig`), and `source`, the path of the file that was read. Raises `ConfigError` when the file cannot be read, is
 larger than 64 KiB, is not valid TOML, or holds an unknown key, a value of the wrong type or a value out of range.

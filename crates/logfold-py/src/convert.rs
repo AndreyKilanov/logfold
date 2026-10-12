@@ -50,7 +50,7 @@ pub(crate) fn parse_format(dict: &Bound<'_, PyDict>) -> PyResult<FormatConfig> {
     })
 }
 
-fn parse_masks(list: &Bound<'_, PyAny>) -> PyResult<Vec<MaskRule>> {
+pub(crate) fn parse_masks(list: &Bound<'_, PyAny>) -> PyResult<Vec<MaskRule>> {
     let mut rules = Vec::new();
     for item in list.try_iter()? {
         let item = item?.cast_into::<PyDict>()?;
@@ -64,7 +64,7 @@ fn parse_masks(list: &Bound<'_, PyAny>) -> PyResult<Vec<MaskRule>> {
     Ok(rules)
 }
 
-fn parse_mining(dict: &Bound<'_, PyDict>) -> PyResult<MiningConfig> {
+pub(crate) fn parse_mining(dict: &Bound<'_, PyDict>) -> PyResult<MiningConfig> {
     let delimiters: String = required(dict, "delimiters")?.extract()?;
     Ok(MiningConfig {
         depth: required(dict, "depth")?.extract()?,

@@ -1,6 +1,7 @@
-use logfold_core::{DrainMiner, MaskScratch, RecordMeta, Recount, RuleMasker, TokenView, Tokenizer};
+use logfold_core::{DrainMiner, MaskRule, MaskScratch, RecordMeta, Recount, RuleMasker, TokenView, Tokenizer};
 use logfold_io::{
-    CompiledFormat, Counters, IoError, LineReader, ParsedRecord, ScanOutcome, ScanWindow, open_source, scan_records,
+    CompiledFormat, Counters, FormatConfig, IoError, LineReader, ParsedRecord, ScanOutcome, ScanWindow, open_source,
+    scan_records,
 };
 
 use crate::error::EngineError;
@@ -16,11 +17,33 @@ pub(crate) struct PipelineContext {
 
 impl PipelineContext {
     pub(crate) fn new(request: &MineRequest) -> Result<Self, EngineError> {
+        Self::from_parts(&request.format, &request.masks, &request.mining.delimiters)
+    }
+
+    pub(crate) fn from_parts(
+        format: &FormatConfig,
+        masks: &[MaskRule],
+        delimiters: &[u8],
+    ) -> Result<Self, EngineError> {
         Ok(PipelineContext {
-            format: CompiledFormat::new(&request.format)?,
-            masker: RuleMasker::new(&request.masks)?,
-            tokenizer: Tokenizer::new(&request.mining.delimiters)?,
+            format: CompiledFormat::new(format)?,
+            masker: RuleMasker::new(masks)?,
+            tokenizer: Tokenizer::new(delimiters)?,
         })
+    }
+
+    /// Masks and tokenizes the message of `record` into the reusable buffers `scratch` and `spans`.
+    pub(crate) fn prepare<'a>(
+        &self,
+        record: &'a ParsedRecord<'_>,
+        scratch: &'a mut MaskScratch,
+        spans: &'a mut Vec<(usize, usize)>,
+    ) -> (TokenView<'a>, RecordMeta<'a>) {
+        let masked = self.masker.mask(&record.message, scratch);
+        self.tokenizer.tokenize(masked, spans);
+        let tokens = TokenView::new(masked, spans);
+        let meta = RecordMeta { message: &record.message, timestamp: record.timestamp, level: record.level };
+        (tokens, meta)
     }
 }
 
@@ -32,11 +55,7 @@ struct Feeder<'c> {
 
 impl Feeder<'_> {
     fn prepare<'a>(&'a mut self, record: &'a ParsedRecord<'_>) -> (TokenView<'a>, RecordMeta<'a>) {
-        let masked = self.context.masker.mask(&record.message, &mut self.scratch);
-        self.context.tokenizer.tokenize(masked, &mut self.spans);
-        let tokens = TokenView::new(masked, &self.spans);
-        let meta = RecordMeta { message: &record.message, timestamp: record.timestamp, level: record.level };
-        (tokens, meta)
+        self.context.prepare(record, &mut self.scratch, &mut self.spans)
     }
 }
 

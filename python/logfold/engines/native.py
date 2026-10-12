@@ -9,7 +9,16 @@ from __future__ import annotations
 from typing import Any
 
 from logfold import _bridge
-from logfold.engines.base import MineRequest, MiningResult, ProgressCallback, RunColumns, RunCounters, TemplateTable
+from logfold.config import MiningConfig
+from logfold.engines.base import (
+    MineRequest,
+    MiningResult,
+    ProgressCallback,
+    RunColumns,
+    RunCounters,
+    StateRequest,
+    TemplateTable,
+)
 from logfold.errors import FormatError
 from logfold.ext.formats import FormatSpec, JsonFormat, PlainFormat, RegexFormat
 from logfold.model import RunMetrics
@@ -51,6 +60,41 @@ def format_to_dict(spec: FormatSpec) -> dict[str, Any]:
     raise FormatError(f"unsupported format specification {spec!r}")
 
 
+def mining_to_dicts(mining: MiningConfig) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Convert a mining configuration into the plain-data masks and mining parameters of the extension.
+
+    Args:
+        mining: Mining configuration.
+
+    Returns:
+        The masking rules and the mining parameters, as the ``masks`` and ``mining`` keys of a request.
+    """
+    masks = [
+        {"name": rule.name, "pattern": rule.pattern, "token": rule.token, "ascii": rule.ascii} for rule in mining.masks
+    ]
+    parameters = {
+        "depth": mining.depth,
+        "sim_th": mining.sim_th,
+        "max_children": mining.max_children,
+        "max_templates": mining.max_templates,
+        "delimiters": mining.delimiters,
+    }
+    return masks, parameters
+
+
+def state_to_dict(state: StateRequest) -> dict[str, Any]:
+    """Convert a state request into the plain-data form understood by the extension."""
+    return {
+        "load": state.load,
+        "save": state.save,
+        "format": state.format,
+        "config_hash": state.config_hash,
+        "masks": state.masks,
+        "logfold_version": state.logfold_version,
+        "log_format": state.log_format,
+    }
+
+
 def request_to_dict(request: MineRequest) -> dict[str, Any]:
     """Convert an engine request into the plain-data form understood by the extension.
 
@@ -69,38 +113,21 @@ def request_to_dict(request: MineRequest) -> dict[str, Any]:
     if request.threads is not None:
         execution["threads"] = request.threads
     state = request.state
+    masks, parameters = mining_to_dicts(mining)
     return {
         "runs": [list(files) for files in request.runs],
         "windows": [tuple(window) for window in request.windows],
-        "state": None
-        if state is None
-        else {
-            "load": state.load,
-            "save": state.save,
-            "format": state.format,
-            "config_hash": state.config_hash,
-            "masks": state.masks,
-            "logfold_version": state.logfold_version,
-            "log_format": state.log_format,
-        },
+        "state": None if state is None else state_to_dict(state),
         "format": format_to_dict(request.format),
-        "masks": [
-            {"name": rule.name, "pattern": rule.pattern, "token": rule.token, "ascii": rule.ascii}
-            for rule in mining.masks
-        ],
-        "mining": {
-            "depth": mining.depth,
-            "sim_th": mining.sim_th,
-            "max_children": mining.max_children,
-            "max_templates": mining.max_templates,
-            "delimiters": mining.delimiters,
-        },
+        "masks": masks,
+        "mining": parameters,
         "execution": execution,
         "recount": request.recount,
     }
 
 
-def _to_result(answer: dict[str, Any]) -> MiningResult:
+def to_result(answer: dict[str, Any]) -> MiningResult:
+    """Convert the plain-data answer of the extension into a mining result."""
     runs = tuple(RunCounters(**run) for run in answer["runs"])
     columns = answer["templates"]
     table = TemplateTable(
@@ -150,7 +177,7 @@ class NativeEngine:
             SourceError: If an input cannot be read.
             StateError: If a state file cannot be used.
         """
-        return _to_result(_bridge.mine(request_to_dict(request), progress))
+        return to_result(_bridge.mine(request_to_dict(request), progress))
 
     def match(self, request: MineRequest, progress: ProgressCallback | None = None) -> MiningResult:
         """Assign the records of ``request`` to the templates of its saved state with the Rust engine.
@@ -168,4 +195,4 @@ class NativeEngine:
             SourceError: If an input cannot be read.
             StateError: If the state file cannot be used.
         """
-        return _to_result(_bridge.match_state(request_to_dict(request), progress))
+        return to_result(_bridge.match_state(request_to_dict(request), progress))
