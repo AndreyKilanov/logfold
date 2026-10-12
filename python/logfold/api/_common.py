@@ -141,10 +141,26 @@ def _state(
     spec: FormatSpec,
 ) -> StateRequest | None:
     """Build the state request of ``analyze()``, or ``None`` when no state file is involved."""
+    if load is None and save is None:
+        _check_state_format(state_format)
+        return None
+    return _state_request(load, save, state_format, mining, spec)
+
+
+def _check_state_format(state_format: str) -> None:
     if state_format not in STATE_FORMATS:
         raise ConfigError(f"state_format must be one of {', '.join(STATE_FORMATS)}, got {state_format!r}")
-    if load is None and save is None:
-        return None
+
+
+def _state_request(
+    load: PathLike | None,
+    save: PathLike | None,
+    state_format: str,
+    mining: MiningConfig,
+    spec: FormatSpec,
+) -> StateRequest:
+    """Build the state request that carries the header data of the state files, whether or not one is read now."""
+    _check_state_format(state_format)
     return StateRequest(
         load=None if load is None else os.fspath(load),
         save=None if save is None else os.fspath(save),

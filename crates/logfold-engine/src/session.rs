@@ -132,7 +132,7 @@ impl Session {
             templates.retain(|template| template.total() > 0);
         }
         let run = RunSummary {
-            files: 0,
+            files: 1,
             lines: self.counters.lines,
             records: self.counters.records,
             unparsed: self.counters.unparsed,
@@ -143,7 +143,7 @@ impl Session {
             overflowed: self.miner.overflowed().first().copied().unwrap_or(false),
         };
         let metrics = RunMetrics {
-            strategy: "stream",
+            strategy: "sequential",
             threads: 1,
             chunks: 0,
             wall_total_s: self.started.elapsed().as_secs_f64(),

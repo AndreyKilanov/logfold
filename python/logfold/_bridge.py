@@ -8,7 +8,8 @@ exceptions of logfold. It knows nothing about the models, the engines or the rep
 from __future__ import annotations
 
 import re
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Iterator, Sequence
+from contextlib import contextmanager
 from typing import Any
 
 from logfold.errors import ConfigError, EngineError, FormatError, SourceError, StateError
@@ -18,7 +19,7 @@ try:
 except ImportError:
     _core = None  # type: ignore[assignment]
 
-EXPECTED_CORE_API_VERSION = 10
+EXPECTED_CORE_API_VERSION = 11
 
 
 def is_available() -> bool:
@@ -82,11 +83,13 @@ def match_state(request: dict[str, Any], progress: Callable[[int], None] | None 
     return _call("match_state", request, progress)
 
 
-def _call(name: str, request: dict[str, Any], progress: Callable[[int], None] | None) -> dict[str, Any]:
+@contextmanager
+def _translating() -> Iterator[None]:
+    """Turn the exceptions of the extension into the exceptions of logfold."""
     if _core is None:
         raise EngineError("the native extension is unavailable")
     try:
-        answer: dict[str, Any] = getattr(_core, name)(request, progress)
+        yield
     except _core.CoreConfigError as error:
         raise ConfigError(str(error)) from None
     except _core.CoreFormatError as error:
@@ -95,7 +98,76 @@ def _call(name: str, request: dict[str, Any], progress: Callable[[int], None] | 
         raise SourceError(str(error)) from None
     except _core.CoreStateError as error:
         raise StateError(str(error), hint="mine the state again, or use a state made with the same settings") from None
+
+
+def _call(name: str, request: dict[str, Any], progress: Callable[[int], None] | None) -> dict[str, Any]:
+    with _translating():
+        answer: dict[str, Any] = getattr(_core, name)(request, progress)
     return answer
+
+
+class MinerHandle:
+    """A live miner of the extension: one native object that keeps its templates between calls.
+
+    The methods make one native call each, with the GIL released while it works, and are safe to call from several
+    threads; records given by several threads are mined in the order in which the calls get the lock.
+    """
+
+    def __init__(self, request: dict[str, Any]) -> None:
+        """Open the native miner.
+
+        Args:
+            request: The plain-data request: ``format``, ``masks``, ``mining`` and ``state``, see
+                ``crates/logfold-py/src/miner.rs``.
+
+        Raises:
+            EngineError: If the extension is unavailable or speaks another contract version.
+            ConfigError: If a parameter is invalid.
+            FormatError: If the format is invalid.
+            StateError: If the state file to continue from cannot be used.
+        """
+        require()
+        with _translating():
+            self._native = _core.NativeMiner(request)
+
+    def add_many(self, records: Iterable[str]) -> int:
+        """Mine complete records, one string each, in one call; return how many were mined."""
+        batch = list(records)
+        with _translating():
+            try:
+                return int(self._native.add_many(batch))
+            except UnicodeEncodeError:
+                return int(self._native.add_many(_clean(batch)))
+
+    def add_lines(self, lines: Iterable[str]) -> int:
+        """Mine physical lines, joining continuation lines to the record before them; return the records completed."""
+        batch = list(lines)
+        with _translating():
+            try:
+                return int(self._native.add_lines(batch))
+            except UnicodeEncodeError:
+                return int(self._native.add_lines(_clean(batch)))
+
+    def flush(self) -> int:
+        """Mine the record that is still open; return how many records were mined (0 or 1)."""
+        with _translating():
+            return int(self._native.flush())
+
+    def new_templates(self) -> list[str]:
+        """Return the texts of the templates created since the previous call, in creation order."""
+        with _translating():
+            return list(self._native.new_templates())
+
+    def result(self) -> dict[str, Any]:
+        """Return the plain-data answer of :func:`mine` for the records mined so far."""
+        with _translating():
+            answer: dict[str, Any] = self._native.result()
+        return answer
+
+    def save_state(self, path: str, state_format: str | None = None) -> None:
+        """Write the miner as a state file; ``state_format`` is ``json`` or ``binary``."""
+        with _translating():
+            self._native.save_state(path, state_format)
 
 
 _SURROGATES = re.compile("[\ud800-\udfff]")
