@@ -14,6 +14,7 @@ from logfold.api._common import (
     _state_request,
     _templates,
 )
+from logfold.api.parameters import extract_parameters
 from logfold.config import ExamplesMode, MaskRule, MiningConfig
 from logfold.engines.base import MiningResult
 from logfold.engines.live import LiveMiner
@@ -21,7 +22,7 @@ from logfold.errors import ConfigError
 from logfold.ext.formats import Format, FormatSpec
 from logfold.ext.masks import Masker
 from logfold.formats import resolve_format
-from logfold.model import AnalysisResult, RunSummary
+from logfold.model import AnalysisResult, Parameter, RunSummary, Template
 from logfold.settings import Settings
 
 STREAM_NAME = "stream"
@@ -179,6 +180,20 @@ class Miner:
             meta=_meta(self._spec, self._mining),
             warnings=tuple(_warnings(summary, self._mining.max_templates)),
         )
+
+    def extract_parameters(self, template: str | Template, message: str) -> tuple[Parameter, ...] | None:
+        """Give the values that a message has at the variable positions of a template, with the masks of this miner.
+
+        See :func:`logfold.extract_parameters`.
+
+        Args:
+            template: The text of a template of this miner, or a ``Template`` of its result.
+            message: One record.
+
+        Returns:
+            The parameters, or ``None`` when the message does not fit the template.
+        """
+        return extract_parameters(template, message, mining=self._mining)
 
     def save_state(self, path: PathLike, state_format: str | None = None) -> None:
         """Write the miner as a state file that ``analyze(load_state=...)``, ``match`` and ``Miner`` can read.

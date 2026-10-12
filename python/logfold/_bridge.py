@@ -19,7 +19,7 @@ try:
 except ImportError:
     _core = None  # type: ignore[assignment]
 
-EXPECTED_CORE_API_VERSION = 11
+EXPECTED_CORE_API_VERSION = 12
 
 
 def is_available() -> bool:
@@ -168,6 +168,46 @@ class MinerHandle:
         """Write the miner as a state file; ``state_format`` is ``json`` or ``binary``."""
         with _translating():
             self._native.save_state(path, state_format)
+
+
+class ExtractorHandle:
+    """The compiled masks and delimiters of the extension, serving any number of messages.
+
+    It is immutable and safe to share between threads.
+    """
+
+    def __init__(self, masks: list[dict[str, Any]], delimiters: str) -> None:
+        """Compile the masks and the delimiters.
+
+        Args:
+            masks: The masking rules as plain data (``name``, ``pattern``, ``token``, ``ascii``).
+            delimiters: ASCII characters that separate tokens.
+
+        Raises:
+            EngineError: If the extension is unavailable or speaks another contract version.
+            ConfigError: If a rule or the delimiters are invalid.
+        """
+        require()
+        with _translating():
+            self._native = _core.NativeExtractor(masks, delimiters)
+
+    def extract(self, template: str, messages: Sequence[str]) -> list[list[tuple[int, str, str]] | None]:
+        """Give the parameters of every message at the variable positions of ``template``.
+
+        Args:
+            template: The text of a template (tokens joined by single spaces).
+            messages: The messages.
+
+        Returns:
+            For every message the list of ``(position, name, value)``, or ``None`` when it does not fit the template.
+        """
+        batch = list(messages)
+        with _translating():
+            try:
+                found: list[list[tuple[int, str, str]] | None] = self._native.extract(template, batch)
+            except UnicodeEncodeError:
+                found = self._native.extract(_clean(template), _clean(batch))
+        return found
 
 
 _SURROGATES = re.compile("[\ud800-\udfff]")

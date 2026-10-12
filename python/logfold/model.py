@@ -44,6 +44,22 @@ class Template:
 
 
 @dataclass(frozen=True, slots=True)
+class Parameter:
+    """A value that a message gave to a variable position of a template.
+
+    Attributes:
+        position: Index of the token in the template.
+        name: The name of the masking rule that matched the value (``num``, ``ip``, ...), or ``*`` for a position
+            that the miner generalized.
+        value: The text as it was written in the message, not the masked token.
+    """
+
+    position: int
+    name: str
+    value: str
+
+
+@dataclass(frozen=True, slots=True)
 class Unmatched:
     """The records of a run that belong to no template of the saved state it was matched against.
 

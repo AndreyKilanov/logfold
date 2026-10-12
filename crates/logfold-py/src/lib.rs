@@ -4,6 +4,7 @@
 //! whole run, polls for Ctrl+C and converts the result back into plain Python containers.
 
 mod convert;
+mod extract;
 mod inspect;
 mod miner;
 mod observer;
@@ -18,7 +19,7 @@ use logfold_engine::{EngineError, MineRequest};
 use observer::PyObserver;
 
 /// Version of the Python <-> Rust data contract; bump on any incompatible change of the request or result layout.
-const CORE_API_VERSION: u32 = 11;
+const CORE_API_VERSION: u32 = 12;
 
 pyo3::create_exception!(_core, CoreConfigError, pyo3::exceptions::PyException, "Invalid configuration.");
 pyo3::create_exception!(_core, CoreFormatError, pyo3::exceptions::PyException, "Invalid or unusable log format.");
@@ -220,6 +221,7 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(algo_version, m)?)?;
     m.add_function(wrap_pyfunction!(default_masks, m)?)?;
     m.add_class::<miner::NativeMiner>()?;
+    m.add_class::<extract::NativeExtractor>()?;
     m.add("CoreConfigError", m.py().get_type::<CoreConfigError>())?;
     m.add("CoreFormatError", m.py().get_type::<CoreFormatError>())?;
     m.add("CoreSourceError", m.py().get_type::<CoreSourceError>())?;
