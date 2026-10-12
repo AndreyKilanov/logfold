@@ -119,6 +119,40 @@ Options: `--format`, `--multiline`, `--since`, `--until`, `--top`, `--min-count`
 and execution options listed there (`--sim-th`, `--depth`, `--max-children`, `--max-templates`, `--no-masks`, `--strategy`,
 `--threads`, `--chunk-mb`). There is no `--save-state`, `--load-state`, `--high-cardinality`, `--warm-start` or `--engine`.
 
+## `logfold stream`
+
+```
+logfold stream [FILE] [options]
+```
+
+Mines a log while it is written: reads FILE (standard input when it is missing or `-`), prints every template once, on a line
+that starts with `new`, when it first appears, and writes the usual report when the input ends:
+
+```
+kubectl logs -f deploy/api | logfold stream --format plain
+tail -F app.log | logfold stream -f app --save-state model.json --save-every 60
+```
+
+The result is the one of `logfold analyze` over the same lines, whatever the batch size. A line is read as soon as it
+arrives; `--batch-size` (1000) is the most lines mined in one step, and a quiet stream is mined after a second. The text
+of a template is the one it had when it was created, with control characters shown instead of acted on.
+
+The format is `plain` unless `--format` names another one; `auto` is refused, because a stream has no file to detect it
+from. With a multi-line format a record is mined when the next record starts, or after a second of silence. Bytes that are
+not UTF-8 become U+FFFD, a line longer than 1 MiB is read in pieces, and the lines that wait for the miner never take more
+than about 64 MiB.
+
+`--load-state FILE` continues from a state of `analyze`, `match` or an earlier `stream` (the templates it holds are not
+announced), `--save-state FILE` writes the state at the end, and `--save-every SECONDS` writes it while the stream runs too
+(the old file stays until the new one is complete). Ctrl+C ends the input: the state is saved, the report is written for what
+was read, and the exit code is 130.
+
+Options: `--format`, `--multiline`, `--top`, `--level`, `--only-alerts`, `--out`, `--append`, `--report`, `--json`,
+`--examples`, `--quiet`, `--debug`, `--state-format` as for [`analyze`](#logfold-analyze), and `--sim-th`, `--depth`,
+`--max-children`, `--max-templates`, `--no-masks`. With `--json`, or `--report` without `--out`, the `new`
+lines are not printed, so that standard output holds only the report. There is no `--since`, `--until`, `--strategy` or
+`--threads`: a stream is mined by one tree, in the order it arrives.
+
 ## `logfold diff`
 
 Compare two runs: new, disappeared and changed templates. Shares are normalized by the number of records in each run.
@@ -278,7 +312,7 @@ catalog or a failed pip run exit with code 1.
 | 0 | success |
 | 1 | error: invalid option, unreadable input, unknown or undetected format, engine unavailable |
 | 2 | `diff` with `--fail-on-new` found new templates, or with `--fail-on-new-alerts` found new WARN/ERROR/FATAL templates |
-| 130 | interrupted (Ctrl+C) |
+| 130 | interrupted (Ctrl+C); `stream` first saves the state and writes the report for what it read |
 
 Errors are printed on standard error as `error: ...`, followed by a `hint: ...` line when there is a next step: the
 closest known name for a misspelled format, reporter or diff matcher (`did you mean 'nginx'?`) with the command that lists

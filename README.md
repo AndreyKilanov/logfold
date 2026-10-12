@@ -148,6 +148,7 @@ diff(load_analysis("before.json"), load_analysis("after.json"))
 | Folding | `--depth` (4), `--sim-th` (0.4), `--max-children` (100), `--max-templates` (100000). The defaults are the same as in Drain3. |
 | Execution | `--strategy auto` (default; parallel chunks, sequential for logs of unique messages), `sequential`, `chunked`; `--threads`, `--chunk-mb`; `--warm-start` (opt-in, chunked only). |
 | Logs with almost unique lines | `--high-cardinality`: at most 5000 templates, the rest go into catch-all templates, runs sequentially. On a 10 MB file with 84 thousand distinct lines 2.0 s becomes 0.14 s. |
+| Streams | `logfold stream` mines a log while it is written (`tail -F app.log \| logfold stream`) and prints each template when it first appears; in Python `logfold.Miner` takes batches of records with `add_many`. |
 | Reports | HTML, JSON, text, Markdown, CSV; for pipelines `github-summary`, `junit` (`.xml`), `chat-message` and `prometheus` (`.prom`); the `--out` suffix picks the format, `--report NAME` picks the report explicitly, including one from a plugin. |
 | Matchers for `diff` | `jaccard` (default), `jaccard-idf`, `overlap`, `rules:FILE` (your own pairs), `token_subset`, `exact`: they link a reworded message to its earlier version so it is not counted as both new and gone. |
 | Plugins | `logfold plugins list` (built-in, installed, available), `info NAME`, `check`, `install NAME`, `new`; an unknown format, report or matcher name gets a hint with the closest name or the install command. In Python: `logfold.plugins.list_plugins()`. |
