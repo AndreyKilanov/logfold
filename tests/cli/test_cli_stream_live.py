@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from conftest import requires_native
-from logfold.cli.follow import Backlog
+from logfold.cli.follow import MAX_LINE_CHARS, Backlog, read_lines
 
 pytestmark = requires_native
 
@@ -67,8 +67,8 @@ def test_the_state_is_written_while_the_stream_runs(tmp_path: Path) -> None:
 
 def test_a_full_backlog_holds_the_reader_until_lines_are_taken() -> None:
     backlog = Backlog(limit=10)
-    assert backlog.put("aaaaaaaaaaaa", 12)
-    blocked = threading.Thread(target=backlog.put, args=("b", 1), daemon=True)
+    assert backlog.put(["aaaaaaaaaaaa"])
+    blocked = threading.Thread(target=backlog.put, args=(["b"],), daemon=True)
     blocked.start()
     blocked.join(0.3)
     assert blocked.is_alive()
@@ -81,9 +81,9 @@ def test_a_full_backlog_holds_the_reader_until_lines_are_taken() -> None:
 
 def test_a_stopped_backlog_releases_a_waiting_reader() -> None:
     backlog = Backlog(limit=1)
-    backlog.put("x", 5)
+    backlog.put(["xxxxx"])
     results: list[bool] = []
-    waiting = threading.Thread(target=lambda: results.append(backlog.put("y", 1)), daemon=True)
+    waiting = threading.Thread(target=lambda: results.append(backlog.put(["y"])), daemon=True)
     waiting.start()
     backlog.stop()
     waiting.join(DEADLINE)
@@ -92,7 +92,7 @@ def test_a_stopped_backlog_releases_a_waiting_reader() -> None:
 
 def test_the_error_that_ended_the_stream_comes_after_the_lines_before_it() -> None:
     backlog = Backlog()
-    backlog.put("last line", 9)
+    backlog.put(["last line"])
     backlog.finish(OSError("disk gone"))
     assert backlog.take(10, 0.1) == (["last line"], False)
     with pytest.raises(OSError, match="disk gone"):
@@ -106,3 +106,47 @@ def test_a_quiet_stream_returns_nothing_and_is_not_finished() -> None:
     assert time.monotonic() - started >= 0.15
     backlog.finish()
     assert backlog.take(10, 0.2) == ([], True)
+
+
+class Trickle:
+    """A binary source that gives at most ``size`` bytes per read, like a pipe that is written in small pieces."""
+
+    def __init__(self, data: bytes, size: int) -> None:
+        self._data = data
+        self._size = size
+
+    def read1(self, limit: int) -> bytes:
+        count = min(self._size, limit)
+        piece, self._data = self._data[:count], self._data[count:]
+        return piece
+
+
+def lines_of(data: bytes, size: int) -> list[str]:
+    backlog = Backlog()
+    read_lines(Trickle(data, size), backlog)  # type: ignore[arg-type]
+    lines: list[str] = []
+    while True:
+        taken, finished = backlog.take(1000, 0.1)
+        lines += taken
+        if finished:
+            return lines
+
+
+@pytest.mark.parametrize("size", [1, 2, 3, 7, 1000])
+def test_lines_are_cut_correctly_whatever_the_size_of_the_reads(size: int) -> None:
+    data = "first\r\nsecond \u00e9 \u4e2d \U0001f600 end\n\nlast without a line feed".encode()
+    assert lines_of(data, size) == ["first\r", "second \u00e9 \u4e2d \U0001f600 end", "", "last without a line feed"]
+
+
+def test_a_stream_that_ends_with_a_line_feed_has_no_empty_last_line() -> None:
+    assert lines_of(b"a\nb\n", 2) == ["a", "b"]
+
+
+def test_bytes_that_are_not_utf8_become_the_replacement_character() -> None:
+    assert lines_of(b"caf\xe9 ok\n", 3) == ["caf\ufffd ok"]
+
+
+def test_an_overlong_line_arrives_in_pieces() -> None:
+    lines = lines_of(b"x" * (MAX_LINE_CHARS + 10) + b"\nnext\n", 1 << 20)
+    assert sum(map(len, lines[:-1])) == MAX_LINE_CHARS + 10
+    assert lines[-1] == "next"

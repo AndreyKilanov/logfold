@@ -2,40 +2,41 @@
 
 from __future__ import annotations
 
+import codecs
 import threading
 from collections import deque
 from typing import BinaryIO
 
-MAX_LINE_BYTES = 1 << 20
-BACKLOG_BYTES = 64 << 20
+MAX_LINE_CHARS = 1 << 20
+BACKLOG_CHARS = 16 << 20
+CHUNK_BYTES = 1 << 20
 
 
 class Backlog:
-    """Lines read by a thread and waiting for the miner, holding at most about ``limit`` bytes.
+    """Lines read by a thread and waiting for the miner, holding at most about ``limit`` characters.
 
     The reader waits while the backlog is full, so the memory of a stream is bounded whatever its speed.
     """
 
-    def __init__(self, limit: int = BACKLOG_BYTES) -> None:
+    def __init__(self, limit: int = BACKLOG_CHARS) -> None:
         """Create an empty backlog.
 
         Args:
-            limit: Number of bytes after which the reader waits until the miner has taken lines.
+            limit: Number of characters after which the reader waits until the miner has taken lines.
         """
         self._limit = limit
-        self._lines: deque[tuple[str, int]] = deque()
+        self._lines: deque[str] = deque()
         self._size = 0
         self._finished = False
         self._stopped = False
         self._error: OSError | ValueError | None = None
         self._changed = threading.Condition()
 
-    def put(self, line: str, size: int) -> bool:
-        """Add a line, waiting while the backlog is full.
+    def put(self, lines: list[str]) -> bool:
+        """Add lines, waiting while the backlog is full.
 
         Args:
-            line: The line.
-            size: Its size in bytes.
+            lines: The lines, in the order they were read.
 
         Returns:
             False when the consumer has stopped and the reader should end.
@@ -45,8 +46,8 @@ class Backlog:
                 self._changed.wait()
             if self._stopped:
                 return False
-            self._lines.append((line, size))
-            self._size += size
+            self._lines.extend(lines)
+            self._size += sum(map(len, lines))
             self._changed.notify_all()
             return True
 
@@ -81,9 +82,9 @@ class Backlog:
                 self._changed.wait(timeout)
             lines: list[str] = []
             while self._lines and len(lines) < maximum:
-                line, size = self._lines.popleft()
+                line = self._lines.popleft()
                 lines.append(line)
-                self._size -= size
+                self._size -= len(line)
             self._changed.notify_all()
             done = self._finished and not self._lines
             if done and self._error is not None:
@@ -95,19 +96,30 @@ class Backlog:
 
 
 def read_lines(source: BinaryIO, backlog: Backlog) -> None:
-    """Read ``source`` line by line into ``backlog`` until it ends; meant to run in a thread.
+    """Read ``source`` into ``backlog`` as lines until it ends; meant to run in a thread.
 
-    A line longer than ``MAX_LINE_BYTES`` arrives in pieces, and bytes that are not UTF-8 become U+FFFD.
+    The source is read in chunks of whatever is available, so a live stream is not held back, and a line longer than
+    ``MAX_LINE_CHARS`` arrives in pieces. Bytes that are not UTF-8 become U+FFFD.
 
     Args:
         source: A binary stream.
         backlog: Where the lines go.
     """
     error: OSError | ValueError | None = None
+    decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
+    read = source.read1 if hasattr(source, "read1") else source.read
+    carry = ""
     try:
-        for raw in iter(lambda: source.readline(MAX_LINE_BYTES), b""):
-            if not backlog.put(raw.decode("utf-8", errors="replace"), len(raw)):
-                break
+        while chunk := read(CHUNK_BYTES):
+            *complete, carry = (carry + decoder.decode(chunk)).split("\n")
+            if len(carry) > MAX_LINE_CHARS:
+                complete.append(carry)
+                carry = ""
+            if complete and not backlog.put(complete):
+                return
+        tail = carry + decoder.decode(b"", final=True)
+        if tail:
+            backlog.put([tail])
     except (OSError, ValueError) as caught:
         error = caught
     finally:
