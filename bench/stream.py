@@ -12,6 +12,7 @@ Usage::
 
     python bench/stream.py run bench/data/app_100mb.log --variants analyze stream add_many add_lines add_log_message
     python bench/stream.py run bench/data/app_10mb.log --variants analyze add_many drain3
+    python bench/stream.py parallel bench/data/app_100mb.log --workers 4
 """
 
 from __future__ import annotations
@@ -20,6 +21,8 @@ import argparse
 import itertools
 import statistics
 import sys
+import threading
+import time
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -100,6 +103,53 @@ def run(args: argparse.Namespace) -> None:
         )
 
 
+def feed(miner: object, items: list[str], batch_size: int) -> None:
+    """Give ``items`` to a ``logfold.Miner`` in batches."""
+    for start in range(0, len(items), batch_size):
+        miner.add_many(items[start : start + batch_size])  # type: ignore[attr-defined]
+
+
+def timed(workers: list[tuple[object, list[str]]], batch_size: int) -> float:
+    """Wall time of feeding every ``(miner, lines)`` pair from its own thread."""
+    threads = [threading.Thread(target=feed, args=(miner, items, batch_size)) for miner, items in workers]
+    started = time.perf_counter()
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    return time.perf_counter() - started
+
+
+def parallel(args: argparse.Namespace) -> None:
+    """Compare one miner, several miners (one per source) and one shared miner, fed from threads of one process."""
+    import logfold
+
+    lines_read = list(itertools.islice(lines(args.path), args.lines))
+    parts = [lines_read[index :: args.workers] for index in range(args.workers)]
+
+    def miner() -> logfold.Miner:
+        return logfold.Miner(format="plain", examples="none")
+
+    cases = {
+        "1 miner, 1 thread": lambda: timed([(miner(), lines_read)], args.batch_size),
+        f"{args.workers} miners, {args.workers} threads (one per source)": lambda: timed(
+            [(miner(), part) for part in parts], args.batch_size
+        ),
+        f"1 shared miner, {args.workers} threads": lambda: timed(
+            [(shared, part) for shared in [miner()] for part in parts], args.batch_size
+        ),
+    }
+    print(f"{args.path.name}, the first {len(lines_read):,} lines, batch {args.batch_size}, median of {args.repeat}")
+    print()
+    print("| case | wall | lines per second | against 1 miner |")
+    print("|---|---:|---:|---:|")
+    reference = None
+    for label, case in cases.items():
+        wall = statistics.median(case() for _ in range(args.repeat))
+        reference = reference or wall
+        print(f"| {label} | {wall:.2f} s | {len(lines_read) / wall:,.0f} | {reference / wall:.2f}x |", flush=True)
+
+
 def main() -> None:
     """The command line."""
     main_parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -110,6 +160,12 @@ def main() -> None:
     measuring.add_argument("--repeat", type=int, default=3)
     measuring.add_argument("--batch-size", type=int, default=10_000)
     measuring.add_argument("--timeout", type=float, default=900.0)
+    threads = sub.add_parser("parallel", help="one miner, one miner per source and one shared miner, from threads")
+    threads.add_argument("path", type=Path)
+    threads.add_argument("--lines", type=int, default=600_000)
+    threads.add_argument("--workers", type=int, default=4)
+    threads.add_argument("--repeat", type=int, default=5)
+    threads.add_argument("--batch-size", type=int, default=10_000)
     inner = sub.add_parser("worker", help="(internal) mine a file in this process")
     inner.add_argument("name", choices=VARIANTS)
     inner.add_argument("path", type=Path)
@@ -117,6 +173,8 @@ def main() -> None:
     args = main_parser.parse_args()
     if args.what == "run":
         run(args)
+    elif args.what == "parallel":
+        parallel(args)
     else:
         worker(args.name, args.path, args.batch_size)
 

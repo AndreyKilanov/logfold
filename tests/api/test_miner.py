@@ -249,3 +249,27 @@ def test_a_settings_file_that_says_auto_gives_plain_to_a_stream() -> None:
     assert miner.add_many(["x y z"]) == 1
     with pytest.raises(ConfigError, match="no file to detect"):
         logfold.Miner(format="auto", config=settings)
+
+
+def test_one_miner_per_thread_gives_each_the_result_of_its_own_records() -> None:
+    sources = {
+        name: [f"{name} request {n} done" for n in range(1500)] + [f"{name} disk {n} full" for n in range(500)]
+        for name in ("api", "worker", "billing", "mailer")
+    }
+    miners = {name: logfold.Miner() for name in sources}
+
+    def feed(name: str) -> None:
+        for start in range(0, len(sources[name]), 100):
+            miners[name].add_many(sources[name][start : start + 100])
+
+    pool = [threading.Thread(target=feed, args=(name,)) for name in sources]
+    for thread in pool:
+        thread.start()
+    for thread in pool:
+        thread.join()
+    for name, records in sources.items():
+        alone = logfold.Miner()
+        alone.add_many(records)
+        assert [(t.text, t.count) for t in miners[name].result().templates] == [
+            (t.text, t.count) for t in alone.result().templates
+        ]

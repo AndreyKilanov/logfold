@@ -81,7 +81,9 @@ The `format` is `plain` by default (the whole record is the message), and `"auto
 the format from (`logfold inspect FILE` finds it for a sample). The other options are those of `analyze`; the masks and the
 mining parameters must be the ones a loaded state was mined with. The miner is safe to share between threads and the native
 call releases the GIL, but records given by several threads are mined in the order in which the calls get the lock, so only
-a single feeder gives a repeatable result. Memory is bounded for any stream: a record is cut at 1 MiB, a line at 16 MiB,
+a single feeder gives a repeatable result, and a shared miner mines in one thread at a time. To use several cores, give every
+source its own `Miner`: they run in parallel (4 miners in 4 threads: 3.3 times the lines per second of one,
+`bench/docs/STREAM.md`). Memory is bounded for any stream: a record is cut at 1 MiB, a line at 16 MiB,
 and the number of templates is limited by `max_templates`. Speed on a 105 MB file: `add_lines` 103 MB/s, `add_many` 86 MB/s,
 `add_log_message` 34 MB/s, against 134 MB/s of `analyze` and 5 MB/s of a Drain3 loop (`bench/docs/STREAM.md`). See
 [`logfold stream`](cli.md#logfold-stream).

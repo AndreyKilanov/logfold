@@ -52,6 +52,27 @@ Data: `app_100mb.log` (105 MB, 1.27 million lines, 12 templates) and its first 1
 - The refactoring of the pipeline that made the session possible did not slow `analyze` down: sequential `analyze` on the
   100 MB file takes 0.77 s on `main` and 0.77-0.79 s on this branch (5 runs each, alternated).
 
+## Several sources in parallel
+
+One `Miner` mines in one thread (its tree is behind a lock), but every `Miner` has its own tree and lock, and the native
+call releases the GIL, so one miner per source runs in parallel. `python bench/stream.py parallel FILE --workers N` feeds
+lines that are already in memory (the first 600 thousand, or 1.2 million for 8 workers), in batches of 10000, from threads
+of one process; median of 5. The lines are dealt to the workers in turn, so this measures throughput, not the templates of
+real sources.
+
+| Case | Wall | Lines per second | Against 1 miner |
+|---|---:|---:|---:|
+| 1 miner, 1 thread | 0.30 s | 1,990,839 | 1.00x |
+| 4 miners, 4 threads (one per source) | 0.09 s | 6,677,484 | 3.35x |
+| 1 shared miner, 4 threads | 0.26 s | 2,302,555 | 1.16x |
+| 1 miner, 1 thread (1.2 million lines) | 0.62 s | 1,943,493 | 1.00x |
+| 8 miners, 8 threads (one per source) | 0.22 s | 5,489,863 | 2.82x |
+| 1 shared miner, 8 threads | 0.52 s | 2,301,931 | 1.18x |
+
+A miner shared by several threads gains almost nothing (its calls are served one after another), so give every source its
+own miner. A single very fast source cannot be spread over cores: the parallel mode of `analyze` (chunks, then a merge of
+the trees) is not available for a stream, and it gives slightly more templates than one tree.
+
 ## Limits of this measurement
 
 One machine and one dataset of 12 templates, so the cost of a large tree is not in it (`highcard` is the case for that, and

@@ -199,6 +199,15 @@ result = miner.result()  # the same result as analyze() over the same records
 miner.save_state("model.json")  # analyze(load_state=...), match() and Miner(load_state=...) read it
 ```
 
+Mining is single-threaded per miner (about a million lines per second), so for several sources give each its own miner; they
+run in parallel, and a miner shared by threads only takes turns:
+
+```python
+miners = {name: logfold.Miner(format="app") for name in ("api", "worker", "billing")}
+# one thread (or task) per source:
+miners["api"].add_many(batch_from_api)
+```
+
 The result equals the one of `analyze` over the same records, whatever the size of the batches. `add_many` is the fast path
 (a batch is one native call); `add_log_message` is one call per record and about 2.6 times slower. A stream cannot detect its
 format, so it is `plain` unless you name one (`logfold inspect FILE` finds the format of a sample). Speed and memory:
