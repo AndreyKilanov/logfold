@@ -25,7 +25,6 @@ from logfold.cli.options import (
     Depth,
     Examples,
     Level,
-    LoadState,
     MaxChildren,
     MaxTemplates,
     Multiline,
@@ -129,7 +128,16 @@ def stream(
     max_templates: MaxTemplates = None,
     no_masks: NoMasks = False,
     examples: Examples = "raw",
-    load_state: LoadState = None,
+    load_state: Annotated[
+        Path | None,
+        typer.Option(
+            "--load-state",
+            metavar="FILE",
+            help="Continue from a state saved by analyze, match or an earlier stream (same masks and parameters); its "
+            "templates are not announced and the report counts only this stream.",
+            rich_help_panel=PANEL_INPUT,
+        ),
+    ] = None,
     save_state: SaveState = None,
     state_format: StateForm = "json",
     save_every: Annotated[

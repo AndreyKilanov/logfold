@@ -82,6 +82,7 @@ pip install "logfold[cli]"
 logfold analyze app.log --top 30 --out report.html
 logfold analyze app.log --only-alerts     # только шаблоны WARN, ERROR и FATAL
 logfold inspect app.log                   # как читается файл: формат, первые записи, уровни
+tail -F app.log | logfold stream -f app  # разбирать по мере записи, печатать каждый новый шаблон
 ```
 
 Формат определяется по образцу файла (nginx, apache, syslog, journald, Kubernetes, JSON-строки, logfmt и другие). Если
@@ -129,7 +130,18 @@ comparison.to_html("diff.html")
 diff(load_analysis("before.json"), load_analysis("after.json"))
 ```
 
-`analyze()` и `diff()` возвращают неизменяемые dataclass-объекты.
+`analyze()` и `diff()` возвращают неизменяемые dataclass-объекты. Чтобы разбирать записи по мере появления, без файла,
+используйте `logfold.Miner`; результат тот же, что у `analyze()` над теми же записями:
+
+```python
+from logfold import Miner
+
+miner = Miner(format="app")  # у потока нельзя определить формат, назовите его (по умолчанию plain)
+miner.add_many(batch_of_lines)  # пачка — один вызов в Rust; add_log_message(line) — вызов на каждую запись
+miner.new_templates()  # шаблоны, созданные с прошлого вызова
+miner.result().top(10)
+miner.save_state("model.json")  # его читают analyze(load_state=...), match() и Miner(load_state=...)
+```
 
 ## Форматы и параметры
 

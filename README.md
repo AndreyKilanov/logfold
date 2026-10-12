@@ -83,6 +83,7 @@ Analyze a log:
 logfold analyze app.log --top 30 --out report.html
 logfold analyze app.log --only-alerts     # only WARN, ERROR and FATAL templates
 logfold inspect app.log                   # how the file is read: format, first records, levels
+tail -F app.log | logfold stream -f app  # mine while it is written, print each new template
 ```
 
 The format is detected from a sample of the file (nginx, apache, syslog, journald, Kubernetes, JSON lines, logfmt and
@@ -137,7 +138,18 @@ comparison.to_html("diff.html")
 diff(load_analysis("before.json"), load_analysis("after.json"))
 ```
 
-`analyze()` and `diff()` return immutable dataclass objects.
+`analyze()` and `diff()` return immutable dataclass objects. To mine records as they come, without a file, use
+`logfold.Miner`; its result is the one of `analyze()` over the same records:
+
+```python
+from logfold import Miner
+
+miner = Miner(format="app")  # a stream cannot be sniffed, so name the format (the default is plain)
+miner.add_many(batch_of_lines)  # a batch is one native call; add_log_message(line) is one call per record
+miner.new_templates()  # the templates created since the last call
+miner.result().top(10)
+miner.save_state("model.json")  # analyze(load_state=...), match() and Miner(load_state=...) read it
+```
 
 ## Formats and parameters
 
