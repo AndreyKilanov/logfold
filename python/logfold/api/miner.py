@@ -61,8 +61,8 @@ class Miner:
 
         Args:
             format: A registered name, ``regex:<pattern>``, a format specification or a ``Format`` object. The default
-                is ``plain`` (the whole record is the message): a stream has no file to detect a format from, so
-                ``auto`` is refused.
+                is ``plain`` (the whole record is the message), also when the settings say ``auto``: a stream has no
+                file to detect a format from, so ``auto`` named here is refused.
             multiline: Join continuation lines to the previous record (``add_lines`` only); ``None`` keeps the format's
                 default.
             depth: Tree depth (default 4).
@@ -85,7 +85,9 @@ class Miner:
             EngineError: If the native extension is unavailable.
             StateError: If the state file is damaged, too large, newer than this logfold or mined with other settings.
         """
-        chosen = format if format is not None else (config.format if config is not None else None)
+        chosen = format
+        if chosen is None and config is not None and config.format != "auto":
+            chosen = config.format
         if isinstance(chosen, str) and chosen == "auto":
             raise ConfigError(
                 "a stream has no file to detect the format from",
@@ -112,7 +114,7 @@ class Miner:
         Returns:
             The number of records that were mined.
         """
-        return self._live.add_many(records)
+        return self._live.add_many(_items(records, "add_many"))
 
     def add_log_message(self, message: str) -> int:
         """Mine one record. It crosses the native boundary once per message; prefer :meth:`add_many`.
@@ -137,7 +139,7 @@ class Miner:
         Returns:
             The number of records that this call completed and mined.
         """
-        return self._live.add_lines(lines)
+        return self._live.add_lines(_items(lines, "add_lines"))
 
     def flush(self) -> int:
         """Mine the record that is still open, for example at the end of a stream.
@@ -193,6 +195,16 @@ class Miner:
         chosen = self._state_format if state_format is None else state_format
         _state_request(None, None, chosen, self._mining, self._spec)
         self._live.save_state(os.fspath(path), chosen)
+
+
+def _items(items: Iterable[str], method: str) -> Iterable[str]:
+    """Refuse a single string, which would otherwise be mined one character at a time."""
+    if isinstance(items, (str, bytes)):
+        raise ConfigError(
+            f"{method}() takes an iterable of strings, not one string",
+            hint="pass a list, or call add_log_message() for a single record",
+        )
+    return items
 
 
 def _summary(mined: MiningResult) -> RunSummary:

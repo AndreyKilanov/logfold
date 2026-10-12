@@ -233,3 +233,19 @@ def test_a_blank_miner_has_no_templates() -> None:
     assert result.templates == ()
     assert result.run.records == 0
     assert result.run.name == "stream"
+
+
+@pytest.mark.parametrize("method", ["add_many", "add_lines"])
+def test_a_single_string_is_not_mined_one_character_at_a_time(method: str) -> None:
+    miner = logfold.Miner()
+    with pytest.raises(ConfigError, match="not one string"):
+        getattr(miner, method)("one record")
+    assert miner.result().run.records == 0
+
+
+def test_a_settings_file_that_says_auto_gives_plain_to_a_stream() -> None:
+    settings = logfold.Settings(format="auto")
+    miner = logfold.Miner(config=settings)
+    assert miner.add_many(["x y z"]) == 1
+    with pytest.raises(ConfigError, match="no file to detect"):
+        logfold.Miner(format="auto", config=settings)

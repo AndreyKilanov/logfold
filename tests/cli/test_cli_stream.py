@@ -121,3 +121,20 @@ def test_a_report_file_can_be_written(tmp_path: Path) -> None:
     result = runner.invoke(app, ["stream", "-o", str(out), "-q"], input=feed(["job 1 done", "job 2 done"]))
     assert result.exit_code == exit_codes.OK, result.output
     assert json.loads(out.read_text(encoding="utf-8"))["run"]["records"] == 2
+
+
+def test_a_settings_file_with_format_auto_still_streams_as_plain(tmp_path: Path) -> None:
+    settings = tmp_path / "logfold.toml"
+    settings.write_text('format = "auto"\n', encoding="utf-8")
+    result = runner.invoke(app, ["--config", str(settings), "stream", "--json", "-q"], input=feed(["job 1 done"]))
+    assert result.exit_code == exit_codes.OK, result.output
+    assert json.loads(result.output)["run"]["records"] == 1
+
+
+def test_a_settings_file_gives_the_format_to_a_stream(tmp_path: Path) -> None:
+    settings = tmp_path / "logfold.toml"
+    settings.write_text('format = "app"\n', encoding="utf-8")
+    lines = ["2026-10-04T00:00:01Z ERROR boom 5"]
+    result = runner.invoke(app, ["--config", str(settings), "stream", "--json", "-q"], input=feed(lines))
+    assert result.exit_code == exit_codes.OK, result.output
+    assert json.loads(result.output)["templates"][0]["level"] == "ERROR"
