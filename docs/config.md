@@ -1,7 +1,7 @@
 # Settings file `logfold.toml`
 
 Put the settings that you repeat in every command into a `logfold.toml` file at the root of your repository. The commands
-`analyze`, `match`, `stream`, `diff` and `inspect` read it, and so do the library functions when you pass `config=`.
+`analyze`, `match`, `stream`, `diff`, `params` and `inspect` read it, and so do the library functions when you pass `config=`.
 
 ```toml
 format = "app"                  # the default of --format
