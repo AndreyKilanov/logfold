@@ -61,6 +61,7 @@ Mining and execution options, shared with `diff`:
 | `--sim-th` | 0.4 | similarity threshold in `[0, 1]` |
 | `--max-children` | 100 | children per tree node |
 | `--max-templates` | 100000 | template cap; what happens to further records is decided by `--on-full` |
+| `--delimiters` | space, tab, CR, LF | the characters that separate tokens, **replacing** the default; `\t`, `\n`, `\r` and `\\` are read as escapes, so `--delimiters ' \t\n\r_='` also splits at `_` and `=` (keep the whitespace). A state must be used with the same value; `logfold params` needs the space among them |
 | `--on-full` | `pool` | at the cap: `pool` puts the records of a new message shape into catch-all templates, `evict` drops the least recently used templates (a tenth of the cap at a time) and keeps learning; their counts join the catch-all templates, `run.evicted` and a warning say how many were dropped. It mines with one tree, so `--strategy chunked` is refused; a state must be used with the same value |
 | `--no-masks` | off | do not mask numbers, IPs, UUIDs and other values |
 | `--high-cardinality` | off | fast bounded mode for data with a huge number of distinct messages (5000 templates, sequential) |
@@ -83,7 +84,7 @@ logfold analyze tuesday.log --load-state model.json --save-state model.json
 The second run reports only the records of `tuesday.log`, and `model.json` then holds both days: the same file as `analyze
 monday.log tuesday.log --save-state ...` would have written. A state holds the templates (after masking: a template seen once is
 its line with the values replaced), the shape of the tree and counts by level and time, never an example message. It must be
-used with the same masks and parameters (`--depth`, `--sim-th`, `--max-children`, `--max-templates`, `--on-full`, `--no-masks`); otherwise
+used with the same masks and parameters (`--depth`, `--sim-th`, `--max-children`, `--max-templates`, `--on-full`, `--delimiters`, `--no-masks`); otherwise
 the run stops with an error that says so. Continuing needs the native engine. An input of more than one chunk (64 MiB by default,
 `--chunk-mb`) is continued **in parallel** by default: every chunk starts from a copy of the loaded tree, the result does not
 depend on the number of threads and, on six of seven 100 MB logs, has exactly the templates of the sequential run, 3 to 5 times
@@ -111,7 +112,7 @@ logfold match model.json today.log
 The report is the one of `analyze`: the templates of the state that were hit, with the counts, levels and times of
 `today.log` only. A warning says how many records belong to no template of the state, and `run.unmatched` in the JSON report
 holds their number and their length in tokens (the text of those records is not kept). The state must be used with the same
-masks and parameters it was mined with (`--depth`, `--sim-th`, `--max-children`, `--max-templates`, `--on-full`, `--no-masks`); otherwise the
+masks and parameters it was mined with (`--depth`, `--sim-th`, `--max-children`, `--max-templates`, `--on-full`, `--delimiters`, `--no-masks`); otherwise the
 command stops with an error that says so. The result does not depend on `--strategy` or `--threads`, which only decide
 whether the files are read in parallel.
 
@@ -122,7 +123,7 @@ belonging to none. Use it to find the records that no template describes exactly
 
 Options: `--format`, `--multiline`, `--since`, `--until`, `--top`, `--min-count`, `--level`, `--only-alerts`, `--out`,
 `--append`, `--report`, `--json`, `--examples`, `--quiet`, `--debug` as for [`analyze`](#logfold-analyze), and the mining
-and execution options listed there (`--sim-th`, `--depth`, `--max-children`, `--max-templates`, `--on-full`, `--no-masks`, `--strategy`,
+and execution options listed there (`--sim-th`, `--depth`, `--max-children`, `--max-templates`, `--on-full`, `--delimiters`, `--no-masks`, `--strategy`,
 `--threads`, `--chunk-mb`), and `--exact`. There is no `--save-state`, `--load-state`, `--high-cardinality`, `--warm-start` or `--engine`.
 
 ## `logfold stream`
@@ -156,7 +157,7 @@ was read, and the exit code is 130.
 
 Options: `--format`, `--multiline`, `--top`, `--level`, `--only-alerts`, `--out`, `--append`, `--report`, `--json`,
 `--examples`, `--quiet`, `--debug`, `--state-format` as for [`analyze`](#logfold-analyze), and `--sim-th`, `--depth`,
-`--max-children`, `--max-templates`, `--on-full`, `--no-masks`. With `--json`, or `--report` without `--out`, the `new`
+`--max-children`, `--max-templates`, `--on-full`, `--delimiters`, `--no-masks`. With `--json`, or `--report` without `--out`, the `new`
 lines are not printed, so that standard output holds only the report. There is no `--since`, `--until`, `--strategy` or
 `--threads`: a stream is mined by one tree, in the order it arrives.
 
@@ -238,7 +239,7 @@ plain) is an error with a hint, not an empty result.
 ## `logfold params`
 
 ```
-logfold params TEMPLATE MESSAGE [--no-masks] [--json]
+logfold params TEMPLATE MESSAGE [--no-masks] [--delimiters CHARS] [--json]
 ```
 
 Prints the values that one MESSAGE has at the variable parts of a TEMPLATE, one per line as `position`, the name of the masking

@@ -30,7 +30,10 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 - `on_full="evict"` (`--on-full evict`, `on_full` in `logfold.toml`): at `max_templates` the least recently used templates are
   dropped and the miner keeps learning, instead of pooling new message shapes into catch-all templates; `run.evicted` counts the
   dropped ones. Off by default; it mines with one tree. A state of such a miner keeps the recency of the templates (state file schema version 2,
-  written only for it). Extension contract version 15. See `docs/guide.md`. See `docs/api.md`,
+  written only for it). Extension contract version 15. See `docs/guide.md`.
+- `delimiters` (`--delimiters`, `[mining] delimiters` in `logfold.toml`, `delimiters=` of `analyze`, `diff`, `match`, `Miner` and
+  `extract_parameters`): the characters that separate tokens, so that `user_id=7` can be split at `_` and `=`. A state must be used with
+  the same value. See `docs/api.md`,
   `docs/cli.md`.
 - `logfold.extract_parameters(template, message)` and `logfold params TEMPLATE MESSAGE` give the values that a message has at the
   variable parts of a template (`<*>` and masked values such as `<NUM>`), named by the rule or `*`, as written in the message;

@@ -278,6 +278,7 @@ Multi-line records (stack traces): `--multiline` joins lines that do not start a
 | `--sim-th` | 0.4 | similarity threshold: a line joins a template when at least this share of tokens matches exactly |
 | `--max-children` | 100 | children per tree node |
 | `--max-templates` | 100000 | cap on templates; what happens to further records is decided by `--on-full` |
+| `--delimiters` | space, tab, CR, LF | the characters that separate tokens, replacing the default; `\t`, `\n`, `\r` and `\\` are escapes: `--delimiters ' \t\n\r_='` also splits `user_id=7` into `user`, `id` and `7` (keep the whitespace) |
 | `--on-full` | `pool` | at the cap: `pool` puts new message shapes into catch-all templates; `evict` drops the least recently used templates and keeps learning (one tree, sequential); see below |
 | `--no-masks` | off | do not mask values |
 | `--high-cardinality` | off | mode for data with a huge number of distinct messages (see below) |

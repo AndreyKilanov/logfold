@@ -72,7 +72,7 @@ always the exact one.
 |---|---|
 | `sim_th`, `depth`, `max_children` | the same names and defaults |
 | `max_clusters` (unlimited by default) | `max_templates` (100000) with `on_full="evict"` for the least recently used eviction; see below |
-| `extra_delimiters` (regular expressions) | `MiningConfig(delimiters=" \t\n\r_")`: ASCII characters that separate tokens, library only |
+| `extra_delimiters` (regular expressions) | `delimiters=" \t\n\r_"` (library, `--delimiters`, `[mining] delimiters` in `logfold.toml`): the ASCII characters that separate tokens, **replacing** the default, so keep the whitespace; characters only, not regular expressions |
 | `masking_instructions`, `MaskingInstruction(regex, "IP")` | `masks=(MaskRule("ip", regex, "<IP>"),)`, or `[[mining.masks]]` tables in [`logfold.toml`](config.md) |
 | `mask_prefix`, `mask_suffix` | the whole token is the third argument of `MaskRule` (`"<IP>"`) |
 | `parametrize_numeric_tokens` | always on |
@@ -131,7 +131,7 @@ wherever you keep files. See [State files](cli.md#state-files).
 | `full_search_strategy` of `match` | none: `match` always searches the tree and then every template of the same length |
 | `parametrize_numeric_tokens=False` | none: a token with a digit always takes the wildcard branch of the tree, and `ALGORITHM.md` makes that part of the contract |
 | Kafka and Redis persistence | a state file |
-| `extra_delimiters` as regular expressions; delimiters in `drain3.ini` or a CLI flag | characters only, and only in `MiningConfig` |
+| `extra_delimiters` as regular expressions | characters only (`delimiters`, see above) |
 | `change_type` for every line | `new_templates()` |
 | `print_tree` | none |
 
