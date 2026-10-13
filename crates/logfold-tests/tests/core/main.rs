@@ -285,6 +285,85 @@ mod miner {
     }
 
     #[test]
+    fn the_index_of_a_length_equals_the_scan_of_the_length_also_while_the_miner_grows() {
+        let mut found_by_the_fallback = 0;
+        let mut found_exactly = 0;
+        let mut compared = 0;
+        for (sim_th, seed) in [(0.4, 21_u64), (0.1, 22), (0.7, 23), (0.95, 24)] {
+            let cfg = MinerConfig::new(4, sim_th, 100, 100_000).unwrap();
+            let mut miner = DrainMiner::new(cfg, 1);
+            let mut state = seed;
+            let mut trained: Vec<Vec<Box<[u8]>>> = Vec::new();
+            for phase in 0..3 {
+                for round in 0..3000 {
+                    let length = 6 + round % 14;
+                    let line = crowded_line(&mut state, length);
+                    let text =
+                        line.iter().map(|t| String::from_utf8_lossy(t).into_owned()).collect::<Vec<_>>().join(" ");
+                    feed(&mut miner, 0, &text);
+                    if round % 10 == 0 {
+                        trained.push(line);
+                    }
+                }
+                for round in 0..2000 {
+                    let length = 6 + round % 14;
+                    let mut line = match round % 4 {
+                        3 => trained[(next(&mut state) as usize) % trained.len()].clone(),
+                        _ => crowded_line(&mut state, length),
+                    };
+                    let length = line.len();
+                    if round % 4 == 0 {
+                        let at = 1 + (next(&mut state) as usize) % (length - 1);
+                        line[at] = b"never-seen".to_vec().into();
+                    } else if round % 4 == 1 {
+                        line[0] = b"unseen-head".to_vec().into();
+                    }
+                    let (indexed, plain) = miner.fallback_both_ways(&line);
+                    assert_eq!(indexed, plain, "sim_th {sim_th}, phase {phase}, probe {round}");
+                    let (exact_indexed, exact_plain) = miner.exact_fallback_both_ways(&line);
+                    assert_eq!(exact_indexed, exact_plain, "exact, sim_th {sim_th}, phase {phase}, probe {round}");
+                    compared += 1;
+                    found_exactly += usize::from(exact_indexed.is_some());
+                    found_by_the_fallback += usize::from(indexed.is_some() && miner.match_both_ways(&line).0.is_none());
+                }
+            }
+        }
+        assert_eq!(compared, 24_000);
+        assert!(found_by_the_fallback > 100, "the fallback must place records that the tree search cannot");
+        assert!(found_exactly > 1000, "records that fit exactly must be found too ({found_exactly})");
+    }
+
+    #[test]
+    fn clusters_that_lost_most_literals_are_found_by_the_exact_index() {
+        let cfg = MinerConfig::new(4, 0.1, 100, 100_000).unwrap();
+        let mut miner = DrainMiner::new(cfg, 1);
+        for i in 0..40 {
+            let line: Vec<String> = (0..6).map(|p| format!("c{i}t{p}")).collect();
+            feed(&mut miner, 0, &line.join(" "));
+        }
+        for i in 0..40 {
+            let kept = 1 + i % 5;
+            let line: Vec<String> =
+                (0..6).map(|p| if p < kept { format!("c{i}t{p}") } else { format!("u{i}p{p}") }).collect();
+            feed(&mut miner, 0, &line.join(" "));
+        }
+        let token = |text: &str| -> Box<[u8]> { text.as_bytes().into() };
+        let mut found = 0;
+        for i in 0..40 {
+            let kept = 1 + i % 5;
+            let line: Vec<Box<[u8]>> =
+                (0..6).map(|p| if p < kept { token(&format!("c{i}t{p}")) } else { token(&format!("q{p}")) }).collect();
+            let (indexed, plain) = miner.exact_fallback_both_ways(&line);
+            assert_eq!(indexed, plain, "probe {i} with {kept} literals");
+            found += usize::from(indexed.is_some());
+            let mut unknown = line.clone();
+            unknown[0] = token("nobody");
+            assert_eq!(miner.exact_fallback_both_ways(&unknown), (None, None));
+        }
+        assert_eq!(found, 40, "every cluster fits a message that has its literals, however few are left");
+    }
+
+    #[test]
     fn identical_input_gives_identical_output() {
         let run = || {
             let mut miner = DrainMiner::new(MinerConfig::default(), 1);

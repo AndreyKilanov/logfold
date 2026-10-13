@@ -43,15 +43,10 @@ impl DrainMiner {
 
     /// Assigns a message to the cluster whose constant tokens all equal the tokens of the message.
     ///
-    /// The cluster of the tree search of training is taken when it fits; otherwise every cluster of the same length is
-    /// scanned. Among the clusters that fit, the one with the fewest wildcards wins, then the earliest created.
+    /// Every cluster of the same token count is considered, so the answer does not depend on the shape of the tree; the
+    /// one with the fewest wildcards wins, then the earliest created.
     fn assign_exact(&self, tokens: &TokenView<'_>) -> Assignment {
-        let leaf = self.search(tokens).map(|leaf| self.nodes[leaf as usize].clusters.as_slice());
-        let same_length = self.length_clusters.get(&tokens.len()).map(Vec::as_slice);
-        match self
-            .best_exact(leaf.unwrap_or(&[]), tokens)
-            .or_else(|| self.best_exact(same_length.unwrap_or(&[]), tokens))
-        {
+        match self.best_exact_of_length(tokens) {
             Some(index) => Assignment::Cluster(index as u32),
             None => Assignment::Unmatched(tokens.len()),
         }

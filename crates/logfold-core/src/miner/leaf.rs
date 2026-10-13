@@ -1,6 +1,7 @@
 //! Per-leaf inverted index, tree nodes and the per-thread scratch of indexed matching.
 
 use std::collections::HashMap;
+use std::sync::OnceLock;
 
 use ahash::RandomState;
 
@@ -31,6 +32,39 @@ impl LeafIndex {
             }
         }
     }
+}
+
+/// A cluster with at most this many literal tokens is `sparse`, see [`LengthIndex::sparse`]; the exact search leaves out
+/// the lists of this many positions.
+pub(super) const SPARSE_LITERALS: usize = 3;
+
+/// What is kept for one token count, for the records that the tree search cannot place.
+#[derive(Default, Clone)]
+pub(super) struct LengthIndex {
+    /// Inverted index of every cluster of the length, built by the first record that needs it and kept up to date.
+    pub(super) index: OnceLock<LeafIndex>,
+    /// The clusters that hold at most [`SPARSE_LITERALS`] literal tokens. A cluster with more literals that fits a message
+    /// has all of them equal to the message's, so it is found in the list of at least one position even when the lists of
+    /// `SPARSE_LITERALS` other positions are left out; the clusters with fewer literals are not found that way and are
+    /// listed here instead. A cluster only ever loses literals, so it enters the list once and never leaves it.
+    pub(super) sparse: Vec<u32>,
+}
+
+impl LengthIndex {
+    /// Notes a new cluster `id` of this length.
+    pub(super) fn add(&mut self, id: u32, tokens: &[Box<[u8]>]) {
+        if literals(tokens) <= SPARSE_LITERALS {
+            self.sparse.push(id);
+        }
+        if let Some(index) = self.index.get_mut() {
+            index.add(id, tokens);
+        }
+    }
+}
+
+/// Number of tokens that are not the wildcard.
+pub(super) fn literals(tokens: &[Box<[u8]>]) -> usize {
+    tokens.iter().filter(|token| &***token != WILDCARD).count()
 }
 
 #[derive(Default, Clone)]
