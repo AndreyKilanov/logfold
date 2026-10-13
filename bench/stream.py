@@ -14,6 +14,7 @@ Usage::
     python bench/stream.py run bench/data/app_10mb.log --variants analyze add_many drain3
     python bench/stream.py parallel bench/data/app_100mb.log --workers 4
     python bench/stream.py matching bench/data/app_100mb.log
+    python bench/stream.py evict bench/data/highcard_10mb.log --max-templates 5000
 """
 
 from __future__ import annotations
@@ -191,6 +192,33 @@ def matching(args: argparse.Namespace) -> None:
         print(f"| {label} | {wall:.2f} s | {len(lines_read) / wall:,.0f} | {wall / reference:.2f}x |")
 
 
+def evicting(args: argparse.Namespace) -> None:
+    """Time mining with ``on_full`` set to ``pool`` and to ``evict`` at a template limit that the data passes."""
+    import logfold
+
+    lines_read = list(itertools.islice(lines(args.path), args.lines))
+
+    def mine(on_full: str) -> tuple[float, int, int, int]:
+        miner = logfold.Miner(format="plain", examples="none", max_templates=args.max_templates, on_full=on_full)
+        started = time.perf_counter()
+        feed(miner, lines_read, args.batch_size)
+        wall = time.perf_counter() - started
+        result = miner.result()
+        return wall, len(result.templates), result.run.evicted, sum(t.count for t in result.templates)
+
+    print(f"{args.path.name}, {len(lines_read):,} lines, max_templates {args.max_templates:,}, median of {args.repeat}")
+    print()
+    print("| on_full | wall | lines per second | templates | evicted | records in templates |")
+    print("|---|---:|---:|---:|---:|---:|")
+    for on_full in ("pool", "evict"):
+        runs = [mine(on_full) for _ in range(args.repeat)]
+        wall = statistics.median(run[0] for run in runs)
+        _, templates, evicted, counted = runs[0]
+        print(
+            f"| {on_full} | {wall:.2f} s | {len(lines_read) / wall:,.0f} | {templates:,} | {evicted:,} | {counted:,} |"
+        )
+
+
 def main() -> None:
     """The command line."""
     main_parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -213,6 +241,12 @@ def main() -> None:
     matched.add_argument("--train", type=int, default=100_000)
     matched.add_argument("--repeat", type=int, default=5)
     matched.add_argument("--batch-size", type=int, default=10_000)
+    dropping = sub.add_parser("evict", help="mining with on_full pool and evict at a template limit")
+    dropping.add_argument("path", type=Path)
+    dropping.add_argument("--lines", type=int, default=600_000)
+    dropping.add_argument("--max-templates", type=int, default=5000)
+    dropping.add_argument("--repeat", type=int, default=3)
+    dropping.add_argument("--batch-size", type=int, default=10_000)
     inner = sub.add_parser("worker", help="(internal) mine a file in this process")
     inner.add_argument("name", choices=VARIANTS)
     inner.add_argument("path", type=Path)
@@ -224,6 +258,8 @@ def main() -> None:
         parallel(args)
     elif args.what == "matching":
         matching(args)
+    elif args.what == "evict":
+        evicting(args)
     else:
         worker(args.name, args.path, args.batch_size)
 
