@@ -460,6 +460,13 @@ impl DrainMiner {
                 cluster.wild += 1;
             }
         }
+        self.note_literals(index, before);
+    }
+
+    /// Registers the cluster `index` as sparse when it has just lost its literals down to [`SPARSE_LITERALS`] or fewer;
+    /// `before` is the number of its literal tokens before it was generalized.
+    fn note_literals(&mut self, index: usize, before: usize) {
+        let cluster = &self.clusters[index];
         let (length, after) = (cluster.tokens.len(), cluster.tokens.len() - cluster.wild as usize);
         if before > SPARSE_LITERALS && after <= SPARSE_LITERALS {
             self.length_indexes.entry(length).or_default().sparse.push(index as u32);
