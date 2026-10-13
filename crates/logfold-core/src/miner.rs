@@ -16,7 +16,7 @@ mod snapshot;
 
 use leaf::{INDEX_MIN_CLUSTERS, LeafIndex, Node, SCRATCH};
 use matching::{BoxedTokens, Tokens, has_digit, score_bounded, update_stats};
-pub use recount::{Assignment, Recount};
+pub use recount::{Assignment, MatchRule, Recount};
 pub use snapshot::{ClusterHistory, ClusterSnapshot, MinerSnapshot, NodeSnapshot};
 
 /// Token that stands for a variable part of a template.
@@ -174,7 +174,7 @@ impl DrainMiner {
     ///
     /// The statistics gathered while training are discarded; clusters nobody was assigned to disappear.
     pub fn freeze_recounted(self, recount: Recount) -> (Vec<FrozenTemplate>, Vec<bool>) {
-        let Recount { n_runs, mut stats, unmatched } = recount;
+        let Recount { n_runs, mut stats, unmatched, .. } = recount;
         let mut flags = self.overflowed.clone();
         flags.resize(n_runs, false);
         let mut ordered: Vec<Cluster> = Vec::new();

@@ -2,6 +2,8 @@
 
 use std::time::Instant;
 
+use logfold_core::MatchRule;
+
 use crate::error::EngineError;
 use crate::pipeline::PipelineContext;
 use crate::types::{ExecutionStrategy, MineOutput, MineRequest, ProgressObserver, RunMetrics, RunSummary};
@@ -16,6 +18,19 @@ const NEEDS_STATE: &str = "matching needs a saved state";
 /// only decides whether the files are read in parallel: matching never changes the tree, so the result does not depend
 /// on it. `recount`, `warm_start` and `keep_snapshot` have no meaning here and are ignored.
 pub fn match_records(request: &MineRequest, observer: &dyn ProgressObserver) -> Result<MineOutput, EngineError> {
+    match_records_with(request, observer, MatchRule::Similar)
+}
+
+/// Assigns the records of `request` to the templates of its saved state by `rule`, and learns nothing.
+///
+/// [`match_records`] is this function with [`MatchRule::Similar`]. With [`MatchRule::Exact`] a record belongs to a
+/// template only when every constant token of the template equals the token of the record, so the records that differ
+/// from every template in a word are counted as unmatched.
+pub fn match_records_with(
+    request: &MineRequest,
+    observer: &dyn ProgressObserver,
+    rule: MatchRule,
+) -> Result<MineOutput, EngineError> {
     let started = Instant::now();
     validate_request(request)?;
     let context = PipelineContext::new(request)?;
@@ -32,8 +47,8 @@ pub fn match_records(request: &MineRequest, observer: &dyn ProgressObserver) -> 
     let planned = plan::plan(request, chunk_bytes)?;
     let match_started = Instant::now();
     let (mut recount, counters) = match threads {
-        None => sequential::recount(&context, &miner, &planned, observer)?,
-        Some(requested) => chunked::recount(&context, &miner, &planned, requested, observer)?,
+        None => sequential::recount(&context, &miner, &planned, rule, observer)?,
+        Some(requested) => chunked::recount(&context, &miner, &planned, requested, rule, observer)?,
     };
     let match_seconds = match_started.elapsed().as_secs_f64();
 

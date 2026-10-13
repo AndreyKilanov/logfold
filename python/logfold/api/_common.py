@@ -188,6 +188,7 @@ def _mine(
     windows: tuple[tuple[int | None, int | None], ...] = (),
     state: StateRequest | None = None,
     matching: bool = False,
+    exact: bool = False,
 ) -> MiningResult:
     engine = select_engine(execution)
     request = MineRequest(
@@ -201,6 +202,7 @@ def _mine(
         recount=recount,
         windows=windows,
         state=state,
+        exact=exact,
     )
     return engine.match(request, progress) if matching else engine.mine(request, progress)
 

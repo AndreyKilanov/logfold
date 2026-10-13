@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
-use logfold_core::{DrainMiner, MinerConfig, Recount};
+use logfold_core::{DrainMiner, MatchRule, MinerConfig, Recount};
 use logfold_io::Counters;
 
 use crate::adaptive::{TallyingObserver, probe_unit};
@@ -215,20 +215,21 @@ pub(crate) fn train(
     Ok(TrainingOutcome::Merged(Box::new(accumulator), counters, used, merge_seconds))
 }
 
-/// Assigns the records of every unit to the clusters of `miner` in parallel and merges the statistics and the counters
+/// Assigns the records of every unit to the clusters of `miner` by `rule` in parallel and merges the statistics and the counters
 /// in unit order.
 pub(crate) fn recount(
     context: &PipelineContext,
     miner: &DrainMiner,
     plan: &ChunkPlan,
     threads: usize,
+    rule: MatchRule,
     observer: &dyn ProgressObserver,
 ) -> Result<(Recount, Vec<Counters>), EngineError> {
     let n_runs = plan.run_bytes.len();
-    let mut accumulator = Recount::new(n_runs);
+    let mut accumulator = Recount::with_rule(n_runs, rule);
     let mut counters = vec![Counters::default(); n_runs];
     let work = |index: usize| -> Result<(Recount, Counters), EngineError> {
-        let mut partial = Recount::new(n_runs);
+        let mut partial = Recount::with_rule(n_runs, rule);
         let unit_counters = recount_unit(context, &plan.units[index], miner, &mut partial, observer)?;
         Ok((partial, unit_counters))
     };

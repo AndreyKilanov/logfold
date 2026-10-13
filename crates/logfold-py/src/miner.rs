@@ -6,7 +6,7 @@
 use std::path::Path;
 use std::sync::{Mutex, MutexGuard};
 
-use logfold_engine::{EngineError, Session, SessionConfig};
+use logfold_engine::{EngineError, MatchRule, Session, SessionConfig};
 use logfold_io::check_state_writable;
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
@@ -69,11 +69,14 @@ impl NativeMiner {
         self.with_session(py, |session| session.flush())
     }
 
-    /// Assigns complete records to the templates of the miner without learning; returns the distinct templates that
-    /// were hit as `(id, text)` pairs and, for every record, the index of its template or `None`.
-    fn match_many(&self, py: Python<'_>, records: Vec<String>) -> PyResult<MatchAnswer> {
-        let batch =
-            self.with_session(py, |session| session.match_records(records.iter().map(|record| record.as_bytes())))?;
+    /// Assigns complete records to the templates of the miner without learning (`exact`: every constant token of the
+    /// template must equal the token of the record); returns the distinct templates that were hit as `(id, text)`
+    /// pairs and, for every record, the index of its template or `None`.
+    #[pyo3(signature = (records, exact=false))]
+    fn match_many(&self, py: Python<'_>, records: Vec<String>, exact: bool) -> PyResult<MatchAnswer> {
+        let rule = if exact { MatchRule::Exact } else { MatchRule::Similar };
+        let batch = self
+            .with_session(py, |session| session.match_records(records.iter().map(|record| record.as_bytes()), rule))?;
         let templates = batch.templates.into_iter().map(|template| (template.id, template.text)).collect();
         Ok((templates, batch.assigned))
     }

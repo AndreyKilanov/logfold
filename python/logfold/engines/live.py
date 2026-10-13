@@ -49,9 +49,9 @@ class LiveMiner:
         """Mine the record that is still open; return how many records were mined (0 or 1)."""
         return self._handle.flush()
 
-    def match_many(self, records: Iterable[str]) -> tuple[list[tuple[str, str]], list[int | None]]:
+    def match_many(self, records: Iterable[str], exact: bool = False) -> tuple[list[tuple[str, str]], list[int | None]]:
         """Assign records to the templates without learning; see :meth:`logfold._bridge.MinerHandle.match_many`."""
-        return self._handle.match_many(records)
+        return self._handle.match_many(records, exact)
 
     def new_templates(self) -> list[str]:
         """Return the texts of the templates created since the previous call, in creation order."""

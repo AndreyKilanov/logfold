@@ -1,4 +1,4 @@
-use logfold_core::{DrainMiner, MinerConfig, Recount};
+use logfold_core::{DrainMiner, MatchRule, MinerConfig, Recount};
 use logfold_io::Counters;
 
 use crate::error::EngineError;
@@ -24,15 +24,16 @@ pub(crate) fn train(
     Ok((miner, counters))
 }
 
-/// Assigns the records of all units to the clusters of `miner`, in plan order; returns the counters of the scan too.
+/// Assigns the records of all units to the clusters of `miner` by `rule`, in plan order; returns the counters of the scan too.
 pub(crate) fn recount(
     context: &PipelineContext,
     miner: &DrainMiner,
     plan: &ChunkPlan,
+    rule: MatchRule,
     observer: &dyn ProgressObserver,
 ) -> Result<(Recount, Vec<Counters>), EngineError> {
     let n_runs = plan.run_bytes.len();
-    let mut recount = Recount::new(n_runs);
+    let mut recount = Recount::with_rule(n_runs, rule);
     let mut counters = vec![Counters::default(); n_runs];
     for unit in &plan.units {
         let unit_counters = recount_unit(context, unit, miner, &mut recount, observer)?;

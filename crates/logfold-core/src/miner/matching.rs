@@ -3,7 +3,7 @@
 use crate::stats::RunStats;
 use crate::tokenizer::TokenView;
 
-use super::{MAX_EXAMPLE_BYTES, RecordMeta, WILDCARD};
+use super::{DrainMiner, MAX_EXAMPLE_BYTES, RecordMeta, WILDCARD};
 
 pub(super) trait Tokens {
     fn count(&self) -> usize;
@@ -73,4 +73,36 @@ pub(super) fn score_bounded<T: Tokens>(template: &[Box<[u8]>], tokens: &T, floor
         }
     }
     (exact >= floor).then_some((exact, params))
+}
+
+/// Counts the wildcards of `template` when every constant token equals the token of the message; `None` otherwise.
+fn exact_params<T: Tokens>(template: &[Box<[u8]>], tokens: &T) -> Option<usize> {
+    let mut params = 0;
+    for (index, token) in template.iter().enumerate() {
+        if &**token == WILDCARD {
+            params += 1;
+        } else if &**token != tokens.at(index) {
+            return None;
+        }
+    }
+    Some(params)
+}
+
+impl DrainMiner {
+    /// The cluster among `candidates` that fits `tokens` exactly with the fewest wildcards, the earliest one on a tie.
+    pub(super) fn best_exact<T: Tokens>(&self, candidates: &[u32], tokens: &T) -> Option<usize> {
+        let mut best: Option<(usize, usize)> = None;
+        for &index in candidates {
+            let Some(params) = exact_params(&self.clusters[index as usize].tokens, tokens) else {
+                continue;
+            };
+            if best.is_none_or(|(_, fewest)| params < fewest) {
+                best = Some((index as usize, params));
+                if params == 0 {
+                    break;
+                }
+            }
+        }
+        best.map(|(index, _)| index)
+    }
 }

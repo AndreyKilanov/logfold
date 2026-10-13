@@ -55,6 +55,8 @@ class MineRequest:
         recount: Re-assign every record to the finished tree after training; gives consistent assignments
             across runs at the cost of a second pass.
         state: State files to load and save, or ``None``. Only the sequential strategy continues a loaded state.
+        exact: ``match`` only: a record belongs to a template only when every constant token of the template equals the
+            token of the record (the default is the similarity of mining).
         windows: One time window per run, or empty for none. A window is ``(since, until)`` in microseconds since the
             Unix epoch, each bound ``None`` when open: a record is mined when ``since <= timestamp < until``. A record
             without a timestamp is left out of a run whose window has a bound.
@@ -70,6 +72,7 @@ class MineRequest:
     recount: bool = False
     windows: tuple[tuple[int | None, int | None], ...] = ()
     state: StateRequest | None = None
+    exact: bool = False
 
 
 @dataclass(frozen=True, slots=True)
