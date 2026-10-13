@@ -225,9 +225,9 @@ A template says that a part is variable; to see what it was in one message, pass
 message to `logfold params` or to `logfold.extract_parameters`:
 
 ```python
-logfold.extract_parameters(
-    "user <NUM> logged in from <IP>", "user 42 logged in from 10.0.0.1:8080"
-)
+template = "user <NUM> logged in from <IP>"
+message = "user 42 logged in from 10.0.0.1:8080"
+logfold.extract_parameters(template, message)
 # (Parameter(position=1, name='num', value='42'),
 #  Parameter(position=5, name='ip', value='10.0.0.1:8080'))
 ```
