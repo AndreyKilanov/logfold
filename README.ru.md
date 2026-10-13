@@ -149,7 +149,7 @@ miner.save_state("model.json")  # его читают analyze(load_state=...), m
 |---|---|
 | Форматы | `nginx`, `apache`, `nginx-error`, `syslog`, `journald`, `k8s` (CRI/containerd), `jsonl`, `app` (`<время> УРОВЕНЬ сообщение`), `logfmt`, `serilog-clef`, `haproxy`, `postgresql`, `postgresql-csv`, `docker-json`, `github-actions`, `log4j` (или свой `log4j:<шаблон>`), `plain`, свой `regex:<шаблон>`. Список: `logfold formats`. |
 | Многострочные записи | `--multiline`; при `--format auto` включается сам, если найдены строки с отступом. |
-| Схлопывание | `--depth` (4), `--sim-th` (0,4), `--max-children` (100), `--max-templates` (100000). Значения по умолчанию те же, что у Drain3. |
+| Схлопывание | `--depth` (4), `--sim-th` (0,4), `--max-children` (100), `--max-templates` (100000), `--on-full evict` (при пределе вытеснять наименее давно использованные шаблоны вместо складывания новых в общий), `--delimiters` (символы, разделяющие токены). Значения по умолчанию те же, что у Drain3. |
 | Выполнение | `--strategy auto` (по умолчанию; параллельные куски, последовательно для логов из уникальных сообщений), `sequential`, `chunked`; `--threads`, `--chunk-mb`; `--warm-start` (по желанию, только для chunked). |
 | Логи с почти уникальными строками | `--high-cardinality`: не больше 5000 шаблонов, остальное попадает в сводные, выполняется последовательно. На файле в 10 МБ с 84 тысячами разных строк 2,0 с превращаются в 0,14 с. |
 | Параметры | `logfold params ШАБЛОН СООБЩЕНИЕ` (Python: `logfold.extract_parameters`) даёт значения одного сообщения в переменных частях шаблона: имя правила (`num`, `ip`, ...) или `*` и значение как оно записано. |
