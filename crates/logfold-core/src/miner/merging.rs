@@ -28,6 +28,7 @@ impl DrainMiner {
         for (index, cluster) in other.clusters.into_iter().enumerate() {
             if index < seed_len {
                 let mine = &mut self.clusters[index];
+                let before = mine.tokens.len() - mine.wild as usize;
                 for (position, token) in cluster.tokens.iter().enumerate() {
                     let current = &mine.tokens[position];
                     if &**current != WILDCARD && (&**token == WILDCARD || **token != **current) {
@@ -38,6 +39,7 @@ impl DrainMiner {
                 for (dst, src) in mine.stats.iter_mut().zip(cluster.stats.iter()) {
                     dst.absorb(src);
                 }
+                self.note_literals(index, before);
             } else {
                 self.merge_cluster(cluster);
             }
