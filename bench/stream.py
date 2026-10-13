@@ -13,6 +13,7 @@ Usage::
     python bench/stream.py run bench/data/app_100mb.log --variants analyze stream add_many add_lines add_log_message
     python bench/stream.py run bench/data/app_10mb.log --variants analyze add_many drain3
     python bench/stream.py parallel bench/data/app_100mb.log --workers 4
+    python bench/stream.py matching bench/data/app_100mb.log
 """
 
 from __future__ import annotations
@@ -150,6 +151,45 @@ def parallel(args: argparse.Namespace) -> None:
         print(f"| {label} | {wall:.2f} s | {len(lines_read) / wall:,.0f} | {reference / wall:.2f}x |", flush=True)
 
 
+def matching(args: argparse.Namespace) -> None:
+    """Time ``match_many`` and ``match`` on a trained miner, against ``add_many`` of the same lines."""
+    import logfold
+
+    lines_read = list(itertools.islice(lines(args.path), args.lines))
+    trained = logfold.Miner(format="plain", examples="none")
+    trained.add_many(lines_read[: args.train])
+
+    def by_batches(size: int) -> float:
+        started = time.perf_counter()
+        for start in range(0, len(lines_read), size):
+            trained.match_many(lines_read[start : start + size])
+        return time.perf_counter() - started
+
+    def one_by_one() -> float:
+        started = time.perf_counter()
+        for line in lines_read:
+            trained.match(line)
+        return time.perf_counter() - started
+
+    def mining() -> float:
+        miner = logfold.Miner(format="plain", examples="none")
+        started = time.perf_counter()
+        feed(miner, lines_read, args.batch_size)
+        return time.perf_counter() - started
+
+    cases = {f"match_many, batches of {size:,}": (lambda size=size: by_batches(size)) for size in (100, 1_000, 10_000)}
+    cases["match, one record per call"] = one_by_one
+    cases[f"add_many, batches of {args.batch_size:,} (mining the same lines)"] = mining
+    print(f"{args.path.name}, {len(lines_read):,} lines, trained on the first {args.train:,}, median of {args.repeat}")
+    print()
+    print("| case | wall | lines per second | against match_many 10,000 |")
+    print("|---|---:|---:|---:|")
+    walls = {label: statistics.median(case() for _ in range(args.repeat)) for label, case in cases.items()}
+    reference = next(wall for label, wall in walls.items() if label.endswith("10,000"))
+    for label, wall in walls.items():
+        print(f"| {label} | {wall:.2f} s | {len(lines_read) / wall:,.0f} | {wall / reference:.2f}x |")
+
+
 def main() -> None:
     """The command line."""
     main_parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -166,6 +206,12 @@ def main() -> None:
     threads.add_argument("--workers", type=int, default=4)
     threads.add_argument("--repeat", type=int, default=5)
     threads.add_argument("--batch-size", type=int, default=10_000)
+    matched = sub.add_parser("matching", help="match_many and match on a trained miner, against add_many")
+    matched.add_argument("path", type=Path)
+    matched.add_argument("--lines", type=int, default=600_000)
+    matched.add_argument("--train", type=int, default=100_000)
+    matched.add_argument("--repeat", type=int, default=5)
+    matched.add_argument("--batch-size", type=int, default=10_000)
     inner = sub.add_parser("worker", help="(internal) mine a file in this process")
     inner.add_argument("name", choices=VARIANTS)
     inner.add_argument("path", type=Path)
@@ -175,6 +221,8 @@ def main() -> None:
         run(args)
     elif args.what == "parallel":
         parallel(args)
+    elif args.what == "matching":
+        matching(args)
     else:
         worker(args.name, args.path, args.batch_size)
 

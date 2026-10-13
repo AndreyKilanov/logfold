@@ -73,6 +73,24 @@ A miner shared by several threads gains almost nothing (its calls are served one
 own miner. A single very fast source cannot be spread over cores: the parallel mode of `analyze` (chunks, then a merge of
 the trees) is not available for a stream, and it gives slightly more templates than one tree.
 
+## Matching without learning
+
+`Miner.match_many` assigns records to the templates a miner holds and changes nothing. `python bench/stream.py matching FILE` trains a
+miner on the first 100 thousand lines of `app_100mb.log`, then times matching the first 600 thousand lines that are already in
+memory (median of 5), and `add_many` over the same lines for comparison.
+
+| Case | Wall | Lines per second | Against `match_many` of 10,000 |
+|---|---:|---:|---:|
+| `match_many`, batches of 100 | 0.40 s | 1,500,215 | 1.47x |
+| `match_many`, batches of 1,000 | 0.25 s | 2,360,459 | 0.93x |
+| `match_many`, batches of 10,000 | 0.27 s | 2,201,866 | 1.00x |
+| `match`, one record per call | 2.74 s | 219,087 | 10.05x |
+| `add_many`, batches of 10,000 (mining the same lines) | 0.29 s | 2,046,079 | 1.08x |
+
+Matching costs about what mining costs, and a batch of 1,000 or more is at full speed. One record per call is 10 times slower, as for
+mining (the call and the Python wrapper around it cost more than the work), so `match_many` is the interface for more than a few
+records.
+
 ## Limits of this measurement
 
 One machine and one dataset of 12 templates, so the cost of a large tree is not in it (`highcard` is the case for that, and
