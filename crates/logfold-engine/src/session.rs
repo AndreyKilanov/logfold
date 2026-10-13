@@ -4,14 +4,15 @@
 //! record exactly as `mine` does for a file, in the order the records are given, so the result equals the one of a
 //! sequential run over the same records whatever the size of the batches.
 
+use std::collections::HashMap;
 use std::time::Instant;
 
-use logfold_core::{DrainMiner, MaskRule, MaskScratch, MinerSnapshot};
+use logfold_core::{Assignment, DrainMiner, MaskRule, MaskScratch, MinerSnapshot, template_id};
 use logfold_io::{Counters, FormatConfig, MAX_LINE_BYTES, MAX_RECORD_BYTES};
 
 use crate::error::EngineError;
 use crate::pipeline::PipelineContext;
-use crate::types::{MineOutput, MiningConfig, RunMetrics, RunSummary};
+use crate::types::{MatchBatch, MatchedTemplate, MineOutput, MiningConfig, RunMetrics, RunSummary};
 use crate::{empty_miner, load_snapshot, mining_config};
 
 /// Everything needed to open a [`Session`].
@@ -117,6 +118,24 @@ impl Session {
         texts
     }
 
+    /// Assigns complete records to the templates that the miner holds, and learns nothing.
+    ///
+    /// The rule is the one of [`crate::match_records`]: the search of training first, then every template of the same
+    /// length. The miner, its counters and the record that is still open are not touched, so the answer for a record
+    /// does not depend on the other records of the batch or on how the records are split into calls. A blank item, an
+    /// item that the format cannot parse and an item that fits no template are `None`; an item is cut at
+    /// [`MAX_RECORD_BYTES`].
+    pub fn match_records<'a>(&mut self, records: impl IntoIterator<Item = &'a [u8]>) -> MatchBatch {
+        let mut batch = MatchBatch::default();
+        let mut seen: HashMap<u32, usize> = HashMap::new();
+        for record in records {
+            let text = &record[..record.len().min(MAX_RECORD_BYTES)];
+            let assigned = if is_blank(text) { None } else { self.assign(text, &mut batch, &mut seen) };
+            batch.assigned.push(assigned);
+        }
+        batch
+    }
+
     /// Describes the miner as plain data, the counts of this session folded into the history of the templates.
     pub fn snapshot(&self) -> MinerSnapshot {
         self.miner.snapshot()
@@ -163,12 +182,29 @@ impl Session {
         if is_blank(text) {
             return false;
         }
-        let first_len = if self.context.format.multiline() {
+        self.mine(text, self.first_line_len(text))
+    }
+
+    fn first_line_len(&self, text: &[u8]) -> usize {
+        if self.context.format.multiline() {
             text.iter().position(|&byte| byte == b'\n').unwrap_or(text.len())
         } else {
             text.len()
+        }
+    }
+
+    fn assign(&mut self, text: &[u8], batch: &mut MatchBatch, seen: &mut HashMap<u32, usize>) -> Option<usize> {
+        let record = self.context.format.parse(text, self.first_line_len(text))?;
+        let (tokens, _) = self.context.prepare(&record, &mut self.scratch, &mut self.spans);
+        let Assignment::Cluster(cluster) = self.miner.assign(&tokens) else {
+            return None;
         };
-        self.mine(text, first_len)
+        let miner = &self.miner;
+        Some(*seen.entry(cluster).or_insert_with(|| {
+            let text = miner.cluster_text(cluster);
+            batch.templates.push(MatchedTemplate { id: template_id(&text), text });
+            batch.templates.len() - 1
+        }))
     }
 
     fn add_line(&mut self, line: &[u8]) -> bool {

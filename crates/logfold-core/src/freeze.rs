@@ -22,23 +22,29 @@ impl FrozenTemplate {
     }
 }
 
-fn template_id(text: &str) -> String {
+/// Returns the identifier of a template: the first 16 hex digits of `sha256(text)`.
+pub fn template_id(text: &str) -> String {
     let digest = Sha256::digest(text.as_bytes());
     digest[..8].iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// Joins the tokens of a template with single spaces, replacing invalid UTF-8.
+pub(crate) fn template_text(tokens: &[Box<[u8]>]) -> String {
+    let mut joined: Vec<u8> = Vec::new();
+    for (position, token) in tokens.iter().enumerate() {
+        if position > 0 {
+            joined.push(b' ');
+        }
+        joined.extend_from_slice(token);
+    }
+    String::from_utf8_lossy(&joined).into_owned()
 }
 
 pub(crate) fn freeze_clusters(clusters: Vec<Cluster>) -> Vec<FrozenTemplate> {
     let mut index_by_text: HashMap<String, usize> = HashMap::new();
     let mut frozen: Vec<FrozenTemplate> = Vec::new();
     for cluster in clusters {
-        let mut joined: Vec<u8> = Vec::new();
-        for (position, token) in cluster.tokens.iter().enumerate() {
-            if position > 0 {
-                joined.push(b' ');
-            }
-            joined.extend_from_slice(token);
-        }
-        let text = String::from_utf8_lossy(&joined).into_owned();
+        let text = template_text(&cluster.tokens);
         match index_by_text.get(&text) {
             Some(&index) => {
                 for (dst, src) in frozen[index].runs.iter_mut().zip(cluster.stats.iter()) {

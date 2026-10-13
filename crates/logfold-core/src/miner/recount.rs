@@ -4,6 +4,7 @@ use std::collections::{BTreeMap, HashMap};
 
 use ahash::RandomState;
 
+use crate::freeze::template_text;
 use crate::stats::RunStats;
 use crate::tokenizer::TokenView;
 
@@ -17,6 +18,16 @@ pub enum Assignment {
     Cluster(u32),
     /// No cluster matches; the payload is the token count of the message.
     Unmatched(usize),
+}
+
+impl DrainMiner {
+    /// Text of the cluster `index` of an [`Assignment::Cluster`] as it is now, tokens joined by a single space.
+    ///
+    /// # Panics
+    /// Panics when `index` was not given by [`DrainMiner::assign`] of this miner.
+    pub fn cluster_text(&self, index: u32) -> String {
+        template_text(&self.clusters[index as usize].tokens)
+    }
 }
 
 /// Statistics gathered by assigning records to the clusters of a finished tree (`docs/ALGORITHM.md` §9).

@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, HashMap};
 use ahash::RandomState;
 
 use crate::error::CoreError;
-use crate::freeze::{FrozenTemplate, freeze_clusters};
+use crate::freeze::{FrozenTemplate, freeze_clusters, template_text};
 use crate::level::Level;
 use crate::stats::RunStats;
 use crate::tokenizer::TokenView;
@@ -206,14 +206,7 @@ impl DrainMiner {
     ///
     /// A text is the one that the template had when it was created; later records may turn tokens into wildcards.
     pub fn template_texts_from(&self, from: usize) -> Vec<String> {
-        self.clusters
-            .iter()
-            .skip(from)
-            .map(|cluster| {
-                let tokens: Vec<&[u8]> = cluster.tokens.iter().map(|token| &**token).collect();
-                String::from_utf8_lossy(&tokens.join(&b' ')).into_owned()
-            })
-            .collect()
+        self.clusters.iter().skip(from).map(|cluster| template_text(&cluster.tokens)).collect()
     }
 
     /// Returns the unique templates that [`Self::freeze`] would return, and leaves the miner ready for more records.
