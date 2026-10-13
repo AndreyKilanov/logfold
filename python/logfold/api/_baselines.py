@@ -75,6 +75,7 @@ def pool_info(infos: Sequence[RunCounters]) -> RunCounters:
         overflowed=any(i.overflowed for i in infos),
         out_of_range=sum(i.out_of_range for i in infos),
         untimed=sum(i.untimed for i in infos),
+        evicted=sum(i.evicted for i in infos),
     )
 
 

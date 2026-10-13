@@ -26,6 +26,7 @@ from logfold.cli.options import (
     MaxTemplates,
     Multiline,
     NoMasks,
+    OnFull,
     OnlyAlerts,
     Out,
     Quiet,
@@ -85,6 +86,7 @@ def analyze(
     depth: Depth = None,
     max_children: MaxChildren = None,
     max_templates: MaxTemplates = None,
+    on_full: OnFull = None,
     threads: Threads = None,
     engine: Engine = None,
     chunk_mb: ChunkMb = None,
@@ -131,6 +133,7 @@ def analyze(
                     no_masks,
                     high_cardinality,
                     warm_start,
+                    on_full,
                 ),
             )
         if save_state is not None:

@@ -24,6 +24,7 @@ from logfold.cli.options import (
     MaxTemplates,
     Multiline,
     NoMasks,
+    OnFull,
     OnlyAlerts,
     Out,
     Quiet,
@@ -98,6 +99,7 @@ def match(
     depth: Depth = None,
     max_children: MaxChildren = None,
     max_templates: MaxTemplates = None,
+    on_full: OnFull = None,
     threads: Threads = None,
     chunk_mb: ChunkMb = None,
     strategy: Strategy = None,
@@ -114,7 +116,18 @@ def match(
         outputs = resolve_outputs("analysis", out, report, as_json, append)
         threshold = resolve_level(level, only_alerts)
         options = mining_options(
-            sim_th, depth, max_children, max_templates, threads, None, chunk_mb, strategy, no_masks, False, False
+            sim_th,
+            depth,
+            max_children,
+            max_templates,
+            threads,
+            None,
+            chunk_mb,
+            strategy,
+            no_masks,
+            False,
+            False,
+            on_full,
         )
         for name in NOT_FOR_MATCH:
             del options[name]

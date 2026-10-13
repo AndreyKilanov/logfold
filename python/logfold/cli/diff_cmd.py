@@ -27,6 +27,7 @@ from logfold.cli.options import (
     MaxTemplates,
     Multiline,
     NoMasks,
+    OnFull,
     OnlyAlerts,
     Out,
     Quiet,
@@ -204,6 +205,7 @@ def diff(
     depth: Depth = None,
     max_children: MaxChildren = None,
     max_templates: MaxTemplates = None,
+    on_full: OnFull = None,
     threads: Threads = None,
     engine: Engine = None,
     chunk_mb: ChunkMb = None,
@@ -252,6 +254,7 @@ def diff(
                     "--depth": depth is not None,
                     "--max-children": max_children is not None,
                     "--max-templates": max_templates is not None,
+                    "--on-full": on_full is not None,
                     "--threads": threads is not None,
                     "--engine": engine is not None,
                     "--chunk-mb": chunk_mb is not None,
@@ -307,6 +310,7 @@ def diff(
                         no_masks,
                         high_cardinality,
                         warm_start,
+                        on_full,
                     ),
                 )
         if threshold is not None:

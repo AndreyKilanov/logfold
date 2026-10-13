@@ -8,13 +8,14 @@ use crate::stats::RunStats;
 use crate::tokenizer::TokenView;
 
 mod config;
+mod evict;
 mod leaf;
 mod matching;
 mod merging;
 mod recount;
 mod snapshot;
 
-pub use config::MinerConfig;
+pub use config::{MinerConfig, OnFull};
 use leaf::{INDEX_MIN_CLUSTERS, LeafIndex, LengthIndex, Node, SCRATCH, SPARSE_LITERALS};
 use matching::{BoxedTokens, Tokens, has_digit, score_bounded, update_stats};
 pub use recount::{Assignment, MatchRule, Recount};
@@ -44,12 +45,14 @@ pub(crate) struct Cluster {
     /// Counts of earlier runs that were saved with the tree; never part of a report of the current run.
     pub(crate) history: ClusterHistory,
     wild: u32,
+    /// Position of the last record that joined the cluster (or created it) in the stream of the miner; not saved.
+    last_used: u64,
 }
 
 impl Cluster {
     pub(crate) fn new(tokens: Vec<Box<[u8]>>, stats: Vec<RunStats>) -> Self {
         let wild = tokens.iter().filter(|t| &***t == WILDCARD).count() as u32;
-        Cluster { tokens, stats, history: ClusterHistory::default(), wild }
+        Cluster { tokens, stats, history: ClusterHistory::default(), wild, last_used: 0 }
     }
 }
 
@@ -65,6 +68,10 @@ pub struct DrainMiner {
     clusters: Vec<Cluster>,
     overflow: BTreeMap<usize, Cluster>,
     overflowed: Vec<bool>,
+    tick: u64,
+    run: usize,
+    evicted: Vec<u64>,
+    reported: usize,
 }
 
 impl DrainMiner {
@@ -80,6 +87,10 @@ impl DrainMiner {
             clusters: Vec::new(),
             overflow: BTreeMap::new(),
             overflowed: vec![false; n_runs],
+            tick: 0,
+            run: 0,
+            evicted: vec![0; n_runs],
+            reported: 0,
         }
     }
 
@@ -109,15 +120,49 @@ impl DrainMiner {
 
     /// Adds one record of run `run`.
     pub fn add(&mut self, run: usize, tokens: &TokenView<'_>, rec: &RecordMeta<'_>) {
+        self.tick += 1;
+        self.run = run;
         if let Some(index) = self.find_match(tokens) {
             self.generalize(index, tokens);
-            update_stats(&mut self.clusters[index].stats[run], rec);
+            let cluster = &mut self.clusters[index];
+            cluster.last_used = self.tick;
+            update_stats(&mut cluster.stats[run], rec);
             return;
         }
         let mut stats = vec![RunStats::default(); self.n_runs];
         update_stats(&mut stats[run], rec);
         let template: Vec<Box<[u8]>> = (0..tokens.len()).map(|i| Box::from(tokens.get(i))).collect();
-        self.insert_cluster(Cluster::new(template, stats));
+        let mut cluster = Cluster::new(template, stats);
+        cluster.last_used = self.tick;
+        self.insert_cluster(cluster);
+    }
+
+    /// Per run: the number of templates dropped to make room for the new templates of that run since this miner was
+    /// created ([`OnFull::Evict`]).
+    pub fn evicted(&self) -> &[u64] {
+        &self.evicted
+    }
+
+    /// Returns the miner with another [`OnFull`] policy, for a miner that was rebuilt from a snapshot.
+    #[must_use]
+    pub fn with_on_full(mut self, on_full: OnFull) -> Self {
+        self.cfg.on_full = on_full;
+        self
+    }
+
+    /// Texts of the templates created since the previous call (or since [`DrainMiner::mark_reported`]), in creation
+    /// order; a template that was evicted before it was asked for is not reported.
+    ///
+    /// A text is the one that the template had when it was created; later records may turn tokens into wildcards.
+    pub fn take_new_texts(&mut self) -> Vec<String> {
+        let texts = self.template_texts_from(self.reported);
+        self.reported = self.clusters.len();
+        texts
+    }
+
+    /// Treats the templates held now as reported, so that [`DrainMiner::take_new_texts`] only gives later ones.
+    pub fn mark_reported(&mut self) {
+        self.reported = self.clusters.len();
     }
 
     /// Assigns a message to a cluster of the finished tree without changing the tree.
@@ -360,6 +405,9 @@ impl DrainMiner {
     }
 
     fn insert_cluster(&mut self, cluster: Cluster) {
+        if self.clusters.len() >= self.cfg.max_templates && self.cfg.on_full == OnFull::Evict {
+            self.evict_stalest();
+        }
         if self.clusters.len() >= self.cfg.max_templates {
             let length = cluster.tokens.len();
             for (run, stats) in cluster.stats.iter().enumerate() {

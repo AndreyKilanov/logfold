@@ -43,7 +43,6 @@ pub struct Session {
     first_len: usize,
     is_open: bool,
     resumed: bool,
-    reported: usize,
     started: Instant,
 }
 
@@ -58,8 +57,8 @@ impl Session {
         let miner_config = mining_config(&config.mining)?;
         let loaded = load_snapshot(config.initial.as_ref(), &miner_config, 1)?;
         let resumed = loaded.is_some();
-        let miner = loaded.unwrap_or_else(|| empty_miner(&miner_config, 1));
-        let reported = miner.cluster_count();
+        let mut miner = loaded.unwrap_or_else(|| empty_miner(&miner_config, 1));
+        miner.mark_reported();
         Ok(Session {
             context,
             miner,
@@ -71,7 +70,6 @@ impl Session {
             first_len: 0,
             is_open: false,
             resumed,
-            reported,
             started: Instant::now(),
         })
     }
@@ -113,9 +111,7 @@ impl Session {
     ///
     /// A text is the one the template had when it was created. Templates of a loaded state are not reported.
     pub fn take_new_templates(&mut self) -> Vec<String> {
-        let texts = self.miner.template_texts_from(self.reported);
-        self.reported = self.miner.cluster_count();
-        texts
+        self.miner.take_new_texts()
     }
 
     /// Assigns complete records to the templates that the miner holds, and learns nothing.
@@ -162,6 +158,7 @@ impl Session {
             bytes: self.bytes,
             tz_aware: self.counters.tz_aware,
             overflowed: self.miner.overflowed().first().copied().unwrap_or(false),
+            evicted: self.miner.evicted().first().copied().unwrap_or(0),
         };
         let metrics = RunMetrics {
             strategy: "sequential",

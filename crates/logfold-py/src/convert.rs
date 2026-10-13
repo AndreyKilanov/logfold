@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-use logfold_core::{FrozenTemplate, Level, MaskRule};
-use logfold_engine::{ExecutionStrategy, MineOutput, MineRequest, MiningConfig};
+use logfold_core::{FrozenTemplate, Level, MaskRule, OnFull};
+use logfold_engine::{EngineError, ExecutionStrategy, MineOutput, MineRequest, MiningConfig};
 use logfold_io::{FormatConfig, FormatSpec, TimeWindow};
 use pyo3::exceptions::PyKeyError;
 use pyo3::prelude::*;
@@ -66,11 +66,17 @@ pub(crate) fn parse_masks(list: &Bound<'_, PyAny>) -> PyResult<Vec<MaskRule>> {
 
 pub(crate) fn parse_mining(dict: &Bound<'_, PyDict>) -> PyResult<MiningConfig> {
     let delimiters: String = required(dict, "delimiters")?.extract()?;
+    let on_full = match optional(dict, "on_full")?.map(|value| value.extract::<String>()).transpose()?.as_deref() {
+        None | Some("pool") => OnFull::Pool,
+        Some("evict") => OnFull::Evict,
+        Some(other) => return Err(crate::translate(EngineError::Config(format!("unknown on_full '{other}'")))),
+    };
     Ok(MiningConfig {
         depth: required(dict, "depth")?.extract()?,
         sim_th: required(dict, "sim_th")?.extract()?,
         max_children: required(dict, "max_children")?.extract()?,
         max_templates: required(dict, "max_templates")?.extract()?,
+        on_full,
         delimiters: delimiters.into_bytes(),
     })
 }
@@ -193,6 +199,7 @@ pub(crate) fn build_output<'py>(py: Python<'py>, output: &MineOutput) -> PyResul
         item.set_item("bytes", run.bytes)?;
         item.set_item("tz_aware", run.tz_aware)?;
         item.set_item("overflowed", run.overflowed)?;
+        item.set_item("evicted", run.evicted)?;
         runs.append(item)?;
     }
     result.set_item("runs", runs)?;

@@ -61,6 +61,7 @@
         "overflowed": { "type": "boolean" },
         "out_of_range": { "type": "integer", "minimum": 0 },
         "untimed": { "type": "integer", "minimum": 0 },
+        "evicted": { "type": "integer", "minimum": 1 },
         "unmatched": {
           "type": "object",
           "required": ["records", "by_length"],

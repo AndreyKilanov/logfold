@@ -104,6 +104,8 @@ class RunSummary:
         untimed: Records parsed but left out because they have no timestamp and a time window was set.
         unmatched: Set by :func:`logfold.match`: the records that belong to no template of the state; ``None`` when the
             run was mined.
+        evicted: Templates that were dropped to make room for new ones (``on_full='evict'``); their counts are in the
+            catch-all templates, so the counts of the templates still add up to ``records``.
     """
 
     name: str
@@ -117,6 +119,7 @@ class RunSummary:
     out_of_range: int = 0
     untimed: int = 0
     unmatched: Unmatched | None = None
+    evicted: int = 0
 
     @property
     def unparsed_ratio(self) -> float:

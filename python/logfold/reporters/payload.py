@@ -37,6 +37,8 @@ def run_payload(run: RunSummary) -> dict[str, Any]:
     data = asdict(run)
     if run.unmatched is None:
         del data["unmatched"]
+    if not run.evicted:
+        del data["evicted"]
     data["unparsed_ratio"] = round(run.unparsed_ratio, 6)
     return data
 

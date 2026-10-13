@@ -12,7 +12,7 @@ use crate::stats::RunStats;
 
 use super::leaf::{INDEX_MIN_CLUSTERS, LeafIndex, LengthIndex, Node, SPARSE_LITERALS, literals};
 use super::matching::has_digit;
-use super::{Cluster, DrainMiner, MinerConfig, WILDCARD};
+use super::{Cluster, DrainMiner, MinerConfig, OnFull, WILDCARD};
 
 /// Counts of the runs that were saved with a cluster; the example line of a run is never kept.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -34,6 +34,16 @@ impl Default for ClusterHistory {
 }
 
 impl ClusterHistory {
+    /// Adds the counts of another history; sums saturate.
+    pub(super) fn absorb(&mut self, other: &ClusterHistory) {
+        self.count = self.count.saturating_add(other.count);
+        self.first = self.first.min(other.first);
+        self.last = self.last.max(other.last);
+        for (dst, src) in self.levels.iter_mut().zip(other.levels.iter()) {
+            *dst = dst.saturating_add(*src);
+        }
+    }
+
     /// Adds the counts of a run; sums saturate, because a crafted state may hold any number.
     fn add_stats(&mut self, stats: &RunStats) {
         self.count = self.count.saturating_add(stats.count);
@@ -173,7 +183,11 @@ impl DrainMiner {
         for (id, cluster) in clusters.iter().enumerate() {
             length_clusters.entry(cluster.tokens.len()).or_default().push(id as u32);
         }
-        let clusters: Vec<Cluster> = clusters.into_iter().map(|c| Cluster::from_snapshot(c, n_runs)).collect();
+        let clusters_len = clusters.len();
+        let mut clusters: Vec<Cluster> = clusters.into_iter().map(|c| Cluster::from_snapshot(c, n_runs)).collect();
+        for (id, cluster) in clusters.iter_mut().enumerate() {
+            cluster.last_used = id as u64;
+        }
         let mut length_indexes: HashMap<usize, LengthIndex, ahash::RandomState> = HashMap::default();
         for (id, cluster) in clusters.iter().enumerate() {
             let group = length_indexes.entry(cluster.tokens.len()).or_default();
@@ -209,6 +223,10 @@ impl DrainMiner {
             clusters,
             overflow,
             overflowed: vec![false; n_runs],
+            tick: clusters_len as u64,
+            evicted: vec![0; n_runs],
+            run: 0,
+            reported: clusters_len,
         })
     }
 }
@@ -228,6 +246,7 @@ fn checked_config(snapshot: &MinerSnapshot) -> Result<MinerConfig, CoreError> {
         max_children: snapshot.max_children,
         max_templates: snapshot.max_templates,
         threshold_micro: snapshot.threshold_micro,
+        on_full: OnFull::Pool,
     })
 }
 

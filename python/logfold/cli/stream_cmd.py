@@ -29,6 +29,7 @@ from logfold.cli.options import (
     MaxTemplates,
     Multiline,
     NoMasks,
+    OnFull,
     OnlyAlerts,
     Out,
     Quiet,
@@ -126,6 +127,7 @@ def stream(
     depth: Depth = None,
     max_children: MaxChildren = None,
     max_templates: MaxTemplates = None,
+    on_full: OnFull = None,
     no_masks: NoMasks = False,
     examples: Examples = "raw",
     load_state: Annotated[
@@ -182,6 +184,7 @@ def stream(
             sim_th=sim_th,
             max_children=max_children,
             max_templates=max_templates,
+            on_full=on_full,
             masks=[] if no_masks else None,
             load_state=load_state,
             state_format=state_format,

@@ -49,6 +49,8 @@ def analysis_payload(result: logfold.AnalysisResult) -> dict[str, Any]:
     del run["name"]
     if run.get("unmatched") is None:
         run.pop("unmatched", None)
+    if not run.get("evicted"):
+        run.pop("evicted", None)
     return {"run": run, "templates": jsonable(list(result.templates))}
 
 

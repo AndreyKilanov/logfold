@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use logfold_core::{FrozenTemplate, MaskRule, MinerSnapshot};
+use logfold_core::{FrozenTemplate, MaskRule, MinerSnapshot, OnFull};
 use logfold_io::{FormatConfig, TimeWindow};
 
 use crate::error::EngineError;
@@ -19,6 +19,8 @@ pub struct MiningConfig {
     pub max_children: usize,
     /// Maximum number of clusters before records go to overflow clusters.
     pub max_templates: usize,
+    /// What happens to a new message shape when `max_templates` is reached.
+    pub on_full: OnFull,
     /// ASCII delimiter bytes.
     pub delimiters: Vec<u8>,
 }
@@ -30,6 +32,7 @@ impl Default for MiningConfig {
             sim_th: 0.4,
             max_children: 100,
             max_templates: 100_000,
+            on_full: OnFull::Pool,
             delimiters: b" \t\n\r".to_vec(),
         }
     }
@@ -125,6 +128,9 @@ pub struct RunSummary {
     pub tz_aware: bool,
     /// True when records fell into overflow clusters.
     pub overflowed: bool,
+    /// Templates dropped to make room for the new templates of this run ([`OnFull::Evict`]); their counts are in the
+    /// overflow clusters.
+    pub evicted: u64,
 }
 
 /// Timings and execution facts.

@@ -19,7 +19,7 @@ try:
 except ImportError:
     _core = None  # type: ignore[assignment]
 
-EXPECTED_CORE_API_VERSION = 14
+EXPECTED_CORE_API_VERSION = 15
 
 
 def is_available() -> bool:

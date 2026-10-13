@@ -228,6 +228,7 @@ class RunCounters:
         overflowed: True when records were pooled into overflow templates.
         out_of_range: Records left out because their timestamp is outside the time window.
         untimed: Records left out because they have no timestamp and the time window has a bound.
+        evicted: Templates dropped to make room for the new templates of this run (``on_full='evict'``).
     """
 
     files: int
@@ -239,6 +240,7 @@ class RunCounters:
     overflowed: bool
     out_of_range: int = 0
     untimed: int = 0
+    evicted: int = 0
 
 
 @dataclass(frozen=True, slots=True)

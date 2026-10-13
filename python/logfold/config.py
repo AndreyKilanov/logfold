@@ -46,6 +46,9 @@ DEFAULT_MASKS: tuple[MaskRule, ...] = (
 )
 
 
+ON_FULL_MODES = ("pool", "evict")
+
+
 @dataclass(frozen=True, slots=True)
 class MiningConfig:
     """Parameters of the template miner (see ``docs/ALGORITHM.md``).
@@ -54,7 +57,13 @@ class MiningConfig:
         depth: Tree depth, at least 3. Follows the Drain3 convention.
         sim_th: Similarity threshold in ``[0, 1]``.
         max_children: Maximum children per tree node, at least 1.
-        max_templates: Cap on templates; further records go to overflow templates.
+        max_templates: Cap on templates; what happens to further records is decided by ``on_full``.
+        on_full: ``pool`` (the default) pools the records of a new message shape into one catch-all template per token
+            count once ``max_templates`` is reached; ``evict`` drops the least recently used templates (a tenth of
+            ``max_templates`` at a time) to make room, so that a stream that runs for days keeps learning. The counts of
+            a dropped template join the catch-all template, so the totals add up. A miner that evicts mines with one
+            tree (the sequential strategy), because the least recently used template depends on the order of the
+            records.
         delimiters: ASCII characters that separate tokens.
         masks: Masking rules applied in order.
     """
@@ -63,6 +72,7 @@ class MiningConfig:
     sim_th: float = 0.4
     max_children: int = 100
     max_templates: int = 100_000
+    on_full: str = "pool"
     delimiters: str = " \t\n\r"
     masks: tuple[MaskRule, ...] = DEFAULT_MASKS
 
@@ -80,6 +90,8 @@ class MiningConfig:
             raise ConfigError("max_children must be at least 1")
         if self.max_templates < 1:
             raise ConfigError("max_templates must be at least 1")
+        if self.on_full not in ON_FULL_MODES:
+            raise ConfigError(f"on_full must be one of {', '.join(ON_FULL_MODES)}, not {self.on_full!r}")
         if not self.delimiters or not self.delimiters.isascii():
             raise ConfigError("delimiters must be a non-empty ASCII string")
 
@@ -178,7 +190,10 @@ def config_fingerprint(*parts: object) -> str:
 
     def plain(value: object) -> object:
         if hasattr(value, "__dataclass_fields__"):
-            return asdict(value)  # type: ignore[call-overload]
+            fields = asdict(value)  # type: ignore[call-overload]
+            if fields.get("on_full") == "pool":
+                del fields["on_full"]
+            return fields
         return value
 
     payload = json.dumps([plain(p) for p in parts], sort_keys=True, default=str, ensure_ascii=True)

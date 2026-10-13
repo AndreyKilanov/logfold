@@ -14,6 +14,7 @@
         "sim_th": { "type": "number", "minimum": 0, "maximum": 1 },
         "max_children": { "type": "integer", "minimum": 1 },
         "max_templates": { "type": "integer", "minimum": 1 },
+        "on_full": { "enum": ["pool", "evict"] },
         "masks": {
           "oneOf": [
             { "enum": ["default", "none"] },
