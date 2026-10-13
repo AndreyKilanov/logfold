@@ -24,7 +24,8 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   log, compare it with the baseline of the last good run, write the summary and fail on new alerts; see `docs/ci.md`.
 - `logfold.Miner` takes records in batches (`add_many`, `add_lines`, `result()`, `save_state`) and keeps its templates between
   calls, and `logfold stream [FILE]` mines a log while it is written and prints each template when it first appears. Both read and
-  write state files, and the result equals `analyze` over the same records. Extension contract version 11. See `docs/api.md`,
+  write state files, and the result equals `analyze` over the same records. `Miner.match_many(records)` and `Miner.match(record)`
+  assign records to its templates without learning (`logfold.TemplateMatch`). Extension contract version 13. See `docs/api.md`,
   `docs/cli.md`.
 - `logfold.extract_parameters(template, message)` and `logfold params TEMPLATE MESSAGE` give the values that a message has at the
   variable parts of a template (`<*>` and masked values such as `<NUM>`), named by the rule or `*`, as written in the message;

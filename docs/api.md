@@ -70,6 +70,13 @@ mode over the same records in the same order, whatever the sizes of the batches.
 - `add_lines(lines) -> int` and `flush() -> int` take physical lines and join continuation lines to the record before them
   as a file would be read. A record of a multi-line format stays open until the line that starts the next record arrives or
   `flush()` is called.
+- `match_many(records) -> list[TemplateMatch | None]` assigns a batch of complete records to the templates the miner holds and
+  learns nothing: the miner, its counters and an open record stay as they were. The rule is the one of
+  [`match`](#match) (`docs/ALGORITHM.md` §9): a record belongs to a template when at least the share `sim_th` of its tokens
+  equals the constant tokens of the template, so it is looser than the perfect match of Drain3. Every item is the
+  `TemplateMatch(id, text)` of the template as the miner holds it now, or `None` for a record that fits none, is blank or
+  cannot be parsed by the format; the answer for a record does not depend on the other records or on the split into calls.
+  `match(record)` is the same for one record and makes one native call, so use `match_many` for more.
 - `new_templates() -> list[str]` returns the templates created since the previous call; a template of a loaded state is
   not reported.
 - `result() -> AnalysisResult` returns the templates and counters of what was mined so far, and the miner stays usable. The
@@ -271,6 +278,11 @@ registered `formats`, `reporters` and `matchers`. It is what `logfold info` prin
 `after_count`, `before_share`, `after_share`, `ratio` (`after_share / before_share`, `None` when either count is zero),
 `level`, `levels` (summed over both runs), `example`, `first_seen`, `last_seen`, and for `changed` entries `score` (the
 G statistic of the change of the share) and `p_value`; both are `None` for new and disappeared templates.
+
+### `TemplateMatch`
+
+`id` (the identifier of a template, as in `Template.id`) and `text` (the template as the miner holds it now): the template that
+`Miner.match` and `Miner.match_many` assigned a record to.
 
 ### `Parameter`
 
