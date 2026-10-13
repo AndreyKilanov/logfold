@@ -46,6 +46,8 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   with a `ConfigError`; a short listing of 100 thousand templates takes up to 75 ms more.
 - `inspect` reads the sample in the extension, so a format is read exactly as `analyze` reads it (a pattern that only
   Python's `re` accepts, such as a lookahead, is now refused).
+- A record that fits no template is found out up to 100 times faster in `match`, `diff` and `Miner.match_many` when the log has
+  tens of thousands of templates (50,000 templates: 1 ms per record before, 0.01 ms now); the results are the same.
 
 ### Fixed
 

@@ -190,8 +190,10 @@ in different runs. With `recount` enabled (the default for `diff`) the statistic
 discarded and all inputs are read a second time, in the same order, against the finished tree:
 
 1. The record is masked and tokenized as in training and assigned **without changing the tree**: tree search and best
-   candidate exactly as in §4; if that finds no cluster, every cluster with the same token count is scanned in
-   creation order with the same scoring and tie-breaks.
+   candidate exactly as in §4; if that finds no cluster, every cluster with the same token count is scored in
+   creation order with the same scoring and tie-breaks (an implementation may use an index of the tokens of the
+   clusters of that length instead of a scan, as long as the winner is the same; the Rust engine does for lengths with
+   16 or more clusters).
 2. A record that still matches nothing goes to the *unmatched* template of its token count (`<*>` repeated `n` times)
    and the run is flagged `overflowed`.
 3. Statistics (§5) are collected in this pass only. Clusters nobody was assigned to disappear. Freezing follows §7;
@@ -216,12 +218,11 @@ result does not depend on the strategy or the thread count. The differences are 
   for `--load-state`. `ALGO_VERSION` does not change: the tree and its assignment are the same.
 
 **Exact rule.** `logfold match --exact`, `match(exact=True)` and `Miner.match_many(exact=True)` replace step 1 with the perfect
-match of Drain3: a template fits when every constant token equals the token at its position (a wildcard accepts any token). The
-clusters of the leaf found by the tree search of §4 are tried first and, when none fits, every cluster of the same token count;
-among the fitting clusters the one with the fewest wildcards wins, then the earliest created. A record therefore has a template
-exactly when some template fits it, but which one is chosen when several fit depends on the tree. A template with many wildcards
-can fit a record that the similarity rule refuses (too few equal tokens), and the other way round, so neither rule includes the
-other. `ALGO_VERSION` does not change: the tree and the default rule are the same.
+match of Drain3: a template fits when every constant token equals the token at its position (a wildcard accepts any token). Every
+cluster of the same token count is considered, so the answer does not depend on the shape of the tree; among the fitting clusters
+the one with the fewest wildcards wins, then the earliest created. A template with many wildcards can fit a record that the
+similarity rule refuses (too few equal tokens), and the other way round, so neither rule includes the other. `ALGO_VERSION`
+does not change: the tree and the default rule are the same.
 
 `Miner.match_many` (`Session::match_records`) applies steps 1 and 3 to records given in memory, against the tree of a live
 miner: nothing is trained, no counter changes and an open record is not touched, so the answer for a record is the same
