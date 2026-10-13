@@ -81,15 +81,25 @@ memory (median of 5), and `add_many` over the same lines for comparison.
 
 | Case | Wall | Lines per second | Against `match_many` of 10,000 |
 |---|---:|---:|---:|
-| `match_many`, batches of 100 | 0.40 s | 1,500,215 | 1.47x |
-| `match_many`, batches of 1,000 | 0.25 s | 2,360,459 | 0.93x |
-| `match_many`, batches of 10,000 | 0.27 s | 2,201,866 | 1.00x |
-| `match`, one record per call | 2.74 s | 219,087 | 10.05x |
-| `add_many`, batches of 10,000 (mining the same lines) | 0.29 s | 2,046,079 | 1.08x |
+| `match_many`, batches of 100 | 0.39 s | 1,523,903 | 1.37x |
+| `match_many`, batches of 1,000 | 0.25 s | 2,379,556 | 0.88x |
+| `match_many`, batches of 10,000 | 0.29 s | 2,088,923 | 1.00x |
+| `match_many` with `exact=True`, batches of 10,000 | 0.26 s | 2,328,605 | 0.90x |
+| `match`, one record per call | 2.96 s | 202,719 | 10.30x |
+| `add_many`, batches of 10,000 (mining the same lines) | 0.29 s | 2,035,122 | 1.03x |
 
 Matching costs about what mining costs, and a batch of 1,000 or more is at full speed. One record per call is 10 times slower, as for
 mining (the call and the Python wrapper around it cost more than the work), so `match_many` is the interface for more than a few
 records.
+
+**Many templates.** The data above has 12 templates. On `highcard_10mb.log` (83,745 lines of mostly unique messages) a miner
+trained on the first 50,000 lines holds 50,000 templates, one per line. A record that fits one of them is found at once (2,000 trained
+records take 0.01 s), but a record that fits none is compared with every template of its token count: 2,000 unseen records take
+1.96 s, 1 ms each. Matching all 83,745 lines (33,745 of them unseen) takes 31 s, 2,700 lines per second, while mining the same lines
+takes 0.48 s. With `exact=True` the comparison stops at the first different constant word, and the same run takes 11.7 s. The scan is
+the one that `logfold match` and the recount of `diff` do for a record that the tree search does not place; this page did not measure
+it before. Records that fit no template are the expected case for a check against a model, so keep the number of templates small
+(`max_templates`, or the `--high-cardinality` mode) when many records are matched.
 
 ## Limits of this measurement
 

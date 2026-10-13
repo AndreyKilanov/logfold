@@ -159,10 +159,10 @@ def matching(args: argparse.Namespace) -> None:
     trained = logfold.Miner(format="plain", examples="none")
     trained.add_many(lines_read[: args.train])
 
-    def by_batches(size: int) -> float:
+    def by_batches(size: int, exact: bool = False) -> float:
         started = time.perf_counter()
         for start in range(0, len(lines_read), size):
-            trained.match_many(lines_read[start : start + size])
+            trained.match_many(lines_read[start : start + size], exact=exact)
         return time.perf_counter() - started
 
     def one_by_one() -> float:
@@ -178,6 +178,7 @@ def matching(args: argparse.Namespace) -> None:
         return time.perf_counter() - started
 
     cases = {f"match_many, batches of {size:,}": (lambda size=size: by_batches(size)) for size in (100, 1_000, 10_000)}
+    cases["match_many exact, batches of 10,000"] = lambda: by_batches(10_000, exact=True)
     cases["match, one record per call"] = one_by_one
     cases[f"add_many, batches of {args.batch_size:,} (mining the same lines)"] = mining
     print(f"{args.path.name}, {len(lines_read):,} lines, trained on the first {args.train:,}, median of {args.repeat}")
@@ -185,7 +186,7 @@ def matching(args: argparse.Namespace) -> None:
     print("| case | wall | lines per second | against match_many 10,000 |")
     print("|---|---:|---:|---:|")
     walls = {label: statistics.median(case() for _ in range(args.repeat)) for label, case in cases.items()}
-    reference = next(wall for label, wall in walls.items() if label.endswith("10,000"))
+    reference = walls["match_many, batches of 10,000"]
     for label, wall in walls.items():
         print(f"| {label} | {wall:.2f} s | {len(lines_read) / wall:,.0f} | {wall / reference:.2f}x |")
 
