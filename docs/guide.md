@@ -197,7 +197,8 @@ for batch in batches_of_lines():
     for template in miner.new_templates():
         print("new:", template)
 result = miner.result()  # the same result as analyze() over the same records
-miner.save_state("model.json")  # analyze(load_state=...), match() and Miner(load_state=...) read it
+# analyze(load_state=...), match() and Miner(load_state=...) read it
+miner.save_state("model.json")
 ```
 
 Mining is single-threaded per miner (about a million lines per second), so for several sources give each its own miner; they
@@ -224,8 +225,11 @@ A template says that a part is variable; to see what it was in one message, pass
 message to `logfold params` or to `logfold.extract_parameters`:
 
 ```python
-logfold.extract_parameters("user <NUM> logged in from <IP>", "user 42 logged in from 10.0.0.1:8080")
-# (Parameter(position=1, name='num', value='42'), Parameter(position=5, name='ip', value='10.0.0.1:8080'))
+template = "user <NUM> logged in from <IP>"
+message = "user 42 logged in from 10.0.0.1:8080"
+logfold.extract_parameters(template, message)
+# (Parameter(position=1, name='num', value='42'),
+#  Parameter(position=5, name='ip', value='10.0.0.1:8080'))
 ```
 
 The names are those of the masking rules (`num`, `ip`, `ts`, ...) or `*` for a position the miner generalized, and the value is
@@ -278,6 +282,7 @@ Multi-line records (stack traces): `--multiline` joins lines that do not start a
 | `--sim-th` | 0.4 | similarity threshold: a line joins a template when at least this share of tokens matches exactly |
 | `--max-children` | 100 | children per tree node |
 | `--max-templates` | 100000 | cap on templates; what happens to further records is decided by `--on-full` |
+| `--delimiters` | space, tab, CR, LF | the characters that separate tokens, replacing the default; `\t`, `\n`, `\r` and `\\` are escapes: `--delimiters ' \t\n\r_='` also splits `user_id=7` into `user`, `id` and `7` (keep the whitespace) |
 | `--on-full` | `pool` | at the cap: `pool` puts new message shapes into catch-all templates; `evict` drops the least recently used templates and keeps learning (one tree, sequential); see below |
 | `--no-masks` | off | do not mask values |
 | `--high-cardinality` | off | mode for data with a huge number of distinct messages (see below) |

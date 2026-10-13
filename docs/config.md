@@ -46,6 +46,7 @@ A command that uses a file says so on standard error (`config: /path/logfold.tom
 |---|---|---|
 | (top) | `format`, `multiline` | the same as `--format` and `--multiline` |
 | `[mining]` | `depth`, `sim_th`, `max_children`, `max_templates`, `on_full` | the parameters of the miner (see the [CLI reference](cli.md)); `on_full` is `"pool"` or `"evict"` |
+| `[mining]` | `delimiters` | the ASCII characters that separate tokens, **replacing** the default (space, tab, CR, LF): `delimiters = " \t\n\r_="` also splits at `_` and `=`; keep the whitespace in the value |
 | `[mining]` | `masks` | `"default"`, `"none"` (like `--no-masks`) or a list of tables `[[mining.masks]]` with `name`, `pattern`, `token` and an optional `ascii` |
 | `[execution]` | `strategy`, `threads`, `chunk_mb`, `warm_start` | the same as the flags of the same name; `threads` is at most 1024 in a file |
 | `[output]` | `top`, `examples`, `report`, `level`, `only_alerts` | what is printed and written |

@@ -15,6 +15,7 @@ from logfold.cli.options import (
     AsJson,
     ChunkMb,
     Debug,
+    Delimiters,
     Depth,
     Engine,
     Examples,
@@ -87,6 +88,7 @@ def analyze(
     max_children: MaxChildren = None,
     max_templates: MaxTemplates = None,
     on_full: OnFull = None,
+    delimiters: Delimiters = None,
     threads: Threads = None,
     engine: Engine = None,
     chunk_mb: ChunkMb = None,
@@ -134,6 +136,7 @@ def analyze(
                     high_cardinality,
                     warm_start,
                     on_full,
+                    delimiters,
                 ),
             )
         if save_state is not None:

@@ -44,6 +44,7 @@ def analyze(
     max_children: int | None = None,
     max_templates: int | None = None,
     on_full: str | None = None,
+    delimiters: str | None = None,
     masks: Sequence[MaskRule] | None = None,
     high_cardinality: bool = False,
     mining: MiningConfig | None = None,
@@ -75,6 +76,8 @@ def analyze(
         on_full: ``pool`` (the default) pools the records of a new message shape into catch-all templates once
             ``max_templates`` is reached; ``evict`` drops the least recently used templates instead (and runs with one
             tree, the sequential strategy). See :class:`~logfold.MiningConfig`.
+        delimiters: The ASCII characters that separate tokens, replacing the default (space, tab, CR, LF); keep the
+            whitespace in the string when you add a character, for example the default plus ``_`` or ``=``.
         masks: Masking rules replacing the defaults.
         high_cardinality: Mode for data with a huge number of distinct message shapes (unstructured text, random ids):
             caps templates at 5000 unless ``max_templates`` is given, pools the rest into catch-all templates and
@@ -122,7 +125,9 @@ def analyze(
     bounds = window(since, until)
     if bounds != OPEN:
         require_time(spec)
-    mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks, high_cardinality, on_full)
+    mining_config = _mining(
+        mining, depth, sim_th, max_children, max_templates, masks, high_cardinality, on_full, delimiters
+    )
     exec_config = _execution(execution, engine, strategy, threads, chunk_bytes, high_cardinality, warm_start)
     state = _state(load_state, save_state, state_format, mining_config, spec)
     mined = _mine(

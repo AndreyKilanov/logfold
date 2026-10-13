@@ -52,6 +52,7 @@ class Miner:
         max_children: int | None = None,
         max_templates: int | None = None,
         on_full: str | None = None,
+        delimiters: str | None = None,
         masks: Sequence[MaskRule] | None = None,
         mining: MiningConfig | None = None,
         load_state: PathLike | None = None,
@@ -74,6 +75,8 @@ class Miner:
             on_full: ``pool`` (the default) or ``evict``: what happens to a new message shape when ``max_templates`` is
                 reached; ``evict`` drops the least recently used templates and keeps learning, which a miner that runs
                 for days needs. See :class:`~logfold.MiningConfig`.
+            delimiters: The ASCII characters that separate tokens, replacing the default (space, tab, CR, LF); keep the
+                whitespace in the string when you add a character, for example the default plus ``_`` or ``=``.
             masks: Masking rules replacing the defaults.
             mining: Full mining configuration; the keyword arguments above override its fields.
             load_state: A state file of an earlier run to continue from: the templates it holds are the start of the
@@ -103,7 +106,9 @@ class Miner:
         )
         resolved = resolve_format(format, (), multiline)
         self._spec = resolved.spec
-        self._mining = _mining(mining, depth, sim_th, max_children, max_templates, masks, on_full=on_full)
+        self._mining = _mining(
+            mining, depth, sim_th, max_children, max_templates, masks, on_full=on_full, delimiters=delimiters
+        )
         self._examples: ExamplesMode = examples
         self._state_format = state_format
         state = _state_request(load_state, None, state_format, self._mining, self._spec)

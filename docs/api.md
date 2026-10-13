@@ -10,10 +10,15 @@ from logfold import analyze, diff
 ## `analyze`
 
 ```python
-analyze(path, *, format=None, multiline=None, depth=None, sim_th=None, max_children=None, max_templates=None,
-        on_full=None, masks=None, high_cardinality=False, mining=None, execution=None, engine=None, strategy=None, threads=None,
-        chunk_bytes=None, warm_start=None, examples="raw", since=None, until=None, load_state=None, save_state=None,
-        state_format="json", config=None, progress=None) -> AnalysisResult
+analyze(
+    path, *, format=None, multiline=None, depth=None, sim_th=None,
+    max_children=None, max_templates=None, on_full=None, delimiters=None,
+    masks=None, high_cardinality=False, mining=None, execution=None,
+    engine=None, strategy=None, threads=None, chunk_bytes=None,
+    warm_start=None, examples="raw", since=None, until=None,
+    load_state=None, save_state=None, state_format="json", config=None,
+    progress=None,
+) -> AnalysisResult
 ```
 
 Folds one run into templates.
@@ -23,7 +28,7 @@ Folds one run into templates.
 | `path` | one file or a sequence of files forming a single run (`str` or `PathLike`); `"-"` is standard input; gzip is detected by content |
 | `format` | `None` or `"auto"` (detect it; a settings file can give another), a registered name, `"regex:<pattern>"`, `"log4j:<pattern>"`, a format specification or a `Format` object |
 | `multiline` | join continuation lines to the previous record; `None` keeps the format's default |
-| `depth`, `sim_th`, `max_children`, `max_templates`, `on_full`, `masks` | mining parameters, see [`MiningConfig`](#mining-and-execution-configuration) |
+| `depth`, `sim_th`, `max_children`, `max_templates`, `on_full`, `delimiters`, `masks` | mining parameters, see [`MiningConfig`](#mining-and-execution-configuration) |
 | `high_cardinality` | fast bounded mode for data with a huge number of distinct messages |
 | `mining`, `execution` | full configuration objects; the keyword arguments override their fields |
 | `engine`, `strategy`, `threads`, `chunk_bytes`, `warm_start` | execution parameters, see [`ExecutionConfig`](#mining-and-execution-configuration) |
@@ -39,9 +44,13 @@ Raises `ConfigError`, `FormatError`, `SourceError`, `EngineError` or `StateError
 ## `match`
 
 ```python
-match(state, path, *, format=None, multiline=None, depth=None, sim_th=None, max_children=None, max_templates=None,
-      on_full=None, masks=None, mining=None, execution=None, engine=None, strategy=None, threads=None, chunk_bytes=None,
-      examples="raw", since=None, until=None, exact=False, config=None, progress=None) -> AnalysisResult
+match(
+    state, path, *, format=None, multiline=None, depth=None, sim_th=None,
+    max_children=None, max_templates=None, on_full=None, delimiters=None,
+    masks=None, mining=None, execution=None, engine=None, strategy=None,
+    threads=None, chunk_bytes=None, examples="raw", since=None, until=None,
+    exact=False, config=None, progress=None,
+) -> AnalysisResult
 ```
 
 Assigns the records of a log to the templates of a saved state (`analyze(..., save_state=...)`) without learning anything.
@@ -57,8 +66,12 @@ differs from a template in one word can still belong to it. See [`logfold match`
 ## `Miner`
 
 ```python
-Miner(*, format=None, multiline=None, depth=None, sim_th=None, max_children=None, max_templates=None, on_full=None,
-      masks=None, mining=None, load_state=None, state_format="json", examples="raw", config=None)
+Miner(
+    *, format=None, multiline=None, depth=None, sim_th=None,
+    max_children=None, max_templates=None, on_full=None, delimiters=None,
+    masks=None, mining=None, load_state=None, state_format="json",
+    examples="raw", config=None,
+)
 ```
 
 A template miner that takes records as they come, instead of reading a file: a service that feeds its own messages, a
@@ -102,10 +115,13 @@ and the number of templates is limited by `max_templates`. Speed on a 105 MB fil
 ## `diff`
 
 ```python
-diff(before, after=None, *, format=None, multiline=None, threshold_ratio=None, min_count=None, min_new_count=None,
-     recount=None, matcher=None, significance=None, baselines=None, min_baselines=None, diff_config=None, since=None,
-     until=None, split_at=None,
-     <all mining and execution arguments of analyze>) -> DiffResult
+diff(
+    before, after=None, *, format=None, multiline=None,
+    threshold_ratio=None, min_count=None, min_new_count=None, recount=None,
+    matcher=None, significance=None, baselines=None, min_baselines=None,
+    diff_config=None, since=None, until=None, split_at=None,
+    <all mining and execution arguments of analyze>,
+) -> DiffResult
 ```
 
 Compares two runs. Both runs are mined into one shared template tree, so a template present in both is the same
@@ -178,7 +194,10 @@ A UTF-16 file (a PowerShell 5 `>` redirect) counts as a report, so that `load_an
 ## `extract_parameters`
 
 ```python
-extract_parameters(template, message, *, masks=None, mining=None, config=None) -> tuple[Parameter, ...] | None
+extract_parameters(
+    template, message, *, masks=None, mining=None, config=None,
+    delimiters=None,
+) -> tuple[Parameter, ...] | None
 ```
 
 Gives the values that a message has at the variable positions of a template. `template` is the text of a template (or a
@@ -189,8 +208,11 @@ of the token in the template and `name` is the name of the masking rule (`num`, 
 the miner generalized:
 
 ```python
->>> logfold.extract_parameters("user <NUM> logged in from <IP>", "user 42 logged in from 10.0.0.1:8080")
-(Parameter(position=1, name='num', value='42'), Parameter(position=5, name='ip', value='10.0.0.1:8080'))
+>>> logfold.extract_parameters(
+...     "user <NUM> logged in from <IP>", "user 42 logged in from 10.0.0.1:8080"
+... )
+(Parameter(position=1, name='num', value='42'),
+ Parameter(position=5, name='ip', value='10.0.0.1:8080'))
 ```
 
 - A `<*>` token gives one parameter with the whole token; the masked values inside it are not given again. A constant token that
@@ -200,7 +222,7 @@ the miner generalized:
   A template without variable parts gives an empty tuple.
 - The masks and the delimiters must be the ones the template was mined with (`masks=`, `mining=` or the settings in `config=`,
   as for `analyze`). The template text is split at its single spaces, as the miner joins its tokens, so the run must have used
-  the space among its delimiters (the default). The compiled masks are kept between calls, so calling the function for many
+  the space among its delimiters (the default); delimiters without the space raise `ConfigError`. The compiled masks are kept between calls, so calling the function for many
   messages is cheap. `Miner.extract_parameters(template, message)` uses the masks of the miner. See
   [`logfold params`](cli.md#logfold-params).
 
@@ -209,7 +231,9 @@ Raises `ConfigError` for an invalid masking rule and `EngineError` when the nati
 ## `inspect_file`
 
 ```python
-inspect_file(path, *, format="auto", multiline=None, limit=10, sample_lines=1000) -> Inspection
+inspect_file(
+    path, *, format="auto", multiline=None, limit=10, sample_lines=1000,
+) -> Inspection
 ```
 
 Shows how a file is read without mining it: the format that was detected or applied, the first `limit` records as parsed
@@ -314,7 +338,8 @@ them.
 ```python
 from logfold import MiningConfig, ExecutionConfig, DiffConfig, MaskRule
 
-mining = MiningConfig(sim_th=0.5, masks=(MaskRule("order", r"\bORD-\d+\b", "<ORDER>"),))
+order = MaskRule("order", r"\bORD-\d+\b", "<ORDER>")
+mining = MiningConfig(sim_th=0.5, masks=(order,))
 result = analyze("app.log", mining=mining, execution=ExecutionConfig(threads=4))
 ```
 

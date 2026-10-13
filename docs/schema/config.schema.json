@@ -15,6 +15,7 @@
         "max_children": { "type": "integer", "minimum": 1 },
         "max_templates": { "type": "integer", "minimum": 1 },
         "on_full": { "enum": ["pool", "evict"] },
+        "delimiters": { "type": "string", "minLength": 1, "pattern": "^[\\x00-\\x7f]+$" },
         "masks": {
           "oneOf": [
             { "enum": ["default", "none"] },

@@ -7,6 +7,8 @@ from typing import Annotated, Any
 
 import typer
 
+from logfold.errors import ConfigError
+
 PANEL_INPUT = "Input"
 PANEL_OUTPUT = "Output"
 PANEL_DIFF = "Diff"
@@ -160,6 +162,16 @@ OnFull = Annotated[
         rich_help_panel=PANEL_MINING,
     ),
 ]
+Delimiters = Annotated[
+    str | None,
+    typer.Option(
+        "--delimiters",
+        metavar="CHARS",
+        help="The characters that separate tokens, replacing the default (space, tab, CR, LF): \\t, \\n, \\r and \\\\ "
+        "are read as escapes. Keep the whitespace when you add one, for example ' \\t\\n\\r_='.",
+        rich_help_panel=PANEL_MINING,
+    ),
+]
 NoMasks = Annotated[
     bool,
     typer.Option("--no-masks", help="Do not mask numbers, IPs, UUIDs and other values.", rich_help_panel=PANEL_MINING),
@@ -214,6 +226,39 @@ Quiet = Annotated[
 Debug = Annotated[bool, typer.Option("--debug", help="Show tracebacks.", rich_help_panel=PANEL_GENERAL)]
 
 
+ESCAPES = {"t": "\t", "n": "\n", "r": "\r", "\\": "\\"}
+
+
+def read_delimiters(text: str | None) -> str | None:
+    """Read the escapes for a tab, a line feed, a carriage return and a backslash in a ``--delimiters`` value.
+
+    Args:
+        text: The value as typed, or ``None`` when the flag was not given.
+
+    Returns:
+        The characters, or ``None``.
+
+    Raises:
+        ConfigError: If a backslash is followed by anything else, or ends the value.
+    """
+    if text is None:
+        return None
+    out: list[str] = []
+    chars = iter(text)
+    for char in chars:
+        if char != "\\":
+            out.append(char)
+            continue
+        escaped = next(chars, "")
+        if escaped not in ESCAPES:
+            raise ConfigError(
+                f"unknown escape '\\{escaped}' in --delimiters",
+                hint="write a tab as \\t, a line feed as \\n, a carriage return as \\r and a backslash as \\\\",
+            )
+        out.append(ESCAPES[escaped])
+    return "".join(out)
+
+
 def mining_options(
     sim_th: float | None,
     depth: int | None,
@@ -227,6 +272,7 @@ def mining_options(
     high_cardinality: bool,
     warm_start: bool,
     on_full: str | None = None,
+    delimiters: str | None = None,
 ) -> dict[str, Any]:
     """Turn the mining flags of a command into keyword arguments of ``logfold.analyze`` and ``logfold.diff``.
 
@@ -243,6 +289,7 @@ def mining_options(
         high_cardinality: ``--high-cardinality``.
         warm_start: ``--warm-start``.
         on_full: ``--on-full``.
+        delimiters: ``--delimiters``, with the escapes not yet read.
 
     Returns:
         The keyword arguments, with ``None`` for every option left at its default.
@@ -253,6 +300,7 @@ def mining_options(
         "max_children": max_children,
         "max_templates": max_templates,
         "on_full": on_full,
+        "delimiters": read_delimiters(delimiters),
         "threads": threads,
         "engine": engine,
         "chunk_bytes": chunk_mb << 20 if chunk_mb else None,
