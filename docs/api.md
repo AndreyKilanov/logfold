@@ -41,7 +41,7 @@ Raises `ConfigError`, `FormatError`, `SourceError`, `EngineError` or `StateError
 ```python
 match(state, path, *, format=None, multiline=None, depth=None, sim_th=None, max_children=None, max_templates=None,
       masks=None, mining=None, execution=None, engine=None, strategy=None, threads=None, chunk_bytes=None,
-      examples="raw", since=None, until=None, config=None, progress=None) -> AnalysisResult
+      examples="raw", since=None, until=None, exact=False, config=None, progress=None) -> AnalysisResult
 ```
 
 Assigns the records of a log to the templates of a saved state (`analyze(..., save_state=...)`) without learning anything.
@@ -49,8 +49,10 @@ The state is only read. The options are those of `analyze`; the mining options a
 state was mined with, otherwise `StateError` says so. The result is an `AnalysisResult` with the templates that were hit,
 with the counts, levels and times of this log only, and `result.run.unmatched`, a `Unmatched` with `records` (records that fit
 no template) and `by_length` (`(token count, records)` pairs sorted by token count; the text is not kept). `strategy` and
-`threads` only decide whether the files are read in parallel: the answer is the same. See
-[`logfold match`](cli.md#logfold-match).
+`threads` only decide whether the files are read in parallel: the answer is the same. With `exact=True` a record belongs to a
+template only when every constant token of the template equals its token (a `<*>` accepts any token), as `TemplateMiner.match` of
+Drain3 does; the default is the similarity of mining, where at least the share `sim_th` of the tokens must equal, so a record that
+differs from a template in one word can still belong to it. See [`logfold match`](cli.md#logfold-match).
 
 ## `Miner`
 
@@ -70,13 +72,14 @@ mode over the same records in the same order, whatever the sizes of the batches.
 - `add_lines(lines) -> int` and `flush() -> int` take physical lines and join continuation lines to the record before them
   as a file would be read. A record of a multi-line format stays open until the line that starts the next record arrives or
   `flush()` is called.
-- `match_many(records) -> list[TemplateMatch | None]` assigns a batch of complete records to the templates the miner holds and
+- `match_many(records, *, exact=False) -> list[TemplateMatch | None]` assigns a batch of complete records to the templates the miner holds and
   learns nothing: the miner, its counters and an open record stay as they were. The rule is the one of
   [`match`](#match) (`docs/ALGORITHM.md` §9): a record belongs to a template when at least the share `sim_th` of its tokens
-  equals the constant tokens of the template, so it is looser than the perfect match of Drain3. Every item is the
+  equals the constant tokens of the template, so it is looser than the perfect match of Drain3; with `exact=True` every constant
+  token of the template must equal the token of the record (a `<*>` accepts any token), which is the match of Drain3. Every item is the
   `TemplateMatch(id, text)` of the template as the miner holds it now, or `None` for a record that fits none, is blank or
   cannot be parsed by the format; the answer for a record does not depend on the other records or on the split into calls.
-  `match(record)` is the same for one record and makes one native call, so use `match_many` for more.
+  `match(record, *, exact=False)` is the same for one record and makes one native call, so use `match_many` for more.
 - `new_templates() -> list[str]` returns the templates created since the previous call; a template of a loaded state is
   not reported.
 - `result() -> AnalysisResult` returns the templates and counters of what was mined so far, and the miner stays usable. The

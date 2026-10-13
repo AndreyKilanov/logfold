@@ -215,6 +215,14 @@ result does not depend on the strategy or the thread count. The differences are 
 - The state is only read. A state mined with another algorithm version, other masks or other parameters is refused, as
   for `--load-state`. `ALGO_VERSION` does not change: the tree and its assignment are the same.
 
+**Exact rule.** `logfold match --exact`, `match(exact=True)` and `Miner.match_many(exact=True)` replace step 1 with the perfect
+match of Drain3: a template fits when every constant token equals the token at its position (a wildcard accepts any token). The
+clusters of the leaf found by the tree search of §4 are tried first and, when none fits, every cluster of the same token count;
+among the fitting clusters the one with the fewest wildcards wins, then the earliest created. A record therefore has a template
+exactly when some template fits it, but which one is chosen when several fit depends on the tree. A template with many wildcards
+can fit a record that the similarity rule refuses (too few equal tokens), and the other way round, so neither rule includes the
+other. `ALGO_VERSION` does not change: the tree and the default rule are the same.
+
 `Miner.match_many` (`Session::match_records`) applies steps 1 and 3 to records given in memory, against the tree of a live
 miner: nothing is trained, no counter changes and an open record is not touched, so the answer for a record is the same
 whatever the other records of the call are. A record that is blank, cannot be parsed or matches nothing has no template.
