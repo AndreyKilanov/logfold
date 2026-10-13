@@ -197,7 +197,8 @@ for batch in batches_of_lines():
     for template in miner.new_templates():
         print("new:", template)
 result = miner.result()  # the same result as analyze() over the same records
-miner.save_state("model.json")  # analyze(load_state=...), match() and Miner(load_state=...) read it
+# analyze(load_state=...), match() and Miner(load_state=...) read it
+miner.save_state("model.json")
 ```
 
 Mining is single-threaded per miner (about a million lines per second), so for several sources give each its own miner; they
@@ -224,8 +225,11 @@ A template says that a part is variable; to see what it was in one message, pass
 message to `logfold params` or to `logfold.extract_parameters`:
 
 ```python
-logfold.extract_parameters("user <NUM> logged in from <IP>", "user 42 logged in from 10.0.0.1:8080")
-# (Parameter(position=1, name='num', value='42'), Parameter(position=5, name='ip', value='10.0.0.1:8080'))
+logfold.extract_parameters(
+    "user <NUM> logged in from <IP>", "user 42 logged in from 10.0.0.1:8080"
+)
+# (Parameter(position=1, name='num', value='42'),
+#  Parameter(position=5, name='ip', value='10.0.0.1:8080'))
 ```
 
 The names are those of the masking rules (`num`, `ip`, `ts`, ...) or `*` for a position the miner generalized, and the value is

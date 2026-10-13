@@ -116,7 +116,8 @@ always the exact one.
 A Drain3 state (the jsonpickle snapshot) is not read by logfold. Mine the logs again, once, and save the state:
 
 ```python
-miner.save_state("model.json")  # "model.json.gz" is compressed; state_format="binary" is the compact format
+# "model.json.gz" is compressed; state_format="binary" is the compact format
+miner.save_state("model.json")
 miner = logfold.Miner(load_state="model.json", masks=(ip,), sim_th=0.4)
 ```
 

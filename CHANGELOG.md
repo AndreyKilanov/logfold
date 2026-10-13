@@ -24,17 +24,19 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   log, compare it with the baseline of the last good run, write the summary and fail on new alerts; see `docs/ci.md`.
 - `logfold.Miner` takes records in batches (`add_many`, `add_lines`, `result()`, `save_state`) and keeps its templates between
   calls, and `logfold stream [FILE]` mines a log while it is written and prints each template when it first appears. Both read and
-  write state files, and the result equals `analyze` over the same records. `Miner.match_many(records)` and `Miner.match(record)`
-  assign records to its templates without learning (`logfold.TemplateMatch`); `exact=True` (`logfold match --exact`) asks for a
-  perfect match of the constant words, as Drain3 does. Extension contract version 14.
+  write state files, and the result equals `analyze` over the same records. Extension contract version 11. See `docs/api.md`,
+  `docs/cli.md`.
+- `Miner.match_many(records)` and `Miner.match(record)` assign records to the templates of a miner without learning
+  (`logfold.TemplateMatch`); `exact=True` (`logfold match --exact`) asks for every constant word of the template to equal, as
+  `match` of Drain3 does. Extension contract version 14. See `docs/api.md`.
 - `on_full="evict"` (`--on-full evict`, `on_full` in `logfold.toml`): at `max_templates` the least recently used templates are
   dropped and the miner keeps learning, instead of pooling new message shapes into catch-all templates; `run.evicted` counts the
-  dropped ones. Off by default; it mines with one tree. A state of such a miner keeps the recency of the templates (state file schema version 2,
-  written only for it). Extension contract version 15. See `docs/guide.md`.
+  dropped ones. Off by default, one tree only. Its state file is schema version 2 and keeps the recency. Extension contract version
+  15. See `docs/guide.md`.
 - `delimiters` (`--delimiters`, `[mining] delimiters` in `logfold.toml`, `delimiters=` of `analyze`, `diff`, `match`, `Miner` and
-  `extract_parameters`): the characters that separate tokens, so that `user_id=7` can be split at `_` and `=`. A state must be used with
-  the same value. See `docs/api.md`,
-  `docs/cli.md`.
+  `extract_parameters`): the characters that separate tokens, to split `user_id=7` at `_` and `=`. A state must be used with the same
+  value; `extract_parameters` and `logfold params` refuse a set without the space. See `docs/cli.md`.
+- A guide for moving from Drain3: `docs/migrating-from-drain3.md`.
 - `logfold.extract_parameters(template, message)` and `logfold params TEMPLATE MESSAGE` give the values that a message has at the
   variable parts of a template (`<*>` and masked values such as `<NUM>`), named by the rule or `*`, as written in the message;
   also `Miner.extract_parameters` and `logfold.Parameter`. Extension contract version 12. See `docs/api.md`, `docs/cli.md`.
