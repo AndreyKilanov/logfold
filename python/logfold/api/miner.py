@@ -22,7 +22,7 @@ from logfold.errors import ConfigError
 from logfold.ext.formats import Format, FormatSpec
 from logfold.ext.masks import Masker
 from logfold.formats import resolve_format
-from logfold.model import AnalysisResult, Parameter, RunSummary, Template
+from logfold.model import AnalysisResult, Parameter, RunSummary, Template, TemplateMatch
 from logfold.settings import Settings
 
 STREAM_NAME = "stream"
@@ -149,6 +149,37 @@ class Miner:
             1 when a record was open, otherwise 0.
         """
         return self._live.flush()
+
+    def match_many(self, records: Iterable[str]) -> list[TemplateMatch | None]:
+        """Assign a batch of complete records to the templates the miner holds, and learn nothing.
+
+        The rule is the one of :func:`logfold.match` and ``logfold match``: the search of training first, then every
+        template of the same length. The miner, its counters and a record that is still open (see :meth:`add_lines`) are
+        not changed, and the answer for a record does not depend on the other records or on how they are split into
+        calls. The batch is one native call.
+
+        Args:
+            records: One string per record; a record may hold several lines. The format gives the message as for a
+                file.
+
+        Returns:
+            One item per record: the :class:`~logfold.TemplateMatch` of its template, or ``None`` when the record fits
+            no template, is blank or cannot be parsed by the format. The text is the one the template has now.
+        """
+        found, assigned = self._live.match_many(_items(records, "match_many"))
+        matches = [TemplateMatch(identifier, text) for identifier, text in found]
+        return [None if index is None else matches[index] for index in assigned]
+
+    def match(self, record: str) -> TemplateMatch | None:
+        """Assign one record to a template without learning. It makes one native call; prefer :meth:`match_many`.
+
+        Args:
+            record: One record.
+
+        Returns:
+            The :class:`~logfold.TemplateMatch`, or ``None`` as in :meth:`match_many`.
+        """
+        return self.match_many((record,))[0]
 
     def new_templates(self) -> list[str]:
         """Return the templates created since the previous call (or since the miner was opened).

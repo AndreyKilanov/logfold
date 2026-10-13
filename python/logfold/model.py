@@ -60,6 +60,20 @@ class Parameter:
 
 
 @dataclass(frozen=True, slots=True)
+class TemplateMatch:
+    """The template that a record was assigned to by :meth:`logfold.Miner.match`.
+
+    Attributes:
+        id: The identifier of the template, the first 16 hex digits of ``sha256(text)``.
+        text: The text of the template as the miner holds it now; it is the ``text`` of the same template in
+            :meth:`logfold.Miner.result`.
+    """
+
+    id: str
+    text: str
+
+
+@dataclass(frozen=True, slots=True)
 class Unmatched:
     """The records of a run that belong to no template of the saved state it was matched against.
 

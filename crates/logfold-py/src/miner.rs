@@ -15,6 +15,9 @@ use crate::convert::{build_output, parse_format, parse_masks, parse_mining, requ
 use crate::state::{StateIo, from_dict, parse_state_format};
 use crate::translate;
 
+/// The distinct templates that were hit as `(id, text)` pairs, and for every record the index of its template.
+type MatchAnswer = (Vec<(String, String)>, Vec<Option<usize>>);
+
 /// A miner that takes records in batches and keeps its templates between calls.
 #[pyclass(frozen, module = "logfold._core")]
 pub(crate) struct NativeMiner {
@@ -64,6 +67,15 @@ impl NativeMiner {
     /// Mines the record that is still open; returns how many records were mined (0 or 1).
     fn flush(&self, py: Python<'_>) -> PyResult<u64> {
         self.with_session(py, |session| session.flush())
+    }
+
+    /// Assigns complete records to the templates of the miner without learning; returns the distinct templates that
+    /// were hit as `(id, text)` pairs and, for every record, the index of its template or `None`.
+    fn match_many(&self, py: Python<'_>, records: Vec<String>) -> PyResult<MatchAnswer> {
+        let batch =
+            self.with_session(py, |session| session.match_records(records.iter().map(|record| record.as_bytes())))?;
+        let templates = batch.templates.into_iter().map(|template| (template.id, template.text)).collect();
+        Ok((templates, batch.assigned))
     }
 
     /// Texts of the templates created since the previous call, in creation order.

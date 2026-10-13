@@ -22,7 +22,7 @@ pub use compare::{
     overlap_pairs, rules_pairs, token_subset_pairs,
 };
 pub use error::CoreError;
-pub use freeze::FrozenTemplate;
+pub use freeze::{FrozenTemplate, template_id};
 pub use level::{LEVEL_COUNT, Level};
 pub use masker::{MaskHit, MaskRule, MaskScratch, RuleMasker, default_mask_rules};
 pub use miner::{

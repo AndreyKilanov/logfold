@@ -24,8 +24,8 @@ pub use inspect::{SampleRecord, SampleReport, inspect_sample};
 pub use matching::match_records;
 pub use session::{Session, SessionConfig};
 pub use types::{
-    DEFAULT_CHUNK_BYTES, ExecutionStrategy, MineOutput, MineRequest, MiningConfig, NullObserver, ProgressObserver,
-    RunMetrics, RunSummary,
+    DEFAULT_CHUNK_BYTES, ExecutionStrategy, MatchBatch, MatchedTemplate, MineOutput, MineRequest, MiningConfig,
+    NullObserver, ProgressObserver, RunMetrics, RunSummary,
 };
 
 use logfold_core::{CoreError, DrainMiner, MinerConfig, MinerSnapshot};

@@ -56,7 +56,7 @@ Give `add_many` batches (hundreds to thousands of records) and ask for `new_temp
 | `result["cluster_id"]` (an integer in creation order) | `Template.id`, the first 16 hex digits of `sha256(text)`; it changes when a template is generalized |
 | `result["change_type"]` | none; a new template is in `new_templates()` |
 | `miner.drain.clusters` | `Miner.result().templates`, most frequent first, with `count`, `level`, `first_seen`, `last_seen` and an `example` |
-| `miner.match(line)` | [`logfold.match(state, path)`](api.md#match) over a file, or `logfold match STATE FILE`; nothing is learned. There is no call for one line |
+| `miner.match(line)` | [`miner.match(record)`](api.md#miner), or `match_many(records)` for a batch: a `TemplateMatch(id, text)` or `None`, nothing is learned. For a file: [`logfold.match(state, path)`](api.md#match) or `logfold match STATE FILE` |
 | `miner.extract_parameters(template, line)` | [`miner.extract_parameters(template, line)`](api.md#extract_parameters) |
 | `miner.get_parameter_list(template, line)` | `[p.value for p in miner.extract_parameters(template, line)]` |
 | `FilePersistence` and `save_state` | `miner.save_state("model.json")`, or `logfold analyze --save-state` |
@@ -98,6 +98,10 @@ always the exact one.
 - **Identifiers.** A Drain3 `cluster_id` stays when a template changes. A logfold `Template.id` is a hash of the text, so
   it is the same in every run and on every machine, and a generalized template gets a new one. Store the text if you need
   to follow a template over time, or use [`diff`](guide.md#compare-two-runs), which matches templates between two runs.
+- **Matching.** `TemplateMiner.match` asks for a perfect match (`sim_th` 1.0). `Miner.match` uses the similarity of mining: a
+  record belongs to a template when at least the share `sim_th` of its tokens equals the constant tokens of the template (0.4
+  by default), so it answers `None` less often. Records that were pooled into the catch-all templates at the template limit
+  have no template.
 - **Memory limit.** When the number of templates reaches `max_templates`, further records that fit no template go to one
   catch-all template per token count (`<*> <*> <*>`), counts stay exact and `run.overflowed` is set. Drain3 with
   `max_clusters` evicts the least recently used cluster instead.
@@ -122,7 +126,7 @@ wherever you keep files. See [State files](cli.md#state-files).
 | Drain3 | Instead |
 |---|---|
 | `max_clusters` with eviction of the least recently used cluster | `max_templates` with a catch-all template (above). Eviction is [issue #124](https://github.com/AndreyKilanov/logfold/issues/124) |
-| `match` of one line, with `full_search_strategy` | `logfold.match` over a file; to ask about one line, write it to a file or use `extract_parameters`, which tells whether a line fits one template |
+| `full_search_strategy` of `match` | none: `match` always searches the tree and then every template of the same length |
 | `parametrize_numeric_tokens=False` | none: a token with a digit always takes the wildcard branch of the tree, and `ALGORITHM.md` makes that part of the contract |
 | Kafka and Redis persistence | a state file |
 | `extra_delimiters` as regular expressions; delimiters in `drain3.ini` or a CLI flag | characters only, and only in `MiningConfig` |

@@ -165,6 +165,26 @@ pub struct MineOutput {
     pub metrics: RunMetrics,
 }
 
+/// A template that a record was assigned to, as the miner holds it at that moment.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MatchedTemplate {
+    /// `sha256(text)[:16 hex]`, the identifier that reports use.
+    pub id: String,
+    /// Template text, tokens joined by a single space.
+    pub text: String,
+}
+
+/// Answer of [`crate::Session::match_records`]: the templates that were hit once, and for every record the position of
+/// its template in `templates`.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct MatchBatch {
+    /// The distinct clusters that at least one record was assigned to, in the order of their first record.
+    pub templates: Vec<MatchedTemplate>,
+    /// One item per given record: an index into `templates`, or `None` for a record that fits no template, is blank or
+    /// cannot be parsed by the format.
+    pub assigned: Vec<Option<usize>>,
+}
+
 /// Receives progress and can cancel a run. Called from worker threads.
 pub trait ProgressObserver: Sync {
     /// Called with the number of input bytes consumed since the previous call.

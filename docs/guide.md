@@ -209,6 +209,9 @@ miners = {name: logfold.Miner(format="app") for name in ("api", "worker", "billi
 miners["api"].add_many(batch_from_api)
 ```
 
+To ask whether records fit the templates a miner holds, without learning them, use `miner.match_many(records)` (one native call
+per batch) or `miner.match(record)`: each answer is a `TemplateMatch(id, text)` or `None`.
+
 The result equals the one of `analyze` over the same records, whatever the size of the batches. `add_many` is the fast path
 (a batch is one native call); `add_log_message` is one call per record and about 2.6 times slower. A stream cannot detect its
 format, so it is `plain` unless you name one (`logfold inspect FILE` finds the format of a sample). Speed and memory:
