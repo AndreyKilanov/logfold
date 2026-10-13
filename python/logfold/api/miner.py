@@ -51,6 +51,7 @@ class Miner:
         sim_th: float | None = None,
         max_children: int | None = None,
         max_templates: int | None = None,
+        on_full: str | None = None,
         masks: Sequence[MaskRule] | None = None,
         mining: MiningConfig | None = None,
         load_state: PathLike | None = None,
@@ -69,7 +70,10 @@ class Miner:
             depth: Tree depth (default 4).
             sim_th: Similarity threshold (default 0.4).
             max_children: Maximum children per tree node (default 100).
-            max_templates: Maximum number of templates before pooling (default 100000).
+            max_templates: Maximum number of templates before pooling or evicting (default 100000).
+            on_full: ``pool`` (the default) or ``evict``: what happens to a new message shape when ``max_templates`` is
+                reached; ``evict`` drops the least recently used templates and keeps learning, which a miner that runs
+                for days needs. See :class:`~logfold.MiningConfig`.
             masks: Masking rules replacing the defaults.
             mining: Full mining configuration; the keyword arguments above override its fields.
             load_state: A state file of an earlier run to continue from: the templates it holds are the start of the
@@ -99,7 +103,7 @@ class Miner:
         )
         resolved = resolve_format(format, (), multiline)
         self._spec = resolved.spec
-        self._mining = _mining(mining, depth, sim_th, max_children, max_templates, masks)
+        self._mining = _mining(mining, depth, sim_th, max_children, max_templates, masks, on_full=on_full)
         self._examples: ExamplesMode = examples
         self._state_format = state_format
         state = _state_request(load_state, None, state_format, self._mining, self._spec)
@@ -269,6 +273,7 @@ def _summary(mined: MiningResult) -> RunSummary:
         bytes=info.bytes,
         tz_aware=info.tz_aware,
         overflowed=info.overflowed,
+        evicted=info.evicted,
         out_of_range=info.out_of_range,
         untimed=info.untimed,
     )
@@ -280,7 +285,12 @@ def _warnings(summary: RunSummary, max_templates: int) -> list[str]:
         warnings.append(
             f"{summary.unparsed_ratio:.0%} of lines did not match the format; check the format or enable multiline"
         )
-    if summary.overflowed:
+    if summary.evicted:
+        warnings.append(
+            f"max_templates ({max_templates:,}) was reached; {summary.evicted:,} least recently used templates were "
+            "dropped to make room, and their records are counted in catch-all templates"
+        )
+    elif summary.overflowed:
         warnings.append(
             f"max_templates ({max_templates:,}) was reached; extra records were pooled into catch-all templates"
         )

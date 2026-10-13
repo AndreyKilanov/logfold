@@ -77,6 +77,7 @@ def mining_to_dicts(mining: MiningConfig) -> tuple[list[dict[str, Any]], dict[st
         "sim_th": mining.sim_th,
         "max_children": mining.max_children,
         "max_templates": mining.max_templates,
+        "on_full": mining.on_full,
         "delimiters": mining.delimiters,
     }
     return masks, parameters

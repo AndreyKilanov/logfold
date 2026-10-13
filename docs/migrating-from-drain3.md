@@ -71,7 +71,7 @@ always the exact one.
 | `drain3.ini` / `TemplateMinerConfig` | logfold (`Miner(...)`, `MiningConfig`, `logfold.toml`) |
 |---|---|
 | `sim_th`, `depth`, `max_children` | the same names and defaults |
-| `max_clusters` (unlimited by default) | `max_templates` (100000); it is not the same, see below |
+| `max_clusters` (unlimited by default) | `max_templates` (100000) with `on_full="evict"` for the least recently used eviction; see below |
 | `extra_delimiters` (regular expressions) | `MiningConfig(delimiters=" \t\n\r_")`: ASCII characters that separate tokens, library only |
 | `masking_instructions`, `MaskingInstruction(regex, "IP")` | `masks=(MaskRule("ip", regex, "<IP>"),)`, or `[[mining.masks]]` tables in [`logfold.toml`](config.md) |
 | `mask_prefix`, `mask_suffix` | the whole token is the third argument of `MaskRule` (`"<IP>"`) |
@@ -105,7 +105,9 @@ always the exact one.
   the template limit have no template.
 - **Memory limit.** When the number of templates reaches `max_templates`, further records that fit no template go to one
   catch-all template per token count (`<*> <*> <*>`), counts stay exact and `run.overflowed` is set. Drain3 with
-  `max_clusters` evicts the least recently used cluster instead.
+  `max_clusters` evicts the least recently used cluster instead; pass `on_full="evict"` (`--on-full evict`) to do the same: a
+  tenth of `max_templates` of the least recently used templates are dropped at a time, their counts join the catch-all
+  template, and `run.evicted` says how many were dropped. A miner that evicts mines with one tree.
 - **Threads.** A `Miner` takes one batch at a time, and the native call releases the GIL. For several sources give each its
   own `Miner`.
 
@@ -126,7 +128,6 @@ wherever you keep files. See [State files](cli.md#state-files).
 
 | Drain3 | Instead |
 |---|---|
-| `max_clusters` with eviction of the least recently used cluster | `max_templates` with a catch-all template (above). Eviction is [issue #124](https://github.com/AndreyKilanov/logfold/issues/124) |
 | `full_search_strategy` of `match` | none: `match` always searches the tree and then every template of the same length |
 | `parametrize_numeric_tokens=False` | none: a token with a digit always takes the wildcard branch of the tree, and `ALGORITHM.md` makes that part of the contract |
 | Kafka and Redis persistence | a state file |

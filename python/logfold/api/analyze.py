@@ -43,6 +43,7 @@ def analyze(
     sim_th: float | None = None,
     max_children: int | None = None,
     max_templates: int | None = None,
+    on_full: str | None = None,
     masks: Sequence[MaskRule] | None = None,
     high_cardinality: bool = False,
     mining: MiningConfig | None = None,
@@ -70,7 +71,10 @@ def analyze(
         depth: Tree depth (default 4, Drain3 convention).
         sim_th: Similarity threshold (default 0.4).
         max_children: Maximum children per tree node (default 100).
-        max_templates: Maximum number of templates before pooling (default 100000).
+        max_templates: Maximum number of templates before pooling or evicting (default 100000).
+        on_full: ``pool`` (the default) pools the records of a new message shape into catch-all templates once
+            ``max_templates`` is reached; ``evict`` drops the least recently used templates instead (and runs with one
+            tree, the sequential strategy). See :class:`~logfold.MiningConfig`.
         masks: Masking rules replacing the defaults.
         high_cardinality: Mode for data with a huge number of distinct message shapes (unstructured text, random ids):
             caps templates at 5000 unless ``max_templates`` is given, pools the rest into catch-all templates and
@@ -118,7 +122,7 @@ def analyze(
     bounds = window(since, until)
     if bounds != OPEN:
         require_time(spec)
-    mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks, high_cardinality)
+    mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks, high_cardinality, on_full)
     exec_config = _execution(execution, engine, strategy, threads, chunk_bytes, high_cardinality, warm_start)
     state = _state(load_state, save_state, state_format, mining_config, spec)
     mined = _mine(

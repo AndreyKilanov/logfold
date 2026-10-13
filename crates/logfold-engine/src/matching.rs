@@ -69,6 +69,7 @@ pub fn match_records_with(
             bytes: planned.run_bytes[run],
             tz_aware: counters[run].tz_aware,
             overflowed: overflowed[run],
+            evicted: 0,
         })
         .collect();
     let metrics = RunMetrics {

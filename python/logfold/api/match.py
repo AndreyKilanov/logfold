@@ -39,6 +39,7 @@ def match(
     sim_th: float | None = None,
     max_children: int | None = None,
     max_templates: int | None = None,
+    on_full: str | None = None,
     masks: Sequence[MaskRule] | None = None,
     mining: MiningConfig | None = None,
     execution: ExecutionConfig | None = None,
@@ -69,6 +70,7 @@ def match(
         sim_th: Similarity threshold of the state (default 0.4).
         max_children: Maximum children per tree node of the state (default 100).
         max_templates: Maximum number of templates of the state (default 100000).
+        on_full: ``pool`` (the default) or ``evict``; the state must have been mined with the same one.
         masks: Masking rules that the state was mined with, replacing the defaults.
         mining: Full mining configuration; the keyword arguments above override its fields.
         execution: Full execution configuration; the keyword arguments below override its fields.
@@ -105,7 +107,7 @@ def match(
     bounds = window(since, until)
     if bounds != OPEN:
         require_time(spec)
-    mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks)
+    mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks, on_full=on_full)
     exec_config = _execution(execution, engine, strategy, threads, chunk_bytes)
     saved = _state(state, None, "json", mining_config, spec)
     if saved is None:

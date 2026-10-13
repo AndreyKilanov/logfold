@@ -119,6 +119,32 @@ get or create the length node; then for the first `token_layers(n)` tokens, with
 (`max_children >= 1` is required, so rule 4 always creates a child.) The new cluster is appended to the leaf's
 cluster list.
 
+### 4.1 Eviction (`on_full = evict`)
+
+An optional policy, off by default (`on_full = pool` is the rule above), that replaces the pooling of *No match → insert*.
+Every record is numbered in the order the miner gets it (the *tick*, from 1), and a cluster remembers the tick of the last
+record that joined it or created it (`last_used`). When a record needs a new cluster and the number of clusters has reached
+`max_templates`:
+
+1. `k = max(1, floor(max_templates / 10))` clusters are chosen, the ones with the smallest `(last_used, id)`.
+2. Each chosen cluster is removed: its counts of the current run and the history that a loaded state gave it are absorbed into
+   the overflow cluster of its length (created as above when it does not exist), and the run is flagged `overflowed` when it
+   had records. The number of removed clusters is counted per run, by the run of the record that needed the room
+   (`run.evicted`).
+3. The other clusters keep their relative order and are renumbered `0, 1, ...`; the leaves, the indexes and the lists of
+   lengths are renumbered the same way. The nodes of the tree, their children and their keys do not change, so a message is
+   routed as before.
+4. The new cluster is created and attached as above.
+
+So the number of clusters never passes `max_templates`, and the counts of the templates, the overflow clusters included, add
+up to the number of records mined. A batch of `k` rather than one is removed so that the cost of renumbering is shared by `k`
+new templates. The least recently used cluster depends on the order of every record, so the miner mines with one tree: the
+chunked strategy is refused and the adaptive one runs as the sequential one. A state of such a miner stores the order of
+`last_used` (the rank of every cluster, §13), so a miner built from it continues exactly like the one that was saved: mining A
+and then B from the state of A gives the same state as mining A and B in one run. The policy is part of the fingerprint of the settings (it is left out of it when it is
+`pool`, so that the fingerprint of every state and report that was made without it is unchanged); a state mined with another
+policy is refused. `ALGO_VERSION` does not change: with `pool` the results are those of §4.
+
 ## 5. Statistics per cluster and run
 
 `count`; `first` / `last` = min / max timestamp among records with a timestamp; `levels[6]` counts per known level;
@@ -375,7 +401,9 @@ affect `ALGO_VERSION`; it adds the extension contract version 8. The engine read
 **Content.** The miner as plain data: the parameters (`depth`, `threshold_micro`, `max_children`, `max_templates`); the
 nodes of the tree in the order they were created, each with its children (token, node) ordered by the bytes of the token and
 the ids of its clusters in the order they were added; the root node of every message length, ordered by length; the clusters
-by id, each with its tokens and its *history*; the overflow cluster of every message length, ordered by length. A history is
+by id, each with its tokens and its *history*; the overflow cluster of every message length, ordered by length; and, for a miner
+that evicts (§4.1) only, the *recency ranks*: for every cluster by id its rank by `last_used` (ties: the earlier created), 0 for
+the least recently used, a permutation of `0..clusters`. A history is
 the count, the earliest and the latest timestamp (microseconds, `i64::MAX` and `i64::MIN` when none) and the count per level
 of all the runs saved so far. **No example message is saved.** A template seen once is its masked line, so its words are in
 the file; the values the masks hide are not.
@@ -395,17 +423,18 @@ changed in it. Sizes are checked before memory is allocated (defaults: 1 GiB, 1,
 templates, 4,000,000 nodes, 64 KiB per token, 512 MiB of tokens together). A state is refused when the checksum does not match,
 the schema is newer than this logfold reads, `algo_version` differs, the fingerprint of the masks and parameters
 (`config_hash`, the hash of the mining configuration without the log format) differs from the current run, or the tree is not
-a tree the miner builds: parameters in range; at most `max_templates` clusters; no empty token; roots in increasing length; no
+a tree the miner builds: the ranks, when there are any, one for every cluster and a permutation of them; parameters in range; at most `max_templates` clusters; no empty token; roots in increasing length; no
 node reached twice and none unreachable; an inner node holds no cluster and a leaf no child; at most `max_children` children
 ordered by token; a token with a digit is a child only as `<*>`; every cluster is in exactly one leaf of its own length and on
 a path its tokens can follow; an overflow cluster is `<*>` repeated to its length.
 
 **JSON form.** Three lines, each ending in a line feed. Line 1, the header, written in this order with no spaces:
-`{"kind":"logfold-state","schema_version":1,"algo_version":..,"contract":..,"logfold_version":"..","config_hash":"..",
+`{"kind":"logfold-state","schema_version":1 or 2,"algo_version":..,"contract":..,"logfold_version":"..","config_hash":"..",
 "masks":"..","format":"..","miner":{"depth":..,"threshold_micro":..,"max_children":..,"max_templates":..},"counts":{"nodes":..,
 "clusters":..,"overflow":..,"token_bytes":..}}`. Line 2, the body:
 `{"nodes":[{"c":[[token,child],..],"k":[id,..]},..],"roots":[[length,node],..],"clusters":[{"t":[token,..],"h":[count,first,
-last,[level counts]]},..],"overflow":[[length,{"t":..,"h":..}],..]}`. Line 3: `{"sha256":"<hex>"}`, the SHA-256 of lines
+last,[level counts]]},..],"overflow":[[length,{"t":..,"h":..}],..]}`, with `,"recency":[rank,..]` before the closing brace in
+schema version 2. Line 3: `{"sha256":"<hex>"}`, the SHA-256 of lines
 1 and 2 with their line feeds. A token is a JSON string (strings are escaped as `"` `\` and the control characters; other
 characters are written as they are), or `{"hex":"<lower-case hex>"}` when its bytes are not UTF-8. Numbers are integers.
 `token_bytes` is the number of bytes of the tokens of the clusters, of the overflow clusters and the keys of the children.
@@ -415,7 +444,13 @@ four texts (`logfold_version`, `config_hash`, `masks`, `format`: a varint length
 counts as varints, the roots (a varint count, then length and node as varints), the nodes (children as token and node, the
 ids of the clusters, each list with a varint count), the clusters (a varint token count, each token with a varint length,
 the history as a varint count, two little-endian `i64`, six varint level counts), the overflow clusters (length as a varint, then
-a cluster), and the SHA-256 of all the bytes before it (32 bytes). A varint is an unsigned LEB128 of at most 64 bits.
+a cluster), in schema version 2 the recency ranks (one varint for every cluster), and the SHA-256 of all the bytes before it
+(32 bytes). A varint is an unsigned LEB128 of at most 64 bits.
+
+**Schema versions.** Version 1 is the layout above without the ranks; it is the only one written for a miner that pools, so
+the state of such a miner is the same bytes as before the policy `evict` existed. Version 2 adds the ranks and is written only for
+a miner that evicts: a file of version 2 without ranks, or of version 1 with them, is damaged, and a logfold that reads up to
+version 1 refuses a file of version 2 as newer.
 
 A file written to a path that ends in `.gz` is compressed with gzip; a gzip file is recognized by its first bytes, whatever its
 name, and read with the size limit applied to the decompressed bytes. The same state is the same bytes before

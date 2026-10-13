@@ -32,6 +32,25 @@ impl LeafIndex {
             }
         }
     }
+
+    /// Renumbers the clusters after some were removed: `new_id` gives the new id of every old id, `u32::MAX` for a removed
+    /// cluster.
+    pub(super) fn renumber(&mut self, new_id: &[u32]) {
+        for lists in &mut self.exact {
+            for list in lists.values_mut() {
+                renumber(list, new_id);
+            }
+            lists.retain(|_, list| !list.is_empty());
+        }
+    }
+}
+
+/// Maps the ids of `ids` through `new_id` and drops the removed ones (`u32::MAX`), keeping the order.
+pub(super) fn renumber(ids: &mut Vec<u32>, new_id: &[u32]) {
+    ids.retain_mut(|id| {
+        *id = new_id[*id as usize];
+        *id != u32::MAX
+    });
 }
 
 /// A cluster with at most this many literal tokens is `sparse`, see [`LengthIndex::sparse`]; the exact search leaves out

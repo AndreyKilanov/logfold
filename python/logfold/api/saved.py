@@ -156,7 +156,12 @@ def _saved_warnings(before: AnalysisResult, after: AnalysisResult) -> list[str]:
     if before.meta.format != after.meta.format:
         warnings.append(f"the results use different formats ({before.meta.format!r} and {after.meta.format!r})")
     for summary in (before.run, after.run):
-        if summary.overflowed:
+        if summary.evicted:
+            warnings.append(
+                f"{summary.name}: max_templates was reached; {summary.evicted:,} least recently used templates were "
+                "dropped, and their records are counted in catch-all templates"
+            )
+        elif summary.overflowed:
             warnings.append(
                 f"{summary.name}: max_templates was reached; extra records were pooled into catch-all templates"
             )

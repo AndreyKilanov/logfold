@@ -12,7 +12,7 @@ use crate::stats::RunStats;
 
 use super::leaf::{INDEX_MIN_CLUSTERS, LeafIndex, LengthIndex, Node, SPARSE_LITERALS, literals};
 use super::matching::has_digit;
-use super::{Cluster, DrainMiner, MinerConfig, WILDCARD};
+use super::{Cluster, DrainMiner, MinerConfig, OnFull, WILDCARD};
 
 /// Counts of the runs that were saved with a cluster; the example line of a run is never kept.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -34,6 +34,16 @@ impl Default for ClusterHistory {
 }
 
 impl ClusterHistory {
+    /// Adds the counts of another history; sums saturate.
+    pub(super) fn absorb(&mut self, other: &ClusterHistory) {
+        self.count = self.count.saturating_add(other.count);
+        self.first = self.first.min(other.first);
+        self.last = self.last.max(other.last);
+        for (dst, src) in self.levels.iter_mut().zip(other.levels.iter()) {
+            *dst = dst.saturating_add(*src);
+        }
+    }
+
     /// Adds the counts of a run; sums saturate, because a crafted state may hold any number.
     fn add_stats(&mut self, stats: &RunStats) {
         self.count = self.count.saturating_add(stats.count);
@@ -82,6 +92,9 @@ pub struct MinerSnapshot {
     pub clusters: Vec<ClusterSnapshot>,
     /// Overflow template of every message length, ordered by length.
     pub overflow: Vec<(usize, ClusterSnapshot)>,
+    /// For a miner that evicts: the rank of every cluster by recency of use, indexed by cluster id, 0 for the least
+    /// recently used; a permutation of `0..clusters.len()`. `None` for a miner that pools, whose state does not need it.
+    pub recency: Option<Vec<u32>>,
 }
 
 impl MinerSnapshot {
@@ -138,7 +151,19 @@ impl DrainMiner {
             roots,
             clusters: self.clusters.iter().map(Cluster::snapshot).collect(),
             overflow: self.overflow.iter().map(|(length, cluster)| (*length, cluster.snapshot())).collect(),
+            recency: (self.cfg.on_full == OnFull::Evict).then(|| self.recency_ranks()),
         }
+    }
+
+    /// The rank of every cluster by recency of use, 0 for the least recently used (ties: the earlier created).
+    fn recency_ranks(&self) -> Vec<u32> {
+        let mut order: Vec<u32> = (0..self.clusters.len() as u32).collect();
+        order.sort_unstable_by_key(|&id| (self.clusters[id as usize].last_used, id));
+        let mut ranks = vec![0; order.len()];
+        for (rank, &id) in order.iter().enumerate() {
+            ranks[id as usize] = rank as u32;
+        }
+        ranks
     }
 
     /// Rebuilds a miner from a snapshot that tracks `n_runs` runs with empty statistics.
@@ -150,7 +175,7 @@ impl DrainMiner {
             return Err(invalid("at least one run is needed"));
         }
         let cfg = checked_config(&snapshot)?;
-        let MinerSnapshot { nodes, roots, clusters, overflow, .. } = snapshot;
+        let MinerSnapshot { nodes, roots, clusters, overflow, recency, .. } = snapshot;
         if clusters.len() > cfg.max_templates {
             return Err(invalid(format!("{} templates exceed max_templates {}", clusters.len(), cfg.max_templates)));
         }
@@ -173,7 +198,12 @@ impl DrainMiner {
         for (id, cluster) in clusters.iter().enumerate() {
             length_clusters.entry(cluster.tokens.len()).or_default().push(id as u32);
         }
-        let clusters: Vec<Cluster> = clusters.into_iter().map(|c| Cluster::from_snapshot(c, n_runs)).collect();
+        let clusters_len = clusters.len();
+        let ranks = checked_recency(recency, clusters_len)?;
+        let mut clusters: Vec<Cluster> = clusters.into_iter().map(|c| Cluster::from_snapshot(c, n_runs)).collect();
+        for (id, cluster) in clusters.iter_mut().enumerate() {
+            cluster.last_used = ranks.as_ref().map_or(id as u64, |ranks| u64::from(ranks[id]));
+        }
         let mut length_indexes: HashMap<usize, LengthIndex, ahash::RandomState> = HashMap::default();
         for (id, cluster) in clusters.iter().enumerate() {
             let group = length_indexes.entry(cluster.tokens.len()).or_default();
@@ -209,8 +239,28 @@ impl DrainMiner {
             clusters,
             overflow,
             overflowed: vec![false; n_runs],
+            tick: clusters_len as u64,
+            evicted: vec![0; n_runs],
+            run: 0,
+            reported: clusters_len,
         })
     }
+}
+
+/// Checks that the recency ranks are a permutation of `0..clusters`, and gives them back.
+fn checked_recency(recency: Option<Vec<u32>>, clusters: usize) -> Result<Option<Vec<u32>>, CoreError> {
+    let Some(ranks) = recency else { return Ok(None) };
+    if ranks.len() != clusters {
+        return Err(invalid(format!("{} recency ranks for {clusters} templates", ranks.len())));
+    }
+    let mut seen = vec![false; clusters];
+    for &rank in &ranks {
+        match seen.get_mut(rank as usize) {
+            Some(slot) if !*slot => *slot = true,
+            _ => return Err(invalid("the recency ranks are not a permutation of the templates")),
+        }
+    }
+    Ok(Some(ranks))
 }
 
 fn checked_config(snapshot: &MinerSnapshot) -> Result<MinerConfig, CoreError> {
@@ -228,6 +278,7 @@ fn checked_config(snapshot: &MinerSnapshot) -> Result<MinerConfig, CoreError> {
         max_children: snapshot.max_children,
         max_templates: snapshot.max_templates,
         threshold_micro: snapshot.threshold_micro,
+        on_full: OnFull::Pool,
     })
 }
 

@@ -21,8 +21,16 @@ use thiserror::Error;
 
 pub use wire::StateCounts;
 
-/// Version of the layout of a state file; a file with a newer version is refused.
-pub const STATE_SCHEMA_VERSION: u32 = 1;
+/// The newest version of the layout of a state file that this build reads; a file with a newer version is refused.
+///
+/// Version 1 is the layout of a miner that pools. Version 2 adds the recency ranks of a miner that evicts and is written
+/// only for such a miner, so a state of a pooling miner is the same bytes as before.
+pub const STATE_SCHEMA_VERSION: u32 = 2;
+
+/// The version of the layout in which `snapshot` is written.
+pub(crate) fn schema_version_of(snapshot: &MinerSnapshot) -> u32 {
+    if snapshot.recency.is_some() { 2 } else { 1 }
+}
 
 /// The `kind` field of a JSON state file.
 pub const STATE_KIND: &str = "logfold-state";

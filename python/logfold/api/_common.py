@@ -73,6 +73,7 @@ def _mining(
     max_templates: int | None,
     masks: Sequence[MaskRule] | None,
     high_cardinality: bool = False,
+    on_full: str | None = None,
 ) -> MiningConfig:
     config = base or MiningConfig()
     if high_cardinality and max_templates is None:
@@ -83,6 +84,7 @@ def _mining(
         ("sim_th", sim_th),
         ("max_children", max_children),
         ("max_templates", max_templates),
+        ("on_full", on_full),
     ):
         if value is not None:
             changes[key] = value
@@ -172,7 +174,16 @@ def _state_request(
     )
 
 
-def _resolve_strategy(execution: ExecutionConfig, runs: tuple[tuple[str, ...], ...]) -> str:
+def _resolve_strategy(
+    execution: ExecutionConfig, runs: tuple[tuple[str, ...], ...], mining: MiningConfig | None = None
+) -> str:
+    if mining is not None and mining.on_full == "evict":
+        if execution.strategy == "chunked":
+            raise ConfigError(
+                "on_full='evict' needs the sequential strategy",
+                hint="the least recently used template depends on the order of every record; use strategy='sequential'",
+            )
+        return "sequential"
     if execution.strategy != "auto":
         return execution.strategy
     return "adaptive" if _total_size(runs) > execution.chunk_bytes else "sequential"
@@ -195,7 +206,7 @@ def _mine(
         runs=runs,
         format=spec,
         mining=mining,
-        strategy=_resolve_strategy(execution, runs),
+        strategy=_resolve_strategy(execution, runs, mining),
         threads=execution.threads,
         chunk_bytes=execution.chunk_bytes,
         warm_start=execution.warm_start,
@@ -217,6 +228,7 @@ def _summary(paths: tuple[str, ...], info: RunCounters) -> RunSummary:
         bytes=info.bytes,
         tz_aware=info.tz_aware,
         overflowed=info.overflowed,
+        evicted=info.evicted,
         out_of_range=info.out_of_range,
         untimed=info.untimed,
     )
@@ -265,7 +277,13 @@ def _warnings(
                 f"{summary.unparsed_ratio:.0%} of lines in {summary.name} did not match the format; "
                 "check the format or enable multiline"
             )
-        if summary.overflowed:
+        if summary.evicted:
+            warnings.append(
+                f"{summary.name}: max_templates ({mining.max_templates:,}) was reached; {summary.evicted:,} least "
+                "recently used templates were dropped to make room, and their records are counted in catch-all "
+                "templates"
+            )
+        elif summary.overflowed:
             hint = (
                 "high-cardinality mode: records beyond the first templates were pooled into catch-all templates"
                 if high_cardinality

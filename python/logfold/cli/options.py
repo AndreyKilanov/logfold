@@ -151,6 +151,15 @@ MaxTemplates = Annotated[
         rich_help_panel=PANEL_MINING,
     ),
 ]
+OnFull = Annotated[
+    str | None,
+    typer.Option(
+        "--on-full",
+        help="At --max-templates: pool (default) puts new shapes into catch-all templates, evict drops the least "
+        "recently used templates and keeps learning (one tree, so --strategy sequential).",
+        rich_help_panel=PANEL_MINING,
+    ),
+]
 NoMasks = Annotated[
     bool,
     typer.Option("--no-masks", help="Do not mask numbers, IPs, UUIDs and other values.", rich_help_panel=PANEL_MINING),
@@ -217,6 +226,7 @@ def mining_options(
     no_masks: bool,
     high_cardinality: bool,
     warm_start: bool,
+    on_full: str | None = None,
 ) -> dict[str, Any]:
     """Turn the mining flags of a command into keyword arguments of ``logfold.analyze`` and ``logfold.diff``.
 
@@ -232,6 +242,7 @@ def mining_options(
         no_masks: ``--no-masks``.
         high_cardinality: ``--high-cardinality``.
         warm_start: ``--warm-start``.
+        on_full: ``--on-full``.
 
     Returns:
         The keyword arguments, with ``None`` for every option left at its default.
@@ -241,6 +252,7 @@ def mining_options(
         "depth": depth,
         "max_children": max_children,
         "max_templates": max_templates,
+        "on_full": on_full,
         "threads": threads,
         "engine": engine,
         "chunk_bytes": chunk_mb << 20 if chunk_mb else None,

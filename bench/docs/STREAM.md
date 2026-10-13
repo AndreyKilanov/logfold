@@ -113,6 +113,27 @@ on growing trees, and the exact rule against a brute-force oracle). Result on th
 
 Mining is not slower: `analyze` of the 100 MB file takes 0.77 s as before, and `add_many` of the 83,745 lines 0.48 s.
 
+## Eviction at the template limit
+
+`on_full="evict"` drops the least recently used templates (a tenth of `max_templates` at a time) when a new template needs room,
+instead of pooling the new records. `python bench/stream.py evict FILE --max-templates N` mines the first 600 thousand lines with
+both policies (`Miner.add_many`, batches of 10000; median of 3).
+
+| File and limit | Policy | Wall | Lines per second | Templates | Dropped | Records counted |
+|---|---|---:|---:|---:|---:|---:|
+| `highcard_10mb.log`, 5,000 | `pool` | 0.16 s | 523,239 | 5,010 | 0 | 83,745 |
+| | `evict` | 0.57 s | 148,219 | 4,755 | 79,000 | 83,745 |
+| `highcard_10mb.log`, 20,000 | `pool` | 0.21 s | 408,094 | 20,010 | 0 | 83,745 |
+| | `evict` | 0.60 s | 140,219 | 19,755 | 64,000 | 83,745 |
+| `app_100mb.log`, 5 | `pool` | 0.22 s | 1,333,934 | 9 | 0 | 300,000 |
+| | `evict` | 0.33 s | 907,658 | 10 | 173,116 | 300,000 |
+
+`highcard` is the worst case, because almost every record opens a new template and so needs room: eviction costs 3.5 times the
+time of pooling. The templates counted include the catch-all templates, and the records counted are all the records, which is
+the point of pooling the counts of the dropped templates. Without eviction, nothing changes: `analyze` of the 100 MB file takes
+0.77 s as before. The first version rebuilt the index of every large leaf at each eviction (5,000 limit: 1.75 s); renumbering the
+lists in place made it three times faster.
+
 ## Limits of this measurement
 
 One machine and one dataset of 12 templates, so the cost of a large tree is not in it (`highcard` is the case for that, and

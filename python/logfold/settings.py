@@ -67,6 +67,7 @@ _MINING = {
     "sim_th": _number,
     "max_children": _integer(1),
     "max_templates": _integer(1),
+    "on_full": _text("pool", "evict"),
     "masks": lambda value: value,
 }
 _EXECUTION = {

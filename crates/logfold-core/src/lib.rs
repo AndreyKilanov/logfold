@@ -27,7 +27,7 @@ pub use level::{LEVEL_COUNT, Level};
 pub use masker::{MaskHit, MaskRule, MaskScratch, RuleMasker, default_mask_rules};
 pub use miner::{
     Assignment, ClusterHistory, ClusterSnapshot, DrainMiner, MAX_EXAMPLE_BYTES, MatchRule, MinerConfig, MinerSnapshot,
-    NodeSnapshot, RecordMeta, Recount, WILDCARD,
+    NodeSnapshot, OnFull, RecordMeta, Recount, WILDCARD,
 };
 pub use parameters::{Fit, Parameter, WILDCARD_NAME, extract_parameters};
 pub use stats::RunStats;

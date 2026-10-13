@@ -21,7 +21,7 @@ use std::time::Instant;
 
 pub use error::EngineError;
 pub use inspect::{SampleRecord, SampleReport, inspect_sample};
-pub use logfold_core::MatchRule;
+pub use logfold_core::{MatchRule, OnFull};
 pub use matching::{match_records, match_records_with};
 pub use session::{Session, SessionConfig};
 pub use types::{
@@ -56,7 +56,7 @@ pub fn mine(request: &MineRequest, observer: &dyn ProgressObserver) -> Result<Mi
     let initial = load_initial(request, &miner_config)?;
 
     let mine_started = Instant::now();
-    let (chunk_bytes, threads_requested, adaptive) = match request.strategy {
+    let (chunk_bytes, threads_requested, adaptive) = match effective_strategy(request)? {
         ExecutionStrategy::Sequential => (None, None, false),
         ExecutionStrategy::Chunked { chunk_bytes, threads } => (Some(chunk_bytes), Some(threads), false),
         // a loaded tree is the seed of every chunk, so there is no first chunk to judge the diversity by
@@ -116,6 +116,7 @@ pub fn mine(request: &MineRequest, observer: &dyn ProgressObserver) -> Result<Mi
 
     let freeze_started = Instant::now();
     let snapshot = request.keep_snapshot.then(|| miner.snapshot());
+    let evicted = miner.evicted().to_vec();
     let (mut templates, overflowed) = match recounted {
         Some(recount) => miner.freeze_recounted(recount),
         None => {
@@ -139,6 +140,7 @@ pub fn mine(request: &MineRequest, observer: &dyn ProgressObserver) -> Result<Mi
             bytes: planned.run_bytes[run],
             tz_aware: counters[run].tz_aware,
             overflowed: overflowed[run],
+            evicted: evicted[run],
         })
         .collect();
     let metrics = RunMetrics {
@@ -152,6 +154,19 @@ pub fn mine(request: &MineRequest, observer: &dyn ProgressObserver) -> Result<Mi
         wall_freeze_s: freeze_seconds,
     };
     Ok(MineOutput { runs, templates, snapshot, unmatched: None, metrics })
+}
+
+/// The strategy that a request runs with. A miner that evicts templates depends on the order of every record, so it mines
+/// with one tree: the adaptive strategy becomes sequential and the chunked one is refused.
+pub(crate) fn effective_strategy(request: &MineRequest) -> Result<ExecutionStrategy, EngineError> {
+    match (request.mining.on_full, request.strategy) {
+        (OnFull::Evict, ExecutionStrategy::Chunked { .. }) => Err(EngineError::Config(
+            "on_full='evict' needs the sequential strategy: the least recently used template depends on the order of every record"
+                .into(),
+        )),
+        (OnFull::Evict, ExecutionStrategy::Adaptive { .. }) => Ok(ExecutionStrategy::Sequential),
+        (_, strategy) => Ok(strategy),
+    }
 }
 
 pub(crate) fn validate_request(request: &MineRequest) -> Result<(), EngineError> {
@@ -169,7 +184,8 @@ pub(crate) fn miner_config(request: &MineRequest) -> Result<MinerConfig, EngineE
 }
 
 pub(crate) fn mining_config(mining: &MiningConfig) -> Result<MinerConfig, EngineError> {
-    Ok(MinerConfig::new(mining.depth, mining.sim_th, mining.max_children, mining.max_templates)?)
+    Ok(MinerConfig::new(mining.depth, mining.sim_th, mining.max_children, mining.max_templates)?
+        .with_on_full(mining.on_full))
 }
 
 /// Builds the miner of the saved state of `request`, after checking that it was mined with the same parameters.
@@ -188,10 +204,12 @@ pub(crate) fn load_snapshot(
             "the saved state was mined with other parameters (depth, sim_th, max_children or max_templates)".into(),
         ));
     }
-    DrainMiner::from_snapshot(snapshot.clone(), n_runs).map(Some).map_err(|error| match error {
-        CoreError::InvalidState(message) => EngineError::State(StateError::Damaged(message)),
-        other => EngineError::Core(other),
-    })
+    DrainMiner::from_snapshot(snapshot.clone(), n_runs).map(|miner| Some(miner.with_on_full(config.on_full()))).map_err(
+        |error| match error {
+            CoreError::InvalidState(message) => EngineError::State(StateError::Damaged(message)),
+            other => EngineError::Core(other),
+        },
+    )
 }
 
 pub(crate) fn empty_miner(config: &MinerConfig, n_runs: usize) -> DrainMiner {

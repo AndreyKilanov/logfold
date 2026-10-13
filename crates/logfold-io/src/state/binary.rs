@@ -11,7 +11,7 @@ use sha2::{Digest, Sha256};
 use super::wire::{Cursor, StateCounts, counts_of, put_varint};
 use super::{
     BINARY_MAGIC, MAX_HEADER_TEXT_BYTES, STATE_SCHEMA_VERSION, State, StateError, StateHeader, StateLimits, damaged,
-    over,
+    over, schema_version_of,
 };
 
 fn put_bytes(out: &mut Vec<u8>, bytes: &[u8]) {
@@ -38,7 +38,7 @@ pub(super) fn encode(state: &State) -> Vec<u8> {
     let counts = counts_of(snapshot);
     let mut out = Vec::new();
     out.extend_from_slice(BINARY_MAGIC);
-    out.extend_from_slice(&(STATE_SCHEMA_VERSION as u16).to_le_bytes());
+    out.extend_from_slice(&(schema_version_of(snapshot) as u16).to_le_bytes());
     out.extend_from_slice(&state.header.algo_version.to_le_bytes());
     out.extend_from_slice(&state.header.contract.to_le_bytes());
     for text in [&state.header.logfold_version, &state.header.config_hash, &state.header.masks, &state.header.format] {
@@ -74,6 +74,9 @@ pub(super) fn encode(state: &State) -> Vec<u8> {
     for (length, cluster) in &snapshot.overflow {
         put_varint(&mut out, *length as u64);
         put_cluster(&mut out, cluster);
+    }
+    for &rank in snapshot.recency.iter().flatten() {
+        put_varint(&mut out, u64::from(rank));
     }
     let digest = Sha256::digest(&out);
     out.extend_from_slice(&digest);
@@ -144,7 +147,7 @@ pub(super) fn decode(bytes: &[u8], limits: &StateLimits) -> Result<State, StateE
         return Err(StateError::Checksum);
     }
     let mut cursor = Cursor::new(body.get(BINARY_MAGIC.len()..).ok_or_else(|| damaged("the file is too short"))?);
-    cursor.u16_le()?;
+    let schema_version = u32::from(cursor.u16_le()?);
     let algo_version = cursor.u32_le()?;
     let contract = cursor.u32_le()?;
     let mut reader = Reader { cursor, limits, token_bytes: 0, declared_token_bytes: 0 };
@@ -204,14 +207,35 @@ pub(super) fn decode(bytes: &[u8], limits: &StateLimits) -> Result<State, StateE
         let length = reader.size("an overflow length")?;
         overflow.push((length, reader.cluster()?));
     }
+    let recency = if schema_version >= 2 {
+        let mut ranks = Vec::with_capacity(bounded(counts.clusters, reader.cursor.remaining(), 1));
+        for _ in 0..counts.clusters {
+            ranks.push(
+                u32::try_from(reader.cursor.varint()?).map_err(|_| damaged("a recency rank does not fit 32 bits"))?,
+            );
+        }
+        Some(ranks)
+    } else {
+        None
+    };
     if !reader.cursor.finished() {
         return Err(damaged("bytes after the last value"));
     }
     if reader.token_bytes != counts.token_bytes {
         return Err(damaged("the tokens are shorter than the header says"));
     }
-    let snapshot =
-        MinerSnapshot { depth, threshold_micro, max_children, max_templates, nodes, roots, clusters, overflow };
+    let snapshot = MinerSnapshot {
+        depth,
+        threshold_micro,
+        max_children,
+        max_templates,
+        nodes,
+        roots,
+        clusters,
+        overflow,
+        recency,
+    };
+    super::json::check_recency(&snapshot, schema_version)?;
     Ok(State { header, snapshot })
 }
 

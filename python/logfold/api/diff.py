@@ -116,6 +116,7 @@ def diff(
     sim_th: float | None = None,
     max_children: int | None = None,
     max_templates: int | None = None,
+    on_full: str | None = None,
     masks: Sequence[MaskRule] | None = None,
     high_cardinality: bool = False,
     mining: MiningConfig | None = None,
@@ -163,7 +164,8 @@ def diff(
         depth: Tree depth.
         sim_th: Similarity threshold.
         max_children: Maximum children per tree node.
-        max_templates: Maximum number of templates before pooling.
+        max_templates: Maximum number of templates before pooling or evicting.
+        on_full: ``pool`` (the default) or ``evict``; see :func:`logfold.analyze`.
         masks: Masking rules replacing the defaults.
         high_cardinality: Fast mode for data with a huge number of distinct message shapes; see :func:`analyze`.
         mining: Full mining configuration.
@@ -240,7 +242,7 @@ def diff(
         raise ConfigError(
             "split_at reads the input once for each run, so it cannot read standard input; save it to a file"
         )
-    mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks, high_cardinality)
+    mining_config = _mining(mining, depth, sim_th, max_children, max_templates, masks, high_cardinality, on_full)
     exec_config = _execution(execution, engine, strategy, threads, chunk_bytes, high_cardinality, warm_start)
     mined = _mine(runs, spec, mining_config, exec_config, progress, compare.recount, windows)
     pooled = pool_baselines(mined, len(runs) - 1, required_baselines(len(runs) - 1, compare.min_baselines))
