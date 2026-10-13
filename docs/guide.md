@@ -305,7 +305,7 @@ template per length, even when old templates have not been seen for a long time.
 learning. The counts of a dropped template join the catch-all template of its length, so the counts still add up to the number of
 records; `run.evicted` and a warning say how many templates were dropped. Use it with `Miner` or `logfold stream`, which run for
 long. It mines with one tree (a chunked strategy is refused), and a state must be used with the policy it was mined with; a miner
-continued from a state treats the templates of the state as used in the order they were created. Cost: when every record opens a
+continued from a state continues exactly (the state keeps the order in which the templates were last used). Cost: when every record opens a
 new template, mining is about 3.5 times slower than pooling (148 thousand against 523 thousand lines per second at a cap of 5000,
 `bench/docs/STREAM.md`); with few new templates there is no difference.
 
