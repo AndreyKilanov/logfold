@@ -26,7 +26,10 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   calls, and `logfold stream [FILE]` mines a log while it is written and prints each template when it first appears. Both read and
   write state files, and the result equals `analyze` over the same records. `Miner.match_many(records)` and `Miner.match(record)`
   assign records to its templates without learning (`logfold.TemplateMatch`); `exact=True` (`logfold match --exact`) asks for a
-  perfect match of the constant words, as Drain3 does. Extension contract version 14. See `docs/api.md`,
+  perfect match of the constant words, as Drain3 does. Extension contract version 14.
+- `on_full="evict"` (`--on-full evict`, `on_full` in `logfold.toml`): at `max_templates` the least recently used templates are
+  dropped and the miner keeps learning, instead of pooling new message shapes into catch-all templates; `run.evicted` counts the
+  dropped ones. Off by default; it mines with one tree. Extension contract version 15. See `docs/guide.md`. See `docs/api.md`,
   `docs/cli.md`.
 - `logfold.extract_parameters(template, message)` and `logfold params TEMPLATE MESSAGE` give the values that a message has at the
   variable parts of a template (`<*>` and masked values such as `<NUM>`), named by the rule or `*`, as written in the message;

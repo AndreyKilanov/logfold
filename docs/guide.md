@@ -277,7 +277,8 @@ Multi-line records (stack traces): `--multiline` joins lines that do not start a
 | `--depth` | 4 | tree depth (Drain3 convention, minimum 3) |
 | `--sim-th` | 0.4 | similarity threshold: a line joins a template when at least this share of tokens matches exactly |
 | `--max-children` | 100 | children per tree node |
-| `--max-templates` | 100000 | cap on templates; further records are pooled into catch-all templates |
+| `--max-templates` | 100000 | cap on templates; what happens to further records is decided by `--on-full` |
+| `--on-full` | `pool` | at the cap: `pool` puts new message shapes into catch-all templates; `evict` drops the least recently used templates and keeps learning (one tree, sequential); see below |
 | `--no-masks` | off | do not mask values |
 | `--high-cardinality` | off | mode for data with a huge number of distinct messages (see below) |
 | `--strategy` | auto | `sequential` (one tree), `chunked` (parallel), `auto` (chunked above 64 MiB, sequential when almost every record is a new template) |
@@ -295,6 +296,18 @@ masks: 341 against 43; the large templates are the same). `--warm-start` (`warm_
 starts every other chunk from a copy of its tree, which removes most of the strays. The price is a serial prefix of one chunk (a
 smaller `--chunk-mb` makes it cheaper) and a copy of the tree per chunk; it does not apply to the sequential strategy, and
 it is off by default. Numbers: [`bench/docs/WARM_START.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/docs/WARM_START.md).
+
+### A miner that runs for days
+
+With the default policy a miner stops learning at `--max-templates`: the records of every new message shape go into one catch-all
+template per length, even when old templates have not been seen for a long time. `--on-full evict` (`on_full="evict"`, `on_full =
+"evict"` in `logfold.toml`) drops the least recently used templates instead, a tenth of the cap at a time, so that a stream keeps
+learning. The counts of a dropped template join the catch-all template of its length, so the counts still add up to the number of
+records; `run.evicted` and a warning say how many templates were dropped. Use it with `Miner` or `logfold stream`, which run for
+long. It mines with one tree (a chunked strategy is refused), and a state must be used with the policy it was mined with; a miner
+continued from a state treats the templates of the state as used in the order they were created. Cost: when every record opens a
+new template, mining is about 3.5 times slower than pooling (148 thousand against 523 thousand lines per second at a cap of 5000,
+`bench/docs/STREAM.md`); with few new templates there is no difference.
 
 ### High-cardinality data
 

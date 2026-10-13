@@ -119,6 +119,32 @@ get or create the length node; then for the first `token_layers(n)` tokens, with
 (`max_children >= 1` is required, so rule 4 always creates a child.) The new cluster is appended to the leaf's
 cluster list.
 
+### 4.1 Eviction (`on_full = evict`)
+
+An optional policy, off by default (`on_full = pool` is the rule above), that replaces the pooling of *No match → insert*.
+Every record is numbered in the order the miner gets it (the *tick*, from 1), and a cluster remembers the tick of the last
+record that joined it or created it (`last_used`). When a record needs a new cluster and the number of clusters has reached
+`max_templates`:
+
+1. `k = max(1, floor(max_templates / 10))` clusters are chosen, the ones with the smallest `(last_used, id)`.
+2. Each chosen cluster is removed: its counts of the current run and the history that a loaded state gave it are absorbed into
+   the overflow cluster of its length (created as above when it does not exist), and the run is flagged `overflowed` when it
+   had records. The number of removed clusters is counted per run, by the run of the record that needed the room
+   (`run.evicted`).
+3. The other clusters keep their relative order and are renumbered `0, 1, ...`; the leaves, the indexes and the lists of
+   lengths are renumbered the same way. The nodes of the tree, their children and their keys do not change, so a message is
+   routed as before.
+4. The new cluster is created and attached as above.
+
+So the number of clusters never passes `max_templates`, and the counts of the templates, the overflow clusters included, add
+up to the number of records mined. A batch of `k` rather than one is removed so that the cost of renumbering is shared by `k`
+new templates. The least recently used cluster depends on the order of every record, so the miner mines with one tree: the
+chunked strategy is refused and the adaptive one runs as the sequential one. A state does not store `last_used`: a miner built
+from a state treats its clusters as used in the order they were created, and the state of the run that saved it is the one of
+the same stream only up to that point. The policy is part of the fingerprint of the settings (it is left out of it when it is
+`pool`, so that the fingerprint of every state and report that was made without it is unchanged); a state mined with another
+policy is refused. `ALGO_VERSION` does not change: with `pool` the results are those of §4.
+
 ## 5. Statistics per cluster and run
 
 `count`; `first` / `last` = min / max timestamp among records with a timestamp; `levels[6]` counts per known level;

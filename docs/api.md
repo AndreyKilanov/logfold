@@ -11,7 +11,7 @@ from logfold import analyze, diff
 
 ```python
 analyze(path, *, format=None, multiline=None, depth=None, sim_th=None, max_children=None, max_templates=None,
-        masks=None, high_cardinality=False, mining=None, execution=None, engine=None, strategy=None, threads=None,
+        on_full=None, masks=None, high_cardinality=False, mining=None, execution=None, engine=None, strategy=None, threads=None,
         chunk_bytes=None, warm_start=None, examples="raw", since=None, until=None, load_state=None, save_state=None,
         state_format="json", config=None, progress=None) -> AnalysisResult
 ```
@@ -23,7 +23,7 @@ Folds one run into templates.
 | `path` | one file or a sequence of files forming a single run (`str` or `PathLike`); `"-"` is standard input; gzip is detected by content |
 | `format` | `None` or `"auto"` (detect it; a settings file can give another), a registered name, `"regex:<pattern>"`, `"log4j:<pattern>"`, a format specification or a `Format` object |
 | `multiline` | join continuation lines to the previous record; `None` keeps the format's default |
-| `depth`, `sim_th`, `max_children`, `max_templates`, `masks` | mining parameters, see [`MiningConfig`](#mining-and-execution-configuration) |
+| `depth`, `sim_th`, `max_children`, `max_templates`, `on_full`, `masks` | mining parameters, see [`MiningConfig`](#mining-and-execution-configuration) |
 | `high_cardinality` | fast bounded mode for data with a huge number of distinct messages |
 | `mining`, `execution` | full configuration objects; the keyword arguments override their fields |
 | `engine`, `strategy`, `threads`, `chunk_bytes`, `warm_start` | execution parameters, see [`ExecutionConfig`](#mining-and-execution-configuration) |
@@ -40,7 +40,7 @@ Raises `ConfigError`, `FormatError`, `SourceError`, `EngineError` or `StateError
 
 ```python
 match(state, path, *, format=None, multiline=None, depth=None, sim_th=None, max_children=None, max_templates=None,
-      masks=None, mining=None, execution=None, engine=None, strategy=None, threads=None, chunk_bytes=None,
+      on_full=None, masks=None, mining=None, execution=None, engine=None, strategy=None, threads=None, chunk_bytes=None,
       examples="raw", since=None, until=None, exact=False, config=None, progress=None) -> AnalysisResult
 ```
 
@@ -57,8 +57,8 @@ differs from a template in one word can still belong to it. See [`logfold match`
 ## `Miner`
 
 ```python
-Miner(*, format=None, multiline=None, depth=None, sim_th=None, max_children=None, max_templates=None, masks=None,
-      mining=None, load_state=None, state_format="json", examples="raw", config=None)
+Miner(*, format=None, multiline=None, depth=None, sim_th=None, max_children=None, max_templates=None, on_full=None,
+      masks=None, mining=None, load_state=None, state_format="json", examples="raw", config=None)
 ```
 
 A template miner that takes records as they come, instead of reading a file: a service that feeds its own messages, a
@@ -298,7 +298,8 @@ G statistic of the change of the share) and `p_value`; both are `None` for new a
 - `RunSummary`: `name`, `files`, `lines` (non-blank physical lines), `records`, `unparsed` (lines that did not become
   part of a record), `out_of_range` and `untimed` (records left out by a time window: outside it, or without a timestamp),
   `bytes`, `tz_aware` (naive timestamps are interpreted as UTC), `overflowed` (`max_templates` was
-  reached), `unmatched` (set by `match`: an `Unmatched` with `records` and `by_length`; `None` for a mined run and
+  reached), `evicted` (templates dropped to make room for new ones, `on_full="evict"`; their counts are in the catch-all
+  templates; absent from the JSON report when 0), `unmatched` (set by `match`: an `Unmatched` with `records` and `by_length`; `None` for a mined run and
   absent from the JSON report) and the property `unparsed_ratio`.
 - `RunMetrics`: `engine`, `strategy` (`sequential` or `chunked`: what was used, which `auto` decides), `threads`, `chunks`, and wall times `wall_total_s`, `wall_mine_s`,
   `wall_merge_s`, `wall_recount_s`, `wall_freeze_s`.
@@ -319,7 +320,7 @@ result = analyze("app.log", mining=mining, execution=ExecutionConfig(threads=4))
 
 | Class | Fields (defaults) |
 |---|---|
-| `MiningConfig` | `depth=4` (at least 3), `sim_th=0.4` (`[0, 1]`), `max_children=100`, `max_templates=100000`, `delimiters=" \t\n\r"` (ASCII), `masks` (the default rules) |
+| `MiningConfig` | `depth=4` (at least 3), `sim_th=0.4` (`[0, 1]`), `max_children=100`, `max_templates=100000`, `on_full="pool"` (`"evict"` drops the least recently used templates at the cap instead of pooling the new ones; one tree, sequential strategy; a state must be used with the same value), `delimiters=" \t\n\r"` (ASCII), `masks` (the default rules) |
 | `ExecutionConfig` | `engine="auto"` (`auto`, `native`, `python`), `strategy="auto"` (`auto`, `sequential`, `chunked`), `threads=None` (all cores), `chunk_bytes=64 MiB`, `warm_start=False` |
 | `DiffConfig` | `threshold_ratio=2.0`, `min_count=10`, `min_new_count=1`, `recount=True`, `matcher="jaccard"`, `significance=0.01`, `min_baselines=None` |
 | `MaskRule` | `name`, `pattern` (must not match the empty string), `token`, `ascii=False` |
