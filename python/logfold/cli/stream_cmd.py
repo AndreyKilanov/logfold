@@ -22,6 +22,7 @@ from logfold.cli.options import (
     Append,
     AsJson,
     Debug,
+    Delimiters,
     Depth,
     Examples,
     Level,
@@ -38,6 +39,7 @@ from logfold.cli.options import (
     SimTh,
     StateForm,
     Top,
+    read_delimiters,
 )
 from logfold.cli.output import resolve_outputs
 from logfold.cli.runtime import config_note, emit, fail, note, settings_of, write_report, write_stdout
@@ -128,6 +130,7 @@ def stream(
     max_children: MaxChildren = None,
     max_templates: MaxTemplates = None,
     on_full: OnFull = None,
+    delimiters: Delimiters = None,
     no_masks: NoMasks = False,
     examples: Examples = "raw",
     load_state: Annotated[
@@ -185,6 +188,7 @@ def stream(
             max_children=max_children,
             max_templates=max_templates,
             on_full=on_full,
+            delimiters=read_delimiters(delimiters),
             masks=[] if no_masks else None,
             load_state=load_state,
             state_format=state_format,

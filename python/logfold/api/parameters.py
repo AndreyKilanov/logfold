@@ -9,6 +9,7 @@ from logfold._bridge import ExtractorHandle
 from logfold.api._common import _mining
 from logfold.config import MaskRule, MiningConfig
 from logfold.engines.native import mining_to_dicts
+from logfold.errors import ConfigError
 from logfold.model import Parameter, Template
 from logfold.settings import Settings
 
@@ -27,6 +28,7 @@ def extract_parameters(
     masks: Sequence[MaskRule] | None = None,
     mining: MiningConfig | None = None,
     config: Settings | None = None,
+    delimiters: str | None = None,
 ) -> tuple[Parameter, ...] | None:
     """Give the values that a message has at the variable positions of a template.
 
@@ -47,17 +49,24 @@ def extract_parameters(
         mining: Full mining configuration; ``masks`` overrides its rules.
         config: Settings from a ``logfold.toml`` (:func:`logfold.load_config`), used where the call names no mining
             configuration itself.
+        delimiters: The characters that separate tokens, replacing the ones of ``mining``; they must include the space.
 
     Returns:
         The parameters in the order of their positions (empty for a template with no variable part), or ``None`` when
         the message does not fit the template: it has another number of tokens, or a constant token differs.
 
     Raises:
-        ConfigError: If a masking rule is invalid.
+        ConfigError: If a masking rule is invalid or the delimiters do not include the space.
         EngineError: If the native extension is unavailable.
     """
     text = template.text if isinstance(template, Template) else template
     base = mining if mining is not None else (config.mining if config is not None else None)
-    resolved = _mining(base, None, None, None, None, masks)
+    resolved = _mining(base, None, None, None, None, masks, delimiters=delimiters)
+    if " " not in resolved.delimiters:
+        raise ConfigError(
+            "the delimiters do not include the space",
+            hint="a template joins its tokens with a space, so the values of a message can only be found when the "
+            "run split tokens at spaces too",
+        )
     (found,) = _extractor(resolved.masks, resolved.delimiters).extract(text, [message])
     return None if found is None else tuple(Parameter(*row) for row in found)

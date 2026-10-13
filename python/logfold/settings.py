@@ -68,6 +68,7 @@ _MINING = {
     "max_children": _integer(1),
     "max_templates": _integer(1),
     "on_full": _text("pool", "evict"),
+    "delimiters": _text(),
     "masks": lambda value: value,
 }
 _EXECUTION = {

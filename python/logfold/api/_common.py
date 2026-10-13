@@ -74,6 +74,7 @@ def _mining(
     masks: Sequence[MaskRule] | None,
     high_cardinality: bool = False,
     on_full: str | None = None,
+    delimiters: str | None = None,
 ) -> MiningConfig:
     config = base or MiningConfig()
     if high_cardinality and max_templates is None:
@@ -85,6 +86,7 @@ def _mining(
         ("max_children", max_children),
         ("max_templates", max_templates),
         ("on_full", on_full),
+        ("delimiters", delimiters),
     ):
         if value is not None:
             changes[key] = value

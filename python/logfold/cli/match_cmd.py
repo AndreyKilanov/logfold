@@ -16,6 +16,7 @@ from logfold.cli.options import (
     AsJson,
     ChunkMb,
     Debug,
+    Delimiters,
     Depth,
     Examples,
     Format,
@@ -100,6 +101,7 @@ def match(
     max_children: MaxChildren = None,
     max_templates: MaxTemplates = None,
     on_full: OnFull = None,
+    delimiters: Delimiters = None,
     threads: Threads = None,
     chunk_mb: ChunkMb = None,
     strategy: Strategy = None,
@@ -128,6 +130,7 @@ def match(
             False,
             False,
             on_full,
+            delimiters,
         )
         for name in NOT_FOR_MATCH:
             del options[name]
