@@ -1,7 +1,8 @@
 # logfold guide
 
 This guide walks through the typical tasks. For the complete lists of options and signatures see the
-[command-line reference](cli.md) and the [Python API reference](api.md).
+[command-line reference](cli.md) and the [Python API reference](api.md). If you use Drain3 now, start with
+[Migrating from Drain3](migrating-from-drain3.md).
 
 ## Install
 

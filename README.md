@@ -237,6 +237,8 @@ Template quality: `python eval/quality.py` (grouping accuracy on the 16 Loghub-2
   matchers; an example package is in
   [`examples/logfold-example-plugin`](https://github.com/AndreyKilanov/logfold/tree/main/examples/logfold-example-plugin).
 - [Python API reference](https://github.com/AndreyKilanov/logfold/blob/main/docs/api.md).
+- [Migrating from Drain3](https://github.com/AndreyKilanov/logfold/blob/main/docs/migrating-from-drain3.md): the calls and
+  settings that correspond, what differs, what logfold does not have.
 - [Algorithm](https://github.com/AndreyKilanov/logfold/blob/main/docs/ALGORITHM.md),
   [JSON schemas](https://github.com/AndreyKilanov/logfold/tree/main/docs/schema) and the
   [changelog](https://github.com/AndreyKilanov/logfold/blob/main/CHANGELOG.md).

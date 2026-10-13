@@ -233,6 +233,8 @@ ARM, более медленный диск, больше ядер) или на 
   отчётов и сопоставлений; пример пакета —
   [`examples/logfold-example-plugin`](https://github.com/AndreyKilanov/logfold/tree/main/examples/logfold-example-plugin).
 - [Справочник Python API](https://github.com/AndreyKilanov/logfold/blob/main/docs/api.md).
+- [Переход с Drain3](https://github.com/AndreyKilanov/logfold/blob/main/docs/migrating-from-drain3.md): какие вызовы и
+  настройки соответствуют, чем отличается результат, чего в logfold нет.
 - [Алгоритм](https://github.com/AndreyKilanov/logfold/blob/main/docs/ALGORITHM.md),
   [JSON-схемы](https://github.com/AndreyKilanov/logfold/tree/main/docs/schema) и
   [история изменений](https://github.com/AndreyKilanov/logfold/blob/main/CHANGELOG.md).
