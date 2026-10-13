@@ -6,7 +6,7 @@
 mod common;
 
 use common::{feed, lines};
-use logfold_core::{DrainMiner, MinerConfig, OnFull};
+use logfold_core::{DrainMiner, MinerConfig, MinerSnapshot, OnFull};
 use proptest::prelude::*;
 
 fn evicting(max_templates: usize) -> DrainMiner {
@@ -172,7 +172,9 @@ proptest! {
             feed(&mut evicting_miner, 0, text, index);
             feed(&mut pooling_miner, 0, text, index);
         }
-        prop_assert_eq!(evicting_miner.snapshot(), pooling_miner.snapshot());
+        let evicting_snapshot = evicting_miner.snapshot();
+        prop_assert!(evicting_snapshot.recency.is_some());
+        prop_assert_eq!(MinerSnapshot { recency: None, ..evicting_snapshot }, pooling_miner.snapshot());
         prop_assert_eq!(evicting_miner.evicted(), &[0]);
     }
 }

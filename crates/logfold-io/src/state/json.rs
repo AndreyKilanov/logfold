@@ -17,7 +17,8 @@ use sha2::{Digest, Sha256};
 use super::binary::check_counts;
 use super::wire::{StateCounts, counts_of, from_hex, to_hex};
 use super::{
-    MAX_HEADER_TEXT_BYTES, STATE_KIND, STATE_SCHEMA_VERSION, State, StateError, StateHeader, StateLimits, damaged, over,
+    MAX_HEADER_TEXT_BYTES, STATE_KIND, STATE_SCHEMA_VERSION, State, StateError, StateHeader, StateLimits, damaged,
+    over, schema_version_of,
 };
 
 const LIMIT_MARK: &str = "state limit: ";
@@ -83,7 +84,9 @@ pub(super) fn encode(state: &State) -> Vec<u8> {
     let counts = counts_of(snapshot);
     let header = &state.header;
     let mut out = Vec::new();
-    out.extend_from_slice(format!(r#"{{"kind":"{STATE_KIND}","schema_version":{STATE_SCHEMA_VERSION},"#).as_bytes());
+    out.extend_from_slice(
+        format!(r#"{{"kind":"{STATE_KIND}","schema_version":{},"#, schema_version_of(snapshot)).as_bytes(),
+    );
     out.extend_from_slice(
         format!(r#""algo_version":{},"contract":{},"logfold_version":"#, header.algo_version, header.contract)
             .as_bytes(),
@@ -143,6 +146,10 @@ pub(super) fn encode(state: &State) -> Vec<u8> {
         put_cluster(out, cluster);
         out.push(b']');
     });
+    if let Some(ranks) = &snapshot.recency {
+        out.extend_from_slice(br#","recency":"#);
+        put_list(&mut out, ranks, |out, rank| put_number(out, rank));
+    }
     out.extend_from_slice(b"}\n");
 
     let digest = to_hex(&Sha256::digest(&out));
@@ -290,6 +297,7 @@ struct Body {
     roots: Vec<(u64, u32)>,
     clusters: Vec<ClusterJson>,
     overflow: Vec<(u64, ClusterJson)>,
+    recency: Option<Vec<u32>>,
 }
 
 struct BodySeed<'a>(&'a StateLimits);
@@ -311,7 +319,7 @@ impl<'de> Visitor<'de> for BodySeed<'_> {
 
     fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Body, A::Error> {
         let limits = self.0;
-        let (mut nodes, mut roots, mut clusters, mut overflow) = (None, None, None, None);
+        let (mut nodes, mut roots, mut clusters, mut overflow, mut recency) = (None, None, None, None, None);
         while let Some(key) = map.next_key::<String>()? {
             match key.as_str() {
                 "nodes" if nodes.is_none() => {
@@ -326,13 +334,29 @@ impl<'de> Visitor<'de> for BodySeed<'_> {
                 "overflow" if overflow.is_none() => {
                     overflow = Some(map.next_value_seed(Bounded::new(limits.max_clusters, "overflow templates"))?);
                 }
+                "recency" if recency.is_none() => {
+                    recency = Some(map.next_value_seed(Bounded::new(limits.max_clusters, "recency ranks"))?);
+                }
                 other => return Err(de::Error::custom(format!("unexpected or repeated field '{other}'"))),
             }
         }
         match (nodes, roots, clusters, overflow) {
-            (Some(nodes), Some(roots), Some(clusters), Some(overflow)) => Ok(Body { nodes, roots, clusters, overflow }),
+            (Some(nodes), Some(roots), Some(clusters), Some(overflow)) => {
+                Ok(Body { nodes, roots, clusters, overflow, recency })
+            }
             _ => Err(de::Error::custom("the body lacks a field")),
         }
+    }
+}
+
+/// Checks that the ranks are there exactly when the layout has them, and one for every template.
+pub(super) fn check_recency(snapshot: &MinerSnapshot, schema_version: u32) -> Result<(), StateError> {
+    match (&snapshot.recency, schema_version >= 2) {
+        (Some(ranks), true) if ranks.len() == snapshot.clusters.len() => Ok(()),
+        (Some(_), true) => Err(damaged("the recency ranks are not one for every template")),
+        (None, false) => Ok(()),
+        (Some(_), false) => Err(damaged("recency ranks in a file of schema version 1")),
+        (None, true) => Err(damaged("a file of schema version 2 has no recency ranks")),
     }
 }
 
@@ -440,7 +464,9 @@ pub(super) fn decode(bytes: &[u8], limits: &StateLimits) -> Result<State, StateE
         roots,
         clusters,
         overflow,
+        recency: body.recency,
     };
+    check_recency(&snapshot, header.schema_version)?;
     let found = counts_of(&snapshot);
     if found != counts {
         return Err(damaged("the counts in the header are not the counts of the body"));

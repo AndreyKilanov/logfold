@@ -92,6 +92,9 @@ pub struct MinerSnapshot {
     pub clusters: Vec<ClusterSnapshot>,
     /// Overflow template of every message length, ordered by length.
     pub overflow: Vec<(usize, ClusterSnapshot)>,
+    /// For a miner that evicts: the rank of every cluster by recency of use, indexed by cluster id, 0 for the least
+    /// recently used; a permutation of `0..clusters.len()`. `None` for a miner that pools, whose state does not need it.
+    pub recency: Option<Vec<u32>>,
 }
 
 impl MinerSnapshot {
@@ -148,7 +151,19 @@ impl DrainMiner {
             roots,
             clusters: self.clusters.iter().map(Cluster::snapshot).collect(),
             overflow: self.overflow.iter().map(|(length, cluster)| (*length, cluster.snapshot())).collect(),
+            recency: (self.cfg.on_full == OnFull::Evict).then(|| self.recency_ranks()),
         }
+    }
+
+    /// The rank of every cluster by recency of use, 0 for the least recently used (ties: the earlier created).
+    fn recency_ranks(&self) -> Vec<u32> {
+        let mut order: Vec<u32> = (0..self.clusters.len() as u32).collect();
+        order.sort_unstable_by_key(|&id| (self.clusters[id as usize].last_used, id));
+        let mut ranks = vec![0; order.len()];
+        for (rank, &id) in order.iter().enumerate() {
+            ranks[id as usize] = rank as u32;
+        }
+        ranks
     }
 
     /// Rebuilds a miner from a snapshot that tracks `n_runs` runs with empty statistics.
@@ -160,7 +175,7 @@ impl DrainMiner {
             return Err(invalid("at least one run is needed"));
         }
         let cfg = checked_config(&snapshot)?;
-        let MinerSnapshot { nodes, roots, clusters, overflow, .. } = snapshot;
+        let MinerSnapshot { nodes, roots, clusters, overflow, recency, .. } = snapshot;
         if clusters.len() > cfg.max_templates {
             return Err(invalid(format!("{} templates exceed max_templates {}", clusters.len(), cfg.max_templates)));
         }
@@ -184,9 +199,10 @@ impl DrainMiner {
             length_clusters.entry(cluster.tokens.len()).or_default().push(id as u32);
         }
         let clusters_len = clusters.len();
+        let ranks = checked_recency(recency, clusters_len)?;
         let mut clusters: Vec<Cluster> = clusters.into_iter().map(|c| Cluster::from_snapshot(c, n_runs)).collect();
         for (id, cluster) in clusters.iter_mut().enumerate() {
-            cluster.last_used = id as u64;
+            cluster.last_used = ranks.as_ref().map_or(id as u64, |ranks| u64::from(ranks[id]));
         }
         let mut length_indexes: HashMap<usize, LengthIndex, ahash::RandomState> = HashMap::default();
         for (id, cluster) in clusters.iter().enumerate() {
@@ -229,6 +245,22 @@ impl DrainMiner {
             reported: clusters_len,
         })
     }
+}
+
+/// Checks that the recency ranks are a permutation of `0..clusters`, and gives them back.
+fn checked_recency(recency: Option<Vec<u32>>, clusters: usize) -> Result<Option<Vec<u32>>, CoreError> {
+    let Some(ranks) = recency else { return Ok(None) };
+    if ranks.len() != clusters {
+        return Err(invalid(format!("{} recency ranks for {clusters} templates", ranks.len())));
+    }
+    let mut seen = vec![false; clusters];
+    for &rank in &ranks {
+        match seen.get_mut(rank as usize) {
+            Some(slot) if !*slot => *slot = true,
+            _ => return Err(invalid("the recency ranks are not a permutation of the templates")),
+        }
+    }
+    Ok(Some(ranks))
 }
 
 fn checked_config(snapshot: &MinerSnapshot) -> Result<MinerConfig, CoreError> {

@@ -227,19 +227,19 @@ fn a_flipped_bit_is_refused_by_the_checksum() {
 #[test]
 fn a_newer_schema_is_refused_with_its_version() {
     let json = resigned(
-        replaced(&encode_state(&small(), StateFormat::Json), "\"schema_version\":1", "\"schema_version\":2"),
+        replaced(&encode_state(&small(), StateFormat::Json), "\"schema_version\":1", "\"schema_version\":3"),
         StateFormat::Json,
     );
     assert!(matches!(
         decode_state(&json, &StateLimits::default()),
-        Err(StateError::Version { found: 2, supported: 1 })
+        Err(StateError::Version { found: 3, supported: 2 })
     ));
     let mut binary = encode_state(&small(), StateFormat::Binary);
-    binary[8] = 2;
+    binary[8] = 3;
     let binary = resigned(binary, StateFormat::Binary);
     assert!(matches!(
         decode_state(&binary, &StateLimits::default()),
-        Err(StateError::Version { found: 2, supported: 1 })
+        Err(StateError::Version { found: 3, supported: 2 })
     ));
 }
 
@@ -366,11 +366,11 @@ fn a_newer_layout_is_reported_as_newer_whatever_else_changed() {
     let json = b"{\"kind\":\"logfold-state\",\"schema_version\":9,\"a_field_of_the_future\":1}
 not the body of today
 ";
-    assert!(matches!(decode_state(json, &limits), Err(StateError::Version { found: 9, supported: 1 })));
+    assert!(matches!(decode_state(json, &limits), Err(StateError::Version { found: 9, supported: 2 })));
     let mut binary = BINARY_MAGIC.to_vec();
     binary.extend_from_slice(&[9, 0]);
     binary.extend_from_slice(b"a layout that has no checksum at the end");
-    assert!(matches!(decode_state(&binary, &limits), Err(StateError::Version { found: 9, supported: 1 })));
+    assert!(matches!(decode_state(&binary, &limits), Err(StateError::Version { found: 9, supported: 2 })));
 }
 
 #[test]
@@ -459,6 +459,7 @@ fn synthetic(clusters: usize) -> MinerSnapshot {
         roots: vec![(6, 0)],
         clusters: templates,
         overflow: Vec::new(),
+        recency: None,
     }
 }
 

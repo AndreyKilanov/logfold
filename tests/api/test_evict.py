@@ -134,3 +134,35 @@ def test_an_unknown_policy_is_refused() -> None:
         MiningConfig(on_full="forget")
     with pytest.raises(ConfigError, match="on_full"):
         logfold.Miner(on_full="forget")
+
+
+def test_a_saved_state_continues_like_one_continuous_run(tmp_path: Path) -> None:
+    stream = [
+        f"shape{(n * 7) % 53 + n // 11}a shape{(n * 7) % 53 + n // 11}b shape{(n * 7) % 53 + n // 11}c"
+        for n in range(400)
+    ]
+    options = {"max_templates": 10, "on_full": "evict"}
+    continuous = logfold.Miner(**options)
+    continuous.add_many(stream)
+    continuous.save_state(tmp_path / "whole.json")
+
+    first = logfold.Miner(**options)
+    first.add_many(stream[:150])
+    first.save_state(tmp_path / "half.json")
+    for state_format in ("json", "binary"):
+        first.save_state(tmp_path / f"half.{state_format}", state_format)
+        resumed = logfold.Miner(load_state=tmp_path / f"half.{state_format}", **options)
+        resumed.add_many(stream[150:])
+        resumed.save_state(tmp_path / f"resumed-{state_format}.json", "json")
+        assert (tmp_path / f"resumed-{state_format}.json").read_bytes() == (tmp_path / "whole.json").read_bytes()
+
+
+def test_a_state_that_pools_is_written_as_before(tmp_path: Path) -> None:
+    pooling = logfold.Miner(max_templates=10)
+    pooling.add_many(shapes(30))
+    pooling.save_state(tmp_path / "pool.json")
+    assert b'"schema_version":1,' in (tmp_path / "pool.json").read_bytes()
+    evicting = logfold.Miner(max_templates=10, on_full="evict")
+    evicting.add_many(shapes(30))
+    evicting.save_state(tmp_path / "evict.json")
+    assert b'"schema_version":2,' in (tmp_path / "evict.json").read_bytes()

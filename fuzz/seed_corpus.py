@@ -46,15 +46,16 @@ def main() -> None:
         for size in (4, 400):
             log = Path(work) / f"log{size}.log"
             log.write_text(log_text(size), encoding="utf-8", newline="\n")
-            for state_format in ("json", "binary"):
-                saved = Path(work) / f"state{size}.{state_format}"
-                logfold.analyze(str(log), format="plain", save_state=saved, state_format=state_format)
-                raw = saved.read_bytes()
-                if state_format == "json":
-                    header, body, _ = raw.split(b"\n")[:3]
-                    write_seed("state_json", f"seed_{size}", header + b"\n" + body)
-                else:
-                    write_seed("state_binary", f"seed_{size}", raw[BINARY_MAGIC_BYTES:-CHECKSUM_BYTES])
+            for label, options in (("", {}), ("_evict", {"max_templates": 3, "on_full": "evict"})):
+                for state_format in ("json", "binary"):
+                    saved = Path(work) / f"state{size}{label}.{state_format}"
+                    logfold.analyze(str(log), format="plain", save_state=saved, state_format=state_format, **options)
+                    raw = saved.read_bytes()
+                    if state_format == "json":
+                        header, body, _ = raw.split(b"\n")[:3]
+                        write_seed("state_json", f"seed{label}_{size}", header + b"\n" + body)
+                    else:
+                        write_seed("state_binary", f"seed{label}_{size}", raw[BINARY_MAGIC_BYTES:-CHECKSUM_BYTES])
         compressed = gzip.compress(log_text(400).encode("utf-8"), mtime=0)
         write_seed("gzip_lines", "seed_gzip", compressed[2:])
         first, second = gzip.compress(b"a\n", mtime=0), gzip.compress(b"b\n", mtime=0)
