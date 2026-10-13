@@ -123,6 +123,7 @@ def request_to_dict(request: MineRequest) -> dict[str, Any]:
         "mining": parameters,
         "execution": execution,
         "recount": request.recount,
+        "exact": request.exact,
     }
 
 

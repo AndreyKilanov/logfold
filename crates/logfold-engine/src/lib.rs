@@ -21,7 +21,8 @@ use std::time::Instant;
 
 pub use error::EngineError;
 pub use inspect::{SampleRecord, SampleReport, inspect_sample};
-pub use matching::match_records;
+pub use logfold_core::MatchRule;
+pub use matching::{match_records, match_records_with};
 pub use session::{Session, SessionConfig};
 pub use types::{
     DEFAULT_CHUNK_BYTES, ExecutionStrategy, MatchBatch, MatchedTemplate, MineOutput, MineRequest, MiningConfig,
@@ -105,8 +106,8 @@ pub fn mine(request: &MineRequest, observer: &dyn ProgressObserver) -> Result<Mi
     let recount_started = Instant::now();
     let recounted = if request.recount {
         Some(match threads_requested {
-            None => sequential::recount(&context, &miner, &planned, observer)?.0,
-            Some(requested) => chunked::recount(&context, &miner, &planned, requested, observer)?.0,
+            None => sequential::recount(&context, &miner, &planned, MatchRule::Similar, observer)?.0,
+            Some(requested) => chunked::recount(&context, &miner, &planned, requested, MatchRule::Similar, observer)?.0,
         })
     } else {
         None

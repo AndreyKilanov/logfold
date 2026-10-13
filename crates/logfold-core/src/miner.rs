@@ -14,9 +14,9 @@ mod merging;
 mod recount;
 mod snapshot;
 
-use leaf::{INDEX_MIN_CLUSTERS, LeafIndex, Node, SCRATCH};
+use leaf::{INDEX_MIN_CLUSTERS, LeafIndex, LengthIndex, Node, SCRATCH, SPARSE_LITERALS};
 use matching::{BoxedTokens, Tokens, has_digit, score_bounded, update_stats};
-pub use recount::{Assignment, Recount};
+pub use recount::{Assignment, MatchRule, Recount};
 pub use snapshot::{ClusterHistory, ClusterSnapshot, MinerSnapshot, NodeSnapshot};
 
 /// Token that stands for a variable part of a template.
@@ -99,6 +99,7 @@ pub struct DrainMiner {
     nodes: Vec<Node>,
     length_nodes: HashMap<usize, u32, RandomState>,
     length_clusters: HashMap<usize, Vec<u32>, RandomState>,
+    length_indexes: HashMap<usize, LengthIndex, RandomState>,
     clusters: Vec<Cluster>,
     overflow: BTreeMap<usize, Cluster>,
     overflowed: Vec<bool>,
@@ -113,6 +114,7 @@ impl DrainMiner {
             nodes: Vec::new(),
             length_nodes: HashMap::default(),
             length_clusters: HashMap::default(),
+            length_indexes: HashMap::default(),
             clusters: Vec::new(),
             overflow: BTreeMap::new(),
             overflowed: vec![false; n_runs],
@@ -164,7 +166,7 @@ impl DrainMiner {
         if let Some(index) = self.find_match(tokens) {
             return Assignment::Cluster(index as u32);
         }
-        match self.best_in(self.length_clusters.get(&tokens.len()).map(Vec::as_slice).unwrap_or(&[]), tokens) {
+        match self.best_of_length(tokens) {
             Some(index) => Assignment::Cluster(index as u32),
             None => Assignment::Unmatched(tokens.len()),
         }
@@ -174,7 +176,7 @@ impl DrainMiner {
     ///
     /// The statistics gathered while training are discarded; clusters nobody was assigned to disappear.
     pub fn freeze_recounted(self, recount: Recount) -> (Vec<FrozenTemplate>, Vec<bool>) {
-        let Recount { n_runs, mut stats, unmatched } = recount;
+        let Recount { n_runs, mut stats, unmatched, .. } = recount;
         let mut flags = self.overflowed.clone();
         flags.resize(n_runs, false);
         let mut ordered: Vec<Cluster> = Vec::new();
@@ -435,16 +437,22 @@ impl DrainMiner {
             None => {}
         }
         self.length_clusters.entry(cluster.tokens.len()).or_default().push(id);
+        self.length_indexes.entry(cluster.tokens.len()).or_default().add(id, &cluster.tokens);
         self.clusters.push(cluster);
     }
 
     fn generalize<T: Tokens>(&mut self, index: usize, tokens: &T) {
         let cluster = &mut self.clusters[index];
+        let before = cluster.tokens.len() - cluster.wild as usize;
         for (position, template_token) in cluster.tokens.iter_mut().enumerate() {
             if &**template_token != WILDCARD && &**template_token != tokens.at(position) {
                 *template_token = Box::from(WILDCARD);
                 cluster.wild += 1;
             }
+        }
+        let (length, after) = (cluster.tokens.len(), cluster.tokens.len() - cluster.wild as usize);
+        if before > SPARSE_LITERALS && after <= SPARSE_LITERALS {
+            self.length_indexes.entry(length).or_default().sparse.push(index as u32);
         }
     }
 }

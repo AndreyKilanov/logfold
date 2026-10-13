@@ -26,7 +26,7 @@ pub use freeze::{FrozenTemplate, template_id};
 pub use level::{LEVEL_COUNT, Level};
 pub use masker::{MaskHit, MaskRule, MaskScratch, RuleMasker, default_mask_rules};
 pub use miner::{
-    Assignment, ClusterHistory, ClusterSnapshot, DrainMiner, MAX_EXAMPLE_BYTES, MinerConfig, MinerSnapshot,
+    Assignment, ClusterHistory, ClusterSnapshot, DrainMiner, MAX_EXAMPLE_BYTES, MatchRule, MinerConfig, MinerSnapshot,
     NodeSnapshot, RecordMeta, Recount, WILDCARD,
 };
 pub use parameters::{Fit, Parameter, WILDCARD_NAME, extract_parameters};

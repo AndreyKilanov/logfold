@@ -19,7 +19,7 @@ try:
 except ImportError:
     _core = None  # type: ignore[assignment]
 
-EXPECTED_CORE_API_VERSION = 13
+EXPECTED_CORE_API_VERSION = 14
 
 
 def is_available() -> bool:
@@ -153,8 +153,12 @@ class MinerHandle:
         with _translating():
             return int(self._native.flush())
 
-    def match_many(self, records: Iterable[str]) -> tuple[list[tuple[str, str]], list[int | None]]:
+    def match_many(self, records: Iterable[str], exact: bool = False) -> tuple[list[tuple[str, str]], list[int | None]]:
         """Assign complete records to the templates of the miner without learning, in one call.
+
+        Args:
+            records: One string per record.
+            exact: A record fits a template only when every constant token of the template equals its token.
 
         Returns:
             The distinct templates that were hit as ``(id, text)`` pairs, and for every record the index of its
@@ -163,9 +167,9 @@ class MinerHandle:
         batch = list(records)
         with _translating():
             try:
-                return self._native.match_many(batch)
+                return self._native.match_many(batch, exact)
             except UnicodeEncodeError:
-                return self._native.match_many(_clean(batch))
+                return self._native.match_many(_clean(batch), exact)
 
     def new_templates(self) -> list[str]:
         """Return the texts of the templates created since the previous call, in creation order."""

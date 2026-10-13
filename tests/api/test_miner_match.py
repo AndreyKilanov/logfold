@@ -123,3 +123,38 @@ def test_a_lone_surrogate_does_not_break_matching() -> None:
     miner = logfold.Miner()
     miner.add_many(["job 1 finished"])
     assert miner.match("job \ud800 finished") == miner.match("job \N{REPLACEMENT CHARACTER} finished")
+
+
+CHANGED = ["user carol logged in from 10.0.0.3", "user carol logged out from 10.0.0.3", "disk is full"]
+
+
+@pytest.fixture
+def users() -> logfold.Miner:
+    miner = logfold.Miner()
+    miner.add_many(["user alice logged in from 10.0.0.1", "user bob logged in from 10.0.0.2"])
+    return miner
+
+
+def test_exact_asks_for_every_constant_word_and_the_default_for_a_share_of_them(users: logfold.Miner) -> None:
+    template = users.result().templates[0]
+    known = TemplateMatch(template.id, "user <*> logged in from <IP>")
+    assert users.match_many(CHANGED, exact=True) == [known, None, None]
+    assert users.match_many(CHANGED) == [known, known, None]
+    assert users.match(CHANGED[1], exact=True) is None
+    assert users.match(CHANGED[1]) == known
+
+
+def test_an_exact_answer_never_changes_the_miner_and_does_not_depend_on_the_batch(users: logfold.Miner) -> None:
+    before = [(t.text, t.count) for t in users.result().templates]
+    whole = users.match_many(CHANGED, exact=True)
+    assert [users.match(record, exact=True) for record in CHANGED] == whole
+    assert [(t.text, t.count) for t in users.result().templates] == before
+
+
+def test_exact_matches_every_record_the_miner_was_trained_on(trained: logfold.Miner, stream: list[str]) -> None:
+    assert None not in trained.match_many(stream, exact=True)
+
+
+def test_exact_is_a_keyword_argument(users: logfold.Miner) -> None:
+    with pytest.raises(TypeError):
+        users.match_many(CHANGED, True)  # type: ignore[misc]

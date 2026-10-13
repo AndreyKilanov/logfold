@@ -49,6 +49,7 @@ def match(
     examples: ExamplesMode = "raw",
     since: TimeBound = None,
     until: TimeBound = None,
+    exact: bool = False,
     config: Settings | None = None,
     progress: Progress | None = None,
 ) -> AnalysisResult:
@@ -79,6 +80,9 @@ def match(
         examples: ``raw`` keeps example messages, ``masked`` applies the masking rules to them, ``none`` drops them.
         since: Keep only records at or after this time; see :func:`logfold.analyze`.
         until: Keep only records before this time; see :func:`logfold.analyze`.
+        exact: A record belongs to a template only when every constant token of the template equals the token of the
+            record (a wildcard accepts any token), as ``TemplateMiner.match`` of Drain3 does; by default the similarity
+            of mining decides: at least the share ``sim_th`` of the tokens must equal the constant tokens.
         config: Settings from a ``logfold.toml`` (:func:`logfold.load_config`): they give the format, ``multiline``, the
             mining and execution configuration and, for ``diff``, the comparison configuration, wherever the call does
             not name them itself.
@@ -115,6 +119,7 @@ def match(
         windows=(bounds,) if bounds != OPEN else (),
         state=saved,
         matching=True,
+        exact=exact,
     )
     by_length = mined.unmatched[0] if mined.unmatched is not None else ()
     missed = Unmatched(records=sum(records for _, records in by_length), by_length=by_length)

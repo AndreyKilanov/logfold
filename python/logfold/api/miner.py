@@ -150,7 +150,7 @@ class Miner:
         """
         return self._live.flush()
 
-    def match_many(self, records: Iterable[str]) -> list[TemplateMatch | None]:
+    def match_many(self, records: Iterable[str], *, exact: bool = False) -> list[TemplateMatch | None]:
         """Assign a batch of complete records to the templates the miner holds, and learn nothing.
 
         The rule is the one of :func:`logfold.match` and ``logfold match``: the search of training first, then every
@@ -161,25 +161,30 @@ class Miner:
         Args:
             records: One string per record; a record may hold several lines. The format gives the message as for a
                 file.
+            exact: A record fits a template only when every constant token of the template equals the token of the
+                record (a wildcard accepts any token), as ``TemplateMiner.match`` of Drain3 does. By default the
+                similarity of mining decides: at least the share ``sim_th`` of the tokens must equal the constant
+                tokens, so a record that differs from a template in a word can still belong to it.
 
         Returns:
             One item per record: the :class:`~logfold.TemplateMatch` of its template, or ``None`` when the record fits
             no template, is blank or cannot be parsed by the format. The text is the one the template has now.
         """
-        found, assigned = self._live.match_many(_items(records, "match_many"))
+        found, assigned = self._live.match_many(_items(records, "match_many"), exact)
         matches = [TemplateMatch(identifier, text) for identifier, text in found]
         return [None if index is None else matches[index] for index in assigned]
 
-    def match(self, record: str) -> TemplateMatch | None:
+    def match(self, record: str, *, exact: bool = False) -> TemplateMatch | None:
         """Assign one record to a template without learning. It makes one native call; prefer :meth:`match_many`.
 
         Args:
             record: One record.
+            exact: As in :meth:`match_many`.
 
         Returns:
             The :class:`~logfold.TemplateMatch`, or ``None`` as in :meth:`match_many`.
         """
-        return self.match_many((record,))[0]
+        return self.match_many((record,), exact=exact)[0]
 
     def new_templates(self) -> list[str]:
         """Return the templates created since the previous call (or since the miner was opened).

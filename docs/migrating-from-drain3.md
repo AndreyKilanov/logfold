@@ -56,7 +56,7 @@ Give `add_many` batches (hundreds to thousands of records) and ask for `new_temp
 | `result["cluster_id"]` (an integer in creation order) | `Template.id`, the first 16 hex digits of `sha256(text)`; it changes when a template is generalized |
 | `result["change_type"]` | none; a new template is in `new_templates()` |
 | `miner.drain.clusters` | `Miner.result().templates`, most frequent first, with `count`, `level`, `first_seen`, `last_seen` and an `example` |
-| `miner.match(line)` | [`miner.match(record)`](api.md#miner), or `match_many(records)` for a batch: a `TemplateMatch(id, text)` or `None`, nothing is learned. For a file: [`logfold.match(state, path)`](api.md#match) or `logfold match STATE FILE` |
+| `miner.match(line)` | [`miner.match(record, exact=True)`](api.md#miner), or `match_many(records, exact=True)` for a batch: a `TemplateMatch(id, text)` or `None`, nothing is learned. For a file: [`logfold.match(state, path, exact=True)`](api.md#match) or `logfold match STATE FILE --exact` |
 | `miner.extract_parameters(template, line)` | [`miner.extract_parameters(template, line)`](api.md#extract_parameters) |
 | `miner.get_parameter_list(template, line)` | `[p.value for p in miner.extract_parameters(template, line)]` |
 | `FilePersistence` and `save_state` | `miner.save_state("model.json")`, or `logfold analyze --save-state` |
@@ -98,10 +98,11 @@ always the exact one.
 - **Identifiers.** A Drain3 `cluster_id` stays when a template changes. A logfold `Template.id` is a hash of the text, so
   it is the same in every run and on every machine, and a generalized template gets a new one. Store the text if you need
   to follow a template over time, or use [`diff`](guide.md#compare-two-runs), which matches templates between two runs.
-- **Matching.** `TemplateMiner.match` asks for a perfect match (`sim_th` 1.0). `Miner.match` uses the similarity of mining: a
-  record belongs to a template when at least the share `sim_th` of its tokens equals the constant tokens of the template (0.4
-  by default), so it answers `None` less often. Records that were pooled into the catch-all templates at the template limit
-  have no template.
+- **Matching.** `TemplateMiner.match` asks for a perfect match (`sim_th` 1.0). `Miner.match` uses by default the similarity of
+  mining: a record belongs to a template when at least the share `sim_th` of its tokens equals the constant tokens of the template
+  (0.4), so it answers `None` less often. Pass `exact=True` (`--exact` for `logfold match`) for the perfect match of Drain3: every
+  constant token of the template must equal the token of the record. Records that were pooled into the catch-all templates at
+  the template limit have no template.
 - **Memory limit.** When the number of templates reaches `max_templates`, further records that fit no template go to one
   catch-all template per token count (`<*> <*> <*>`), counts stay exact and `run.overflowed` is set. Drain3 with
   `max_clusters` evicts the least recently used cluster instead.

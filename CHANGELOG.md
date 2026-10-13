@@ -25,7 +25,8 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 - `logfold.Miner` takes records in batches (`add_many`, `add_lines`, `result()`, `save_state`) and keeps its templates between
   calls, and `logfold stream [FILE]` mines a log while it is written and prints each template when it first appears. Both read and
   write state files, and the result equals `analyze` over the same records. `Miner.match_many(records)` and `Miner.match(record)`
-  assign records to its templates without learning (`logfold.TemplateMatch`). Extension contract version 13. See `docs/api.md`,
+  assign records to its templates without learning (`logfold.TemplateMatch`); `exact=True` (`logfold match --exact`) asks for a
+  perfect match of the constant words, as Drain3 does. Extension contract version 14. See `docs/api.md`,
   `docs/cli.md`.
 - `logfold.extract_parameters(template, message)` and `logfold params TEMPLATE MESSAGE` give the values that a message has at the
   variable parts of a template (`<*>` and masked values such as `<NUM>`), named by the rule or `*`, as written in the message;
@@ -45,6 +46,8 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   with a `ConfigError`; a short listing of 100 thousand templates takes up to 75 ms more.
 - `inspect` reads the sample in the extension, so a format is read exactly as `analyze` reads it (a pattern that only
   Python's `re` accepts, such as a lookahead, is now refused).
+- A record that fits no template is found out up to 100 times faster in `match`, `diff` and `Miner.match_many` when the log has
+  tens of thousands of templates (50,000 templates: 1 ms per record before, 0.01 ms now); the results are the same.
 
 ### Fixed
 

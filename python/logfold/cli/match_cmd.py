@@ -48,6 +48,8 @@ EXAMPLES = """Examples:
 
   logfold match model.json app.log.1.gz app.log -o report.html
 
+  logfold match model.json app.log --exact
+
   logfold match model.json app.log --json > matched.json"""
 
 NOT_FOR_MATCH = ("engine", "high_cardinality", "warm_start")
@@ -68,6 +70,15 @@ def match(
     multiline: Multiline = None,
     since: Since = None,
     until: Until = None,
+    exact: Annotated[
+        bool,
+        typer.Option(
+            "--exact",
+            help="A record fits a template only when every constant word of the template equals its word "
+            "(as Drain3's match); by default at least the share --sim-th of the words must equal.",
+            rich_help_panel=PANEL_INPUT,
+        ),
+    ] = False,
     top: Top = 20,
     min_count: Annotated[
         int,
@@ -115,6 +126,7 @@ def match(
                 multiline=multiline,
                 since=since,
                 until=until,
+                exact=exact,
                 examples=examples,  # type: ignore[arg-type]
                 progress=progress,
                 config=settings,

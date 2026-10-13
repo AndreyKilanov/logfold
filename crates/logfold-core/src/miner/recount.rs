@@ -11,6 +11,18 @@ use crate::tokenizer::TokenView;
 use super::matching::update_stats;
 use super::{DrainMiner, RecordMeta};
 
+/// How a record is assigned to a template of a finished tree.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum MatchRule {
+    /// The similarity of mining (`docs/ALGORITHM.md` §9): at least the share `sim_th` of the tokens equals the constant
+    /// tokens of the template.
+    #[default]
+    Similar,
+    /// A perfect match, as `TemplateMiner.match` of Drain3: every constant token of the template equals the token of
+    /// the record, and a wildcard accepts any token.
+    Exact,
+}
+
 /// Result of [`DrainMiner::assign`].
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Assignment {
@@ -21,6 +33,25 @@ pub enum Assignment {
 }
 
 impl DrainMiner {
+    /// Assigns a message to a cluster of the finished tree without changing the tree, by `rule`.
+    pub fn assign_with(&self, tokens: &TokenView<'_>, rule: MatchRule) -> Assignment {
+        match rule {
+            MatchRule::Similar => self.assign(tokens),
+            MatchRule::Exact => self.assign_exact(tokens),
+        }
+    }
+
+    /// Assigns a message to the cluster whose constant tokens all equal the tokens of the message.
+    ///
+    /// Every cluster of the same token count is considered, so the answer does not depend on the shape of the tree; the
+    /// one with the fewest wildcards wins, then the earliest created.
+    fn assign_exact(&self, tokens: &TokenView<'_>) -> Assignment {
+        match self.best_exact_of_length(tokens) {
+            Some(index) => Assignment::Cluster(index as u32),
+            None => Assignment::Unmatched(tokens.len()),
+        }
+    }
+
     /// Text of the cluster `index` of an [`Assignment::Cluster`] as it is now, tokens joined by a single space.
     ///
     /// # Panics
@@ -32,21 +63,32 @@ impl DrainMiner {
 
 /// Statistics gathered by assigning records to the clusters of a finished tree (`docs/ALGORITHM.md` §9).
 pub struct Recount {
+    rule: MatchRule,
     pub(crate) n_runs: usize,
     pub(crate) stats: HashMap<u32, Vec<RunStats>, RandomState>,
     pub(crate) unmatched: BTreeMap<usize, Vec<RunStats>>,
 }
 
 impl Recount {
-    /// Creates an empty recount for `n_runs` runs.
+    /// Creates an empty recount for `n_runs` runs that assigns records by similarity.
     pub fn new(n_runs: usize) -> Self {
-        Recount { n_runs, stats: HashMap::default(), unmatched: BTreeMap::new() }
+        Self::with_rule(n_runs, MatchRule::Similar)
+    }
+
+    /// Creates an empty recount for `n_runs` runs that assigns records by `rule`.
+    pub fn with_rule(n_runs: usize, rule: MatchRule) -> Self {
+        Recount { rule, n_runs, stats: HashMap::default(), unmatched: BTreeMap::new() }
+    }
+
+    /// The rule by which this recount assigns records.
+    pub fn rule(&self) -> MatchRule {
+        self.rule
     }
 
     /// Assigns one record of run `run` using `miner` and updates the statistics.
     pub fn record(&mut self, miner: &DrainMiner, run: usize, tokens: &TokenView<'_>, rec: &RecordMeta<'_>) {
         let n_runs = self.n_runs;
-        let slot = match miner.assign(tokens) {
+        let slot = match miner.assign_with(tokens, self.rule) {
             Assignment::Cluster(index) => self.stats.entry(index).or_insert_with(|| vec![RunStats::default(); n_runs]),
             Assignment::Unmatched(length) => {
                 self.unmatched.entry(length).or_insert_with(|| vec![RunStats::default(); n_runs])

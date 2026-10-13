@@ -10,7 +10,7 @@ use crate::error::CoreError;
 use crate::level::LEVEL_COUNT;
 use crate::stats::RunStats;
 
-use super::leaf::{INDEX_MIN_CLUSTERS, LeafIndex, Node};
+use super::leaf::{INDEX_MIN_CLUSTERS, LeafIndex, LengthIndex, Node, SPARSE_LITERALS, literals};
 use super::matching::has_digit;
 use super::{Cluster, DrainMiner, MinerConfig, WILDCARD};
 
@@ -174,6 +174,13 @@ impl DrainMiner {
             length_clusters.entry(cluster.tokens.len()).or_default().push(id as u32);
         }
         let clusters: Vec<Cluster> = clusters.into_iter().map(|c| Cluster::from_snapshot(c, n_runs)).collect();
+        let mut length_indexes: HashMap<usize, LengthIndex, ahash::RandomState> = HashMap::default();
+        for (id, cluster) in clusters.iter().enumerate() {
+            let group = length_indexes.entry(cluster.tokens.len()).or_default();
+            if literals(&cluster.tokens) <= SPARSE_LITERALS {
+                group.sparse.push(id as u32);
+            }
+        }
         let nodes: Vec<Node> = nodes
             .into_iter()
             .map(|node| {
@@ -198,6 +205,7 @@ impl DrainMiner {
             nodes,
             length_nodes,
             length_clusters,
+            length_indexes,
             clusters,
             overflow,
             overflowed: vec![false; n_runs],

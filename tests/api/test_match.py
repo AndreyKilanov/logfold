@@ -119,3 +119,24 @@ def test_no_input_is_a_config_error(tmp_path: Path) -> None:
     state = trained(tmp_path, app_lines(100, 3))
     with pytest.raises(ConfigError, match="at least one input"):
         logfold.match(state, [])
+
+
+def test_exact_counts_a_record_that_differs_in_a_constant_word_as_unmatched(tmp_path: Path) -> None:
+    trained = write(
+        tmp_path / "trained.log", ["user alice logged in from 10.0.0.1", "user bob logged in from 10.0.0.2"]
+    )
+    state = tmp_path / "model.json"
+    logfold.analyze(str(trained), format="plain", save_state=state)
+    probe = write(
+        tmp_path / "probe.log",
+        ["user carol logged in from 10.0.0.3", "user carol logged out from 10.0.0.3", "disk is full"],
+    )
+
+    loose = logfold.match(state, str(probe), format="plain")
+    strict = logfold.match(state, str(probe), format="plain", exact=True)
+
+    assert loose.run.unmatched is not None
+    assert strict.run.unmatched is not None
+    assert loose.run.unmatched.records == 1
+    assert strict.run.unmatched.records == 2
+    assert [(t.text, t.count) for t in strict.templates] == [("user <*> logged in from <IP>", 1)]

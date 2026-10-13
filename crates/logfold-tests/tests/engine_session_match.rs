@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use common::lines;
-use logfold_core::{MinerSnapshot, default_mask_rules, template_id};
+use logfold_core::{MatchRule, MinerSnapshot, default_mask_rules, template_id};
 use logfold_engine::{
     ExecutionStrategy, MatchBatch, MineOutput, MineRequest, MiningConfig, NullObserver, Session, SessionConfig,
     match_records,
@@ -60,7 +60,7 @@ fn feed(session: &mut Session, records: &[String]) {
 }
 
 fn ask(session: &mut Session, records: &[String]) -> MatchBatch {
-    session.match_records(records.iter().map(|record| record.as_bytes()))
+    session.match_records(records.iter().map(|record| record.as_bytes()), MatchRule::Similar)
 }
 
 fn texts(batch: &MatchBatch) -> Vec<Option<String>> {
@@ -155,7 +155,7 @@ fn blank_unparsed_and_unknown_records_have_no_template() {
     let mut live = session(regex());
     feed(&mut live, &["INFO job 1 finished".to_string(), "INFO job 2 finished".to_string()]);
     let records = ["INFO job 3 finished", "", "   ", "no level at all", "WARN something never seen before ever"];
-    let batch = live.match_records(records.iter().map(|record| record.as_bytes()));
+    let batch = live.match_records(records.iter().map(|record| record.as_bytes()), MatchRule::Similar);
     assert_eq!(batch.assigned, vec![Some(0), None, None, None, None]);
     assert_eq!(batch.templates.len(), 1);
     assert_eq!(live.output().runs[0].unparsed, 0);
@@ -179,10 +179,10 @@ fn a_record_that_is_still_open_is_not_touched() {
     };
     let mut live = session(multiline);
     live.add_lines(["2026-01-01 failure 1\n".as_bytes(), "  at frame 0\n".as_bytes()]);
-    let batch = live.match_records(["2026-01-01 failure 2\n  at frame 1".as_bytes()]);
+    let batch = live.match_records(["2026-01-01 failure 2\n  at frame 1".as_bytes()], MatchRule::Similar);
     assert_eq!(batch.assigned, vec![None]);
     assert_eq!(live.flush(), 1);
-    let batch = live.match_records(["2026-01-01 failure 2\n  at frame 1".as_bytes()]);
+    let batch = live.match_records(["2026-01-01 failure 2\n  at frame 1".as_bytes()], MatchRule::Similar);
     assert_eq!(batch.assigned, vec![Some(0)]);
 }
 

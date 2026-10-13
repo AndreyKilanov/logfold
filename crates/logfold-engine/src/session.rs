@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 use std::time::Instant;
 
-use logfold_core::{Assignment, DrainMiner, MaskRule, MaskScratch, MinerSnapshot, template_id};
+use logfold_core::{Assignment, DrainMiner, MaskRule, MaskScratch, MatchRule, MinerSnapshot, template_id};
 use logfold_io::{Counters, FormatConfig, MAX_LINE_BYTES, MAX_RECORD_BYTES};
 
 use crate::error::EngineError;
@@ -120,17 +120,19 @@ impl Session {
 
     /// Assigns complete records to the templates that the miner holds, and learns nothing.
     ///
-    /// The rule is the one of [`crate::match_records`]: the search of training first, then every template of the same
-    /// length. The miner, its counters and the record that is still open are not touched, so the answer for a record
-    /// does not depend on the other records of the batch or on how the records are split into calls. A blank item, an
-    /// item that the format cannot parse and an item that fits no template are `None`; an item is cut at
-    /// [`MAX_RECORD_BYTES`].
-    pub fn match_records<'a>(&mut self, records: impl IntoIterator<Item = &'a [u8]>) -> MatchBatch {
+    /// With [`MatchRule::Similar`] the rule is the one of [`crate::match_records`]: the search of training first, then
+    /// every template of the same length. With [`MatchRule::Exact`] a record fits a template only when every constant
+    /// token of the template equals the token of the record.
+    ///
+    /// The miner, its counters and the record that is still open are not touched, so the answer for a record does not
+    /// depend on the other records of the batch or on how the records are split into calls. A blank item, an item that
+    /// the format cannot parse and an item that fits no template are `None`; an item is cut at [`MAX_RECORD_BYTES`].
+    pub fn match_records<'a>(&mut self, records: impl IntoIterator<Item = &'a [u8]>, rule: MatchRule) -> MatchBatch {
         let mut batch = MatchBatch::default();
         let mut seen: HashMap<u32, usize> = HashMap::new();
         for record in records {
             let text = &record[..record.len().min(MAX_RECORD_BYTES)];
-            let assigned = if is_blank(text) { None } else { self.assign(text, &mut batch, &mut seen) };
+            let assigned = if is_blank(text) { None } else { self.assign(text, rule, &mut batch, &mut seen) };
             batch.assigned.push(assigned);
         }
         batch
@@ -193,10 +195,16 @@ impl Session {
         }
     }
 
-    fn assign(&mut self, text: &[u8], batch: &mut MatchBatch, seen: &mut HashMap<u32, usize>) -> Option<usize> {
+    fn assign(
+        &mut self,
+        text: &[u8],
+        rule: MatchRule,
+        batch: &mut MatchBatch,
+        seen: &mut HashMap<u32, usize>,
+    ) -> Option<usize> {
         let record = self.context.format.parse(text, self.first_line_len(text))?;
         let (tokens, _) = self.context.prepare(&record, &mut self.scratch, &mut self.spans);
-        let Assignment::Cluster(cluster) = self.miner.assign(&tokens) else {
+        let Assignment::Cluster(cluster) = self.miner.assign_with(&tokens, rule) else {
             return None;
         };
         let miner = &self.miner;

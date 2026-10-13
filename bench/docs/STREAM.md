@@ -81,15 +81,37 @@ memory (median of 5), and `add_many` over the same lines for comparison.
 
 | Case | Wall | Lines per second | Against `match_many` of 10,000 |
 |---|---:|---:|---:|
-| `match_many`, batches of 100 | 0.40 s | 1,500,215 | 1.47x |
-| `match_many`, batches of 1,000 | 0.25 s | 2,360,459 | 0.93x |
-| `match_many`, batches of 10,000 | 0.27 s | 2,201,866 | 1.00x |
-| `match`, one record per call | 2.74 s | 219,087 | 10.05x |
-| `add_many`, batches of 10,000 (mining the same lines) | 0.29 s | 2,046,079 | 1.08x |
+| `match_many`, batches of 100 | 0.39 s | 1,523,903 | 1.37x |
+| `match_many`, batches of 1,000 | 0.25 s | 2,379,556 | 0.88x |
+| `match_many`, batches of 10,000 | 0.29 s | 2,088,923 | 1.00x |
+| `match_many` with `exact=True`, batches of 10,000 | 0.26 s | 2,328,605 | 0.90x |
+| `match`, one record per call | 2.96 s | 202,719 | 10.30x |
+| `add_many`, batches of 10,000 (mining the same lines) | 0.29 s | 2,035,122 | 1.03x |
 
 Matching costs about what mining costs, and a batch of 1,000 or more is at full speed. One record per call is 10 times slower, as for
 mining (the call and the Python wrapper around it cost more than the work), so `match_many` is the interface for more than a few
 records.
+
+**Many templates.** The data above has 12 templates. On `highcard_10mb.log` (83,745 lines of mostly unique messages) a miner
+trained on the first 50,000 lines holds 50,000 templates, one per line. A record that fits one of them is found at once, but a
+record that fits none used to be compared with every template of its token count: 2,000 unseen records took 1.96 s (1 ms each), and
+matching all 83,745 lines took 31 s (2,700 lines per second) with the default rule and 11.7 s with `exact=True`, against 0.48 s
+for mining the same lines. The scan was also what `logfold match` and the recount of `diff` did for such a record.
+
+The templates of one token count now have an inverted index (token at a position to the templates that hold it), built when the
+first such record asks for it and kept up to date after that. The similarity rule walks the lists of the positions that can
+reach the threshold; the exact rule leaves out the lists of the three most common tokens of the message and tries separately the
+templates that have three literal words or fewer. Both give the answer of the scan (`crates/logfold-tests/tests/core`: 24,000 probes
+on growing trees, and the exact rule against a brute-force oracle). Result on the same data:
+
+| Case | Before | Now |
+|---|---:|---:|
+| 2,000 unseen records, default rule | 1.96 s | 0.12 s |
+| 2,000 unseen records, `exact=True` | 0.49 s | 0.002 s |
+| all 83,745 lines, default rule | 31 s | 0.30 s |
+| all 83,745 lines, `exact=True` | 11.7 s | 0.28 s |
+
+Mining is not slower: `analyze` of the 100 MB file takes 0.77 s as before, and `add_many` of the 83,745 lines 0.48 s.
 
 ## Limits of this measurement
 

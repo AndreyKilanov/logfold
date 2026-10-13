@@ -114,10 +114,15 @@ masks and parameters it was mined with (`--depth`, `--sim-th`, `--max-children`,
 command stops with an error that says so. The result does not depend on `--strategy` or `--threads`, which only decide
 whether the files are read in parallel.
 
+A record belongs to a template when at least the share `--sim-th` of its words equals the constant words of the template, so a
+record that differs from a template in one word still belongs to it. `--exact` asks for the strict meaning of Drain3: every
+constant word of the template must equal the word of the record (a `<*>` accepts any word), otherwise the record counts as
+belonging to none. Use it to find the records that no template describes exactly.
+
 Options: `--format`, `--multiline`, `--since`, `--until`, `--top`, `--min-count`, `--level`, `--only-alerts`, `--out`,
 `--append`, `--report`, `--json`, `--examples`, `--quiet`, `--debug` as for [`analyze`](#logfold-analyze), and the mining
 and execution options listed there (`--sim-th`, `--depth`, `--max-children`, `--max-templates`, `--no-masks`, `--strategy`,
-`--threads`, `--chunk-mb`). There is no `--save-state`, `--load-state`, `--high-cardinality`, `--warm-start` or `--engine`.
+`--threads`, `--chunk-mb`), and `--exact`. There is no `--save-state`, `--load-state`, `--high-cardinality`, `--warm-start` or `--engine`.
 
 ## `logfold stream`
 

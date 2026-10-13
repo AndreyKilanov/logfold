@@ -76,3 +76,21 @@ def test_the_help_lists_the_command_and_not_the_training_options() -> None:
     assert "STATE" in result.output
     for option in ("--load-state", "--high-cardinality", "--warm-start", "--engine"):
         assert option not in result.output
+
+
+def test_exact_counts_the_records_that_differ_in_a_constant_word(tmp_path: Path) -> None:
+    trained = write(
+        tmp_path / "trained.log", ["user alice logged in from 10.0.0.1", "user bob logged in from 10.0.0.2"]
+    )
+    model = tmp_path / "m.json"
+    saved = runner.invoke(app, ["analyze", str(trained), "-f", "plain", "--save-state", str(model), "-q"])
+    assert saved.exit_code == exit_codes.OK, saved.output
+    probe = write(tmp_path / "probe.log", ["user carol logged in from 10.0.0.3", "user carol logged out from 10.0.0.3"])
+
+    def unmatched(*extra: str) -> int:
+        result = runner.invoke(app, ["match", str(model), str(probe), "-f", "plain", "--json", "-q", *extra])
+        assert result.exit_code == exit_codes.OK, result.output
+        return int(json.loads(result.output)["run"]["unmatched"]["records"])
+
+    assert unmatched() == 0
+    assert unmatched("--exact") == 1
