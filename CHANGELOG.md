@@ -87,6 +87,9 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   field `join_unterminated` of `JsonFormat`; the time is the first piece's).
 - A JSON message loses one line break at its end, so the examples and `inspect` of `docker-json` no longer show a line break
   (the templates were not affected).
+- `log4j:<pattern>` reads the log4j2 date names `DEFAULT`, `COMPACT`, `ISO8601_OFFSET_DATE_TIME_*` and the `_MICROS` and
+  `_NANOS` forms, and a pattern with the exception after the newline (Spring Boot's `%m%n%wEx`); both were refused.
+  Found with real log4j2, logback and log4j 1.x.
 
 ## [0.4.0] - 2026-10-07
 

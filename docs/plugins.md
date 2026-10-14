@@ -70,10 +70,12 @@ spec = log4j_format("%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%t] %c - %m%n", name="sho
 result = logfold.analyze("app.log", format=spec)
 ```
 
-Understood: `%d` (`ISO8601`, `ABSOLUTE`, `DATE`, or a Java date pattern built from `y M d H m s S` and `X`/`Z` for an
-offset), `%p`/`%level`, `%m`/`%msg`, `%c`/`%logger`, `%t`/`%thread`, the other plain fields (`%C %F %L %M %r %X{key} %x
-%u`), `%ex` and its relatives (the stack trace is printed on the following lines and joins the record), `%%`, a trailing
-`%n`, and width modifiers such as `%-5p`. A converter that is not understood (`%highlight`, `%replace`, `%d{EEE}`)
+Understood: `%d` (`DEFAULT`, `ISO8601`, `ISO8601_BASIC`, `ISO8601_OFFSET_DATE_TIME_HH`, `ABSOLUTE`, `DATE`, `COMPACT` and
+their `_MICROS`/`_NANOS` forms, or a Java date pattern built from `y M d H m s S` and `X`/`Z` for an offset),
+`%p`/`%level`, `%m`/`%msg`, `%c`/`%logger`, `%t`/`%thread`, the other plain fields (`%C %F %L %M %r %X{key} %x %u`),
+`%ex` and its relatives (the stack trace is printed on the following lines and joins the record), `%%`, a trailing `%n`
+(exception converters may follow it, as in the Spring Boot file pattern `...%m%n%wEx`), and width modifiers such as
+`%-5p`. A converter that is not understood (`%highlight`, `%replace`, `%d{EEE}`)
 fails before any log is read, with a hint to write the format as `regex:<pattern>`. Records are multi-line by default,
 so stack traces join the line that started them; `--no-multiline` turns that off.
 
