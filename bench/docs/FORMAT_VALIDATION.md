@@ -129,3 +129,62 @@ line (as a multiset), and the first and last time (those of the first entry of a
 
 **Not checked:** other drivers (`local`, `journald`, `syslog`), a log that Docker rotates (`max-size`), compressed rotated
 files, entries with `attrs` or `tag`.
+
+## Java logging libraries (`log4j`, `log4j:<pattern>`)
+
+**The oracle.** A Java program (`bench/validate/java/`, compiled and run in a Temurin 17 or 21 container with
+libraries downloaded at pinned versions and SHA-256) writes numbered events through **log4j2 2.25.2**, **logback 1.5.18**
+and **log4j 1.x (reload4j 1.2.25)** and keeps its own record of them: the level, the first line of the message, how many
+lines the event added to the log file (counted from the growth of the file, so no parser decides where an event ends) and
+the wall-clock time just before and just after the call. Per round (20 rounds, 300 to 320 events and 1,140 to 1,160 lines
+per run): every level, an empty message, a message of several lines with a blank line inside, an exception with a cause
+chain, a suppressed exception and `... N more`, the same under a multi-line message, a 20,000-character message, a message
+full of regex characters with an exception whose message has two lines, an MDC value, and three thread names (one with
+spaces).
+
+**What is compared**, for `-f "log4j:<pattern>"` with the pattern that the program used: the number of records, the lines
+that were not parsed (0), and **every record in order**: the level, the first line of the message, the number of
+non-blank physical lines, and a time between the two clock readings (the time of day only when the pattern has no date;
+wall-clock time in the zone of the JVM, `UTC`, `Asia/Kolkata` and `America/New_York`).
+
+| library | pattern | result |
+|---|---|---|
+| log4j2 (Java 17, 21) | `%d{ISO8601} %-5p [%t] %c - %m%n` (the `log4j` default) | match |
+| log4j2 | `%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n` | match |
+| log4j2 | `%d{ISO8601} %-5p [%t] %c{1.} (%X{requestId}) - %m%n` | match |
+| log4j2 | `%d{DATE} [%t] %-5p %c{1} - %m%n` | match |
+| log4j2 | `%d{HH:mm:ss.SSS} ...`, `%d{ABSOLUTE} ...` (time only) | match |
+| log4j2 | `%d{DEFAULT} %p %c{1.} [%t] %m%n%ex` | match (refused before the fix) |
+| log4j2 | `%d{DEFAULT} %p [%t] %m%ex%n` | match (see the note below) |
+| log4j2 | Spring Boot file pattern, `%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %5p 1 --- [%15.15t] %-40.40logger{39} : %m%n%ex` | match (refused before the fix) |
+| log4j2, zone `Asia/Kolkata` | the default pattern | match |
+| logback (Java 17, 21) | `%d{ISO8601} %-5p [%t] %c - %m%n`, `%d [%t] %-5p %c - %m%n` | match |
+| logback | `%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n`, and the same with `%d{HH:mm:ss.SSS}` | match |
+| logback | `... [%X{requestId:-none}] ...`, Spring Boot pattern | match |
+| logback, zone `America/New_York` | the default pattern | match |
+| log4j 1.x | `%d{ISO8601} %-5p [%t] %c - %m%n`, `%d [%t] ...`, `%d{ISO8601} %-5p %c{1}:%L - %m%n`, `%d{dd MMM yyyy HH:mm:ss,SSS} ...` | match |
+
+**What this found.**
+
+- **`%d{DEFAULT}` was refused** ("the date letter 'D' ... is not supported"): `DEFAULT` is the name log4j2 uses when you
+  write `%d` and the one its documentation shows. Fixed together with the other names of log4j2 (`DEFAULT_MICROS`,
+  `DEFAULT_NANOS`, `ABSOLUTE_MICROS`, `ABSOLUTE_NANOS`, `COMPACT`, `ISO8601_OFFSET_DATE_TIME_HH`, `_HHMM`, `_HHCMM`).
+  `UNIX` and `UNIX_MILLIS` (epoch numbers) are still refused, with the hint to write the format as `regex:<pattern>`.
+- **A pattern with the exception after the newline was refused** ("a newline inside the pattern ..."): this is the
+  file pattern of Spring Boot (`... : %m%n%wEx`) and the usual logback `%msg%n%ex`. The exception converters print on the
+  lines after the record, so they may follow the `%n`; any other field after it is still refused.
+- The first run of the oracle showed that logfold counts the lines of a record without its blank lines (the message with a
+  blank line inside has one line less than the file grew). That is the documented meaning of `lines` ("non-blank"), so the
+  oracle counts the same way; the blank line still belongs to the record and does not start a new one.
+
+**Behaviors that the check confirmed or showed, not defects:**
+
+- `-f auto` does not pick `log4j`: it refuses and lists the best guesses (the pattern is a setting of the program, so the
+  format has to be named). The detection matrix is a later step of the task.
+- log4j2 with `%m%ex%n` writes the first line of the exception **right after the message** on the same line
+  (`evt 1 exceptionjava.lang.RuntimeException: outer 1`), so that is the message of the record. No parser can tell the
+  two apart; `%m%n%ex` writes them on separate lines. The check expects the glued form for this pattern.
+
+**Not checked:** other log4j2 layouts (`JsonTemplateLayout`, `%replace`, `%highlight`, `%style`), `%d{...}{timezone}` with a
+zone other than that of the JVM, `%d{UNIX}`, logback `%nopex`, Android and Kotlin loggers, logs of other Java versions
+than 17 and 21, rolling files, and a very long log (the check runs on about 120 KB).

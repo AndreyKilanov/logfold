@@ -9,7 +9,10 @@ Here a real program writes the log and the expected result comes from the progra
                  lines) and the severity of each. ``-f postgresql``, ``-f postgresql-csv`` and ``-f auto`` must agree
                  with that: records, lines that were not parsed, records per level and the time range.
 
-Usage: ``python bench/validate/formats.py [postgresql] [--versions 13 14 15 16 17] [--only NAME]``
+Usage: ``python bench/validate/formats.py [postgresql|haproxy|docker-json|log4j] [--versions 13 14 15 16 17]``
+``[--rounds N] [--only NAME]``. The HAProxy, docker-json and Java (log4j2, logback, log4j 1.x) checks are in
+``formats_haproxy.py``, ``formats_dockerjson.py`` and ``formats_java.py``; the results are in
+``bench/docs/FORMAT_VALIDATION.md``.
 
 Containers are named ``logfold-validate-*`` and removed at the end. Needs ``docker`` and the extension built
 (``maturin develop --release``).
@@ -454,18 +457,32 @@ def run_dockerjson_cases(args: argparse.Namespace) -> int:
     return failed
 
 
+def run_java_cases(args: argparse.Namespace) -> int:
+    """Run the log4j and logback cases against real Java libraries; return the number that failed."""
+    from formats_java import run_java_cases as run
+
+    return run(args)
+
+
 def main() -> None:
     """Run the cases of the chosen programs and print one table for each; exit with 1 when any number differs."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("target", nargs="?", default="postgresql", choices=["postgresql", "haproxy", "docker-json"])
+    parser.add_argument(
+        "target", nargs="?", default="postgresql", choices=["postgresql", "haproxy", "docker-json", "log4j"]
+    )
     parser.add_argument("--versions", nargs="+", type=int, default=sorted(POSTGRES_IMAGES), help="PostgreSQL majors")
     parser.add_argument("--events", type=int, default=20, help="PostgreSQL: rounds of the emitter")
-    parser.add_argument("--rounds", type=int, default=20, help="HAProxy: rounds of requests")
+    parser.add_argument("--rounds", type=int, default=20, help="HAProxy, Java: rounds of events")
     parser.add_argument("--only", help="run the cases whose label contains this text")
     args = parser.parse_args()
     if not logfold._bridge.is_available():
         sys.exit("the native extension is not built: run `maturin develop --release`")
-    runners = {"postgresql": run_postgresql, "haproxy": run_haproxy_cases, "docker-json": run_dockerjson_cases}
+    runners = {
+        "postgresql": run_postgresql,
+        "haproxy": run_haproxy_cases,
+        "docker-json": run_dockerjson_cases,
+        "log4j": run_java_cases,
+    }
     failed = runners[args.target](args)
     sys.exit(1 if failed else 0)
 
