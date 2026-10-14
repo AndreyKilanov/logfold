@@ -21,7 +21,8 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   (`--no-config` reads none); a flag beats the file. Library: `load_config()` and `config=` of `analyze`, `match` and
   `diff`. The file holds no key that runs code or uses the network. See `docs/config.md`.
 - A GitHub Action (`uses: AndreyKilanov/logfold@<tag>`) and a GitLab CI template (`ci/gitlab/logfold.yml`): analyze the
-  log, compare it with the baseline of the last good run, write the summary and fail on new alerts; see `docs/ci.md`.
+  log, compare it with the baseline of the last good run, write the summary and fail on new alerts; `masks` and
+  `masks-file` (`LOGFOLD_MASKS`, `LOGFOLD_MASKS_FILE`) choose the mask sets; see `docs/ci.md`.
 - `logfold.Miner` takes records in batches (`add_many`, `add_lines`, `result()`, `save_state`) and keeps its templates between
   calls, and `logfold stream [FILE]` mines a log while it is written and prints each template when it first appears. Both read and
   write state files, and the result equals `analyze` over the same records. Extension contract version 11. See `docs/api.md`,
