@@ -354,7 +354,7 @@ LOGFMT = RegexFormat(
 |---|---|
 | `pattern` | regular expression with named groups |
 | `message_group` | group with the message; without it the whole first line is the message |
-| `time_group`, `ts_format` | group with the timestamp and its `strptime`-style format; ISO-8601 when `ts_format` is omitted |
+| `time_group`, `ts_format` | group with the timestamp and its `strptime`-style format; ISO-8601 when `ts_format` is omitted, and for a text that `ts_format` does not read |
 | `level_group` | group with the level; TRACE, DEBUG, INFO, WARN, ERROR and FATAL (and common spellings such as `warning`) are recognized, other values give no level |
 | `multiline` | join lines that do not match `pattern` to the previous record (stack traces) |
 
