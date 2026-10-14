@@ -46,6 +46,10 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   more than `--max-unmatched` (1%) of its records fit no template of the model or a new WARN+ template appears (`--fail-on`); the reports
   of `diff` work, the JSON has the schema `check-v1`, `[check]` of `logfold.toml` sets the limits. Extension contract version 17. See
   `docs/cli.md`, `docs/ci.md`.
+- `analyze --values` (library `analyze(values=True)`) counts the values at the variable positions of the most frequent templates: the top
+  values with their counts and, for numbers, min, max, mean and p50/p90/p99, in the text, HTML and JSON reports (`Template.values`). It
+  runs a second pass (about three to four times the time), keeps memory bounded and never counts a value that a mask set of yours hides.
+  Extension contract version 18. See `docs/cli.md`, `docs/ALGORITHM.md` §15.
 - A guide for moving from Drain3: `docs/migrating-from-drain3.md`.
 - `logfold.extract_parameters(template, message)` and `logfold params TEMPLATE MESSAGE` give the values that a message has at the
   variable parts of a template (`<*>` and masked values such as `<NUM>`), named by the rule or `*`, as written in the message;

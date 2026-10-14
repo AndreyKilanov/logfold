@@ -110,6 +110,24 @@ def analyze(
     high_cardinality: HighCardinality = False,
     warm_start: WarmStart = False,
     examples: Examples = "raw",
+    values: Annotated[
+        bool,
+        typer.Option(
+            "--values",
+            help="Count the values at the variable positions of the most frequent templates (top values, and "
+            "p50/p90/p99 of numbers); runs a second pass, see --values-templates.",
+            rich_help_panel=PANEL_OUTPUT,
+        ),
+    ] = False,
+    values_templates: Annotated[
+        int,
+        typer.Option(
+            "--values-templates",
+            min=1,
+            help="With --values: how many of the most frequent templates get their values counted.",
+            rich_help_panel=PANEL_OUTPUT,
+        ),
+    ] = 200,
     load_state: LoadState = None,
     save_state: SaveState = None,
     state_format: StateForm = "json",
@@ -132,6 +150,8 @@ def analyze(
                 since=since,
                 until=until,
                 examples=examples,  # type: ignore[arg-type]
+                values=values,
+                value_templates=values_templates,
                 load_state=load_state,
                 save_state=save_state,
                 state_format=state_format,

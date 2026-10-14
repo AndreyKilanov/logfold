@@ -15,6 +15,7 @@ from logfold.ext import registry
 from logfold.ext.files import check_appendable, write_text
 from logfold.levels import LEVEL_NAMES, at_least, normalize_level
 from logfold.model_run import ResultMeta, RunMetrics, RunSummary, Unmatched
+from logfold.model_values import ValueStats
 
 SCHEMA_VERSION = 1
 
@@ -46,6 +47,8 @@ class Template:
         example: A raw message of the first matching record.
         level: Most severe level seen, or ``None``.
         levels: Record counts per level name (only levels that occurred).
+        values: The distributions of the values at the variable positions, for a template that ``analyze(values=True)``
+            tracked (one of the most frequent); ``None`` otherwise.
     """
 
     id: str
@@ -56,6 +59,7 @@ class Template:
     example: str | None
     level: str | None
     levels: Mapping[str, int]
+    values: tuple[ValueStats, ...] | None = None
 
 
 @dataclass(frozen=True, slots=True)

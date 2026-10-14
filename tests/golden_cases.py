@@ -51,7 +51,11 @@ def analysis_payload(result: logfold.AnalysisResult) -> dict[str, Any]:
         run.pop("unmatched", None)
     if not run.get("evicted"):
         run.pop("evicted", None)
-    return {"run": run, "templates": jsonable(list(result.templates))}
+    templates = jsonable(list(result.templates))
+    for template in templates:
+        if template.get("values") is None:
+            template.pop("values", None)
+    return {"run": run, "templates": templates}
 
 
 def digest_payload(payload: dict[str, Any]) -> dict[str, Any]:

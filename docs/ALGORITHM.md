@@ -516,7 +516,7 @@ remembers where each replacement stood in the message.
    replaces (the hand-written scanner of the default rules is tested against the regex engine, which gives the spans).
 2. Tokenize the masked text as in §3. The template is the list of its tokens (its text split at single spaces). The message fits
    only if it has the same number of tokens; in the exact fit every constant token of the template must also equal the token of the
-   message, otherwise there is no result. (The by-position fit, which the core crate keeps for later use, ignores constants that differ.)
+   message, otherwise there is no result. (The by-position fit, which §15 uses, ignores constants that differ.)
 3. For every position in order: a `<*>` token of the template gives one parameter, named `*`, whose value is the text of the message
    that the token stands for (the text from the start of its first character to the end of its last character, with every replacement
    inside it taken as it was written); the matches inside such a token give no parameter of their own. Any other token gives one
@@ -524,3 +524,32 @@ remembers where each replacement stood in the message.
 4. A match whose replacement holds a delimiter belongs to the token in which it starts; a match with an empty replacement belongs to none.
 
 The values are slices of the message, never recomputed text, so they hold every character of the log as it was written.
+
+## 15. Values of the positions
+
+`analyze(values=True)` counts the values that the records of the most frequent templates give to their variable positions
+(ADR-016). The values cannot be taken while the tree is trained, because a position can become `<*>` later, so they are taken in the
+pass of §9 that assigns every record to the finished tree: when a record is assigned to a template that is tracked, its parameters
+are extracted by position (§14, the by-position fit: constants that differ are ignored, as in the assignment) and counted. The
+counts of the templates are then those of that pass, and the values of a position add up to the records of the template.
+
+- **Tracked templates:** the `value_templates` clusters (default 200) with the most records in the training pass, the ones with the same
+  count in the order of their tokens. A template is tracked by its cluster, and the clusters of the same text are summed at the end.
+- **Position:** the index of the token and the name of the parameter: `*`, or the name of a rule of the **default** masking rules. A
+  parameter named by a rule of a mask set of the user is dropped before it is counted, so a value that such a set hides never reaches
+  a report. A token with several matches of one rule gives them all to one position.
+- **Counters:** a position counts exactly at most 1000 different values, each cut at its first 64 bytes; once the counters are full a value
+  that is not among them is only added to `other` (the values that are among them keep counting). The report lists the 10 most frequent,
+  by count (more first) and then by bytes, the number of counted values, whether the counters were full and `other`.
+- **Numbers:** a value `-?digits(.digits)?` of at most 32 bytes is also a number. Numbers go into buckets that are one factor 1.05 wide
+  (a number of 1e-9 or less in size is counted as zero, one above 1e15 goes to the last bucket); the limits of the buckets are
+  `1.05^i` built by exactly rounded multiplications and divisions, so they are the same on every platform. The percentile `q` is
+  the middle of the bucket of the number with the rank `floor(q * (count - 1))`, within about 2.4% of that number and between the smallest and
+  the largest number; the report also has the count, the smallest, the largest and the mean.
+- **Merging:** the parts of the input are merged in input order (§6): the counts of the buckets add up exactly in any order, so the
+  numbers never depend on the chunks or the threads. The counters are exact while at most 1000 different values meet; above that
+  the values that make it into the counters depend on the order of the input, which is the same for a fixed chunk size whatever the
+  number of threads.
+
+`ALGO_VERSION` does not change: the tree and the assignment are the same, the values are an addition to the result. The extension
+contract version is 18.

@@ -18,12 +18,14 @@ from logfold.api._common import (
     _templates,
     _warnings,
 )
+from logfold.api._values import DEFAULT_VALUE_TEMPLATES, attach_values
 from logfold.api._windows import OPEN, TimeBound, labeled, require_time, window, window_warnings
 from logfold.config import (
     ExamplesMode,
     ExecutionConfig,
     MiningConfig,
 )
+from logfold.errors import ConfigError
 from logfold.ext.formats import Format, FormatSpec
 from logfold.ext.mask_selection import MaskSelection
 from logfold.ext.masks import Masker
@@ -57,6 +59,8 @@ def analyze(
     examples: ExamplesMode = "raw",
     since: TimeBound = None,
     until: TimeBound = None,
+    values: bool = False,
+    value_templates: int = DEFAULT_VALUE_TEMPLATES,
     load_state: PathLike | None = None,
     save_state: PathLike | None = None,
     state_format: str = "json",
@@ -95,6 +99,14 @@ def analyze(
             compared with the times of the log as written, a time with a zone is converted to UTC). Records without a
             timestamp cannot be placed and are left out; the result counts them.
         until: Keep only records before this time; see ``since``.
+        values: Count the values at the variable positions of the most frequent templates: ``Template.values`` then
+            holds, for each position, the most frequent values and, for numbers, min, max, mean and p50, p90, p99.
+            This runs a second pass that assigns every record to the finished templates, so the counts of the
+            templates are those of that pass (as in ``diff``); it costs time and is off by default. Values that a mask
+            set of the user hides are never counted, and ``examples`` decides how the values are shown: ``raw`` as
+            they are, ``masked`` with the masking rules applied, ``none`` without the list of values.
+        value_templates: How many of the most frequent templates get their values counted (default 200); the memory of
+            the values is bounded by it.
         load_state: A state file of an earlier run to continue from: the templates it holds are the start of the tree,
             the result counts only the records of this run, and the file must have been mined with the same masks and
             parameters. Needs the native engine. A big input is continued in parallel (every chunk starts from a copy of
@@ -130,8 +142,17 @@ def analyze(
     )
     exec_config = _execution(execution, engine, strategy, threads, chunk_bytes, high_cardinality, warm_start)
     state = _state(load_state, save_state, state_format, mining_config, spec)
+    if values and value_templates < 1:
+        raise ConfigError("value_templates must be at least 1")
     mined = _mine(
-        (run,), spec, mining_config, exec_config, progress, windows=(bounds,) if bounds != OPEN else (), state=state
+        (run,),
+        spec,
+        mining_config,
+        exec_config,
+        progress,
+        windows=(bounds,) if bounds != OPEN else (),
+        state=state,
+        values=value_templates if values else None,
     )
     summary = labeled(_summary(run, mined.runs[0]), bounds)
     notes = []
@@ -141,7 +162,9 @@ def analyze(
             "with strategy='sequential', which is exact"
         )
     masker = Masker(mining_config.masks)
-    templates = _templates(mined.templates, 0, summary.tz_aware, examples, masker)
+    templates = attach_values(
+        _templates(mined.templates, 0, summary.tz_aware, examples, masker), mined.values, examples, masker
+    )
     return AnalysisResult(
         templates=templates,
         run=summary,

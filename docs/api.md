@@ -16,6 +16,7 @@ analyze(
     masks=None, high_cardinality=False, mining=None, execution=None,
     engine=None, strategy=None, threads=None, chunk_bytes=None,
     warm_start=None, examples="raw", since=None, until=None,
+    values=False, value_templates=200,
     load_state=None, save_state=None, state_format="json", config=None,
     progress=None,
 ) -> AnalysisResult
@@ -34,6 +35,7 @@ Folds one run into templates.
 | `engine`, `strategy`, `threads`, `chunk_bytes`, `warm_start` | execution parameters, see [`ExecutionConfig`](#mining-and-execution-configuration) |
 | `examples` | `"raw"` keeps example messages, `"masked"` applies the masking rules to them, `"none"` drops them |
 | `since`, `until` | keep only records at or after `since` and before `until`: ISO 8601 strings (`2026-10-06T12:30`, a trailing `Z` or an offset means a zone) or `datetime` objects. A time with a zone is converted to UTC; a time without one is compared with the times of the log as written (naive times are UTC everywhere in logfold). A record without a timestamp cannot be placed and is left out. The result counts the records left out in `run.out_of_range` and `run.untimed`, the run name shows the window, and a warning mentions records without a time. A format without a time (`plain`) raises `ConfigError` |
+| `values`, `value_templates` | `values=True` counts the values at the variable positions of the `value_templates` (default 200) most frequent templates into `Template.values`; it runs a second pass (the counts of the templates are then those of that pass) and takes three to four times as long; see [Values of the parameters](cli.md#values-of-the-parameters) |
 | `load_state` | a state file of an earlier run to continue from: its templates start the tree, the result counts only the records of this run, and it must have been mined with the same masks and parameters. A big input is continued in parallel by default (a warning says so) and `strategy="sequential"` is the exact continuation; it needs the native engine (see [State files](cli.md#state-files)) |
 | `save_state`, `state_format` | write the trained miner to this file (`.gz` is compressed), `"json"` (readable, default) or `"binary"`; the file holds templates and counts, never example lines |
 | `config` | a `Settings` from [`load_config`](#load_config): it gives the format, `multiline`, `mining` and `execution` wherever the call does not name them |
@@ -317,6 +319,13 @@ registered `formats`, `reporters`, `matchers` and `mask_sets`. It is what `logfo
 | `example` | a raw message of the first matching record (`None` with `examples="none"`) |
 | `level` | most severe level seen, or `None`; levels are TRACE, DEBUG, INFO, WARN, ERROR, FATAL |
 | `levels` | record counts per level name |
+| `values` | for a template that `analyze(values=True)` tracked, a tuple of `ValueStats` (one per variable position), otherwise `None` |
+
+`ValueStats`: `position` (index of the token in the template), `name` (`*`, or the name of a default masking rule), `count`, `top`
+(the most frequent values as `(value, count)` pairs, at most 10; empty with `examples="none"`, masked with `examples="masked"`),
+`distinct` (different values counted one by one), `capped` (more than 1000 different values were met, so `distinct` is a lower
+bound), `other` (values not counted one by one) and `numeric`, a `NumericSummary` (`count`, `min`, `max`, `mean`, `p50`, `p90`,
+`p99`) or `None`. See [Values of the parameters](cli.md#values-of-the-parameters).
 
 ### `DiffResult`
 

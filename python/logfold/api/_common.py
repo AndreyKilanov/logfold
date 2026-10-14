@@ -217,6 +217,7 @@ def _mine(
     matching: bool = False,
     exact: bool = False,
     checking: bool = False,
+    values: int | None = None,
 ) -> MiningResult:
     engine = select_engine(execution)
     request = MineRequest(
@@ -231,6 +232,7 @@ def _mine(
         windows=windows,
         state=state,
         exact=exact,
+        values=values,
     )
     if checking:
         return engine.check(request, progress)

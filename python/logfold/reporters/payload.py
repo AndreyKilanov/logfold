@@ -20,6 +20,7 @@ from logfold.model import (
     Unmatched,
 )
 from logfold.model_check import CheckResult
+from logfold.model_values import NumericSummary, ValueStats
 
 
 def _iso(value: datetime | None) -> str | None:
@@ -44,6 +45,27 @@ def run_payload(run: RunSummary) -> dict[str, Any]:
     return data
 
 
+def value_payload(item: ValueStats) -> dict[str, Any]:
+    """Return the JSON form of the values of a position.
+
+    Args:
+        item: The statistics of a position.
+
+    Returns:
+        A JSON-compatible dictionary.
+    """
+    return {
+        "position": item.position,
+        "name": item.name,
+        "count": item.count,
+        "top": [{"value": value, "count": count} for value, count in item.top],
+        "distinct": item.distinct,
+        "capped": item.capped,
+        "other": item.other,
+        "numeric": None if item.numeric is None else asdict(item.numeric),
+    }
+
+
 def template_payload(template: Template, total_records: int) -> dict[str, Any]:
     """Return the JSON form of a template.
 
@@ -54,7 +76,7 @@ def template_payload(template: Template, total_records: int) -> dict[str, Any]:
     Returns:
         A JSON-compatible dictionary.
     """
-    return {
+    data: dict[str, Any] = {
         "id": template.id,
         "text": template.text,
         "count": template.count,
@@ -65,6 +87,9 @@ def template_payload(template: Template, total_records: int) -> dict[str, Any]:
         "levels": dict(template.levels),
         "example": template.example,
     }
+    if template.values is not None:
+        data["values"] = [value_payload(item) for item in template.values]
+    return data
 
 
 def entry_payload(entry: DiffEntry) -> dict[str, Any]:
@@ -184,6 +209,20 @@ def _moment(value: object) -> datetime | None:
     return datetime.fromisoformat(value) if isinstance(value, str) else None
 
 
+def _value_stats(item: dict[str, Any]) -> ValueStats:
+    numeric = item["numeric"]
+    return ValueStats(
+        position=int(item["position"]),
+        name=str(item["name"]),
+        count=int(item["count"]),
+        top=tuple((str(entry["value"]), int(entry["count"])) for entry in item["top"]),
+        distinct=int(item["distinct"]),
+        capped=bool(item["capped"]),
+        other=int(item["other"]),
+        numeric=None if numeric is None else NumericSummary(**{key: numeric[key] for key in NumericSummary.__slots__}),
+    )
+
+
 def _template(data: dict[str, Any]) -> Template:
     text = str(data["text"])
     template_id = str(data["id"])
@@ -198,6 +237,7 @@ def _template(data: dict[str, Any]) -> Template:
         example=data["example"],
         level=data["level"],
         levels={str(name): int(count) for name, count in data["levels"].items()},
+        values=None if "values" not in data else tuple(_value_stats(item) for item in data["values"]),
     )
 
 
