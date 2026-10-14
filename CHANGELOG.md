@@ -90,6 +90,10 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 - `log4j:<pattern>` reads the log4j2 date names `DEFAULT`, `COMPACT`, `ISO8601_OFFSET_DATE_TIME_*` and the `_MICROS` and
   `_NANOS` forms, and a pattern with the exception after the newline (Spring Boot's `%m%n%wEx`); both were refused.
   Found with real log4j2, logback and log4j 1.x.
+- `nginx` and `apache` read a list of addresses, a virtual host and a quoted list in front of the time; `nginx-error`,
+  `syslog` and `github-actions` join the lines that continue an entry; `syslog` reads the ISO time of rsyslog; `logfmt`
+  reads other `key=value` pairs before `level=` (about 2x slower on the reading stage); `jsonl` knows `log.level` and
+  `timeMillis`; a `ts_format` that does not read a text falls back to ISO-8601. Found with logs of other projects.
 
 ## [0.4.0] - 2026-10-07
 

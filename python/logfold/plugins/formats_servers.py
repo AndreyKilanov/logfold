@@ -96,12 +96,14 @@ GITHUB_ACTIONS = RegexFormat(
     message_group="msg",
     time_group="ts",
     level_group="lvl",
+    multiline=True,
 )
 """GitHub Actions job logs (the text of a downloaded run): ``2026-10-06T12:00:03.1234567Z ##[error]Process completed``.
 
 A leading ``##[error]``, ``##[warning]``, ``##[notice]`` or ``##[debug]`` is read as the level and left out of the
 message; the other commands (``##[group]``, ``##[endgroup]``, ``##[command]``) stay in the message. A byte-order mark
-in front of the first line is accepted.
+in front of the first line is accepted. A line without a time (the next lines of a multi-line value that a step prints,
+such as a ``with:`` input) joins the line before it.
 """
 
 LOG4J = log4j_format(LOG4J_DEFAULT_PATTERN, name="log4j")

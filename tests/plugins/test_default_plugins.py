@@ -128,3 +128,37 @@ def test_jaccard_matcher_makes_a_reworded_message_one_template(tmp_path: Path) -
     paired = logfold.diff(before, after, format="logfmt", engine="native", min_count=1)
     assert paired.config.matcher == "jaccard"
     assert (len(paired.new_templates), len(paired.disappeared)) == (0, 0)
+
+
+@pytest.mark.parametrize(
+    ("line", "level", "message"),
+    [
+        (
+            'ts=2024-04-17T09:52:46.364803306Z caller=http.go:194 level=debug traceID=1ee2 msg="POST /x (200) 1ms"',
+            "DEBUG",
+            'traceID=1ee2 msg="POST /x (200) 1ms"',
+        ),
+        (
+            'time="2015-03-26T01:27:38-04:00" level=debug msg="Started observing beach"',
+            "DEBUG",
+            'msg="Started observing beach"',
+        ),
+        ("ts=2026-10-04T10:00:01Z lvl=warn", "WARN", ""),
+        ("ts=2026-10-04T10:00:01Z a=1 b=2 c=3 level=error msg=x", "ERROR", "msg=x"),
+    ],
+)
+def test_logfmt_reads_other_pairs_before_the_level(tmp_path: Path, line: str, level: str, message: str) -> None:
+    seen = logfold.inspect_file(write(tmp_path, "a.log", line + "\n"), format="logfmt")
+    assert (seen.records, seen.unparsed) == (1, 0)
+    assert seen.first_time is not None
+    assert (seen.shown[0].level, seen.shown[0].message) == (level, message)
+
+
+def test_json_level_and_time_keys_of_ecs_and_log4j2_layouts(tmp_path: Path) -> None:
+    text = (
+        '{"@timestamp":"2022-01-25T15:12:08.472Z","log.level":"WARN","message":"adding template"}\n'
+        '{"level":"ERROR","loggerName":"x","timeMillis":1546896321871,"message":"boom"}\n'
+    )
+    seen = logfold.inspect_file(write(tmp_path, "a.log", text), format="jsonl")
+    assert [record.level for record in seen.shown] == ["WARN", "ERROR"]
+    assert all(record.time is not None for record in seen.shown)

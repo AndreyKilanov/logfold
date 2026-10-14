@@ -27,7 +27,7 @@ They are part of `pip install logfold`; nothing else has to be installed.
 | format | `postgresql` | the `stderr` log; any `log_line_prefix` that starts with a timestamp; `DETAIL`, `HINT` and `STATEMENT` lines are records of their own, indented continuation lines of a statement join the record |
 | format | `postgresql-csv` | `csvlog`: severity is the 12th column, the message the 14th |
 | format | `docker-json` | Docker `json-file` driver: `{"log": "...", "stream": "stdout", "time": "..."}`; the pieces of a line longer than 16 KB that Docker splits are joined into one record |
-| format | `github-actions` | job logs with 7-digit timestamps and a leading byte-order mark; `##[error]`, `##[warning]`, `##[notice]` and `##[debug]` are the level, other `##[...]` commands stay in the message |
+| format | `github-actions` | job logs with 7-digit timestamps and a leading byte-order mark; `##[error]`, `##[warning]`, `##[notice]` and `##[debug]` are the level, other `##[...]` commands stay in the message; a line without a time joins the line before it |
 | format | `log4j` | the pattern `%d{ISO8601} %-5p [%t] %c - %m%n`; stack traces join their record; any other pattern: `log4j:<pattern>` |
 | reporter | `markdown` | Markdown tables for an analysis or a diff |
 | reporter | `csv` | one template per row, for spreadsheets and scripts |

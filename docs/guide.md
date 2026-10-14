@@ -253,14 +253,14 @@ guesses instead of guessing wrong silently.
 | Name | Input |
 |---|---|
 | `plain` | the whole line is the message |
-| `jsonl` | one JSON object per line; keys `message`/`msg`/`log`, `timestamp`/`time`/`ts`/`@timestamp`, `level`/`severity`/`lvl` |
+| `jsonl` | one JSON object per line; keys `message`/`msg`/`log`, `timestamp`/`time`/`ts`/`@timestamp`/`timeMillis`, `level`/`severity`/`lvl`/`log.level` |
 | `journald` | `journalctl -o json` |
 | `nginx`, `apache` | combined access log; the message is `"METHOD path HTTP/x" status` |
 | `nginx-error` | nginx error log |
-| `syslog` | classic syslog lines |
+| `syslog` | classic (`Dec 13 11:35:28 host app[1]: ...`) and ISO-time (`2018-08-14T14:30:02+02:00 host app[1]: ...`, rsyslog's default on newer systems) syslog lines; lines that follow a record join it |
 | `k8s` | CRI/containerd container logs (`kubectl logs` raw files) |
 | `app` | `<ISO timestamp> [thread] LEVEL message`, typical of Python, Java and Go services |
-| `logfmt` | `key=value` pairs (default plugin); `msg`, `time`/`ts` and `level` keys are used |
+| `logfmt` | `key=value` pairs (default plugin); starts with `ts=` or `time=`, then `level=` or `lvl=` (other plain pairs may stand between them); the rest is the message |
 | `serilog-clef` | Serilog compact JSON (default plugin); `@m`/`@mt`, `@t`, `@l` |
 | `haproxy` | HAProxy HTTP and TCP logs, with or without the syslog prefix (default plugin) |
 | `postgresql`, `postgresql-csv` | PostgreSQL server log, `stderr` and `csvlog` (default plugins) |
