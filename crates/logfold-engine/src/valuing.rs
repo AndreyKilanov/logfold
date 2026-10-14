@@ -41,9 +41,8 @@ impl ValuePlan {
     ) {
         let Assignment::Cluster(index) = assignment else { return };
         let Some(tokens) = self.templates.get(&index) else { return };
-        let template: Vec<&[u8]> = tokens.iter().map(|token| &**token).collect();
         if let Some(mut parameters) =
-            extract_parameters(&context.masker, &context.tokenizer, &template, record.message, Fit::ByPosition)
+            extract_parameters(&context.masker, &context.tokenizer, tokens, record.message, Fit::ByPosition)
         {
             parameters.retain(|parameter| parameter.name == WILDCARD_NAME || self.names.contains(&parameter.name));
             recount.add_values(run, index, &parameters);

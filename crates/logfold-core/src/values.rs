@@ -254,7 +254,20 @@ pub type Slot = (usize, String);
 /// The distributions of the templates (given by the index of their cluster) of one run.
 #[derive(Clone, Debug, Default)]
 pub struct ValueCollector {
-    clusters: BTreeMap<u32, BTreeMap<Slot, Distribution>>,
+    clusters: BTreeMap<u32, Vec<(Slot, Distribution)>>,
+}
+
+/// Finds the distribution of a position in the few that a template has, or makes it; the list stays sorted by position.
+fn slot_of<'a>(slots: &'a mut Vec<(Slot, Distribution)>, position: usize, name: &str) -> &'a mut Distribution {
+    let found = slots.binary_search_by(|((at, called), _)| at.cmp(&position).then_with(|| called.as_str().cmp(name)));
+    let index = match found {
+        Ok(index) => index,
+        Err(index) => {
+            slots.insert(index, ((position, name.to_string()), Distribution::default()));
+            index
+        }
+    };
+    &mut slots[index].1
 }
 
 impl ValueCollector {
@@ -262,7 +275,7 @@ impl ValueCollector {
     pub fn add(&mut self, cluster: u32, parameters: &[Parameter]) {
         let slots = self.clusters.entry(cluster).or_default();
         for parameter in parameters {
-            slots.entry((parameter.position, parameter.name.clone())).or_default().add(&parameter.value);
+            slot_of(slots, parameter.position, &parameter.name).add(&parameter.value);
         }
     }
 
@@ -270,19 +283,14 @@ impl ValueCollector {
     pub fn merge(&mut self, other: ValueCollector) {
         for (cluster, slots) in other.clusters {
             let mine = self.clusters.entry(cluster).or_default();
-            for (slot, distribution) in slots {
-                match mine.get_mut(&slot) {
-                    Some(existing) => existing.merge(&distribution),
-                    None => {
-                        mine.insert(slot, distribution);
-                    }
-                }
+            for ((position, name), distribution) in slots {
+                slot_of(mine, position, &name).merge(&distribution);
             }
         }
     }
 
     /// The distributions by cluster and position, in order.
     pub fn into_clusters(self) -> BTreeMap<u32, BTreeMap<Slot, Distribution>> {
-        self.clusters
+        self.clusters.into_iter().map(|(cluster, slots)| (cluster, slots.into_iter().collect())).collect()
     }
 }

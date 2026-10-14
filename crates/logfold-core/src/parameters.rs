@@ -90,10 +90,10 @@ impl Mapper<'_> {
 ///
 /// Returns `None` when the message has another number of tokens than the template, or, with [`Fit::Exact`], when a
 /// constant token differs.
-pub fn extract_parameters(
+pub fn extract_parameters<T: AsRef<[u8]>>(
     masker: &RuleMasker,
     tokenizer: &Tokenizer,
-    template: &[&[u8]],
+    template: &[T],
     message: &[u8],
     fit: Fit,
 ) -> Option<Vec<Parameter>> {
@@ -106,7 +106,8 @@ pub fn extract_parameters(
     let mut parameters = Vec::new();
     let mut mapper = Mapper { replacements: &replacements, index: 0, shift: 0 };
     let mut next = 0;
-    for (position, (&expected, &(start, end))) in template.iter().zip(&spans).enumerate() {
+    for (position, (expected, &(start, end))) in template.iter().zip(&spans).enumerate() {
+        let expected = expected.as_ref();
         let inside = |replacement: &Replacement| replacement.masked_start < end;
         if expected == WILDCARD {
             let value = message[mapper.original(start, false)..mapper.original(end, true)].to_vec();
