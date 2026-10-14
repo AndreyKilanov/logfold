@@ -1,7 +1,6 @@
 {
   "sets": [
-    "secrets",
-    "pii"
+    "all"
   ],
   "per_dataset": {
     "Android": {

@@ -24,6 +24,6 @@ logfold reads log files that may contain attacker-controlled text and writes rep
 - The Markdown and CSV reporters neutralize log content: table cells cannot be broken out of, and CSV cells that a
   spreadsheet would read as a formula get a leading apostrophe.
 - Example messages in reports are raw log lines and may contain secrets or personal data. Use `--examples masked` or
-  `--examples none` before sharing a report. The mask sets (`--masks secrets,pii`) hide tokens, keys, passwords and personal
-  data in templates, saved states and masked examples, but they find only what a rule can describe: they lower the risk and
-  do not remove it.
+  `--examples none` before sharing a report. The mask sets (`--masks all`) hide tokens, keys, passwords and personal
+  data in templates, saved states and masked examples (`secrets` and `pii` alone do not hide passwords or cards), but they
+  find only what a rule can describe: they lower the risk and do not remove it.

@@ -256,6 +256,9 @@ def masks(args: argparse.Namespace) -> None:
             "+ pii": ["--masks", "pii"],
             "+ secrets, pii": ["--masks", "secrets,pii"],
             "+ secrets, pii, 30 own rules": ["--masks", "secrets,pii", "--masks-file", str(own)],
+            "+ credentials": ["--masks", "credentials"],
+            "+ payment": ["--masks", "payment"],
+            "+ all": ["--masks", "all"],
         }
         for path in files:
             header(f"{path.name} ({path.stat().st_size / 1e6:,.0f} MB, strategy {args.strategy})")

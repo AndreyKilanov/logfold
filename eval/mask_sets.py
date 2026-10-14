@@ -7,7 +7,7 @@ number in a log would be a find, not a false alarm); ``--show`` prints a sample 
 
 Usage::
 
-    python eval/mask_sets.py --sets secrets pii --out eval/results/mask_sets.json
+    python eval/mask_sets.py --sets all --out eval/results/mask_sets.json
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=Path("eval/data"))
     parser.add_argument("--out", type=Path, default=Path("eval/results/mask_sets.json"))
-    parser.add_argument("--sets", nargs="+", default=["secrets", "pii"])
+    parser.add_argument("--sets", nargs="+", default=["all"])
     parser.add_argument("--show", type=int, default=0, help="print this many changed messages per dataset")
     args = parser.parse_args()
     with_sets = resolve_masks(args.sets)
