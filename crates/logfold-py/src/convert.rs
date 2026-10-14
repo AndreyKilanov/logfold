@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use logfold_core::{FrozenTemplate, Level, MaskRule, OnFull};
+use logfold_core::{FrozenTemplate, Level, MaskCheck, MaskRule, OnFull};
 use logfold_engine::{EngineError, ExecutionStrategy, MineOutput, MineRequest, MiningConfig};
 use logfold_io::{FormatConfig, FormatSpec, TimeWindow};
 use pyo3::exceptions::PyKeyError;
@@ -54,11 +54,19 @@ pub(crate) fn parse_masks(list: &Bound<'_, PyAny>) -> PyResult<Vec<MaskRule>> {
     let mut rules = Vec::new();
     for item in list.try_iter()? {
         let item = item?.cast_into::<PyDict>()?;
+        let name: String = required(&item, "name")?.extract()?;
+        let check = match optional_string(&item, "check")? {
+            None => None,
+            Some(text) => Some(MaskCheck::from_name(&text).ok_or_else(|| {
+                crate::translate(EngineError::Config(format!("mask rule '{name}': unknown check '{text}'")))
+            })?),
+        };
         rules.push(MaskRule {
-            name: required(&item, "name")?.extract()?,
+            name,
             pattern: required(&item, "pattern")?.extract()?,
             token: required(&item, "token")?.extract()?,
             ascii: required(&item, "ascii")?.extract()?,
+            check,
         });
     }
     Ok(rules)

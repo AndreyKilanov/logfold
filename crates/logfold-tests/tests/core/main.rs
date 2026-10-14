@@ -30,8 +30,8 @@ mod masker {
     #[test]
     fn earliest_rule_wins_at_the_same_position() {
         let rules = vec![
-            MaskRule { name: "a".into(), pattern: "ab".into(), token: "<A>".into(), ascii: true },
-            MaskRule { name: "b".into(), pattern: "abc".into(), token: "<B>".into(), ascii: true },
+            MaskRule { name: "a".into(), pattern: "ab".into(), token: "<A>".into(), ascii: true, check: None },
+            MaskRule { name: "b".into(), pattern: "abc".into(), token: "<B>".into(), ascii: true, check: None },
         ];
         assert_eq!(masked_with(&rules, "xabcx"), "x<A>cx");
     }
@@ -39,8 +39,8 @@ mod masker {
     #[test]
     fn leftmost_match_wins_over_rule_order() {
         let rules = vec![
-            MaskRule { name: "late".into(), pattern: "cd".into(), token: "<L>".into(), ascii: true },
-            MaskRule { name: "early".into(), pattern: "bc".into(), token: "<E>".into(), ascii: true },
+            MaskRule { name: "late".into(), pattern: "cd".into(), token: "<L>".into(), ascii: true, check: None },
+            MaskRule { name: "early".into(), pattern: "bc".into(), token: "<E>".into(), ascii: true, check: None },
         ];
         assert_eq!(masked_with(&rules, "abcd"), "a<E>d");
     }
@@ -129,7 +129,7 @@ mod masker {
 
     #[test]
     fn rejects_empty_matching_pattern() {
-        let rule = MaskRule { name: "bad".into(), pattern: "a*".into(), token: "<A>".into(), ascii: true };
+        let rule = MaskRule { name: "bad".into(), pattern: "a*".into(), token: "<A>".into(), ascii: true, check: None };
         assert!(RuleMasker::new(&[rule]).is_err());
     }
 }

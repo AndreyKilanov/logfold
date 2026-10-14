@@ -289,11 +289,61 @@ fn next_dash_start(input: &[u8], from: usize) -> usize {
     (first - 4).min(uuid)
 }
 
-/// Applies the default rules to `input`. Returns `false` (leaving `out` untouched) when nothing matches.
+/// The matches of the default rules in an input, in order: `(start, end, token)`.
 ///
 /// Only positions that can start a match are examined (`matched` decides at them): a hex letter can only start a uuid
 /// and a digit inside a word only a uuid or a timestamp, and both need a `-` at a fixed distance, so those positions are
 /// found from the dashes; every other digit, `/`, `+` and `-` is examined.
+struct Matches<'a> {
+    input: &'a [u8],
+    position: usize,
+    dash_start: usize,
+}
+
+impl<'a> Matches<'a> {
+    fn new(input: &'a [u8]) -> Self {
+        Matches { input, position: 0, dash_start: next_dash_start(input, 0) }
+    }
+}
+
+impl Iterator for Matches<'_> {
+    type Item = (usize, usize, &'static [u8]);
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        let input = self.input;
+        let mut position = self.position;
+        while position < input.len() {
+            let examine = match CLASS[input[position] as usize] {
+                CLASS_NONE => false,
+                CLASS_SLASH_OR_SIGN => true,
+                class => {
+                    if self.dash_start < position {
+                        self.dash_start = next_dash_start(input, position);
+                    }
+                    position == self.dash_start || (class == CLASS_DIGIT && !word_before(input, position))
+                }
+            };
+            if !examine {
+                position += 1;
+                continue;
+            }
+            if let Some((end, token)) = matched(input, position) {
+                self.position = end;
+                return Some((position, end, token));
+            }
+            position += 1;
+        }
+        self.position = position;
+        None
+    }
+}
+
+/// Applies the default rules to `input`. Returns `false` (leaving `out` untouched) when nothing matches.
+///
+/// This is the loop of [`Matches`] written out by hand: with the loop state in locals the whole pass is about 15% faster
+/// than over the iterator, and this is the path of every run that selects no mask set. Both are tested against the
+/// regex engine, so they cannot drift apart unnoticed.
 pub(crate) fn mask_default(input: &[u8], out: &mut Vec<u8>) -> bool {
     let mut cursor = 0;
     let mut position = 0;
@@ -332,4 +382,20 @@ pub(crate) fn mask_default(input: &[u8], out: &mut Vec<u8>) -> bool {
         out.extend_from_slice(&input[cursor..]);
     }
     wrote
+}
+
+/// Appends `input` with the default rules applied to the end of `out`, which keeps what it already holds.
+pub(crate) fn append_masked_default(input: &[u8], out: &mut Vec<u8>) {
+    let mut cursor = 0;
+    for (start, end, token) in Matches::new(input) {
+        out.extend_from_slice(&input[cursor..start]);
+        out.extend_from_slice(token);
+        cursor = end;
+    }
+    out.extend_from_slice(&input[cursor..]);
+}
+
+/// Tells whether the default rules match anywhere in `input`.
+pub(crate) fn matches_default(input: &[u8]) -> bool {
+    Matches::new(input).next().is_some()
 }

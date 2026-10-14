@@ -19,7 +19,7 @@ try:
 except ImportError:
     _core = None  # type: ignore[assignment]
 
-EXPECTED_CORE_API_VERSION = 15
+EXPECTED_CORE_API_VERSION = 16
 
 
 def is_available() -> bool:
@@ -186,6 +186,38 @@ class MinerHandle:
         """Write the miner as a state file; ``state_format`` is ``json`` or ``binary``."""
         with _translating():
             self._native.save_state(path, state_format)
+
+
+class MaskerHandle:
+    """The compiled masking rules of the extension, serving any number of texts.
+
+    The rules are applied by an engine that runs in time linear in the text, whatever the patterns are. The handle is
+    immutable and safe to share between threads.
+    """
+
+    def __init__(self, masks: list[dict[str, Any]]) -> None:
+        """Compile the rules.
+
+        Args:
+            masks: The masking rules as plain data (``name``, ``pattern``, ``token``, ``ascii``, ``check``).
+
+        Raises:
+            EngineError: If the extension is unavailable or speaks another contract version.
+            ConfigError: If a rule is invalid.
+        """
+        require()
+        with _translating():
+            self._native = _core.NativeMasker(masks)
+
+    def mask_many(self, texts: Sequence[str]) -> list[str]:
+        """Return the texts with the rules applied; a lone surrogate is read as U+FFFD."""
+        batch = list(texts)
+        with _translating():
+            try:
+                masked: list[str] = self._native.mask_many(batch)
+            except UnicodeEncodeError:
+                masked = self._native.mask_many(_clean(batch))
+        return masked
 
 
 class ExtractorHandle:
