@@ -47,8 +47,8 @@ pub fn match_records_with(
     let planned = plan::plan(request, chunk_bytes)?;
     let match_started = Instant::now();
     let (mut recount, counters) = match threads {
-        None => sequential::recount(&context, &miner, &planned, rule, observer)?,
-        Some(requested) => chunked::recount(&context, &miner, &planned, requested, rule, observer)?,
+        None => sequential::recount(&context, &miner, &planned, rule, None, observer)?,
+        Some(requested) => chunked::recount(&context, &miner, &planned, requested, rule, None, observer)?,
     };
     let match_seconds = match_started.elapsed().as_secs_f64();
 
@@ -82,5 +82,5 @@ pub fn match_records_with(
         wall_recount_s: match_seconds,
         wall_freeze_s: freeze_seconds,
     };
-    Ok(MineOutput { runs, templates, snapshot: None, unmatched: Some(unmatched), check: None, metrics })
+    Ok(MineOutput { runs, templates, snapshot: None, unmatched: Some(unmatched), check: None, values: None, metrics })
 }

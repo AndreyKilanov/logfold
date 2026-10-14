@@ -64,6 +64,7 @@ fn request(
         recount: false,
         initial,
         keep_snapshot,
+        values: None,
     }
 }
 

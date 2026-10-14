@@ -79,6 +79,7 @@ fn from_file(path: &Path, initial: MinerSnapshot) -> MineOutput {
         recount: false,
         initial: Some(initial),
         keep_snapshot: false,
+        values: None,
     };
     match_records(&request, &NullObserver).unwrap()
 }

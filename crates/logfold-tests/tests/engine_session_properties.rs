@@ -36,6 +36,7 @@ fn from_file(path: PathBuf) -> MineOutput {
         recount: false,
         initial: None,
         keep_snapshot: false,
+        values: None,
     };
     mine(&request, &NullObserver).unwrap()
 }

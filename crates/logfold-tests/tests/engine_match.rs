@@ -43,6 +43,7 @@ fn request(path: &Path, strategy: ExecutionStrategy, initial: Option<MinerSnapsh
         recount: false,
         initial,
         keep_snapshot: keep,
+        values: None,
     }
 }
 

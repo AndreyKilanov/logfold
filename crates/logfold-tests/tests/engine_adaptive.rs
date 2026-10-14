@@ -61,6 +61,7 @@ fn request(path: &Path, strategy: ExecutionStrategy, recount: bool) -> MineReque
         recount,
         initial: None,
         keep_snapshot: false,
+        values: None,
     }
 }
 

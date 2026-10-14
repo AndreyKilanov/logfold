@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use logfold_core::{FrozenTemplate, MaskRule, MinerSnapshot, OnFull};
+use logfold_core::{FrozenTemplate, MaskRule, MinerSnapshot, OnFull, ValueSummary};
 use logfold_io::{FormatConfig, TimeWindow};
 
 use crate::error::EngineError;
@@ -105,6 +105,38 @@ pub struct MineRequest {
     pub initial: Option<MinerSnapshot>,
     /// Return a snapshot of the trained miner in [`MineOutput::snapshot`].
     pub keep_snapshot: bool,
+    /// Collect the distributions of the values of the most frequent templates (see `docs/ALGORITHM.md` §15). It needs
+    /// the pass of `recount`, which then runs whatever `recount` says.
+    pub values: Option<ValuesRequest>,
+}
+
+/// Which templates [`MineRequest::values`] collects the values of.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ValuesRequest {
+    /// The number of the most frequent templates that get their values counted.
+    pub templates: usize,
+}
+
+/// The values of one variable position of a template in one run.
+#[derive(Clone, Debug, PartialEq)]
+pub struct PositionValues {
+    /// Index of the token in the template.
+    pub position: usize,
+    /// The name of the masking rule, or `*` for a position that the miner generalized.
+    pub name: String,
+    /// The counts of the values and what the numbers among them look like.
+    pub summary: ValueSummary,
+}
+
+/// The values of a template, by run.
+#[derive(Clone, Debug, PartialEq)]
+pub struct TemplateValues {
+    /// `sha256(text)[:16 hex]`, the identifier that reports use.
+    pub id: String,
+    /// Template text, tokens joined by a single space.
+    pub text: String,
+    /// For every run, the positions in order.
+    pub runs: Vec<Vec<PositionValues>>,
 }
 
 /// Counters of one run.
@@ -169,6 +201,8 @@ pub struct MineOutput {
     pub unmatched: Option<Vec<Vec<(usize, u64)>>>,
     /// Set by [`crate::check_records`]. `None` otherwise.
     pub check: Option<CheckOutput>,
+    /// The values of the templates that [`MineRequest::values`] asked for, by the text of the template; `None` without it.
+    pub values: Option<Vec<TemplateValues>>,
     /// Timings.
     pub metrics: RunMetrics,
 }

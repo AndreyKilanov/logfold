@@ -41,6 +41,7 @@ fn request(path: PathBuf, mining: MiningConfig, strategy: ExecutionStrategy) -> 
         recount: false,
         initial: None,
         keep_snapshot: false,
+        values: None,
     }
 }
 

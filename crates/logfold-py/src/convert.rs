@@ -1,7 +1,10 @@
 use std::path::PathBuf;
 
 use logfold_core::{FrozenTemplate, Level, MaskCheck, MaskRule, OnFull};
-use logfold_engine::{EngineError, ExecutionStrategy, MineOutput, MineRequest, MiningConfig};
+use logfold_engine::{
+    EngineError, ExecutionStrategy, MineOutput, MineRequest, MiningConfig, PositionValues, TemplateValues,
+    ValuesRequest,
+};
 use logfold_io::{FormatConfig, FormatSpec, TimeWindow};
 use pyo3::exceptions::PyKeyError;
 use pyo3::prelude::*;
@@ -124,6 +127,9 @@ pub(crate) fn parse_request(dict: &Bound<'_, PyDict>) -> PyResult<(MineRequest, 
         recount: required(dict, "recount")?.extract()?,
         initial: None,
         keep_snapshot: false,
+        values: optional(dict, "values")?
+            .map(|value| value.extract::<usize>().map(|templates| ValuesRequest { templates }))
+            .transpose()?,
     };
     Ok((request, state))
 }
@@ -192,6 +198,57 @@ fn template_columns<'py>(py: Python<'py>, templates: &[FrozenTemplate], n_runs: 
     Ok(columns)
 }
 
+fn position_dict<'py>(py: Python<'py>, position: &PositionValues) -> PyResult<Bound<'py, PyDict>> {
+    let summary = &position.summary;
+    let item = PyDict::new(py);
+    item.set_item("position", position.position)?;
+    item.set_item("name", &position.name)?;
+    item.set_item("count", summary.count)?;
+    let top = PyList::empty(py);
+    for (value, count) in &summary.top {
+        top.append((String::from_utf8_lossy(value).into_owned(), *count))?;
+    }
+    item.set_item("top", top)?;
+    item.set_item("distinct", summary.distinct)?;
+    item.set_item("capped", summary.capped)?;
+    item.set_item("other", summary.other)?;
+    match &summary.numeric {
+        Some(numeric) => {
+            let stats = PyDict::new(py);
+            stats.set_item("count", numeric.count)?;
+            stats.set_item("min", numeric.min)?;
+            stats.set_item("max", numeric.max)?;
+            stats.set_item("mean", numeric.mean)?;
+            stats.set_item("p50", numeric.p50)?;
+            stats.set_item("p90", numeric.p90)?;
+            stats.set_item("p99", numeric.p99)?;
+            item.set_item("numeric", stats)?;
+        }
+        None => item.set_item("numeric", py.None())?,
+    }
+    Ok(item)
+}
+
+/// The values of the templates: for each one the identifier and, for every run, the positions in order.
+fn values_list<'py>(py: Python<'py>, values: &[TemplateValues]) -> PyResult<Bound<'py, PyList>> {
+    let list = PyList::empty(py);
+    for template in values {
+        let item = PyDict::new(py);
+        item.set_item("id", &template.id)?;
+        let runs = PyList::empty(py);
+        for positions in &template.runs {
+            let run = PyList::empty(py);
+            for position in positions {
+                run.append(position_dict(py, position)?)?;
+            }
+            runs.append(run)?;
+        }
+        item.set_item("runs", runs)?;
+        list.append(item)?;
+    }
+    Ok(list)
+}
+
 /// Converts the engine output into plain Python containers.
 pub(crate) fn build_output<'py>(py: Python<'py>, output: &MineOutput) -> PyResult<Bound<'py, PyDict>> {
     let result = PyDict::new(py);
@@ -214,6 +271,9 @@ pub(crate) fn build_output<'py>(py: Python<'py>, output: &MineOutput) -> PyResul
     result.set_item("templates", template_columns(py, &output.templates, output.runs.len())?)?;
     if let Some(unmatched) = &output.unmatched {
         result.set_item("unmatched", unmatched)?;
+    }
+    if let Some(values) = &output.values {
+        result.set_item("values", values_list(py, values)?)?;
     }
     if let Some(check) = &output.check {
         result.set_item("model", template_columns(py, &check.model, 1)?)?;
