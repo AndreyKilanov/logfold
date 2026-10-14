@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import importlib
 import os
 import sys
+import tempfile
 import time
+import types
 from pathlib import Path
 
 import pytest
@@ -184,9 +187,9 @@ def test_a_text_that_is_not_a_source_is_refused(text: str) -> None:
     assert "docker" in (caught.value.hint or "")
 
 
-@pytest.mark.parametrize(("timeout", "max_bytes"), [(0, 10), (-1, 10), (5, 0)])
+@pytest.mark.parametrize(("timeout", "max_bytes"), [(0, 10), (-1, 10), (5, 0), (float("inf"), 10), (float("nan"), 10)])
 def test_limits_must_be_positive(fake_source: Path, timeout: float, max_bytes: int) -> None:
-    with pytest.raises(ConfigError, match="must be positive"):
+    with pytest.raises(ConfigError, match="must be positive numbers"):
         logfold.fetch("fake:ok", timeout=timeout, max_bytes=max_bytes).__enter__()
     assert _left(fake_source) == []
 
@@ -195,3 +198,30 @@ def test_the_program_gets_no_standard_input(fake_source: Path, cleanup: object) 
     _register("reader", Command((PYTHON, "-c", "import sys; print(repr(sys.stdin.read()))")))
     with logfold.fetch("reader:x") as path:
         assert path.read_text().strip() == "''"
+
+
+def test_a_disk_that_cannot_be_written_is_an_error_and_the_program_is_stopped(
+    fake_source: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def refuse(*args: object, **kwargs: object) -> int:
+        raise OSError(28, "No space left on device")
+
+    module = importlib.import_module("logfold.api.fetch")  # the package attribute of that name is the function
+    monkeypatch.setattr(module, "os", types.SimpleNamespace(**{**vars(os), "open": refuse}))
+    started = time.monotonic()
+    with (
+        pytest.raises(SourceError, match="cannot store the output of python: No space left"),
+        logfold.fetch("fake:sleep", timeout=60),
+    ):
+        pass
+    assert time.monotonic() - started < 30
+    assert _left(fake_source) == []
+
+
+def test_a_temporary_folder_that_cannot_be_made_is_an_error(fake_source: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def refuse(*args: object, **kwargs: object) -> str:
+        raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(tempfile, "mkdtemp", refuse)
+    with pytest.raises(SourceError, match="cannot create a temporary folder"), logfold.fetch("fake:ok"):
+        pass

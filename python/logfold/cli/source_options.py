@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from contextlib import ExitStack
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Annotated
 
 import typer
@@ -101,6 +102,11 @@ def open_inputs(stack: ExitStack, inputs: Sequence[str], args: SourceArgs, quiet
         if split_source(text) is None:
             paths.append(text)
             continue
+        if Path(text).exists():
+            raise logfold.ConfigError(
+                f"{printable(text)!r} is both a file in this folder and a source",
+                hint=f"write ./{printable(text)} for the file, or rename it",
+            )
         used = True
         path = stack.enter_context(
             logfold.fetch(

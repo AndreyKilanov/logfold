@@ -111,7 +111,7 @@ def test_journalctl_reads_one_unit_in_a_stable_format_without_a_pager() -> None:
             "--output=short-iso",
             "--unit=nginx.service",
             "--lines=200",
-            "--since=2026-10-14T10:00:00",
+            "--since=2026-10-14 10:00:00",
         )
     )
     assert JournalctlSource().platforms == ("linux",)
@@ -195,3 +195,14 @@ def test_a_plugin_file_can_add_a_source(tmp_path: Path, monkeypatch: pytest.Monk
         registry._sources.pop("stern", None)
         registry._origins.pop(("source", "stern"), None)
         registry._explicit_dirs.clear()
+
+
+@pytest.mark.parametrize(("since", "argument"), [("15m", "--since=-15m"), ("2h", "--since=-2h"), ("1w", "--since=-1w")])
+def test_journalctl_reads_a_span_as_that_long_ago(since: str, argument: str) -> None:
+    assert argument in JournalctlSource().command("nginx", SourceOptions(since=since)).argv
+
+
+@pytest.mark.parametrize("since", ["2026-10-14 10:00:00", "2026-10-14T10:00:00"])
+def test_journalctl_gets_a_time_with_a_space_between_the_date_and_the_time(since: str) -> None:
+    argv = JournalctlSource().command("nginx", SourceOptions(since=since)).argv
+    assert "--since=2026-10-14 10:00:00" in argv

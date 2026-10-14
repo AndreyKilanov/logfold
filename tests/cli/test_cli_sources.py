@@ -136,6 +136,18 @@ def test_a_file_with_the_name_of_a_source_is_read_as_a_file_with_a_folder_prefix
     assert json.loads(result.stdout)["run"]["records"] == 1
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="a colon is not allowed in a Windows file name")
+def test_a_file_that_has_the_name_of_a_source_is_not_run_by_mistake(
+    fake_source: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / "fake:ok").write_text("2026-10-14 11:00:00 INFO from a file\n")
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(app, ["analyze", "fake:ok", "-f", "app"])
+    assert result.exit_code == exit_codes.ERROR
+    assert "is both a file in this folder and a source" in result.output
+    assert "./fake:ok" in result.output
+
+
 def test_the_help_names_the_source_options() -> None:
     result = runner.invoke(app, ["analyze", "--help"])
     for flag in ("--source-tail", "--source-since", "--source-previous", "--source-timeout", "--source-max-mb"):

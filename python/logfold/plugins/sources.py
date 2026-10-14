@@ -13,6 +13,8 @@ from logfold.ext.sources import Command, SourceOptions
 _DOCKER_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}")
 _DNS_LABEL = re.compile(r"[a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?")
 _DNS_NAME = re.compile(r"[a-z0-9]([-a-z0-9.]{0,251}[a-z0-9])?")
+_SPAN = re.compile(r"[0-9]{1,6}[smhdw]")
+_ISO = re.compile(r"^([0-9]{4}-[0-9]{2}-[0-9]{2})T([0-9])")
 _UNIT = re.compile(r"[A-Za-z0-9_:.@\\][A-Za-z0-9_:.@\\-]{0,255}")
 
 
@@ -20,6 +22,13 @@ def _check(pattern: re.Pattern[str], value: str, what: str, example: str) -> str
     if not pattern.fullmatch(value):
         raise ConfigError(f"{what} {value!r} is not valid", hint=f"for example {example}")
     return value
+
+
+def _journal_time(since: str) -> str:
+    """Write a time as journalctl reads it: a span ``15m`` is ``-15m``; the date and the time are split by a space."""
+    if _SPAN.fullmatch(since):
+        return f"-{since}"
+    return _ISO.sub(lambda found: f"{found.group(1)} {found.group(2)}", since)
 
 
 def _no_previous(options: SourceOptions, program: str) -> None:
@@ -108,7 +117,7 @@ class JournalctlSource:
 
         Args:
             target: Unit name, such as ``nginx.service``.
-            options: What to read.
+            options: What to read; a ``since`` such as ``15m`` means that long ago.
 
         Returns:
             The command.
@@ -122,7 +131,7 @@ class JournalctlSource:
         if options.tail is not None:
             argv.append(f"--lines={options.tail}")
         if options.since is not None:
-            argv.append(f"--since={options.since}")
+            argv.append(f"--since={_journal_time(options.since)}")
         return Command(tuple(argv))
 
 

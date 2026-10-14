@@ -402,7 +402,7 @@ logfold check kubectl:prod/web-7d9/app --state model.json
 Sources work in `analyze`, `learn`, `check`, `match`, `diff` (both runs and `--baseline`) and `inspect`, together with files
 in one run. A file whose name looks like a source is written `./docker:web`.
 
-* **Options:** `--source-tail N` (the last N lines), `--source-since 15m` or a time (as the program takes it),
+* **Options:** `--source-tail N` (the last N lines), `--source-since 15m` (a span, meaning that long ago, or a time such as `2026-10-14T10:00:00`),
   `--source-previous` (`kubectl`: the previous instance of a restarted container), `--source-timeout SECONDS` (default 300)
   and `--source-max-mb MB` (default 1024). They need a source among the inputs. Do not confuse `--source-since` (what the
   program prints) with `--since` (which parsed records are kept).

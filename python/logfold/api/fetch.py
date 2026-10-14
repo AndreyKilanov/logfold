@@ -7,6 +7,7 @@ caller is done.
 
 from __future__ import annotations
 
+import math
 import os
 import shutil
 import signal
@@ -137,7 +138,7 @@ def _run(argv: list[str], merge_stderr: bool, path: Path, timeout: float, max_by
     stopped: list[str] = []
 
     def stop(reason: str) -> None:
-        if not stopped:
+        if not stopped and process.poll() is None:
             stopped.append(reason)
             _kill(process)
 
@@ -150,8 +151,8 @@ def _run(argv: list[str], merge_stderr: bool, path: Path, timeout: float, max_by
         reader = threading.Thread(target=_drain, args=(process.stderr, errors), daemon=True)
         reader.start()
     written = 0
-    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0), 0o600)
     try:
+        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0), 0o600)
         with os.fdopen(descriptor, "wb") as out:
             while chunk := process.stdout.read(_CHUNK):
                 written += len(chunk)
@@ -160,6 +161,8 @@ def _run(argv: list[str], merge_stderr: bool, path: Path, timeout: float, max_by
                     break
                 out.write(chunk)
         process.wait()
+    except OSError as error:
+        raise SourceError(f"cannot store the output of {label}: {error.strerror or error}") from None
     finally:
         timer.cancel()
         if process.poll() is None:
@@ -168,6 +171,8 @@ def _run(argv: list[str], merge_stderr: bool, path: Path, timeout: float, max_by
         process.wait()
         if reader is not None:
             reader.join(timeout=5)
+        if process.stderr is not None:
+            process.stderr.close()
     _check_outcome(label, process.returncode, stopped, timeout, max_bytes, path, b"".join(errors))
 
 
@@ -235,8 +240,8 @@ def fetch(
             f"{source!r} is not a source",
             hint=f"a source looks like docker:web; known sources: {', '.join(source_names())}",
         )
-    if timeout <= 0 or max_bytes < 1:
-        raise ConfigError("timeout and max_bytes must be positive")
+    if not 0 < timeout < math.inf or max_bytes < 1:
+        raise ConfigError("timeout and max_bytes must be positive numbers")
     chosen = get_source(parsed[0])
     if chosen.platforms and not sys.platform.startswith(chosen.platforms):
         raise SourceError(
@@ -244,7 +249,10 @@ def fetch(
         )
     command = chosen.command(parsed[1], SourceOptions(tail, since, previous))
     program = find_program(command.argv[0])
-    folder = Path(tempfile.mkdtemp(prefix="logfold-source-"))
+    try:
+        folder = Path(tempfile.mkdtemp(prefix="logfold-source-"))
+    except OSError as error:
+        raise SourceError(f"cannot create a temporary folder: {error.strerror or error}") from None
     path = folder / "source.log"
     set_label(str(path), source)
     try:
