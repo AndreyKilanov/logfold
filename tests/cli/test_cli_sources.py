@@ -5,8 +5,10 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
+import typer.main
 from typer.testing import CliRunner
 
 from conftest import requires_native
@@ -148,7 +150,19 @@ def test_a_file_that_has_the_name_of_a_source_is_not_run_by_mistake(
     assert "./fake:ok" in result.output
 
 
-def test_the_help_names_the_source_options() -> None:
-    result = runner.invoke(app, ["analyze", "--help"])
-    for flag in ("--source-tail", "--source-since", "--source-previous", "--source-timeout", "--source-max-mb"):
-        assert flag in result.output
+@pytest.mark.parametrize("command", ["analyze", "learn", "check", "match", "diff", "inspect"])
+def test_every_command_that_reads_a_log_has_the_source_options_in_the_input_panel(command: str) -> None:
+    group: Any = typer.main.get_command(app)
+    flags = {
+        flag: param.rich_help_panel
+        for param in group.commands[command].params
+        for flag in param.opts
+        if flag.startswith("--source-")
+    }
+    assert flags == {
+        "--source-tail": "Input",
+        "--source-since": "Input",
+        "--source-previous": "Input",
+        "--source-timeout": "Input",
+        "--source-max-mb": "Input",
+    }
