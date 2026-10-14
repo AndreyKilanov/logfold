@@ -188,3 +188,79 @@ wall-clock time in the zone of the JVM, `UTC`, `Asia/Kolkata` and `America/New_Y
 **Not checked:** other log4j2 layouts (`JsonTemplateLayout`, `%replace`, `%highlight`, `%style`), `%d{...}{timezone}` with a
 zone other than that of the JVM, `%d{UNIX}`, logback `%nopex`, Android and Kotlin loggers, logs of other Java versions
 than 17 and 21, rolling files, and a very long log (the check runs on about 120 KB).
+
+## Logs that other people wrote (V2)
+
+**The oracle.** Test logs of other open projects, each read with the format that is meant for it and compared with an
+expectation that the project wrote (or, where there is none, with one that is computed from the file without `logfold`).
+Nothing of theirs is in this repository: `bench/validate/external_samples.json` lists every file with its source,
+commit and SHA-256, `external_samples.py` downloads it to `bench/data/formats/external/` (not tracked), and
+`formats_external.py` compares. Sources and licences: `elastic/beats` (Filebeat module tests, Apache-2.0 outside
+`x-pack`), `fluent/fluent-bit` (Apache-2.0), `grafana/loki` (AGPL-3.0: downloaded for the check only, never copied), and
+the workflow runs of this repository (`gh api .../actions/runs/ID/logs`; the logs expire after 90 days, so these are the
+newest runs on the day, not pinned).
+
+Three oracles: **Filebeat's `*-expected.json`** (the boundaries of an event are the bytes from its `log.offset` to the next
+one, the time is `@timestamp`, the level `log.level`; Filebeat keeps at most 100 events per file); **Docker's own rule**
+for `json-file` (the entries of one printed line, read with Python's `json`); and **one event per line** with the time and
+the level cut from the line by a regex (a line that does not start with a time joins the line before it, for GitHub Actions).
+
+**What is compared:** the number of records and of lines that were not parsed, that every non-blank line is in a record or
+in the unparsed count, and record by record, in order: the number of lines, the message (inside the text of the event),
+the time (to the millisecond; a time that differs only by a zone offset is counted apart) and the level (only the levels
+that `logfold` knows: `LOG`, `DETAIL` and so on have none).
+
+| format | samples | match | sources |
+|---|---:|---:|---|
+| `apache` | 5 | 4 | Filebeat `apache/access` |
+| `nginx` | 3 | 3 | Filebeat `nginx/access` |
+| `nginx-error` | 1 | 1 | Filebeat `nginx/error` |
+| `haproxy` | 4 | 3 | Filebeat `haproxy/log` |
+| `postgresql` | 12 | 12 | Filebeat `postgresql/log`, PostgreSQL 9.5 to 13 |
+| `postgresql-csv` | 10 | 10 | Filebeat `postgresql/log`, PostgreSQL 11 and 13 |
+| `log4j:<pattern>` | 8 | 8 | Filebeat `kafka/log` (two patterns of Kafka) |
+| `docker-json` | 8 | 8 | Filebeat and Fluent Bit tests (split lines, a broken line) |
+| `k8s` | 1 | 1 | Filebeat CRI sample |
+| `logfmt` | 2 | 2 | Loki test logs |
+| `jsonl` | 14 | 8 | Filebeat Elasticsearch, Logstash and MongoDB JSON logs |
+| `syslog` | 7 | 7 | Filebeat `system/syslog` and `system/auth` |
+| `github-actions` | 39 | 39 | 3 runs of this repository, every job log |
+
+Fewer than 20 samples for every format but `github-actions`: there are no more of them in these projects. Not covered by
+other people's samples: `journald` (Filebeat's `.export` files are the export format, not `journalctl -o json`),
+`serilog-clef`, `app`, `plain`.
+
+**What this found, and what was fixed** (each fix has a test made of lines from the samples):
+
+- **`nginx` and `apache` read only `client ident user [time]`.** Not read: a list of addresses in the first field
+  (`10.0.0.2, 10.0.0.1, 127.0.0.1 - - [`, a proxy chain), a virtual host in front (`example.com 10.0.0.2 - - [`, Apache's
+  `vhost_combined`), a quoted list. Now everything in front of the first `[date:` is the prefix. Same speed (0.41 s against
+  0.40 s on 100 MB).
+- **`nginx-error` did not join the lines of an entry** (PHP warnings of a FastCGI error continue on the next lines): they
+  were counted as not parsed. Now it is multi-line.
+- **`logfmt` needed `level=` right after `ts=`.** Lines of Go services (`ts=... caller=http.go:194 level=debug ...`, Loki,
+  Prometheus) were not read (half of a Loki log), and so were logrus' `time="..." level=...` and `lvl=`. Now other plain
+  pairs may stand between them. **Cost:** 0.62 s against 0.32 s on 500,000 lines (the regex no longer takes the fast path
+  of the engine); both numbers are whole runs of `analyze` with the default strategy on 16 threads.
+- **`jsonl` did not know `log.level` and `timeMillis`** (Elasticsearch's ECS logs, log4j2's JsonLayout): the level and the
+  time were missing. Added to the default keys.
+- **`syslog` read only the classic time** (`Dec 13 11:35:28`): the ISO time of rsyslog's default format on newer systems
+  (`2018-08-14T14:30:02.203151+02:00 host prog[1]: ...`) was not read at all, and the lines that continue an entry (macOS)
+  were not parsed. `ts_format` now falls back to ISO-8601 for a text it does not read (an engine change, in
+  `docs/ALGORITHM.md` §1.3), and `syslog` takes both and joins continuation lines.
+- **`github-actions` did not join the lines of a multi-line value** (the `with:` inputs of a step print their next lines
+  without a time): 6 lines per job were not parsed. Now it is multi-line.
+
+**Limits that were found and are written down, not fixed:**
+
+- `apache`: a custom `LogFormat` (the `ssl_request_log` of Apache puts `[time]` first) is not the combined format; use
+  `regex:<pattern>`. `haproxy`: the plain `Connect from ... to ...` messages of the default log mode are not HTTP or TCP logs.
+- `jsonl`: one JSON object **per line**. A pretty-printed object over several lines (Elasticsearch's `stacktrace` arrays),
+  a message that is not at the top level (log4j2's `logEvent.message`, Elasticsearch's `elasticsearch.slowlog.message`)
+  and a time that is an object (MongoDB's `"t": {"$date": ...}`, with the level in `"s": "I"`) are not read; MongoDB's logs
+  have records, but no time and no level.
+- `postgresql`: the zone name of the time (`CEST`) is not applied, the time is the wall clock of the server. In 8 samples
+  (130 times) the time differs from `@timestamp` only by that offset.
+- `docker-json`: the `lines` of one inspected record that was joined from several entries is 1 (the counter of the run is
+  right: it counts the physical lines).
+- The classic syslog time has no year (1970).

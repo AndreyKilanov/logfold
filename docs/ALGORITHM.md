@@ -35,11 +35,11 @@ and optional `level`.
 - **json**: the line must be a JSON object, else the line is unparsed. `message` = first present key of
   `message_keys` (default `message`, `msg`, `log`); a string is used as is except that one line break (`\n` or `\r\n`) at its end is dropped, other scalar JSON values are rendered
   as compact JSON; a missing message makes the line unparsed. `timestamp` = first present key of `time_keys`
-  (default `timestamp`, `time`, `ts`, `@timestamp`): strings go through §1.3 (a string of 1–18 ASCII digits is
+  (default `timestamp`, `time`, `ts`, `@timestamp`, `timeMillis`): strings go through §1.3 (a string of 1–18 ASCII digits is
   treated as an integer), numbers are epoch seconds (`|v| < 1e11`), milliseconds (`< 1e14`), microseconds
   (`< 1e17`) or nanoseconds (integers use integer arithmetic; floats use `floor(v * scale + 0.5)`). Epoch values are
   absolute, so they count as timezone-aware. `level` = first present key of
-  `level_keys` (default `level`, `severity`, `lvl`).
+  `level_keys` (default `level`, `severity`, `lvl`, `log.level`).
   With `join_unterminated` (the `docker-json` format) an entry whose message does not end with a line break is joined
   with the entries that follow it, up to the first one whose message does (a blank line between them is skipped, a line
   that is not an entry ends the group and is unparsed): the record is the messages one after the other, with one line
@@ -55,7 +55,8 @@ Input text is parsed with `ts_format` when given, else as ISO-8601: `YYYY-MM-DD`
 optional fraction (`.` or `,`, 1–9 digits, truncated to microseconds), optional zone (`Z`, `±HH`, `±HHMM`, `±HH:MM`).
 Without a zone the time is interpreted as UTC and the run is marked *naive* (`tz_aware = false` unless any record
 carried a zone). `ts_format` directives: `%Y %y %m %d %e %H %M %S %f %z %b %B %j %T %%`; any other literal must match.
-A timestamp that fails to parse is treated as absent (the record still counts).
+A text that `ts_format` does not read is tried as ISO-8601 (so one format can hold both, as `syslog` does). A timestamp that
+fails to parse is treated as absent (the record still counts).
 
 ### 1.4 Levels
 

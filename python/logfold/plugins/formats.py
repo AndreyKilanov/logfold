@@ -12,15 +12,16 @@ __all__ = ["LOGFMT", "SERILOG_CLEF"]
 
 LOGFMT = RegexFormat(
     name="logfmt",
-    pattern=r"^ts=(?P<ts>\S+) level=(?P<lvl>\w+) (?P<msg>.*)$",
+    pattern=r'^(?:ts|time)="?(?P<ts>[^"\s]+)"?(?: \S+=\S*)*? (?:level|lvl)=(?P<lvl>\w+) ?(?P<msg>.*)$',
     message_group="msg",
     time_group="ts",
     level_group="lvl",
 )
 """``key=value`` lines: ``ts=2026-10-04T10:00:01Z level=warn msg="slow query" took=412ms``.
 
-The timestamp is ISO-8601. The message is everything after the level, so the remaining ``key=value`` pairs take part
-in the template.
+The line starts with the timestamp (``ts`` or ``time``, ISO-8601, quotes allowed) and the level (``level`` or ``lvl``)
+follows it, directly or after other plain ``key=value`` pairs (``ts=... caller=http.go:194 level=debug ...``). The
+message is everything after the level, so the remaining ``key=value`` pairs take part in the template.
 """
 
 SERILOG_CLEF = JsonFormat(

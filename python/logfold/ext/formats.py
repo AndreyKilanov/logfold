@@ -58,8 +58,8 @@ class JsonFormat:
 
     name: str = "jsonl"
     message_keys: tuple[str, ...] = ("message", "msg", "log")
-    time_keys: tuple[str, ...] = ("timestamp", "time", "ts", "@timestamp")
-    level_keys: tuple[str, ...] = ("level", "severity", "lvl")
+    time_keys: tuple[str, ...] = ("timestamp", "time", "ts", "@timestamp", "timeMillis")
+    level_keys: tuple[str, ...] = ("level", "severity", "lvl", "log.level")
     ts_format: str | None = None
     multiline: bool = False
     join_unterminated: bool = False
@@ -89,7 +89,8 @@ class RegexFormat:
         message_group: Group holding the message.
         time_group: Group holding the timestamp text.
         level_group: Group holding the level text.
-        ts_format: ``strptime``-style format of the timestamp; ISO-8601 when ``None``.
+        ts_format: ``strptime``-style format of the timestamp; ISO-8601 when ``None``. A text it does not read is tried
+            as ISO-8601.
         multiline: Join lines that do not match ``pattern`` to the previous record.
     """
 

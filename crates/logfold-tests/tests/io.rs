@@ -70,6 +70,27 @@ mod format {
     }
 
     #[test]
+    fn a_text_that_ts_format_does_not_read_is_tried_as_iso() {
+        let fmt = CompiledFormat::new(&FormatConfig {
+            spec: FormatSpec::Regex {
+                pattern: r"^(?P<ts>\S+ \S+ \S+|\S+) (?P<msg>.*)$".into(),
+                message_group: Some("msg".into()),
+                time_group: Some("ts".into()),
+                level_group: None,
+            },
+            ts_format: Some("%d/%b/%Y:%H:%M:%S".into()),
+            multiline: false,
+        })
+        .unwrap();
+        let classic = b"01/Jan/1970:00:00:02 started";
+        let iso = b"1970-01-01T00:00:03Z started";
+        let neither = b"yesterday started";
+        assert_eq!(fmt.parse(classic, classic.len()).unwrap().timestamp, Some(2_000_000));
+        assert_eq!(fmt.parse(iso, iso.len()).unwrap().timestamp, Some(3_000_000));
+        assert_eq!(fmt.parse(neither, neither.len()).unwrap().timestamp, None);
+    }
+
+    #[test]
     fn rejects_unknown_group() {
         let result = CompiledFormat::new(&FormatConfig {
             spec: FormatSpec::Regex {

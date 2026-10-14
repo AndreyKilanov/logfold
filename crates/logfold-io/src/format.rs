@@ -251,7 +251,7 @@ impl CompiledFormat {
 
     fn parse_time(&self, text: &[u8]) -> Option<ParsedTimestamp> {
         match &self.ts_format {
-            Some(format) => format.parse(text),
+            Some(format) => format.parse(text).or_else(|| parse_iso(text)),
             None => parse_iso(text),
         }
     }

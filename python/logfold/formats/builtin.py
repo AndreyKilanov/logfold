@@ -8,9 +8,11 @@ from logfold.ext.registry import register_format
 _ISO = r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:[.,]\d+)?(?:Z|[+-]\d{2}:?\d{2})?"
 _LEVELS = r"TRACE|DEBUG|INFO|NOTICE|WARN(?:ING)?|ERROR|ERR|FATAL|CRITICAL|CRIT"
 
+_SYSLOG_ISO = r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:[.,]\d+)?(?:[+-]\d{2}(?::?\d{2})?)?"
+
 NGINX_ACCESS = RegexFormat(
     name="nginx",
-    pattern=r'^\S+ \S+ \S+ \[(?P<ts>[^\]]+)\] (?P<msg>"[^"]*" \d{3})',
+    pattern=r'^[^\[]*\[(?P<ts>\d{2}/[A-Za-z]{3}/\d{4}:[^\]]+)\] (?P<msg>"[^"]*" \d{3})',
     message_group="msg",
     time_group="ts",
     ts_format="%d/%b/%Y:%H:%M:%S %z",
@@ -31,14 +33,16 @@ NGINX_ERROR = RegexFormat(
     time_group="ts",
     level_group="lvl",
     ts_format="%Y/%m/%d %H:%M:%S",
+    multiline=True,
 )
 
 SYSLOG = RegexFormat(
     name="syslog",
-    pattern=r"^(?P<ts>[A-Z][a-z]{2} +\d{1,2} \d{2}:\d{2}:\d{2}) \S+ (?P<msg>.*)$",
+    pattern=rf"^(?P<ts>[A-Z][a-z]{{2}} +\d{{1,2}} \d{{2}}:\d{{2}}:\d{{2}}|{_SYSLOG_ISO}) \S+ (?P<msg>.*)$",
     message_group="msg",
     time_group="ts",
     ts_format="%b %e %H:%M:%S",
+    multiline=True,
 )
 
 KUBERNETES = RegexFormat(

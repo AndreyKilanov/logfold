@@ -1,0 +1,792 @@
+{
+ "sources": {
+  "beats": {
+   "repo": "elastic/beats",
+   "commit": "3451fb9978cbab75fc2f7d11e762c60cec32f099",
+   "license": "Apache-2.0 (outside x-pack)"
+  },
+  "fluent-bit": {
+   "repo": "fluent/fluent-bit",
+   "commit": "eef172226af2879b24ce61d8d73a874567e465c3",
+   "license": "Apache-2.0"
+  },
+  "loki": {
+   "repo": "grafana/loki",
+   "commit": "febb00b049dd80f50757a5061ab467bfabeeeb25",
+   "license": "AGPL-3.0 (downloaded for a local check only, never copied into this repository)"
+  }
+ },
+ "samples": [
+  {
+   "source": "beats",
+   "format": "apache",
+   "path": "filebeat/module/apache/access/test/test.log",
+   "sha256": {
+    "filebeat/module/apache/access/test/test.log": "865ae19bd8fe42b2024742174e4a40d0b706b29bd7a7093ab1fe52cf87964374",
+    "filebeat/module/apache/access/test/test.log-expected.json": "008977629b33c4af58e0b45f723174b6a25cdaeb9af2a2ce852b343f2f90ad85"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "apache",
+   "path": "filebeat/module/apache/access/test/ssl-request.log",
+   "sha256": {
+    "filebeat/module/apache/access/test/ssl-request.log": "bce4e6fc7ec9e98a306bd225347d2edfbe94b5932a99b3f89772ef9edcafc6d5",
+    "filebeat/module/apache/access/test/ssl-request.log-expected.json": "d659c8fe5c264522ec3af91c84633189f44a43c7877a5504ec5cce1cba4b7570"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "apache",
+   "path": "filebeat/module/apache/access/test/test-vhost.log",
+   "sha256": {
+    "filebeat/module/apache/access/test/test-vhost.log": "ed73e94a354915ce97c3ffd68e89b195ab6bedc33a1b6980aa5aeb1198082f33",
+    "filebeat/module/apache/access/test/test-vhost.log-expected.json": "272c1626a94a0819d3a1f3ad0f6e619e162c43bb3787692bbecdae79084d4f0c"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "apache",
+   "path": "filebeat/module/apache/access/test/darwin-2.4.23.log",
+   "sha256": {
+    "filebeat/module/apache/access/test/darwin-2.4.23.log": "343235a0e995800f7f8cfe47874dce59d8c72f9738ea8662b05a833b80b7ac50",
+    "filebeat/module/apache/access/test/darwin-2.4.23.log-expected.json": "a9cd19e90711fb6ed210977bfee242f1359acf496781c5cc96b409351789b875"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "apache",
+   "path": "filebeat/module/apache/access/test/ubuntu-2.2.22.log",
+   "sha256": {
+    "filebeat/module/apache/access/test/ubuntu-2.2.22.log": "d36df8cdd7dabbdc32b7b7e961331c40a7e70560a18077d949a750b461e1074b",
+    "filebeat/module/apache/access/test/ubuntu-2.2.22.log-expected.json": "285e2bcd9a3c09108eb872669d1cd2fb2c212bd18fbe46b6aaa43b055a9f43fa"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "nginx",
+   "path": "filebeat/module/nginx/access/test/access.log",
+   "sha256": {
+    "filebeat/module/nginx/access/test/access.log": "95d0240e260fe7ee0526b39281cbb315e4d7f7a1da3cc8d4141bc88a4b3f8120",
+    "filebeat/module/nginx/access/test/access.log-expected.json": "39c7b4c7033691bc5c447d7971c840c348b03febd52210e06812c9209ba89021"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "nginx",
+   "path": "filebeat/module/nginx/access/test/test-with-host.log",
+   "sha256": {
+    "filebeat/module/nginx/access/test/test-with-host.log": "3198a7cd82f3347b45777ab1fcb7a0e0865fec6599db7910dbf679fc879bcbd8",
+    "filebeat/module/nginx/access/test/test-with-host.log-expected.json": "158b72de925c45c40cb27c755d2e7897a95289ccf0d9749767c03782a5a880b9"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "nginx",
+   "path": "filebeat/module/nginx/access/test/test.log",
+   "sha256": {
+    "filebeat/module/nginx/access/test/test.log": "dc74beb6fe29e4c0af7981b0b4a0ac5b775add0ac822338d5d80a07b99045017",
+    "filebeat/module/nginx/access/test/test.log-expected.json": "7d969ba19eb3eba11cccdd6c507fbbacc4dbdc31eb2095b12dd29c951f24050b"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "nginx-error",
+   "path": "filebeat/module/nginx/error/test/error.log",
+   "sha256": {
+    "filebeat/module/nginx/error/test/error.log": "3de88b6fa4751ee63da9851650b57fd388ac5e91e55a594ec0de8cebf61d4c64",
+    "filebeat/module/nginx/error/test/error.log-expected.json": "58a7fa796432ea53f206f825a70716a9455c168b4a879a7a7d777c7b2698b836"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "haproxy",
+   "path": "filebeat/module/haproxy/log/test/default.log",
+   "sha256": {
+    "filebeat/module/haproxy/log/test/default.log": "80caddfb35e9cb29dfaac4c83936a35f4be007700940d52d328f481e4efc8735",
+    "filebeat/module/haproxy/log/test/default.log-expected.json": "b8033af4a652642eb42d41539223b593f9878ccbcac0031fa41347f868b1705b"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "haproxy",
+   "path": "filebeat/module/haproxy/log/test/haproxy.log",
+   "sha256": {
+    "filebeat/module/haproxy/log/test/haproxy.log": "611665491dec6233a7ff280ef96d518e99f651c397805461386c4662a25c6aad",
+    "filebeat/module/haproxy/log/test/haproxy.log-expected.json": "617e264687cf153332f18050a84c9c7d467c51f8c1b321ae99978423ad5b202f"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "haproxy",
+   "path": "filebeat/module/haproxy/log/test/httplog-no-headers.log",
+   "sha256": {
+    "filebeat/module/haproxy/log/test/httplog-no-headers.log": "d3176323d6ec6f3b70758b49b8ce83931699719cf1409fcc2e2a6ca98a4435b9",
+    "filebeat/module/haproxy/log/test/httplog-no-headers.log-expected.json": "73cef11b2cea45e2565ee4ce5eec223bbe4b07907975d3bc91aab3d27f2c4d96"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "haproxy",
+   "path": "filebeat/module/haproxy/log/test/tcplog.log",
+   "sha256": {
+    "filebeat/module/haproxy/log/test/tcplog.log": "c97f0105d9900fd01621e3c3bf6d0c754785b2dcddfbbb60b8c08c316ecf0022",
+    "filebeat/module/haproxy/log/test/tcplog.log-expected.json": "7882fd9ef3fe99223c5e9ce0aaaf18de85269b9d0b0ac50beb0da4a9bd132e7e"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql",
+   "path": "filebeat/module/postgresql/log/test/postgresql-10-default.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-10-default.log": "ae753d55780e5194a19da33eb6cd293d09fe0c538eb315b774e44b0b77fb3b55",
+    "filebeat/module/postgresql/log/test/postgresql-10-default.log-expected.json": "21a93b420415e60c0c46a2df3951a99012c2bba1c0ffbd5ae51da93c4ed8b60a"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql",
+   "path": "filebeat/module/postgresql/log/test/postgresql-10-min-duration-statement.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-10-min-duration-statement.log": "08316f0cfcfc7c29699fbf968e3bffbfa34a22a164dbcc8db0ca53b1cd3294c0",
+    "filebeat/module/postgresql/log/test/postgresql-10-min-duration-statement.log-expected.json": "8c55598e2f467f3751b599247a3a0ea053d7376ebe8691fab91bfd66cd7247db"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql",
+   "path": "filebeat/module/postgresql/log/test/postgresql-11.4.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-11.4.log": "3c8623acf383aec2aaa432f235b33d5817e8e8ed99b7331a09d6ea2264d0b2db",
+    "filebeat/module/postgresql/log/test/postgresql-11.4.log-expected.json": "1b1c78cc051ad288fdbd287ecb719ab69c88e650ac8c9fb7fb10cf5c0ffa6d0a"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql",
+   "path": "filebeat/module/postgresql/log/test/postgresql-12-default.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-12-default.log": "709b282e951abaaa138878f662ac561fc5e6e978560c14dbf6db0dd0a2205d8f",
+    "filebeat/module/postgresql/log/test/postgresql-12-default.log-expected.json": "19794549d434b5898dee736f5653d6a53923d6b83eb550198ab22278e837509d"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql",
+   "path": "filebeat/module/postgresql/log/test/postgresql-12-min-duration-statement.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-12-min-duration-statement.log": "ea1b68e44739aa3f7368a2bfce1d7a58ff02bac3b24d2b132dd2a4028ecf31b8",
+    "filebeat/module/postgresql/log/test/postgresql-12-min-duration-statement.log-expected.json": "090c720f909be4f5f1ac787bbc46660e7ea39d04fc23aabcd5d623fb7c2e25c1"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql",
+   "path": "filebeat/module/postgresql/log/test/postgresql-13-log-statement-all.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-13-log-statement-all.log": "ccfeee3c8a95a6ba01186c2cbf18f0e447a0a3a53c1c751334bedde52262fa76",
+    "filebeat/module/postgresql/log/test/postgresql-13-log-statement-all.log-expected.json": "522ad5e33963e3e0c5796ad19ca04f1512314d8057f8cfdd5d5a5635d731d5f0"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql",
+   "path": "filebeat/module/postgresql/log/test/postgresql-9-log-statement-all.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-9-log-statement-all.log": "e9be843df86609430e32b406cd55315fafffea41ea13fd5490a7c8d17839aa0c",
+    "filebeat/module/postgresql/log/test/postgresql-9-log-statement-all.log-expected.json": "962a2cc7ba8a4984687634c1232a23a7eca072201382fbb366008a2cc1c31676"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql",
+   "path": "filebeat/module/postgresql/log/test/postgresql-9.6-debian-with-slowlog.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-9.6-debian-with-slowlog.log": "dd31d7eabe96a2b7ba8b8eb8c8689b2712a6a29fce24045ead8153471332fb67",
+    "filebeat/module/postgresql/log/test/postgresql-9.6-debian-with-slowlog.log-expected.json": "4d5b4d544cceb63554ee7c24289c2dd5ff5f2c20a043360aa36ec39838f448bb"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql",
+   "path": "filebeat/module/postgresql/log/test/postgresql-9.6-multi-core.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-9.6-multi-core.log": "cce52d7c0b1f4ff5779891351a34b5dd44d23e256050b36554e58107a731c6a6",
+    "filebeat/module/postgresql/log/test/postgresql-9.6-multi-core.log-expected.json": "0bae70a75bdba7b18a677d1bcda4cdccd8f8e6eb061ddf44f8d8d9ca370240c3"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql",
+   "path": "filebeat/module/postgresql/log/test/postgresql-9.6-new-timestamp.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-9.6-new-timestamp.log": "0f62588e4b4554248dc0dd7619f985c750d04079a6210d1a94580e85d755cd48",
+    "filebeat/module/postgresql/log/test/postgresql-9.6-new-timestamp.log-expected.json": "7a0ff67de44a3333f836e04815ec06ea95090149213e1e01a8a0032b177473ac"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql",
+   "path": "filebeat/module/postgresql/log/test/postgresql-query-steps-slowlog.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-query-steps-slowlog.log": "eae0294a514d6e0565b1088acdc812f90d956282478d489a7b59248667e47122",
+    "filebeat/module/postgresql/log/test/postgresql-query-steps-slowlog.log-expected.json": "22a43c1c520f11d0482cb006fff6a96188248bfa7c6a2bda661c3f7f8715aa12"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql",
+   "path": "filebeat/module/postgresql/log/test/postgresql-ubuntu-9.5.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-ubuntu-9.5.log": "8f038a6be7170681851d42d551a86cf68c631e22f9877fd795fd8db02ba5988c",
+    "filebeat/module/postgresql/log/test/postgresql-ubuntu-9.5.log-expected.json": "48fba4f3def28c5e28d40e92d16ca4d49633232a5267245eb4a40bc2f5befa92"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql-csv",
+   "path": "filebeat/module/postgresql/log/test/postgresql-11-autovacuum.csv.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-11-autovacuum.csv.log": "0078b2318a0a9fe104595d3229eb1b3e1e9a520f1aded3d9af600bc722546fd0",
+    "filebeat/module/postgresql/log/test/postgresql-11-autovacuum.csv.log-expected.json": "a67da76a7c553c298035e9e2c16626b7605308b4413827693c151389a97191e8"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql-csv",
+   "path": "filebeat/module/postgresql/log/test/postgresql-11-connection-disconnection.csv.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-11-connection-disconnection.csv.log": "29fce94495083741e9a4602cc3cf5f59afd7f47f5b17d2cf285ed7d82b568834",
+    "filebeat/module/postgresql/log/test/postgresql-11-connection-disconnection.csv.log-expected.json": "683896c8666a3f26f3166068d689f4f8589d5e04aae36249f51cbc72b12fe06b"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql-csv",
+   "path": "filebeat/module/postgresql/log/test/postgresql-11-duration.csv.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-11-duration.csv.log": "9120072777832a0ed7e1fb9cd5ddf7199aa2f126b232f2612109c131ddcdfc01",
+    "filebeat/module/postgresql/log/test/postgresql-11-duration.csv.log-expected.json": "e5998febeb1847bee059eeb99f1521655803e732812d78a0de0186b36995a903"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql-csv",
+   "path": "filebeat/module/postgresql/log/test/postgresql-11-ipv6.csv.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-11-ipv6.csv.log": "c32290fc645b84604379f91b81caae5c98c4ab57cca7184a48e6d1d49b71bb4b",
+    "filebeat/module/postgresql/log/test/postgresql-11-ipv6.csv.log-expected.json": "844a2eb9906b72362577d6a3db2144ae2e98a2f0deac301705ccd92e94787132"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql-csv",
+   "path": "filebeat/module/postgresql/log/test/postgresql-11-multi-line.csv.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-11-multi-line.csv.log": "83ad4a49084f9f2f007867cb087cf00488d9921419c5bc899045f607d4453e20",
+    "filebeat/module/postgresql/log/test/postgresql-11-multi-line.csv.log-expected.json": "0d4b604600d5415d1a1f3efb379cfdbf9caad5f34d5ac6d512ee3d9e2749e2ef"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql-csv",
+   "path": "filebeat/module/postgresql/log/test/postgresql-11-parse-bind.csv.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-11-parse-bind.csv.log": "fb01be091235d58b4a96539dc75cf57c4ada6435f22d13187585030baafdcabc",
+    "filebeat/module/postgresql/log/test/postgresql-11-parse-bind.csv.log-expected.json": "500aa1f846112510f2b06e2420d22560202d384a90f6f707567e6f8e49ae9529"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql-csv",
+   "path": "filebeat/module/postgresql/log/test/postgresql-11-start-stop.csv.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-11-start-stop.csv.log": "a928a48ae420d58b19823cb160681cb4ab70b4e30c353f371b6aabcf44bc6f76",
+    "filebeat/module/postgresql/log/test/postgresql-11-start-stop.csv.log-expected.json": "f4f20275182f7ba56186cc1c9f5f5df7a394075d74e05ab913a842225bdfca4a"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql-csv",
+   "path": "filebeat/module/postgresql/log/test/postgresql-11-tempfile.csv.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-11-tempfile.csv.log": "316412f365d09e83b3f7c008182e6dd826ec806da48b719fee269fcdf6348263",
+    "filebeat/module/postgresql/log/test/postgresql-11-tempfile.csv.log-expected.json": "2a9cb3c4e7572d104e9c4ea86a5b80f29e553531b0a0fbc42c7ba6b687577779"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql-csv",
+   "path": "filebeat/module/postgresql/log/test/postgresql-13-error-code.csv.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-13-error-code.csv.log": "35dac627f70a1fe744ff3e90e61e78c06605b6812cdd0159de19619b478c9f64",
+    "filebeat/module/postgresql/log/test/postgresql-13-error-code.csv.log-expected.json": "49bb14cebc7aeb36f126191dd3bd30ea8b7733eec81b8ad90d0ed0be753bddea"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "postgresql-csv",
+   "path": "filebeat/module/postgresql/log/test/postgresql-13.csv.log",
+   "sha256": {
+    "filebeat/module/postgresql/log/test/postgresql-13.csv.log": "07b234fe8b7ba1ed078556a10cef52f3759ea6180ea8706f117303955b20844f",
+    "filebeat/module/postgresql/log/test/postgresql-13.csv.log-expected.json": "ed5a00a94d6291854278ccd1c21d9d3ed3651542ce5072a731eccf5b218d717b"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "log4j:[%d] %p %m (%c)%n",
+   "path": "filebeat/module/kafka/log/test/controller-2.0.0.log",
+   "sha256": {
+    "filebeat/module/kafka/log/test/controller-2.0.0.log": "94777a9251580bcf46c985c01b10abb8cf41888afb80fc4f8fc19c5595860b84",
+    "filebeat/module/kafka/log/test/controller-2.0.0.log-expected.json": "c28288e2a41609429ee8860d744bf5a34ee2493475f55ca216c40c60f99ffef1"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "log4j:[%d] %p %m (%c)%n",
+   "path": "filebeat/module/kafka/log/test/controller.log",
+   "sha256": {
+    "filebeat/module/kafka/log/test/controller.log": "2d8b492bbaf012d656ec4943894658c6546c8a5b94f79e2a973b8e6e91e49bef",
+    "filebeat/module/kafka/log/test/controller.log-expected.json": "15e7d7e57ea560db963976d21e40a0bfd3eb01e389cba4f48f5472bfaaaa6420"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "log4j:[%d] %p %m (%c)%n",
+   "path": "filebeat/module/kafka/log/test/server-2.0.0.log",
+   "sha256": {
+    "filebeat/module/kafka/log/test/server-2.0.0.log": "5368a9367207b3c46bfc65db51841e07336b3c93f36d4284f4bcba484ac5547e",
+    "filebeat/module/kafka/log/test/server-2.0.0.log-expected.json": "c20171c0080af6b2129e49462aaa8022999ac5d894a064009de93798f339139a"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "log4j:[%d] %p %m (%c)%n",
+   "path": "filebeat/module/kafka/log/test/server.log",
+   "sha256": {
+    "filebeat/module/kafka/log/test/server.log": "1ae7d2dadb0a640e521bd1975e04a9e115f04556f5ef2f28ed4aa4813f14d3cb",
+    "filebeat/module/kafka/log/test/server.log-expected.json": "611f9ad07c7f0df56eea33e70262591f710e711b382cd45f0f4f168185a6794b"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "log4j:[%d] %p %m (%c)%n",
+   "path": "filebeat/module/kafka/log/test/state-change-1.1.0.log",
+   "sha256": {
+    "filebeat/module/kafka/log/test/state-change-1.1.0.log": "20baff6befe9aec371898a214e4155d60496d070e973382084ff1c01dcfb592f",
+    "filebeat/module/kafka/log/test/state-change-1.1.0.log-expected.json": "1c9efd9664bb23a8c22b3c00923e5f6f5434b69a1c024e3588ddfcd5b1a1fed4"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "log4j:[%d] %p %m (%c)%n",
+   "path": "filebeat/module/kafka/log/test/state-change-2.0.0.log",
+   "sha256": {
+    "filebeat/module/kafka/log/test/state-change-2.0.0.log": "fb292499ebcdf6868ef44f93034ca35ac2c7153b184f8532bece2d84659c986b",
+    "filebeat/module/kafka/log/test/state-change-2.0.0.log-expected.json": "6cfcc1580e0781316f3fa1fb96c422e8a6d2e118dfe924e35b4aa5df29f61eda"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "log4j:[%d] [%-5p] [%t] [%c] - %m%n",
+   "path": "filebeat/module/kafka/log/test/state-change-2.2.2.log",
+   "sha256": {
+    "filebeat/module/kafka/log/test/state-change-2.2.2.log": "29f78e0940d4fdfa1a8894973a5f9d34cbe4bbd85fd8a778ae98b2afb3cd3146",
+    "filebeat/module/kafka/log/test/state-change-2.2.2.log-expected.json": "b804f3da06364d4af4138f9cb505c2dcfdd45490ea17aca8e648cf1e0be08c55"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "log4j:[%d] %p %m (%c)%n",
+   "path": "filebeat/module/kafka/log/test/state-change.log",
+   "sha256": {
+    "filebeat/module/kafka/log/test/state-change.log": "8453ad38e794a89304cc991af169ff42bc6f634f271d5962feeae606f5f182cb",
+    "filebeat/module/kafka/log/test/state-change.log-expected.json": "e49760c302306d4a70bdd9518aec051817df560b257707754ee729ba170c4ee6"
+   },
+   "oracle": "expected"
+  },
+  {
+   "source": "beats",
+   "format": "docker-json",
+   "path": "filebeat/tests/files/logs/docker.log",
+   "oracle": "docker",
+   "sha256": {
+    "filebeat/tests/files/logs/docker.log": "4f2704653e0a3fbe680a56e3b4c902e56dbddb8d7a0694f64aac1369680bdf19"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "docker-json",
+   "path": "filebeat/tests/files/logs/docker_multiline.log",
+   "oracle": "docker",
+   "sha256": {
+    "filebeat/tests/files/logs/docker_multiline.log": "60e9815f7a123e417258aa019e40851f6df132855e2017cc00b2c6177d3a22c1"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "docker-json",
+   "path": "filebeat/testing/integration/files/logs/docker_corrupted.log",
+   "oracle": "docker",
+   "sha256": {
+    "filebeat/testing/integration/files/logs/docker_corrupted.log": "8474a8f848a6161480ca5a6077e378a33d35c77dec0801223be8714f8900103f"
+   }
+  },
+  {
+   "source": "fluent-bit",
+   "format": "docker-json",
+   "path": "tests/runtime/data/tail/log/dockermode.log",
+   "oracle": "docker",
+   "sha256": {
+    "tests/runtime/data/tail/log/dockermode.log": "e45b86861a8c77157d76198f68ca218f7962fcf012fa4bbd370b98b5ac4f32d5"
+   }
+  },
+  {
+   "source": "fluent-bit",
+   "format": "docker-json",
+   "path": "tests/runtime/data/tail/log/dockermode_firstline_detection.log",
+   "oracle": "docker",
+   "sha256": {
+    "tests/runtime/data/tail/log/dockermode_firstline_detection.log": "a709df4f356791f5459dee970ac0296a6898d1dda56305cd3c49d0b6cb19466c"
+   }
+  },
+  {
+   "source": "fluent-bit",
+   "format": "docker-json",
+   "path": "tests/runtime/data/tail/log/dockermode_multiple_lines.log",
+   "oracle": "docker",
+   "sha256": {
+    "tests/runtime/data/tail/log/dockermode_multiple_lines.log": "7909d0f60c42e1d9316b9224aee15de9cbcb8e904d06ca12602db57549575222"
+   }
+  },
+  {
+   "source": "fluent-bit",
+   "format": "docker-json",
+   "path": "tests/runtime/data/tail/log/dockermode_splitted_line.log",
+   "oracle": "docker",
+   "sha256": {
+    "tests/runtime/data/tail/log/dockermode_splitted_line.log": "b54ac326b854934911c29f8c6a718ccbccdb9008169d88f09fdd1e415c583af5"
+   }
+  },
+  {
+   "source": "fluent-bit",
+   "format": "docker-json",
+   "path": "tests/runtime/data/tail/log/dockermode_splitted_multiple_lines.log",
+   "oracle": "docker",
+   "sha256": {
+    "tests/runtime/data/tail/log/dockermode_splitted_multiple_lines.log": "9028f9f47ecf3e3c8b30cf8c01a5d4d4b658b51675dfb4fedaa53da77e7a1f29"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "k8s",
+   "path": "filebeat/testing/integration/files/logs/cri.log",
+   "oracle": "lines",
+   "options": {
+    "time_re": "^(\\S+) "
+   },
+   "sha256": {
+    "filebeat/testing/integration/files/logs/cri.log": "e887e0335a237db62568b0492955f438953be47830602c297efdfc158ba76b5f"
+   }
+  },
+  {
+   "source": "loki",
+   "format": "logfmt",
+   "path": "pkg/pattern/drain/testdata/ingester-logfmt.txt",
+   "oracle": "lines",
+   "options": {
+    "time_re": "\\bts=(\\S+)",
+    "level_re": "\\blevel=(\\w+)"
+   },
+   "sha256": {
+    "pkg/pattern/drain/testdata/ingester-logfmt.txt": "f62c7dbf4484854e8602148277455c9c545fc27ba1b4cb804b952276c90c5c87"
+   }
+  },
+  {
+   "source": "loki",
+   "format": "logfmt",
+   "path": "pkg/pattern/drain/testdata/agent-logfmt.txt",
+   "oracle": "lines",
+   "options": {
+    "time_re": "\\bts=(\\S+)",
+    "level_re": "\\blevel=(\\w+)"
+   },
+   "sha256": {
+    "pkg/pattern/drain/testdata/agent-logfmt.txt": "d57f3e9181a6c1810eda19a3aa0d814d3b95048f50a82ba11ed9521f2bdb5697"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "jsonl",
+   "path": "filebeat/module/elasticsearch/deprecation/test/es_deprecation-json.800.log",
+   "oracle": "expected",
+   "sha256": {
+    "filebeat/module/elasticsearch/deprecation/test/es_deprecation-json.800.log": "2b46249c2d191059aecb9032b0da86ca3c99683a264bad2af892f1b191aca7a4",
+    "filebeat/module/elasticsearch/deprecation/test/es_deprecation-json.800.log-expected.json": "c9eb1a2f94728965c514efbf58c6d6354ab289459840befc259ca110fbc37c31"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "jsonl",
+   "path": "filebeat/module/elasticsearch/deprecation/test/test-json.log",
+   "oracle": "expected",
+   "sha256": {
+    "filebeat/module/elasticsearch/deprecation/test/test-json.log": "6893e192fcc5bde8c428b6e78abaa467524606b368e554b7a81da4d35e308dc7",
+    "filebeat/module/elasticsearch/deprecation/test/test-json.log-expected.json": "d80c2ae4866608c8a90abfca6a65aed557b58748af81029acf38cc40d29f492e"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "jsonl",
+   "path": "filebeat/module/elasticsearch/server/test/elasticsearch-json.800.log",
+   "oracle": "expected",
+   "sha256": {
+    "filebeat/module/elasticsearch/server/test/elasticsearch-json.800.log": "c56d623ef206f425bc111d05c32c3e4e208c030d0976154304668582254c5232",
+    "filebeat/module/elasticsearch/server/test/elasticsearch-json.800.log-expected.json": "3b17f18c1afed869a18260264a964669b9c0393458e69b01bb8a5f9e448e4c99"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "jsonl",
+   "path": "filebeat/module/elasticsearch/server/test/test-json.log",
+   "oracle": "expected",
+   "sha256": {
+    "filebeat/module/elasticsearch/server/test/test-json.log": "663ff50dbda436b316e77585edfdc41cbe71e47cb8b6b80405bb5e28d8cbd927",
+    "filebeat/module/elasticsearch/server/test/test-json.log-expected.json": "9d82dcff94fd1376242e2201f8754eed573528a39121756a54a1ce091cc99233"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "jsonl",
+   "path": "filebeat/module/elasticsearch/slowlog/test/es74_index_indexing_slowlog-json.log",
+   "oracle": "expected",
+   "sha256": {
+    "filebeat/module/elasticsearch/slowlog/test/es74_index_indexing_slowlog-json.log": "66e060eb95d8b4bf6d3165608662879f785980990c421d813cff6765c3b47716",
+    "filebeat/module/elasticsearch/slowlog/test/es74_index_indexing_slowlog-json.log-expected.json": "ca70c30bb3f0c5ceae3b1bb8fb22cc0819bdb8063dc12274a6a7859f5acb92b3"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "jsonl",
+   "path": "filebeat/module/elasticsearch/slowlog/test/es74_index_search_slowlog-json.log",
+   "oracle": "expected",
+   "sha256": {
+    "filebeat/module/elasticsearch/slowlog/test/es74_index_search_slowlog-json.log": "f7ce4f8a5a9e6d5690571b34194cc7292c79079add06ee7a12c42c212b59ee4c",
+    "filebeat/module/elasticsearch/slowlog/test/es74_index_search_slowlog-json.log-expected.json": "83c90c51fca3f4dcb867f422e1157014d833c6ef90b126e1e49c0776e796d069"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "jsonl",
+   "path": "filebeat/module/elasticsearch/slowlog/test/es814_index_indexing_slowlog-json.log",
+   "oracle": "expected",
+   "sha256": {
+    "filebeat/module/elasticsearch/slowlog/test/es814_index_indexing_slowlog-json.log": "f0dfee0c556c88970acff4e9ad15f78a52f57c379ee666f42a9bb4f9bddff776",
+    "filebeat/module/elasticsearch/slowlog/test/es814_index_indexing_slowlog-json.log-expected.json": "d86bccb7e1e3fa92072237e595ce0688bf8c0989f3056b33de3b9bdf05f7a6d0"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "jsonl",
+   "path": "filebeat/module/elasticsearch/slowlog/test/es814_index_search_slowlog-json.log",
+   "oracle": "expected",
+   "sha256": {
+    "filebeat/module/elasticsearch/slowlog/test/es814_index_search_slowlog-json.log": "7cb10d987df96d523e1f351609dbd8674cfb17ab19d35fda02ad85533c1af416",
+    "filebeat/module/elasticsearch/slowlog/test/es814_index_search_slowlog-json.log-expected.json": "8d26f7d536b3f1878481e251e48fce6030e9a38ab3d2e764d60d7b7884575a79"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "jsonl",
+   "path": "filebeat/module/elasticsearch/slowlog/test/es_index_indexing_slowlog-json.log",
+   "oracle": "expected",
+   "sha256": {
+    "filebeat/module/elasticsearch/slowlog/test/es_index_indexing_slowlog-json.log": "195cea20851f56a564507264acaf74d684debd8c27e8e7b8dabcea82862f4417",
+    "filebeat/module/elasticsearch/slowlog/test/es_index_indexing_slowlog-json.log-expected.json": "57285a185dc2f308212ea3c706ba854b78055843d5a8bad0914f9bf301808ebd"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "jsonl",
+   "path": "filebeat/module/elasticsearch/slowlog/test/es_index_search_slowlog-json.log",
+   "oracle": "expected",
+   "sha256": {
+    "filebeat/module/elasticsearch/slowlog/test/es_index_search_slowlog-json.log": "7e352b15a8cff464f29cb9de8b29030c356b7a02c1b50718c872bf77f8568716",
+    "filebeat/module/elasticsearch/slowlog/test/es_index_search_slowlog-json.log-expected.json": "63be9d70de167dd333039aee6d14ec5d134268457b55eadda9c6dec61f953489"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "jsonl",
+   "path": "filebeat/module/elasticsearch/slowlog/test/slowlogs-json.log",
+   "oracle": "expected",
+   "sha256": {
+    "filebeat/module/elasticsearch/slowlog/test/slowlogs-json.log": "c043837e761e90802aa543136ef5d57c9b0039d4c205b55ff940b1828d365d53",
+    "filebeat/module/elasticsearch/slowlog/test/slowlogs-json.log-expected.json": "d0e4cfce86905423633fb53c5653cfcd76e9cd90b747012f6d09235f2d592344"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "jsonl",
+   "path": "filebeat/module/logstash/log/test/logstash-json.log",
+   "oracle": "expected",
+   "sha256": {
+    "filebeat/module/logstash/log/test/logstash-json.log": "486fbfb741f7699c0be0c87a179236a1e364bc35506207e6277cf08fe85c15a4",
+    "filebeat/module/logstash/log/test/logstash-json.log-expected.json": "74dfaded46a259b137bf144bb84478f8b4e3600e66920fa1d45cccb0d39567f2"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "jsonl",
+   "path": "filebeat/module/logstash/slowlog/test/slowlog-json.log",
+   "oracle": "expected",
+   "sha256": {
+    "filebeat/module/logstash/slowlog/test/slowlog-json.log": "9809c7cbd41558bd2a2e6a51bc747630556053b404cb02873bdc4d5ad5e2b81f",
+    "filebeat/module/logstash/slowlog/test/slowlog-json.log-expected.json": "4e9de244854bc07a8356591a53014ce98260ee1b4483159ef599b23656d0560e"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "jsonl",
+   "path": "filebeat/module/mongodb/log/test/mongodb-ubuntu-4.4.4-json.log",
+   "oracle": "expected",
+   "sha256": {
+    "filebeat/module/mongodb/log/test/mongodb-ubuntu-4.4.4-json.log": "a49fcc903c43730cb36583466ae44de76479049d70252a6ac631fb57ab358b44",
+    "filebeat/module/mongodb/log/test/mongodb-ubuntu-4.4.4-json.log-expected.json": "84c4283a002091865a2b35021983729c2cc68dd89d91bb6403d05ec91201d70b"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "syslog",
+   "path": "filebeat/module/system/syslog/test/darwin-syslog-sample.log",
+   "oracle": "expected",
+   "options": {
+    "no_year": true
+   },
+   "sha256": {
+    "filebeat/module/system/syslog/test/darwin-syslog-sample.log": "203251ed0a55575e060d3ba09a93143e0b31a6870cd1261f7c3db57a0d6e64fd",
+    "filebeat/module/system/syslog/test/darwin-syslog-sample.log-expected.json": "d63a62193231e36d8e7ea2c72de9ee6c78de87b6a02238508429423221e7f2d8"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "syslog",
+   "path": "filebeat/module/system/syslog/test/darwin-syslog.log",
+   "oracle": "expected",
+   "options": {
+    "no_year": true
+   },
+   "sha256": {
+    "filebeat/module/system/syslog/test/darwin-syslog.log": "b323a393d6b4fcc4ed540602f727ba3fe108ebd39099b88ca86eca0db2f3b859",
+    "filebeat/module/system/syslog/test/darwin-syslog.log-expected.json": "1a928de63261d402331f1490ad791e0ad7e35b36acb0ba80b5f87f1cb6b860df"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "syslog",
+   "path": "filebeat/module/system/syslog/test/suse-syslog.log",
+   "oracle": "expected",
+   "options": {
+    "no_year": true
+   },
+   "sha256": {
+    "filebeat/module/system/syslog/test/suse-syslog.log": "a6c33ca278a2b15e66516cac76b8715715b91f404d3ab7e6da0d15a4006d7014",
+    "filebeat/module/system/syslog/test/suse-syslog.log-expected.json": "b099116cf45fc1eb86e382563ba04a5e545bc0699db488dd5f0f6b0546727388"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "syslog",
+   "path": "filebeat/module/system/syslog/test/tz-offset.log",
+   "oracle": "expected",
+   "options": {
+    "no_year": true
+   },
+   "sha256": {
+    "filebeat/module/system/syslog/test/tz-offset.log": "aa5b365b0037bb581ea215db8ccb5fc611d2891c530639c217d32e959b12a69d",
+    "filebeat/module/system/syslog/test/tz-offset.log-expected.json": "36cf4534e608c3ae628238a8e5e242def2036ff5b7c75fd9666bebcb664b5477"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "syslog",
+   "path": "filebeat/module/system/auth/test/secure-rhel7.log",
+   "oracle": "expected",
+   "options": {
+    "no_year": true
+   },
+   "sha256": {
+    "filebeat/module/system/auth/test/secure-rhel7.log": "d5668a474cd78681c47553faf8bad5c7892e8b9736f0a8ccf7917f55e735f8fd",
+    "filebeat/module/system/auth/test/secure-rhel7.log-expected.json": "f3c5af8e880d8c5d0b9d511f26ef104454cfc0a24b6578a1373e72a77a62cf62"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "syslog",
+   "path": "filebeat/module/system/auth/test/test.log",
+   "oracle": "expected",
+   "options": {
+    "no_year": true
+   },
+   "sha256": {
+    "filebeat/module/system/auth/test/test.log": "f093dfe2e3a11e1750d83aef1566658b6d228e25dd461b04b2be972708f41a45",
+    "filebeat/module/system/auth/test/test.log-expected.json": "be39817adebe7570c081438a77c4904df165ae1e2004c9617ca40f73213e4976"
+   }
+  },
+  {
+   "source": "beats",
+   "format": "syslog",
+   "path": "filebeat/module/system/auth/test/timestamp.log",
+   "oracle": "expected",
+   "options": {
+    "no_year": true
+   },
+   "sha256": {
+    "filebeat/module/system/auth/test/timestamp.log": "cf11ab7c6af651b48326b8103b6941962ae40275f4b33638c60a0bbc5e3ac9f3",
+    "filebeat/module/system/auth/test/timestamp.log-expected.json": "739a40dda8a8b243b0194988e80c6e9cef31824b9071f0b328e60fb28efbecab"
+   }
+  }
+ ]
+}
