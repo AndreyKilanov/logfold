@@ -8,9 +8,9 @@ from logfold.ext.mask_selection import ALL_SETS, MaskSelection, resolve_masks
 from logfold.ext.mask_sets import MaskSet, load_mask_set, mask_fingerprint
 from logfold.ext.masks import DEFAULT_MASKS, MaskRule
 from logfold.ext.matchers import DiffMatcher
+from logfold.ext.plugin_folders import default_plugin_dir, plugin_directories
 from logfold.ext.registry import (
     add_plugin_directory,
-    default_plugin_dir,
     format_names,
     get_format,
     get_mask_set,
@@ -18,7 +18,6 @@ from logfold.ext.registry import (
     get_reporter,
     mask_set_names,
     matcher_names,
-    plugin_directories,
     plugin_sources,
     register_format,
     register_mask_set,

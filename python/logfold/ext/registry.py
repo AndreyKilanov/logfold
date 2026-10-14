@@ -8,10 +8,8 @@ zero-argument callable returning one).
 
 from __future__ import annotations
 
-import importlib.util
 import logging
 import os
-import sys
 from collections.abc import Callable
 from importlib import metadata
 from pathlib import Path
@@ -28,6 +26,7 @@ from logfold.errors import (
 from logfold.ext.formats import Format, FormatSpec, JsonFormat, PlainFormat, RegexFormat
 from logfold.ext.mask_sets import MaskSet
 from logfold.ext.matchers import DiffMatcher
+from logfold.ext.plugin_folders import import_plugin_modules, plugin_directories
 from logfold.ext.reporters import Reporter
 
 if TYPE_CHECKING:
@@ -50,9 +49,6 @@ SUFFIX_REPORTERS = {
     ".prom": "prometheus",
 }
 """Report file suffixes and the built-in reporter each one selects."""
-
-ENV_PLUGIN_PATH = "LOGFOLD_PLUGIN_PATH"
-ENV_NO_USER_PLUGINS = "LOGFOLD_NO_USER_PLUGINS"
 
 _formats: dict[str, FormatSpec | Format] = {}
 _reporters: dict[str, Reporter] = {}
@@ -226,40 +222,6 @@ def plugin_origins() -> dict[tuple[str, str], PluginOrigin]:
     return dict(_origins)
 
 
-def default_plugin_dir() -> Path:
-    r"""Return the folder where logfold looks for the user's own plugins.
-
-    Returns:
-        ``%APPDATA%\logfold\plugins`` on Windows, ``$XDG_CONFIG_HOME/logfold/plugins`` or
-        ``~/.config/logfold/plugins`` elsewhere. The folder does not have to exist.
-    """
-    if os.name == "nt":
-        base = Path(os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming")
-    else:
-        base = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config")
-    return base / "logfold" / "plugins"
-
-
-def plugin_directories() -> list[Path]:
-    """Return the folders that are searched for plugins without being asked.
-
-    These are the user plugin folder and the folders of ``LOGFOLD_PLUGIN_PATH`` (separated like ``PATH``). The current
-    directory is never searched. ``LOGFOLD_NO_USER_PLUGINS=1`` switches all of them off.
-
-    Returns:
-        The folders, in loading order, without duplicates.
-    """
-    if os.environ.get(ENV_NO_USER_PLUGINS, "") not in ("", "0"):
-        return []
-    folders = [default_plugin_dir()]
-    folders.extend(Path(part) for part in os.environ.get(ENV_PLUGIN_PATH, "").split(os.pathsep) if part)
-    unique: list[Path] = []
-    for folder in folders:
-        if folder not in unique:
-            unique.append(folder)
-    return unique
-
-
 def add_plugin_directory(path: str | os.PathLike[str]) -> None:
     """Load the plugins of a folder, now or as soon as plugins are loaded.
 
@@ -274,72 +236,25 @@ def add_plugin_directory(path: str | os.PathLike[str]) -> None:
         _load_directory(folder, warn_if_missing=True)
 
 
-def _is_unsafe(path: Path) -> bool:
-    """Tell whether another user could have planted or changed ``path``.
-
-    On POSIX a path is unsafe when everybody can write to it or when it belongs to somebody other than the current user
-    or root. Group write access is allowed, because many systems give every user a private group. On Windows the check
-    is skipped: the plugin folder lives in the user's own profile.
-    """
-    if sys.platform == "win32":
-        return False
-    info = path.stat()
-    return bool(info.st_mode & 0o002) or info.st_uid not in (os.getuid(), 0)
-
-
 def _load_directory(directory: Path, warn_if_missing: bool) -> None:
-    if not directory.is_dir():
-        if warn_if_missing:
-            logger.warning("logfold plugin folder %s does not exist", directory)
-        return
-    if _is_unsafe(directory):
-        logger.warning("skipping logfold plugin folder %s: other users can change it", directory)
-        return
-    for entry in sorted(directory.iterdir(), key=lambda item: item.name):
-        if entry.name.startswith(("_", ".")):
-            continue
-        if entry.is_file() and entry.suffix == ".py":
-            _load_user_module(entry, entry.stem, package=False)
-        elif entry.is_dir() and (entry / "__init__.py").is_file():
-            _load_user_module(entry / "__init__.py", entry.name, package=True)
-
-
-def _load_user_module(path: Path, stem: str, package: bool) -> None:
-    if _is_unsafe(path):
-        logger.warning("skipping logfold plugin %s: other users can change it", path)
-        return
-    module_name = "logfold_user_plugin_" + "".join(c if c.isalnum() else "_" for c in stem)
-    spec = importlib.util.spec_from_file_location(
-        module_name, path, submodule_search_locations=[str(path.parent)] if package else None
-    )
-    if spec is None or spec.loader is None:
-        logger.warning("cannot load logfold plugin %s", path)
-        return
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = module
-    try:
-        spec.loader.exec_module(module)
-    except Exception:
-        sys.modules.pop(module_name, None)
-        logger.warning("failed to load logfold plugin %s", path, exc_info=True)
-        return
-    for kind, attribute, load in (
-        ("format", "FORMATS", _load_format),
-        ("reporter", "REPORTERS", _load_reporter),
-        ("matcher", "MATCHERS", _load_matcher),
-        ("mask", "MASKS", _load_mask_set),
-    ):
-        items = getattr(module, attribute, ())
-        if not isinstance(items, (list, tuple)):
-            logger.warning("logfold plugin %s: %s must be a list", path, attribute)
-            continue
-        for item in items:
-            try:
-                name = load(str(getattr(item, "name", "")), item)
-            except Exception:
-                logger.warning("failed to register a %s from logfold plugin %s", kind, path, exc_info=True)
+    for path, module in import_plugin_modules(directory, warn_if_missing):
+        for kind, attribute, load in (
+            ("format", "FORMATS", _load_format),
+            ("reporter", "REPORTERS", _load_reporter),
+            ("matcher", "MATCHERS", _load_matcher),
+            ("mask", "MASKS", _load_mask_set),
+        ):
+            items = getattr(module, attribute, ())
+            if not isinstance(items, (list, tuple)):
+                logger.warning("logfold plugin %s: %s must be a list", path, attribute)
                 continue
-            _origins[(kind, name)] = PluginOrigin(str(path))
+            for item in items:
+                try:
+                    name = load(str(getattr(item, "name", "")), item)
+                except Exception:
+                    logger.warning("failed to register a %s from logfold plugin %s", kind, path, exc_info=True)
+                    continue
+                _origins[(kind, name)] = PluginOrigin(str(path))
 
 
 def get_format(name: str) -> FormatSpec:

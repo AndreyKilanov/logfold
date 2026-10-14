@@ -8,7 +8,7 @@ from pathlib import Path
 from string import Template
 
 from logfold.errors import ConfigError, SourceError
-from logfold.ext import registry
+from logfold.ext import plugin_folders
 
 __all__ = ["KINDS", "module_stem", "render_template", "write_template"]
 
@@ -174,7 +174,7 @@ def write_template(kind: str, name: str, folder: str | os.PathLike[str] | None =
         SourceError: If the file cannot be written.
     """
     source = render_template(kind, name)
-    target_dir = Path(folder) if folder is not None else registry.default_plugin_dir()
+    target_dir = Path(folder) if folder is not None else plugin_folders.default_plugin_dir()
     target = target_dir / f"{module_stem(name)}.py"
     if target.exists() and not force:
         raise ConfigError(

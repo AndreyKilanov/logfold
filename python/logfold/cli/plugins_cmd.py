@@ -15,7 +15,7 @@ from rich.table import Table
 
 from logfold.cli import runtime
 from logfold.errors import LogfoldError
-from logfold.ext import printable, registry
+from logfold.ext import plugin_folders, printable
 from logfold.plugins import listing as plugin_listing
 from logfold.plugins import scaffold
 
@@ -177,18 +177,18 @@ def info_command(
 def show_folders() -> None:
     """Show where logfold looks for your own plugins (Python files and packages)."""
     console = _stdout()
-    default = registry.default_plugin_dir()
+    default = plugin_folders.default_plugin_dir()
     state = "exists" if default.is_dir() else "does not exist yet"
     console.print(f"plugin folder:       {escape(str(default))} ({state})", soft_wrap=True)
-    extra = [part for part in os.environ.get(registry.ENV_PLUGIN_PATH, "").split(os.pathsep) if part]
+    extra = [part for part in os.environ.get(plugin_folders.ENV_PLUGIN_PATH, "").split(os.pathsep) if part]
     shown = escape(os.pathsep.join(extra)) if extra else "not set"
-    console.print(f"{registry.ENV_PLUGIN_PATH}: {shown}", soft_wrap=True)
-    if registry.plugin_directories():
+    console.print(f"{plugin_folders.ENV_PLUGIN_PATH}: {shown}", soft_wrap=True)
+    if plugin_folders.plugin_directories():
         console.print(
             "Add a plugin with: [bold]logfold plugins new KIND NAME[/bold]  (KIND: format, reporter, matcher, mask)"
         )
     else:
-        console.print(f"These folders are switched off by {registry.ENV_NO_USER_PLUGINS}.")
+        console.print(f"These folders are switched off by {plugin_folders.ENV_NO_USER_PLUGINS}.")
 
 
 @plugins_app.command("new")
@@ -205,7 +205,7 @@ def new_plugin(
         raise _fail(error) from None
     console = _stdout()
     console.print(f"Wrote {escape(str(target))}", soft_wrap=True)
-    if folder is not None and folder not in registry.plugin_directories():
+    if folder is not None and folder not in plugin_folders.plugin_directories():
         console.print(f"Use it with: [bold]logfold --plugins-dir {escape(str(folder))} ...[/bold]", soft_wrap=True)
     console.print("Edit it, then check that logfold sees it: [bold]logfold plugins list[/bold]")
 
