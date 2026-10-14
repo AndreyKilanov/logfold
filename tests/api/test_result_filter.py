@@ -27,6 +27,21 @@ def test_levels_sums_the_records_per_level_least_severe_first(analysis: logfold.
     assert sum(levels.values()) == analysis.run.records
 
 
+def test_levels_adds_up_templates_of_mixed_levels_and_ignores_empty_ones(analysis: logfold.AnalysisResult) -> None:
+    first, second = analysis.templates[0], analysis.templates[1]
+    mixed = dataclasses.replace(
+        analysis,
+        templates=(
+            dataclasses.replace(first, levels={"ERROR": 2, "INFO": 3}),
+            dataclasses.replace(second, levels={"INFO": 4, "WARN": 0}),
+            dataclasses.replace(second, levels={}),
+        ),
+    )
+    assert mixed.levels == {"INFO": 7, "ERROR": 2}
+    assert list(mixed.levels) == ["INFO", "ERROR"]
+    assert dataclasses.replace(analysis, templates=()).levels == {}
+
+
 def test_a_format_without_levels_has_no_level_counts(corpus_dir: Path) -> None:
     assert logfold.analyze(str(corpus_dir / "nginx.log"), format="nginx").levels == {}
 
