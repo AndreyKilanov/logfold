@@ -1,6 +1,6 @@
 # Benchmarks
 
-Six scripts; the flags choose what is measured. They print Markdown tables and save the raw numbers of every run to `bench/results/`.
+Seven scripts; the flags choose what is measured. They print Markdown tables and save the raw numbers of every run to `bench/results/`.
 
 | script | what it does |
 |---|---|
@@ -10,6 +10,7 @@ Six scripts; the flags choose what is measured. They print Markdown tables and s
 | [`stream.py`](stream.py) | the streaming interfaces: `logfold stream` and `logfold.Miner` (`add_many`, `add_lines`, `add_log_message`) against `analyze` and a Drain3 loop on one file; prints a table and does not save the raw numbers |
 | [`state_parallel.py`](state_parallel.py) | continuing a saved state in parallel against continuing it sequentially, on 100 MB logs |
 | [`accuracy.py`](accuracy.py) | which `diff` matcher is best: false alarms, rewording and false merges on before/after pairs cut from the large real logs |
+| [`validate/formats.py`](validate/formats.py) | the built-in formats against real software in Docker (PostgreSQL 13 to 17 so far): the expected numbers come from the program, see [`FORMAT_VALIDATION.md`](docs/FORMAT_VALIDATION.md) |
 
 | path | what it is |
 |---|---|
