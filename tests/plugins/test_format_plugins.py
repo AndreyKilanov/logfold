@@ -128,6 +128,35 @@ def test_haproxy_with_and_without_the_syslog_prefix(tmp_path: Path) -> None:
     assert result.run.records == 4
 
 
+HAPROXY_REAL_REQUEST = (
+    "172.17.0.1:45034 [14/Oct/2026:19:20:41.871] fe_http be_app/srv1 0/0/-1/-1/3009 503 217 - - SC-- 1/1/0/0/3 0/0 "
+    '"GET /down/3 HTTP/1.1"'
+)
+HAPROXY_REAL_CONNECTION = "172.17.0.1:56804 [14/Oct/2026:19:20:44.886] fe_tcp be_tcp/srv_tcp 1/-1/0 0 CC 1/1/0/0/1 0/0"
+HAPROXY_REAL_HEADERS = {
+    "short": "<6>",
+    "iso": "2026-10-14T19:20:44.882067+00:00 ",
+    "rfc3164": "<134>Oct 14 19:20:51 localhost haproxy[8]: ",
+    "rfc5424": "<134>1 2026-10-14T19:21:20.757049+00:00 - haproxy 8 - - ",
+}
+"""What HAProxy 3.2.25 puts in front of a request or a connection, for each ``log stdout format``."""
+
+
+@pytest.mark.parametrize("form", list(HAPROXY_REAL_HEADERS))
+def test_haproxy_reads_every_syslog_form_that_haproxy_writes(tmp_path: Path, form: str) -> None:
+    header = HAPROXY_REAL_HEADERS[form]
+    notice = header + "Proxy fe_http stopped (cumulated conns: FE: 5, BE: 0)."
+    log = tmp_path / "haproxy.log"
+    log.write_text(lines(header + HAPROXY_REAL_REQUEST, header + HAPROXY_REAL_CONNECTION, notice), encoding="utf-8")
+    result = logfold.analyze(str(log), format="haproxy", engine="native")
+    assert result.run.records == 2
+    assert result.run.unparsed == 1
+    assert {template.text.split(" ")[0] for template in result.templates} == {"fe_http", "fe_tcp"}
+    first = logfold.inspect_file(log, format="haproxy").first_time
+    assert first is not None
+    assert first.isoformat() == "2026-10-14T19:20:41.871000"
+
+
 def test_haproxy_accept_time_selects_a_window(tmp_path: Path) -> None:
     result = analyze(tmp_path, "haproxy", since="2026-10-06T12:00:02")
     assert result.run.records == 2

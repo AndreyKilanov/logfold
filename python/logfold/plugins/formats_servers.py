@@ -14,14 +14,18 @@ __all__ = ["DOCKER_JSON", "GITHUB_ACTIONS", "HAPROXY", "LOG4J", "POSTGRESQL", "P
 HAPROXY = RegexFormat(
     name="haproxy",
     pattern=(
-        r"^(?:[^\[\]]*haproxy\[\d+\]: )?\S+:\d+ \[(?P<ts>\d{2}/[A-Za-z]{3}/\d{4}:\d{2}:\d{2}:\d{2}\.\d+)\] "
+        r"^(?:[^\[\]]*haproxy\[\d+\]: |<\d+>1 \S+ \S+ haproxy \S+ \S+ \S+ |\d{4}-\d{2}-\d{2}T\S+ )?"
+        r"\S+:\d+ \[(?P<ts>\d{2}/[A-Za-z]{3}/\d{4}:\d{2}:\d{2}:\d{2}\.\d+)\] "
         r"(?P<msg>\S+ \S+ .*)$"
     ),
     message_group="msg",
     time_group="ts",
     ts_format="%d/%b/%Y:%H:%M:%S.%f",
 )
-"""HAProxy HTTP and TCP logs (``option httplog`` and ``option tcplog``), with or without the syslog prefix.
+"""HAProxy HTTP and TCP logs (``option httplog`` and ``option tcplog``), with or without a syslog prefix.
+
+Every form of ``log ... format`` is read: ``raw``, ``short`` (``<6>``), ``iso`` (an ISO time in front), ``rfc3164`` and
+``rfc5424``. The CLF form (``option httplog clf``) is not.
 
 The message runs from the frontend to the end of the line: ``fe_http be_app/srv1 0/0/1/12/13 200 1534 - - ---- 3/3/0/0/0
 0/0 "GET /index.html HTTP/1.1"``. The termination state (``----``, ``sH--``) stays in the template, so a change in how
