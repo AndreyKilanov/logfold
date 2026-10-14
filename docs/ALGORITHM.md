@@ -77,6 +77,32 @@ empty string. Inline flags must be scoped (`(?i:...)`) and back-references are u
 | path | `(?:/[\w.\-]+){2,}` | `<PATH>` |
 | num | `\b[+-]?\d+(?:\.\d+)?\b` | `<NUM>` |
 
+### 2.1 Layers and checks (mask sets)
+
+A rule may carry a **check**, `luhn` or `iban`. A candidate that a rule with a check matches is accepted only when the
+check passes; otherwise it counts as no match at that position, and the search goes on from the next byte (so no other
+rule is tried at that start position, and the digits of a rejected candidate are left to the later rules).
+
+* `luhn`: the candidate is 13 to 19 digits, spaces and dashes ignored, any other byte refuses it, and the digits pass the
+  Luhn checksum.
+* `iban`: the candidate without spaces is 15 to 34 ASCII letters and digits, starts with two letters and two digits, and
+  moving its first four characters to the end and reading letters as 10 to 35 gives 1 modulo 97.
+
+A list of rules is applied in **two layers** when it ends with the six default rules above, in that order and unchanged:
+the rules in front of them are the first layer and the default rules are the second. The first layer is matched in one pass
+as described above (leftmost match, earliest rule at the same position, checks). The second layer is then applied to each
+piece of text between two matches of the first, as if that piece were the whole message (a match of the first layer is
+replaced by its token and its text is not scanned again; a token must not be changed by the default rules, which is checked
+when the rules are compiled). A list that does not end with the default rules is one layer, exactly as in §2. Without a first
+layer the result is the one of §2. At most 256 rules are allowed, a pattern is at most 4096 bytes, and a rule whose pattern
+matches the empty string is refused.
+
+The sets `secrets` and `pii` of `logfold.plugins` are first layers of this kind; their rules and their `version` are data
+(`python/logfold/plugins/mask_data/`), and `mask_fingerprint(rules)` (SHA-256 of the canonical JSON of the rules, 16 hex
+digits) names the rules in a state header and in `logfold masks`. `ALGO_VERSION` does not change: with no first layer nothing
+differs from before. The extension contract version is 16 (a rule has an optional `check`).
+
+
 ## 3. Tokenization
 
 Tokens are maximal runs of bytes that are not delimiters (default delimiters: space, tab, `\n`, `\r`). Delimiters must
@@ -427,6 +453,10 @@ a tree the miner builds: the ranks, when there are any, one for every cluster an
 node reached twice and none unreachable; an inner node holds no cluster and a leaf no child; at most `max_children` children
 ordered by token; a token with a digit is a child only as `<*>`; every cluster is in exactly one leaf of its own length and on
 a path its tokens can follow; an overflow cluster is `<*>` repeated to its length.
+
+The header text `masks` is `default` for the default rules and, for any other list, the fingerprint of its rules (§2.1); it
+informs, and the check on loading uses `config_hash`, which covers every rule, so the first layer of a mask set is part of what
+a state must match.
 
 **JSON form.** Three lines, each ending in a line feed. Line 1, the header, written in this order with no spaces:
 `{"kind":"logfold-state","schema_version":1 or 2,"algo_version":..,"contract":..,"logfold_version":"..","config_hash":"..",

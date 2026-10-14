@@ -1,6 +1,6 @@
 # Plugins
 
-logfold can be extended with three kinds of plugins. A plugin is an ordinary Python package; logfold finds it through
+logfold can be extended with four kinds of plugins. A plugin is an ordinary Python package; logfold finds it through
 entry points as soon as it is installed, with no configuration.
 
 | Kind | Adds | Entry point group | Used as |
@@ -8,6 +8,7 @@ entry points as soon as it is installed, with no configuration.
 | Format | a way to read one more log format | `logfold.formats` | `--format NAME`, `format="NAME"` |
 | Reporter | one more output format of a result | `logfold.reporters` | `result.render("NAME")` |
 | Diff matcher | a rule that pairs reworded templates in `diff` | `logfold.matchers` | `--matcher NAME`, `matcher="NAME"` |
+| Mask set | rules that hide a kind of value (secrets, personal data, your own ids) before mining | `logfold.masks` | `--masks NAME`, `masks=["NAME"]` |
 
 logfold ships a set of [default plugins](#default-plugins), `logfold plugins` [lists, checks and installs](#managing-plugins)
 more, and [Writing a plugin](#writing-a-plugin) explains how to make your own. A complete, installable package with
@@ -37,6 +38,8 @@ They are part of `pip install logfold`; nothing else has to be installed.
 | matcher | `jaccard-idf` | like `jaccard`, but a word weighs `1 / (templates that contain it)`, so shared rare words count more (threshold 0.5) |
 | matcher | `overlap` | `shared words / words of the shorter template` (threshold 0.8, templates of three words or more): catches an extended message |
 | matcher | `rules` | the pairs you list in a file, `--matcher rules:FILE` (see below) |
+| mask set | `secrets` | JWTs, `Authorization` and `Bearer` credentials, API keys with a known prefix, passwords and tokens in URLs and `key=value` pairs, private keys |
+| mask set | `pii` | e-mail addresses, international phone numbers, payment card numbers (Luhn) and IBANs (mod 97) |
 
 ```
 logfold analyze app.logfmt --format logfmt
@@ -213,7 +216,7 @@ in the terminal as well as from Python.
 
 ```
 logfold plugins dir                    # where logfold looks, and whether the folder exists
-logfold plugins new format my-fmt      # writes a working template there: also `reporter` and `matcher`
+logfold plugins new format my-fmt      # writes a working template there: also `reporter`, `matcher` and `mask`
 ```
 
 The folder is `%APPDATA%\logfold\plugins` on Windows and `$XDG_CONFIG_HOME/logfold/plugins` (usually
@@ -221,7 +224,7 @@ The folder is `%APPDATA%\logfold\plugins` on Windows and `$XDG_CONFIG_HOME/logfo
 without `--force`; `--dir` writes somewhere else). Edit the file, then run `logfold plugins list`: the plugin is there,
 and its source is the path of the file.
 
-A plugin file lists what it provides in three module-level lists, all optional:
+A plugin file lists what it provides in four module-level lists, all optional:
 
 ```python
 from logfold.ext import RegexFormat
@@ -246,6 +249,7 @@ FORMATS = [
 ]
 REPORTERS = [Shout]  # classes are created without arguments; instances work too
 MATCHERS = []  # diff matchers: objects with name and match()
+MASKS = []  # mask sets: MaskSet objects
 ```
 
 A folder with an `__init__.py` is loaded as a package, so a bigger plugin can have several files and relative imports.
@@ -421,6 +425,54 @@ class JaccardMatcher:
 `match` returns pairs `(i, j)` meaning `before_only[i]` and `after_only[j]` describe the same event. Every index may
 occur at most once. The lists are short (only templates that changed between runs), so a simple quadratic comparison is
 fine. A matcher is created without arguments; for a tunable one, subclass it and register the subclass.
+
+### Mask sets
+
+A mask set is data, not code: a name, a version and a list of rules, each with a pattern, a token and, if it has one, a
+check. It is a JSON file ([schema](schema/mask-set.schema.json)) that `--masks-file` reads, or a `MaskSet` object that a plugin
+registers. The sets that ship with logfold (`secrets`, `pii`) are files of this kind; `logfold masks show NAME` prints them.
+
+```json
+{
+  "name": "orders",
+  "version": 1,
+  "description": "Order and ticket numbers",
+  "rules": [
+    {"name": "order", "pattern": "\\bORD-[0-9]{6}\\b", "token": "<ORDER>"},
+    {"name": "card", "pattern": "\\b[0-9]{16}\\b", "token": "<CARD>", "check": "luhn"}
+  ]
+}
+```
+
+| Key of a rule | Meaning |
+|---|---|
+| `name` | up to 32 characters of `a-z`, digits, `_` and `-`, unique in the set |
+| `pattern` | a regular expression of the linear-time engine (no look-around, no back-references; at most 4096 bytes); it must not match the empty string. Write inline flags scoped, `(?i:...)` |
+| `token` | the replacement: `<NAME>` with capital letters, digits and `_`, at most 32 bytes; the default masks must not change it (a token such as `7` is refused) |
+| `ascii` | `true` by default in a set file (the `MaskRule` class defaults to `false`): `\d`, `\w` and `\b` match ASCII only |
+| `check` | optional: `luhn` (13 to 19 digits, spaces and dashes allowed, Luhn checksum) or `iban` (15 to 34 characters, mod-97 checksum); a match that fails it is skipped and the search goes on one byte later |
+
+A set has 1 to 256 rules and a file is at most 1 MiB; a file that breaks a limit, has an unknown key or is not valid JSON
+is an error that names the file. At one position the earliest rule wins, and the rules of all chosen sets run in one pass
+before the default masks (`docs/ALGORITHM.md`, section 2).
+
+```python
+import logfold
+from logfold.ext import MaskRule, MaskSet, load_mask_set, register_mask_set
+
+register_mask_set(MaskSet("orders", (MaskRule("order", r"\bORD-[0-9]{6}\b", "<ORDER>", True),)))
+logfold.analyze("app.log", masks=["secrets", "orders"])  # names, run in this order, before the default masks
+logfold.analyze("app.log", masks=[load_mask_set("orders.json")])
+```
+
+A plugin package lists its sets in the entry point group `logfold.masks` (each entry point is a `MaskSet` or a function that
+returns one), a plugin file in your plugin folder in a list `MASKS = [MaskSet(...)]`, and `logfold plugins new mask NAME` writes
+a template. `masks=` takes either a list of `MaskRule` (the full list: it replaces the default masks) or a list of sets and
+names (they run first and the default masks follow); the two cannot be mixed. `logfold.ext.resolve_masks(selection)` gives
+the rules that a selection stands for.
+
+A state remembers which rules it was mined with: a change of a pattern, of the order or of the version of a set makes an
+old state fail with `StateError`, so raise `version` when you change a set.
 
 ### Without packaging
 
