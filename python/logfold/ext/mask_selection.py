@@ -9,9 +9,12 @@ from logfold.errors import ConfigError
 from logfold.ext.mask_sets import MAX_RULES, MaskSet
 from logfold.ext.registry import get_mask_set
 
-__all__ = ["DEFAULT_SET_NAME", "MaskSelection", "resolve_masks"]
+__all__ = ["ALL_SETS", "ALL_SET_NAME", "DEFAULT_SET_NAME", "MaskSelection", "resolve_masks"]
 
 DEFAULT_SET_NAME = "default"
+ALL_SET_NAME = "all"
+ALL_SETS = ("secrets", "credentials", "pii", "payment")
+"""The sets that the name ``all`` stands for: every built-in set, in this order."""
 MaskSelection = Sequence[MaskRule | MaskSet | str]
 """What ``masks=`` takes: rules that replace the defaults, or sets (objects or registered names) that go before them."""
 
@@ -24,7 +27,8 @@ def resolve_masks(
     Two kinds of selection exist. A list of :class:`~logfold.config.MaskRule` is the full rule list and replaces the
     defaults (an empty list masks nothing). A list of mask sets, as objects or registered names such as ``"secrets"``,
     puts the rules of the sets first, in the order given, and the default rules last, so that a card number is not
-    taken by the rule for plain numbers. The name ``default`` stands for the default rules that always come last.
+    taken by the rule for plain numbers. The name ``default`` stands for the default rules that always come last, and
+    the name ``all`` for every built-in set (:data:`ALL_SETS`).
 
     Args:
         selection: Rules, or sets and set names; the two cannot be mixed. One item can be given without a list.
@@ -45,9 +49,15 @@ def resolve_masks(
             "masks mixes rules with mask sets",
             hint="give either a list of MaskRule (it replaces the defaults) or a list of mask sets and names",
         )
+    expanded: list[MaskRule | MaskSet | str] = []
+    for item in items:
+        if isinstance(item, str) and item == ALL_SET_NAME:
+            expanded.extend(ALL_SETS)
+        else:
+            expanded.append(item)
     rules: list[MaskRule] = []
     taken: set[str] = set()
-    for item in items:
+    for item in expanded:
         if isinstance(item, MaskSet):
             mask_set = item
         elif isinstance(item, str):

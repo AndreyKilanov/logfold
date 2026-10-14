@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from logfold.ext.formats import Format, FormatSpec, JsonFormat, PlainFormat, RegexFormat
 from logfold.ext.log4j import log4j_format
-from logfold.ext.mask_selection import MaskSelection, resolve_masks
+from logfold.ext.mask_selection import ALL_SETS, MaskSelection, resolve_masks
 from logfold.ext.mask_sets import MaskSet, load_mask_set, mask_fingerprint
 from logfold.ext.masks import DEFAULT_MASKS, MaskRule
 from logfold.ext.matchers import DiffMatcher
@@ -31,6 +31,7 @@ from logfold.ext.reporters import Reporter
 from logfold.ext.text import printable
 
 __all__ = [
+    "ALL_SETS",
     "DEFAULT_MASKS",
     "DiffMatcher",
     "Format",

@@ -63,7 +63,7 @@ Mining and execution options, shared with `diff`:
 | `--max-templates` | 100000 | template cap; what happens to further records is decided by `--on-full` |
 | `--delimiters` | space, tab, CR, LF | the characters that separate tokens, **replacing** the default; `\t`, `\n`, `\r` and `\\` are read as escapes, so `--delimiters ' \t\n\r_='` also splits at `_` and `=` (keep the whitespace). A state must be used with the same value; `logfold params` needs the space among them |
 | `--on-full` | `pool` | at the cap: `pool` puts the records of a new message shape into catch-all templates, `evict` drops the least recently used templates (a tenth of the cap at a time) and keeps learning; their counts join the catch-all templates, `run.evicted` and a warning say how many were dropped. It mines with one tree, so `--strategy chunked` is refused; a state must be used with the same value |
-| `--masks` | none | mask sets that run **before** the default masks, comma-separated: `--masks secrets,pii`; `logfold masks list` shows what is installed. A state must be used with the same sets (see [Mask sets](#mask-sets)) |
+| `--masks` | none | mask sets that run **before** the default masks, comma-separated: `--masks secrets,pii` or `--masks all`; `logfold masks list` shows what is installed. A state must be used with the same sets (see [Mask sets](#mask-sets)) |
 | `--masks-file` | none | a mask set from a JSON file (repeat the flag for several); it runs after the sets of `--masks` |
 | `--no-masks` | off | do not mask numbers, IPs, UUIDs and other values; cannot be combined with `--masks` or `--masks-file` |
 | `--high-cardinality` | off | fast bounded mode for data with a huge number of distinct messages (5000 templates, sequential) |
@@ -297,18 +297,25 @@ messages and for `--help`; a normal run never touches it.
 ## Mask sets
 
 A mask set is a named list of masking rules that hides a kind of value before the log is mined, so that the templates, the
-saved state and the report never hold it. Two sets ship with logfold:
+saved state and the report never hold it. Four sets ship with logfold, split by what they cost:
 
-| Set | Hides | Token |
-|---|---|---|
-| `secrets` | JWTs, `Authorization` headers and `Bearer` tokens, API keys with a known prefix (AWS, GitHub, GitLab, Slack, Stripe, Google, npm, SendGrid, `sk-`), passwords and tokens in URLs and in `password=`, `token=`, `api_key=` pairs, private keys | `<JWT>`, `<KEY>`, `<SECRET>` |
-| `pii` | e-mail addresses, international phone numbers (`+44 20 7946 0958`), payment card numbers (the Luhn check) and IBANs (the mod-97 check) | `<EMAIL>`, `<PHONE>`, `<CARD>`, `<IBAN>` |
+| Set | Hides | Token | Cost on 100 MB logs without secrets |
+|---|---|---|---|
+| `secrets` | private keys, JWTs, API keys with a known prefix (AWS, GitHub, GitLab, Slack, Stripe, Google, npm, SendGrid, `sk-`) | `<KEY>`, `<JWT>` | 3 to 9% |
+| `pii` | e-mail addresses, international phone numbers (`+44 20 7946 0958`) | `<EMAIL>`, `<PHONE>` | 1 to 7% |
+| `credentials` | `Authorization` headers, `Bearer` tokens, passwords and tokens in URLs and in `password=`, `token=`, `api_key=` pairs | `<SECRET>` | 12 to 24% |
+| `payment` | payment card numbers (the Luhn check) and IBANs (the mod-97 check) | `<CARD>`, `<IBAN>` | 12 to 24% |
+
+`--masks all` chooses every set that the installed version ships (today these four; a state keeps the rules it was mined with, so a version that adds a set refuses the states of `all` made before). **Choose `credentials` if you want `password=...` hidden: `secrets` and `pii` alone do not
+hide passwords, cards or IBANs.** The two cheap sets run together for about 4 to 12%; the others read every byte of every
+line (a word in any case, a number that can start anywhere), and one of them costs as much as all together.
 
 ```
 logfold analyze app.log --masks secrets,pii --examples masked
+logfold analyze app.log --masks all --examples masked
 logfold analyze app.log --masks-file ./orders.json --save-state model.json
 logfold masks list
-logfold masks show secrets
+logfold masks show payment
 ```
 
 The rules of the chosen sets run first, in the order given, and the default masks (numbers, IPs, UUIDs, timestamps, paths,
@@ -325,8 +332,11 @@ regular expressions of a linear-time engine; no rule is code.
   `--examples masked` or `none`; a run that selects sets with raw examples says so on standard error.
 * The sets lower the risk and do not remove it: a rule finds what it can describe (a prefix, a label, a checksum), not a
   random password without a label, and it can mask something that only looks like a secret (the word `token` followed by a
-  long value). `bench/docs/MASK_SETS.md` lists what they changed on 16 public logs and what they cost: about 17 to 20% of the
-  time of a run on 100 MB logs without secrets.
+  long value). `bench/docs/MASK_SETS.md` lists what they changed on 16 public logs and what each costs.
+* Why the split: a run pays for a set only when it asks. If every rule of the chosen sets has a literal that all its matches
+  contain (a key prefix, `@`, `+1`), a text without those literals is skipped quickly; one rule that has none, such as a
+  card number, puts every line through the regex engine. Your own sets are fast when their rules have such a literal
+  (`ORD-123456`) and slow when they do not (`[0-9]{16}`).
 * `logfold masks list [--json]` shows the sets that `--masks` accepts, `logfold masks show NAME_OR_FILE [--json]` the rules
   of one.
 

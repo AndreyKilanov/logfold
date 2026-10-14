@@ -8,7 +8,7 @@ format = "app"                  # the default of --format
 
 [mining]
 sim_th = 0.5
-masks = "default"               # "default", "none", ["secrets", "pii"], or your own [[mining.masks]] tables
+masks = "default"               # "default", "none", ["secrets", "pii"] or ["all"], or your own [[mining.masks]] tables
 
 [execution]
 strategy = "auto"

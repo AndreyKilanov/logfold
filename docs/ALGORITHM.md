@@ -95,9 +95,10 @@ piece of text between two matches of the first, as if that piece were the whole 
 replaced by its token and its text is not scanned again; a token must not be changed by the default rules, which is checked
 when the rules are compiled). A list that does not end with the default rules is one layer, exactly as in §2. Without a first
 layer the result is the one of §2. At most 256 rules are allowed, a pattern is at most 4096 bytes, and a rule whose pattern
-matches the empty string is refused.
+matches the empty string is refused. An implementation may skip the search of the first layer in a text that holds none of
+the literals that every match of its rules must contain (a prefix, `@`, `://`); the result does not change, only the time.
 
-The sets `secrets` and `pii` of `logfold.plugins` are first layers of this kind; their rules and their `version` are data
+The sets `secrets`, `credentials`, `pii` and `payment` of `logfold.plugins` are first layers of this kind; their rules and their `version` are data
 (`python/logfold/plugins/mask_data/`), and `mask_fingerprint(rules)` (SHA-256 of the canonical JSON of the rules, 16 hex
 digits) names the rules in a state header and in `logfold masks`. `ALGO_VERSION` does not change: with no first layer nothing
 differs from before. The extension contract version is 16 (a rule has an optional `check`).

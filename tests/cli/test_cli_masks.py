@@ -29,7 +29,7 @@ def analyze(tmp_path: Path, *extra: str, lines: list[str] | None = None) -> obje
 
 
 def test_masks_selects_the_built_in_sets(tmp_path: Path) -> None:
-    result = analyze(tmp_path, "--masks", "secrets,pii")
+    result = analyze(tmp_path, "--masks", "all")
     assert result.exit_code == exit_codes.OK, result.output  # type: ignore[attr-defined]
     assert templates(result.output) == {"user <EMAIL> paid with <CARD> <SECRET>"}  # type: ignore[attr-defined]
 
@@ -85,13 +85,13 @@ def test_the_raw_examples_note_is_shown_only_when_it_matters(tmp_path: Path) -> 
 
 def test_the_settings_file_names_the_sets_and_the_flag_wins(tmp_path: Path) -> None:
     config = tmp_path / "logfold.toml"
-    config.write_text('[mining]\nmasks = ["pii"]\n', encoding="utf-8")
+    config.write_text('[mining]\nmasks = ["pii", "payment"]\n', encoding="utf-8")
     log = write(tmp_path / "a.log", LINES)
     base = ["--config", str(config), "analyze", str(log), "-f", "plain", "--json", "--examples", "none", "-q"]
     from_file = runner.invoke(app, base)
     assert from_file.exit_code == exit_codes.OK, from_file.output
     assert all("<EMAIL>" in text and "<CARD>" in text for text in templates(from_file.output))
-    flag = runner.invoke(app, [*base, "--masks", "secrets"])
+    flag = runner.invoke(app, [*base, "--masks", "credentials"])
     assert flag.exit_code == exit_codes.OK, flag.output
     assert all("<SECRET>" in text and "<EMAIL>" not in text for text in templates(flag.output))
 
@@ -134,9 +134,23 @@ def test_match_stream_and_params_take_the_flags(tmp_path: Path) -> None:
 
 def test_diff_takes_the_flags_for_logs_and_refuses_them_for_saved_reports(tmp_path: Path) -> None:
     before = write(tmp_path / "before.log", LINES)
-    after = write(tmp_path / "after.log", [*LINES, "refund issued to zed@example.com on card 5555555555554444 ok"])
+    refund = "refund issued to zed@example.com on card 5555555555554444 ok"
+    after = write(tmp_path / "after.log", [*LINES, refund])
     diff = runner.invoke(
-        app, ["diff", str(before), str(after), "-f", "plain", "--masks", "pii", "--examples", "masked", "--json", "-q"]
+        app,
+        [
+            "diff",
+            str(before),
+            str(after),
+            "-f",
+            "plain",
+            "--masks",
+            "pii,payment",
+            "--examples",
+            "masked",
+            "--json",
+            "-q",
+        ],
     )
     assert diff.exit_code == exit_codes.OK, diff.output
     assert any("<CARD>" in item["text"] for item in json.loads(diff.output)["new_templates"])
@@ -151,14 +165,14 @@ def test_diff_takes_the_flags_for_logs_and_refuses_them_for_saved_reports(tmp_pa
 def test_masks_list_and_show(tmp_path: Path) -> None:
     listing = runner.invoke(app, ["masks", "list"])
     assert listing.exit_code == exit_codes.OK, listing.output
-    for name in ("default", "secrets", "pii"):
+    for name in ("default", "secrets", "credentials", "pii", "payment"):
         assert name in listing.output
     data = json.loads(runner.invoke(app, ["masks", "list", "--json"]).output)
-    assert {row["name"] for row in data} >= {"default", "secrets", "pii"}
+    assert {row["name"] for row in data} >= {"default", "secrets", "credentials", "pii", "payment"}
     assert all(len(row["fingerprint"]) == 16 for row in data)
-    shown = runner.invoke(app, ["masks", "show", "pii"])
+    shown = runner.invoke(app, ["masks", "show", "payment"])
     assert shown.exit_code == exit_codes.OK, shown.output
-    assert "<EMAIL>" in shown.output
+    assert "<CARD>" in shown.output
     assert "luhn" in shown.output
     as_json = json.loads(runner.invoke(app, ["masks", "show", "secrets", "--json"]).output)
     assert as_json["name"] == "secrets"
@@ -173,7 +187,7 @@ def test_masks_list_and_show(tmp_path: Path) -> None:
 
 
 def test_info_and_the_plugin_commands_know_the_mask_kind(tmp_path: Path) -> None:
-    assert "mask sets: default, pii, secrets" in runner.invoke(app, ["info"]).output
+    assert "mask sets: credentials, default, payment, pii, secrets" in runner.invoke(app, ["info"]).output
     listed = runner.invoke(app, ["plugins", "list", "--kind", "mask", "--installed"])
     assert listed.exit_code == exit_codes.OK, listed.output
     assert "secrets" in listed.output

@@ -26,6 +26,11 @@ impl NativeMasker {
         Ok(NativeMasker { masker })
     }
 
+    /// Tells whether the first layer is gated: whether a text without the literals of its rules skips the regex engine.
+    fn first_layer_is_gated(&self) -> bool {
+        self.masker.first_layer_is_gated()
+    }
+
     /// Returns each text with the rules applied.
     fn mask_many(&self, py: Python<'_>, texts: Vec<String>) -> Vec<String> {
         py.detach(|| {

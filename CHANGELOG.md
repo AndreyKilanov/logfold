@@ -36,10 +36,11 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 - `delimiters` (`--delimiters`, `[mining] delimiters` in `logfold.toml`, `delimiters=` of `analyze`, `diff`, `match`, `Miner` and
   `extract_parameters`): the characters that separate tokens, to split `user_id=7` at `_` and `=`. A state must be used with the same
   value; `extract_parameters` and `logfold params` refuse a set without the space. See `docs/cli.md`.
-- Mask sets: `--masks secrets,pii` (library `masks=["secrets", "pii"]`, `[mining] masks` in `logfold.toml`) hide tokens, API keys,
-  passwords, e-mails, phones, cards (Luhn) and IBANs before mining, ahead of the default masks; `--masks-file FILE` and the plugin group
-  `logfold.masks` add your own sets, `logfold masks list` shows them. A state is tied to the masks it was mined with. Extension contract
-  version 16. See `docs/cli.md`, `docs/plugins.md`, `bench/docs/MASK_SETS.md`.
+- Mask sets `secrets`, `credentials`, `pii` and `payment` (`--masks all` takes all; library `masks=[...]`, `[mining] masks` in
+  `logfold.toml`) hide keys, tokens, passwords, e-mails, phones, cards (Luhn) and IBANs before mining; `secrets` and `pii` add about
+  4 to 12% to a run on 100 MB logs, the others read every byte (12 to 24%). `--masks-file FILE` and the plugin group `logfold.masks` add your own
+  sets, `logfold masks list` shows them. A state is tied to the masks it was mined with. Extension contract version 16. See
+  `docs/cli.md`, `docs/plugins.md`, `bench/docs/MASK_SETS.md`.
 - A guide for moving from Drain3: `docs/migrating-from-drain3.md`.
 - `logfold.extract_parameters(template, message)` and `logfold params TEMPLATE MESSAGE` give the values that a message has at the
   variable parts of a template (`<*>` and masked values such as `<NUM>`), named by the rule or `*`, as written in the message;

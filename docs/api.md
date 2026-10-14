@@ -355,9 +355,9 @@ result = analyze("app.log", mining=mining, execution=ExecutionConfig(threads=4))
 `hex` -> `<HEX>`, `path` -> `<PATH>`, `num` -> `<NUM>`. They are available as `logfold.ext.DEFAULT_MASKS`; extend them
 with `masks=(*DEFAULT_MASKS, MaskRule(...))`.
 
-`masks` also takes **mask sets**, as objects or as the names that `logfold masks list` shows: `masks=["secrets", "pii"]`. The
-rules of the sets run first, in the order given, and the default rules run last over the text that is left, so `masks=["pii"]`
-turns `4111 1111 1111 1111` into `<CARD>` and not into four `<NUM>`. A list of `MaskRule` is the full list and replaces the
+`masks` also takes **mask sets**, as objects or as the names that `logfold masks list` shows: `masks=["secrets", "pii"]` (or
+`"all"`, every built-in set). The rules of the sets run first, in the order given, and the default rules run last over
+the text that is left, so `masks=["payment"]` turns `4111 1111 1111 1111` into `<CARD>` and not into four `<NUM>`. A list of `MaskRule` is the full list and replaces the
 defaults; rules and sets cannot be mixed in one list (`ConfigError`), an unknown name raises `UnknownMaskSetError`, a subclass of
 `ConfigError` with a "did you mean" hint. A state or a saved comparison must be made with the same rules. The sets hide values in
 templates and states; the examples of a result stay raw unless `examples="masked"` or `"none"`. See the

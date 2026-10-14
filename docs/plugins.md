@@ -38,8 +38,10 @@ They are part of `pip install logfold`; nothing else has to be installed.
 | matcher | `jaccard-idf` | like `jaccard`, but a word weighs `1 / (templates that contain it)`, so shared rare words count more (threshold 0.5) |
 | matcher | `overlap` | `shared words / words of the shorter template` (threshold 0.8, templates of three words or more): catches an extended message |
 | matcher | `rules` | the pairs you list in a file, `--matcher rules:FILE` (see below) |
-| mask set | `secrets` | JWTs, `Authorization` and `Bearer` credentials, API keys with a known prefix, passwords and tokens in URLs and `key=value` pairs, private keys |
-| mask set | `pii` | e-mail addresses, international phone numbers, payment card numbers (Luhn) and IBANs (mod 97) |
+| mask set | `secrets` | private keys, JWTs and API keys with a known prefix (cheap: every rule has a literal) |
+| mask set | `credentials` | `Authorization` and `Bearer` credentials, passwords and tokens in URLs and `key=value` pairs (words in any case: costs more) |
+| mask set | `pii` | e-mail addresses and international phone numbers (cheap) |
+| mask set | `payment` | payment card numbers (Luhn) and IBANs (mod 97) (a number can start anywhere: costs more) |
 
 ```
 logfold analyze app.logfmt --format logfmt
@@ -430,7 +432,7 @@ fine. A matcher is created without arguments; for a tunable one, subclass it and
 
 A mask set is data, not code: a name, a version and a list of rules, each with a pattern, a token and, if it has one, a
 check. It is a JSON file ([schema](schema/mask-set.schema.json)) that `--masks-file` reads, or a `MaskSet` object that a plugin
-registers. The sets that ship with logfold (`secrets`, `pii`) are files of this kind; `logfold masks show NAME` prints them.
+registers. The sets that ship with logfold (`secrets`, `credentials`, `pii`, `payment`) are files of this kind; `logfold masks show NAME` prints them.
 
 ```json
 {
@@ -451,6 +453,11 @@ registers. The sets that ship with logfold (`secrets`, `pii`) are files of this 
 | `token` | the replacement: `<NAME>` with capital letters, digits and `_`, at most 32 bytes; the default masks must not change it (a token such as `7` is refused) |
 | `ascii` | `true` by default in a set file (the `MaskRule` class defaults to `false`): `\d`, `\w` and `\b` match ASCII only |
 | `check` | optional: `luhn` (13 to 19 digits, spaces and dashes allowed, Luhn checksum) or `iban` (15 to 34 characters, mod-97 checksum); a match that fails it is skipped and the search goes on one byte later |
+
+A set is cheap when every rule has a literal that all its matches contain (`ORD-123456`, `user@`, `://`): the text without it
+is skipped without running the regex engine. One rule that has none (`[0-9]{16}`, a word in any case) makes every line go
+through the engine, 12 to 24% of a run; `logfold.ext.masks.first_layer_is_gated(rules)` tells which case a list is. Up to
+64 literals and three single bytes such as `@` are searched in all.
 
 A set has 1 to 256 rules and a file is at most 1 MiB; a file that breaks a limit, has an unknown key or is not valid JSON
 is an error that names the file. At one position the earliest rule wins, and the rules of all chosen sets run in one pass

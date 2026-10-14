@@ -18,7 +18,7 @@ from logfold.ext.mask_sets import MaskSet, load_mask_set
 
 masks_app = typer.Typer(
     name="masks",
-    help="List the mask sets (secrets, pii, ...) and show their rules.",
+    help="List the mask sets (secrets, credentials, pii, payment, ...) and show their rules.",
     no_args_is_help=True,
     add_completion=False,
 )
@@ -73,8 +73,9 @@ def list_command(as_json: AsJson = False) -> None:
         )
     console.print(table)
     console.print(
-        "\nUse one with [bold]--masks secrets,pii[/bold] or a set file with [bold]--masks-file FILE[/bold]; "
-        "the default masks always run last. Rules: [bold]logfold masks show NAME[/bold]"
+        "\nUse them with [bold]--masks secrets,pii[/bold] (cheap), [bold]--masks all[/bold] (every built-in set) or a "
+        "set file with [bold]--masks-file FILE[/bold]; the default masks always run last. "
+        "Rules: [bold]logfold masks show NAME[/bold]"
     )
 
 
