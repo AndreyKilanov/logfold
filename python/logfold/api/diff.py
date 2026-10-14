@@ -38,11 +38,11 @@ from logfold.config import (
     DiffConfig,
     ExamplesMode,
     ExecutionConfig,
-    MaskRule,
     MiningConfig,
 )
 from logfold.errors import ConfigError
 from logfold.ext.formats import Format, FormatSpec
+from logfold.ext.mask_selection import MaskSelection
 from logfold.ext.masks import Masker
 from logfold.formats import resolve_format
 from logfold.model import (
@@ -118,7 +118,7 @@ def diff(
     max_templates: int | None = None,
     on_full: str | None = None,
     delimiters: str | None = None,
-    masks: Sequence[MaskRule] | None = None,
+    masks: MaskSelection | None = None,
     high_cardinality: bool = False,
     mining: MiningConfig | None = None,
     execution: ExecutionConfig | None = None,
@@ -168,7 +168,7 @@ def diff(
         max_templates: Maximum number of templates before pooling or evicting.
         on_full: ``pool`` (the default) or ``evict``; see :func:`logfold.analyze`.
         delimiters: The characters that separate tokens; see :func:`logfold.analyze`.
-        masks: Masking rules replacing the defaults.
+        masks: Rules that replace the defaults, or mask sets and names such as ``"secrets"`` that run before them.
         high_cardinality: Fast mode for data with a huge number of distinct message shapes; see :func:`analyze`.
         mining: Full mining configuration.
         execution: Full execution configuration.

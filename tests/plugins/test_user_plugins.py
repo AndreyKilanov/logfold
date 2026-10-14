@@ -281,6 +281,12 @@ def test_every_template_loads_and_is_usable(plugin_dir: Path, kind: str, tmp_pat
         assert "disk" in result.render("my-thing")
         comparison = logfold.diff(str(log), str(log), format="plain", engine="native")
         assert comparison.render("my-thing").startswith("0 new")
+    elif kind == "mask":
+        assert registry.get_mask_set("my-thing").name == "my-thing"
+        orders = tmp_path / "orders.log"
+        orders.write_text("order ORD-123456 shipped\norder ORD-654321 shipped\n", encoding="utf-8")
+        masked = logfold.analyze(str(orders), format="plain", engine="native", masks=["my-thing"])
+        assert [(t.text, t.count) for t in masked.templates] == [("order <ORDER> shipped", 2)]
     else:
         assert registry.get_matcher("my-thing").match(["retry failed"], ["retry gave up"]) == [(0, 0)]
 

@@ -4,11 +4,13 @@ import pytest
 
 from logfold import ConfigError, MaskRule
 from logfold.config import DEFAULT_MASKS
-from logfold.ext.masks import Masker, validate_masks
+from logfold.ext.masks import Masker, ReferenceMasker, validate_masks
 
 
 def masked(text: str, rules: tuple[MaskRule, ...] = DEFAULT_MASKS) -> str:
-    return Masker(rules).mask(text)
+    native = Masker(rules).mask(text)
+    assert ReferenceMasker(rules).mask(text) == native
+    return native
 
 
 @pytest.mark.parametrize(

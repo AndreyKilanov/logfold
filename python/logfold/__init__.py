@@ -34,6 +34,7 @@ from logfold.api import (
 )
 from logfold.config import DiffConfig, ExecutionConfig, MaskRule, MiningConfig
 from logfold.errors import ConfigError, EngineError, FormatError, LogfoldError, SourceError, StateError
+from logfold.ext.mask_sets import MaskSet
 from logfold.model import (
     AnalysisResult,
     DiffEntry,
@@ -64,6 +65,7 @@ __all__ = [
     "Inspection",
     "LogfoldError",
     "MaskRule",
+    "MaskSet",
     "Miner",
     "MiningConfig",
     "Parameter",

@@ -102,7 +102,13 @@ _SECTIONS: dict[str, dict[str, _Check]] = {
     "analyze": _ANALYZE,
     "diff": _DIFF,
 }
-_MASK_KEYS = {"name": _text(), "pattern": _text(), "token": _text(), "ascii": _boolean}
+_MASK_KEYS = {
+    "name": _text(),
+    "pattern": _text(),
+    "token": _text(),
+    "ascii": _boolean,
+    "check": _text("luhn", "iban"),
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -113,6 +119,8 @@ class Settings:
         format: Default log format, or ``None`` for ``auto``.
         multiline: Join continuation lines; ``None`` keeps the format's default.
         mining: Mining parameters and masks.
+        mask_sets: The names that ``[mining] masks`` lists; they are looked up when a run starts, so ``mining.masks``
+            holds the default rules until then (see :func:`logfold.ext.resolve_masks`).
         execution: How the work is executed.
         diff: Parameters of the run comparison.
         top: Rows to print per table (command line only).
@@ -130,6 +138,7 @@ class Settings:
     format: str | None = None
     multiline: bool | None = None
     mining: MiningConfig = field(default_factory=MiningConfig)
+    mask_sets: tuple[str, ...] = ()
     execution: ExecutionConfig = field(default_factory=ExecutionConfig)
     diff: DiffConfig = field(default_factory=DiffConfig)
     top: int | None = None
@@ -205,16 +214,19 @@ def _checked(source: str, where: str, table: Mapping[str, Any], spec: Mapping[st
     return checked
 
 
-def _masks(source: str, value: object) -> tuple[MaskRule, ...]:
+def _masks(source: str, value: object) -> tuple[tuple[MaskRule, ...], tuple[str, ...]]:
+    """Read ``[mining] masks``: the rules to use, or the names of the mask sets to look up when a run starts."""
     if value == "default":
-        return DEFAULT_MASKS
+        return DEFAULT_MASKS, ()
     if value == "none":
-        return ()
+        return (), ()
     if not isinstance(value, list):
         raise ConfigError(
-            f'{source}: \'mining.masks\' must be "default", "none" or a list of [[mining.masks]] tables, '
-            f"found {value!r}"
+            f'{source}: \'mining.masks\' must be "default", "none", a list of mask set names or a list of '
+            f"[[mining.masks]] tables, found {value!r}"
         )
+    if value and all(isinstance(item, str) for item in value):
+        return DEFAULT_MASKS, tuple(value)
     rules = []
     for index, item in enumerate(value, start=1):
         where = f"mining.masks #{index}"
@@ -225,7 +237,7 @@ def _masks(source: str, value: object) -> tuple[MaskRule, ...]:
         if missing:
             raise ConfigError(f"{source}: '{where}' needs {', '.join(missing)}")
         rules.append(MaskRule(**fields))
-    return tuple(rules)
+    return tuple(rules), ()
 
 
 def _build(source: str, section: str, factory: Callable[[], Any]) -> Any:
@@ -263,7 +275,7 @@ def parse_settings(data: Mapping[str, Any], source: str) -> Settings:
         else:
             raise _unknown(source, "", key, [*_TOP, *_SECTIONS])
     mining_table = dict(tables.get("mining", {}))
-    masks = _masks(source, mining_table.pop("masks")) if "masks" in mining_table else DEFAULT_MASKS
+    masks, mask_sets = _masks(source, mining_table.pop("masks")) if "masks" in mining_table else (DEFAULT_MASKS, ())
     execution_table = dict(tables.get("execution", {}))
     if "chunk_mb" in execution_table:
         execution_table["chunk_bytes"] = execution_table.pop("chunk_mb") << 20
@@ -274,6 +286,7 @@ def parse_settings(data: Mapping[str, Any], source: str) -> Settings:
         format=top.get("format"),
         multiline=top.get("multiline"),
         mining=_build(source, "mining", lambda: MiningConfig(masks=masks, **mining_table)),
+        mask_sets=mask_sets,
         execution=_build(source, "execution", lambda: ExecutionConfig(**execution_table)),
         diff=_build(source, "diff", lambda: DiffConfig(**diff_keys)),
         top=output.get("top"),

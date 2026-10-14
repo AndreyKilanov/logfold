@@ -151,6 +151,24 @@ class UnknownMatcherError(_UnknownNameError, ConfigError):
         super().__init__("diff matcher", "matchers", name, known)
 
 
+class UnknownMaskSetError(_UnknownNameError, ConfigError):
+    """A mask set name is not registered.
+
+    Attributes:
+        name: The name that was asked for.
+        known: The registered names, sorted.
+    """
+
+    def __init__(self, name: str, known: Iterable[str]) -> None:
+        """Create the error.
+
+        Args:
+            name: The unknown name.
+            known: The registered names.
+        """
+        super().__init__("mask set", "mask sets", name, known)
+
+
 class UnknownPluginError(_UnknownNameError, ConfigError):
     """A plugin name is neither registered nor in the catalog.
 

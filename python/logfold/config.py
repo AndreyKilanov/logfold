@@ -17,6 +17,7 @@ HIGH_CARDINALITY_MAX_TEMPLATES = 5_000
 EngineName = Literal["auto", "native", "python"]
 StrategyName = Literal["auto", "sequential", "chunked"]
 ExamplesMode = Literal["raw", "masked", "none"]
+MASK_CHECKS = ("luhn", "iban")
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,12 +29,26 @@ class MaskRule:
         pattern: Regular expression. It must not match the empty string.
         token: Replacement text, for example ``<IP>``.
         ascii: Compile in ASCII mode so ``\\d``, ``\\w`` and ``\\b`` are ASCII only.
+        check: Optional check that a match must pass: ``luhn`` (a payment card number) or ``iban``. A match that fails
+            it is skipped, see ``docs/ALGORITHM.md`` section 2.
     """
 
     name: str
     pattern: str
     token: str
     ascii: bool = False
+    check: str | None = None
+
+    def __post_init__(self) -> None:
+        """Validate the check.
+
+        Raises:
+            ConfigError: If ``check`` is not ``luhn`` or ``iban``.
+        """
+        if self.check is not None and self.check not in MASK_CHECKS:
+            raise ConfigError(
+                f"mask rule {self.name!r}: unknown check {self.check!r} (known: {', '.join(MASK_CHECKS)})"
+            )
 
 
 DEFAULT_MASKS: tuple[MaskRule, ...] = (
@@ -193,6 +208,11 @@ def config_fingerprint(*parts: object) -> str:
             fields = asdict(value)  # type: ignore[call-overload]
             if fields.get("on_full") == "pool":
                 del fields["on_full"]
+            if isinstance(fields.get("masks"), list | tuple):
+                fields["masks"] = [
+                    {key: item for key, item in rule.items() if key != "check" or item is not None}
+                    for rule in fields["masks"]
+                ]
             return fields
         return value
 

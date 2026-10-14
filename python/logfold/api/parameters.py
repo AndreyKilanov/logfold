@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from functools import lru_cache
 
 from logfold._bridge import ExtractorHandle
-from logfold.api._common import _mining
+from logfold.api._common import _mining, settings_mining
 from logfold.config import MaskRule, MiningConfig
 from logfold.engines.native import mining_to_dicts
 from logfold.errors import ConfigError
+from logfold.ext.mask_selection import MaskSelection
 from logfold.model import Parameter, Template
 from logfold.settings import Settings
 
@@ -25,7 +25,7 @@ def extract_parameters(
     template: str | Template,
     message: str,
     *,
-    masks: Sequence[MaskRule] | None = None,
+    masks: MaskSelection | None = None,
     mining: MiningConfig | None = None,
     config: Settings | None = None,
     delimiters: str | None = None,
@@ -45,7 +45,7 @@ def extract_parameters(
     Args:
         template: The text of a template, or a ``Template`` of a result.
         message: One record, as written in the log (without the part that the format cuts off).
-        masks: Masking rules replacing the defaults.
+        masks: Rules that replace the defaults, or mask sets and names such as ``"secrets"`` that run before them.
         mining: Full mining configuration; ``masks`` overrides its rules.
         config: Settings from a ``logfold.toml`` (:func:`logfold.load_config`), used where the call names no mining
             configuration itself.
@@ -60,7 +60,7 @@ def extract_parameters(
         EngineError: If the native extension is unavailable.
     """
     text = template.text if isinstance(template, Template) else template
-    base = mining if mining is not None else (config.mining if config is not None else None)
+    base = mining if mining is not None else (settings_mining(config) if config is not None else None)
     resolved = _mining(base, None, None, None, None, masks, delimiters=delimiters)
     if " " not in resolved.delimiters:
         raise ConfigError(

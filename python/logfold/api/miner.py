@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable
 
 from logfold.api._common import (
     UNPARSED_WARNING_RATIO,
@@ -15,11 +15,12 @@ from logfold.api._common import (
     _templates,
 )
 from logfold.api.parameters import extract_parameters
-from logfold.config import ExamplesMode, MaskRule, MiningConfig
+from logfold.config import ExamplesMode, MiningConfig
 from logfold.engines.base import MiningResult
 from logfold.engines.live import LiveMiner
 from logfold.errors import ConfigError
 from logfold.ext.formats import Format, FormatSpec
+from logfold.ext.mask_selection import MaskSelection
 from logfold.ext.masks import Masker
 from logfold.formats import resolve_format
 from logfold.model import AnalysisResult, Parameter, RunSummary, Template, TemplateMatch
@@ -53,7 +54,7 @@ class Miner:
         max_templates: int | None = None,
         on_full: str | None = None,
         delimiters: str | None = None,
-        masks: Sequence[MaskRule] | None = None,
+        masks: MaskSelection | None = None,
         mining: MiningConfig | None = None,
         load_state: PathLike | None = None,
         state_format: str = "json",
@@ -77,7 +78,7 @@ class Miner:
                 for days needs. See :class:`~logfold.MiningConfig`.
             delimiters: The ASCII characters that separate tokens, replacing the default (space, tab, CR, LF); keep the
                 whitespace in the string when you add a character, for example the default plus ``_`` or ``=``.
-            masks: Masking rules replacing the defaults.
+            masks: Rules that replace the defaults, or mask sets and names such as ``"secrets"`` that run before them.
             mining: Full mining configuration; the keyword arguments above override its fields.
             load_state: A state file of an earlier run to continue from: the templates it holds are the start of the
                 tree, ``result()`` counts only the records of this miner, and the file must have been mined with the

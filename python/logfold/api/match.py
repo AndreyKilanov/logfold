@@ -20,9 +20,10 @@ from logfold.api._common import (
     _warnings,
 )
 from logfold.api._windows import OPEN, TimeBound, labeled, require_time, window, window_warnings
-from logfold.config import ExamplesMode, ExecutionConfig, MaskRule, MiningConfig
+from logfold.config import ExamplesMode, ExecutionConfig, MiningConfig
 from logfold.errors import ConfigError
 from logfold.ext.formats import Format, FormatSpec
+from logfold.ext.mask_selection import MaskSelection
 from logfold.ext.masks import Masker
 from logfold.formats import resolve_format
 from logfold.model import AnalysisResult, Unmatched
@@ -41,7 +42,7 @@ def match(
     max_templates: int | None = None,
     on_full: str | None = None,
     delimiters: str | None = None,
-    masks: Sequence[MaskRule] | None = None,
+    masks: MaskSelection | None = None,
     mining: MiningConfig | None = None,
     execution: ExecutionConfig | None = None,
     engine: str | None = None,
@@ -73,7 +74,7 @@ def match(
         max_templates: Maximum number of templates of the state (default 100000).
         on_full: ``pool`` (the default) or ``evict``; the state must have been mined with the same one.
         delimiters: The characters that separate tokens; the state must have been mined with the same ones.
-        masks: Masking rules that the state was mined with, replacing the defaults.
+        masks: The masks that the state was mined with: rules, or mask sets and names such as ``"secrets"``.
         mining: Full mining configuration; the keyword arguments above override its fields.
         execution: Full execution configuration; the keyword arguments below override its fields.
         engine: ``auto`` or ``native``.

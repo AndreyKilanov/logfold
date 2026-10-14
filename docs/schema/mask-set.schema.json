@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/AndreyKilanov/logfold/blob/main/docs/schema/mask-set.schema.json",
+  "title": "logfold mask set",
+  "description": "A mask set file for --masks-file and the built-in sets: a named, versioned list of masking rules. The file is data only and at most 1 MiB; at most 256 rules; the name of the file does not matter.",
+  "type": "object",
+  "required": ["name", "rules"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]{0,31}$",
+      "description": "What --masks takes."
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1,
+      "description": "Raise it when the rules change; a saved state is refused when the rules differ."
+    },
+    "description": { "type": "string" },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 256,
+      "description": "Tried in one pass, the earliest rule wins at one position; they run before the default masks.",
+      "items": {
+        "type": "object",
+        "required": ["name", "pattern", "token"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{0,31}$", "description": "Unique in the set." },
+          "pattern": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "description": "A regular expression of the linear-time engine (no look-around, no back-references); it must not match the empty string. Inline flags must be scoped, (?i:...)."
+          },
+          "token": {
+            "type": "string",
+            "pattern": "^<[A-Z][A-Z0-9_]{0,29}>$",
+            "description": "The replacement; the default masks must not change it."
+          },
+          "ascii": { "type": "boolean", "default": true, "description": "\\d, \\w and \\b match ASCII only." },
+          "check": {
+            "enum": ["luhn", "iban"],
+            "description": "A match that fails the check is skipped and the search goes on one byte later."
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

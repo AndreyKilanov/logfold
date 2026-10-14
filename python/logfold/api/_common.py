@@ -15,7 +15,6 @@ from logfold.config import (
     HIGH_CARDINALITY_MAX_TEMPLATES,
     ExamplesMode,
     ExecutionConfig,
-    MaskRule,
     MiningConfig,
     config_fingerprint,
 )
@@ -23,6 +22,8 @@ from logfold.engines.base import MineRequest, MiningResult, RunCounters, StateRe
 from logfold.engines.select import select_engine
 from logfold.errors import ConfigError, read_error
 from logfold.ext.formats import Format, FormatSpec
+from logfold.ext.mask_selection import MaskSelection, resolve_masks
+from logfold.ext.mask_sets import mask_fingerprint
 from logfold.ext.masks import Masker, validate_masks
 from logfold.formats import ResolvedFormat
 from logfold.model import (
@@ -49,6 +50,13 @@ def _paths(value: PathLike | Sequence[PathLike], what: str) -> tuple[str, ...]:
     return tuple(os.fspath(item) for item in items)
 
 
+def settings_mining(config: Settings) -> MiningConfig:
+    """Return the mining configuration of ``config`` with the mask sets that its file names turned into rules."""
+    if not config.mask_sets:
+        return config.mining
+    return dataclasses.replace(config.mining, masks=resolve_masks(config.mask_sets))
+
+
 def _apply_settings(
     config: Settings | None,
     format: str | FormatSpec | Format | None,
@@ -60,7 +68,7 @@ def _apply_settings(
     if config is not None:
         format = config.format if format is None else format
         multiline = config.multiline if multiline is None else multiline
-        mining = config.mining if mining is None else mining
+        mining = settings_mining(config) if mining is None else mining
         execution = config.execution if execution is None else execution
     return ("auto" if format is None else format), multiline, mining, execution
 
@@ -71,7 +79,7 @@ def _mining(
     sim_th: float | None,
     max_children: int | None,
     max_templates: int | None,
-    masks: Sequence[MaskRule] | None,
+    masks: MaskSelection | None,
     high_cardinality: bool = False,
     on_full: str | None = None,
     delimiters: str | None = None,
@@ -91,7 +99,7 @@ def _mining(
         if value is not None:
             changes[key] = value
     if masks is not None:
-        changes["masks"] = tuple(masks)
+        changes["masks"] = resolve_masks(masks)
     config = dataclasses.replace(config, **changes) if changes else config
     validate_masks(config.masks)
     return config
@@ -170,7 +178,7 @@ def _state_request(
         save=None if save is None else os.fspath(save),
         format=state_format,
         config_hash=config_fingerprint(mining),
-        masks="default" if mining.masks == DEFAULT_MASKS else "custom",
+        masks="default" if mining.masks == DEFAULT_MASKS else mask_fingerprint(mining.masks),
         logfold_version=get_version(),
         log_format=spec.name,
     )

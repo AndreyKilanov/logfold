@@ -42,7 +42,7 @@ __all__ = [
 SCHEMA_VERSION = 1
 DEFAULT_CATALOG_URL = "https://raw.githubusercontent.com/AndreyKilanov/logfold/main/python/logfold/plugins/catalog.json"
 ENV_OFFLINE = "LOGFOLD_OFFLINE"
-KINDS = ("format", "reporter", "matcher")
+KINDS = ("format", "reporter", "matcher", "mask")
 MAX_BYTES = 256 * 1024
 MAX_ENTRIES = 500
 TIMEOUT_SECONDS = 10.0
@@ -60,7 +60,7 @@ class CatalogEntry:
 
     Attributes:
         name: Short name used by ``logfold plugins install``.
-        kinds: What the package adds: ``format``, ``reporter`` and/or ``matcher``.
+        kinds: What the package adds: ``format``, ``reporter``, ``matcher`` and/or ``mask``.
         package: Name of the package on PyPI.
         specifier: Version constraint such as ``>=0.2,<1``, or an empty string.
         description: One line for people.

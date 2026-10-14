@@ -3,7 +3,7 @@
 Formats: ``logfmt``, ``serilog-clef``, ``haproxy``, ``postgresql``, ``postgresql-csv``, ``log4j``, ``docker-json``,
 ``github-actions``. Reporters: ``markdown``, ``csv``, ``github-summary``, ``junit``, ``chat-message``,
 ``prometheus``. Diff matchers: ``jaccard``, ``jaccard-idf``, ``overlap``,
-``rules``.
+``rules``. Mask sets: ``default``, ``secrets``, ``pii``.
 
 They use the same extension points as third-party plugins (:mod:`logfold.ext`); a plugin package that registers the same
 name replaces the default. :mod:`logfold.plugins.catalog` lists and installs further plugins;
@@ -12,10 +12,12 @@ name replaces the default. :mod:`logfold.plugins.catalog` lists and installs fur
 
 from __future__ import annotations
 
-from logfold.ext.registry import register_format, register_matcher, register_reporter
+from logfold.ext.registry import register_format, register_mask_set, register_matcher, register_reporter
 from logfold.plugins.formats import LOGFMT, SERILOG_CLEF
 from logfold.plugins.formats_servers import DOCKER_JSON, GITHUB_ACTIONS, HAPROXY, LOG4J, POSTGRESQL, POSTGRESQL_CSV
 from logfold.plugins.listing import PluginInfo, closest, list_plugins, plugin_info, unknown_name_hint
+from logfold.plugins.masks import DEFAULT as DEFAULT_MASK_SET
+from logfold.plugins.masks import PII, SECRETS, builtin_mask_sets
 from logfold.plugins.matchers import JaccardIdfMatcher, JaccardMatcher, OverlapMatcher, RulesMatcher
 from logfold.plugins.reporters import CsvReporter, MarkdownReporter
 from logfold.plugins.reporters_ci import GithubSummaryReporter, JunitReporter
@@ -34,15 +36,20 @@ register_matcher(JaccardMatcher())
 register_matcher(JaccardIdfMatcher())
 register_matcher(OverlapMatcher())
 register_matcher(RulesMatcher())
+for _mask_set in builtin_mask_sets():
+    register_mask_set(_mask_set)
 
 __all__ = [
+    "DEFAULT_MASK_SET",
     "DOCKER_JSON",
     "GITHUB_ACTIONS",
     "HAPROXY",
     "LOG4J",
     "LOGFMT",
+    "PII",
     "POSTGRESQL",
     "POSTGRESQL_CSV",
+    "SECRETS",
     "SERILOG_CLEF",
     "ChatMessageReporter",
     "CsvReporter",
