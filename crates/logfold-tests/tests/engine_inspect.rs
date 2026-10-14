@@ -87,6 +87,7 @@ fn json_lines_use_their_keys_and_a_plain_line_is_unparsed() {
         message_keys: vec!["msg".into()],
         time_keys: vec!["time".into()],
         level_keys: vec!["level".into()],
+        join_unterminated: false,
     };
     let config = FormatConfig { spec, ts_format: None, multiline: false };
     let sample = b"{\"msg\":\"hello\",\"time\":\"2026-10-04T12:00:01Z\",\"level\":\"warn\"}\nnot json\n";

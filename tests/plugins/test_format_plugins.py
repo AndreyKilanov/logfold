@@ -189,6 +189,29 @@ def test_docker_json_drops_the_line_break_and_the_stream(tmp_path: Path) -> None
     assert templates(result) == {"user <NUM> logged in": (2, None), "disk <NUM> full": (1, None)}
 
 
+def test_docker_json_joins_the_pieces_of_a_long_line_into_one_record(tmp_path: Path) -> None:
+    pieces = ["a" * 16384, "b" * 16384, "c" * 100]
+    rows = [
+        {"log": pieces[0], "stream": "stdout", "time": "2026-10-06T12:00:00.000000001Z"},
+        {"log": pieces[1], "stream": "stdout", "time": "2026-10-06T12:00:00.000000002Z"},
+        {"log": pieces[2] + "\n", "stream": "stdout", "time": "2026-10-06T12:00:00.000000003Z"},
+        {"log": "short line\n", "stream": "stderr", "time": "2026-10-06T12:00:01.000000000Z"},
+        {"log": "last line without a break", "stream": "stdout", "time": "2026-10-06T12:00:02.000000000Z"},
+    ]
+    log = tmp_path / "docker-json.log"
+    log.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+    result = logfold.analyze(str(log), format="docker-json", engine="native")
+    assert (result.run.records, result.run.lines, result.run.unparsed) == (3, 5, 0)
+    seen = logfold.inspect_file(log, format="docker-json", limit=10)
+    assert [(record.message[:3], len(record.message), record.lines) for record in seen.shown] == [
+        ("aaa", 32868, 1),
+        ("sho", 10, 1),
+        ("las", 25, 1),
+    ]
+    assert seen.first_time is not None
+    assert seen.first_time.isoformat() == "2026-10-06T12:00:00+00:00"
+
+
 def test_github_actions_levels_commands_and_the_byte_order_mark(tmp_path: Path) -> None:
     found = templates(analyze(tmp_path, "github-actions"))
     assert found == {

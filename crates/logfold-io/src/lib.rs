@@ -15,7 +15,7 @@ mod state;
 mod timestamp;
 
 pub use error::IoError;
-pub use format::{CompiledFormat, FormatConfig, FormatSpec, ParsedRecord};
+pub use format::{CompiledFormat, Entry, EntryJoiner, FormatConfig, FormatSpec, ParsedRecord};
 pub use lines::{INITIAL_WINDOW, Line, LineReader, MAX_LINE_BYTES};
 pub use records::{
     Counters, MAX_RECORD_BYTES, Placement, ScanOutcome, ScanWindow, TICK_BYTES, TimeWindow, scan_records,

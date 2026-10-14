@@ -40,6 +40,11 @@ and optional `level`.
   (`< 1e17`) or nanoseconds (integers use integer arithmetic; floats use `floor(v * scale + 0.5)`). Epoch values are
   absolute, so they count as timezone-aware. `level` = first present key of
   `level_keys` (default `level`, `severity`, `lvl`).
+  With `join_unterminated` (the `docker-json` format) an entry whose message does not end with a line break is joined
+  with the entries that follow it, up to the first one whose message does (a blank line between them is skipped, a line
+  that is not an entry ends the group and is unparsed): the record is the messages one after the other, with one line
+  break dropped from its end, and has the time and the level of the first entry. The entries of the group are lines
+  of the file (`lines` counts them), the group is one record. The end of the input closes an open group.
 - **regex**: `pattern` is searched in the first line of the record; no match means the line is unparsed (or a
   continuation in multiline mode). Named groups select `message_group`, `time_group`, `level_group`. The message is
   the message group followed by the continuation lines. Without `message_group` the message is the whole first line.
@@ -209,7 +214,7 @@ descending, then `text` ascending by UTF-8 bytes.
 
 A chunk `[s, e)` owns every record whose first line starts at a byte offset in `[s, e)`. A chunk with `s > 0` first
 skips to the next line start at or after `s` (when byte `s-1` is `\n`, `s` itself is a line start), then in multiline
-mode skips lines until a record start. A chunk keeps consuming lines after `e` (continuation lines, blank lines and, before the first record of a file, unparsed lines) until the next line that starts a record; that line belongs to the next chunk. Compressed files are a
+mode skips lines until a record start. In a format that joins entries (§1.2) the lines that a chunk skips are those that belong to a record of the previous chunk: when the last entry before `s` has no line break at its end (the chunk looks back up to 64 KiB for it; a longer entry counts as one that ends its line), the chunk skips the lines up to and including the first entry that ends its line, or the first line that is not an entry; the previous chunk reads on after `e` until its open group is closed. A chunk keeps consuming lines after `e` (continuation lines, blank lines and, before the first record of a file, unparsed lines) until the next line that starts a record; that line belongs to the next chunk. Compressed files are a
 single chunk. Chunk size is fixed by configuration and independent of the thread count; chunk results are merged in
 chunk order (files of run 0 first, then run 1). The result is deterministic for a fixed chunk size.
 

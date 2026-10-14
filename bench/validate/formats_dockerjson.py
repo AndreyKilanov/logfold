@@ -2,9 +2,9 @@
 
 A container prints numbered lines on stdout and stderr, empty lines, non-ASCII text, escape sequences, quotes and
 backslashes, lines longer than 16 KB (which Docker splits into several entries) and a last line without a line break.
-The real ``*-json.log`` file is read back and parsed with Python's ``json`` module: every line of the file is one entry,
-so the expected records, messages and times come from the file, and the lines that the container printed are rebuilt from
-the entries to prove that the file holds what was written.
+The real ``*-json.log`` file is read back and parsed with Python's ``json`` module: every line of the file is one entry.
+The lines that the container printed are rebuilt from the entries to prove that the file holds what was written, and the
+expected records are those printed lines: a line is one record however many entries Docker made of it.
 """
 
 from __future__ import annotations
@@ -38,6 +38,8 @@ sys.stdout.write("no line break at exit")
 sys.stdout.flush()
 """
 NANOSECONDS = re.compile(r"(\.\d{6})\d*Z$")
+LF = "\n"
+CR = "\r"
 
 
 @dataclass
@@ -55,6 +57,7 @@ class DockerJsonOutcome:
     case: DockerJsonCase
     entries: int = 0
     problems: list[str] = field(default_factory=list)
+    note: str = ""
 
 
 def printed_lines(rounds: int, tty: bool) -> Counter[tuple[str, str]]:
@@ -83,13 +86,24 @@ def joined_lines(entries: list[dict[str, str]], terminator: str) -> Counter[tupl
     pending: dict[str, str] = {}
     for entry in entries:
         stream, text = entry["stream"], entry["log"]
-        if text.endswith("\n"):
-            lines[(stream, (pending.pop(stream, "") + text).removesuffix("\n").removesuffix(terminator))] += 1
+        if text.endswith(LF):
+            lines[(stream, (pending.pop(stream, "") + text).removesuffix(LF).removesuffix(terminator))] += 1
         else:
             pending[stream] = pending.get(stream, "") + text
     for stream, text in pending.items():
         lines[(stream, text)] += 1
     return lines
+
+
+def group_starts(entries: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Return the entries that start a printed line: the first one, and every one after an entry that ends its line."""
+    starts: list[dict[str, str]] = []
+    after_break = True
+    for entry in entries:
+        if after_break:
+            starts.append(entry)
+        after_break = entry["log"].endswith(LF)
+    return starts
 
 
 def run_dockerjson(case: DockerJsonCase, index: int, rounds: int) -> DockerJsonOutcome:
@@ -98,20 +112,8 @@ def run_dockerjson(case: DockerJsonCase, index: int, rounds: int) -> DockerJsonO
     name = f"logfold-validate-dockerjson-{index}"
     docker("rm", "-f", name, check=False)
     options = ["-t"] if case.tty else []
-    docker(
-        "run",
-        "-d",
-        "--name",
-        name,
-        "--log-driver",
-        "json-file",
-        *options,
-        CONTAINER_IMAGE,
-        "python",
-        "-c",
-        PRINTER,
-        str(rounds),
-    )
+    command = ["python", "-c", PRINTER, str(rounds)]
+    docker("run", "-d", "--name", name, "--log-driver", "json-file", *options, CONTAINER_IMAGE, *command)
     try:
         docker("wait", name)
         path = docker("inspect", "-f", "{{.LogPath}}", name).stdout.strip()
@@ -129,32 +131,33 @@ def run_dockerjson(case: DockerJsonCase, index: int, rounds: int) -> DockerJsonO
 def check_log(case: DockerJsonCase, log: Path, rounds: int, outcome: DockerJsonOutcome) -> None:
     """Compare the file with the lines that were printed and with what logfold reads from it."""
     problems = outcome.problems
-    entries = [json.loads(line) for line in log.read_text(encoding="utf-8").split("\n") if line]
+    entries = [json.loads(line) for line in log.read_text(encoding="utf-8").split(LF) if line]
     outcome.entries = len(entries)
-    terminator = "\r" if case.tty else ""
-    if joined_lines(entries, terminator) != printed_lines(rounds, case.tty):
+    terminator = CR if case.tty else ""
+    printed = printed_lines(rounds, case.tty)
+    if joined_lines(entries, terminator) != printed:
         problems.append("the lines rebuilt from the file are not the lines that were printed (the oracle is wrong)")
         return
     seen = logfold.inspect_file(log, format="docker-json", sample_lines=10_000_000, limit=10_000_000)
-    if seen.records != len(entries):
-        problems.append(f"{seen.records} records, the file has {len(entries)} entries")
+    if seen.records != sum(printed.values()):
+        problems.append(f"{seen.records} records, {sum(printed.values())} lines were printed")
     if seen.unparsed:
         problems.append(f"{seen.unparsed} lines were not parsed")
-    expected = Counter(entry["log"].removesuffix("\n").removesuffix(terminator) for entry in entries)
+    expected = Counter(text for _stream, text in printed.elements())
     got = Counter(record.message for record in seen.shown)
     for message in list((got - expected).elements())[:2]:
-        problems.append(f"read {message[:60]!r} ({len(message)} characters), the file has nothing like it")
+        problems.append(f"read {message[:60]!r} ({len(message)} characters), nothing like it was printed")
     for message in list((expected - got).elements())[:2]:
-        problems.append(f"the file has {message[:60]!r} ({len(message)} characters), not read like that")
-    first = min(entry_time(entry["time"]) for entry in entries)
-    last = max(entry_time(entry["time"]) for entry in entries)
+        problems.append(f"printed {message[:60]!r} ({len(message)} characters), not read like that")
+    starts = group_starts(entries)
+    first = min(entry_time(entry["time"]) for entry in starts)
+    last = max(entry_time(entry["time"]) for entry in starts)
     seen_first, seen_last = (
         moment.replace(tzinfo=None) if moment else None for moment in (seen.first_time, seen.last_time)
     )
     if (seen_first, seen_last) != (first, last):
-        problems.append(f"time range {seen_first} to {seen_last}, the file has {first} to {last}")
-    parts = sum(1 for entry in entries if not entry["log"].endswith("\n"))
-    if parts:
-        outcome.problems.append(
-            f"note: {parts} entries are pieces of a longer line and are read as records of their own"
+        problems.append(
+            f"time range {seen_first} to {seen_last}, the first entries of the lines have {first} to {last}"
         )
+    pieces = len(entries) - len(starts)
+    outcome.note = f"{pieces} entries are pieces of a longer line" if pieces else ""

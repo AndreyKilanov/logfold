@@ -37,6 +37,7 @@ pub(crate) fn parse_format(dict: &Bound<'_, PyDict>) -> PyResult<FormatConfig> {
             message_keys: required(dict, "message_keys")?.extract()?,
             time_keys: required(dict, "time_keys")?.extract()?,
             level_keys: required(dict, "level_keys")?.extract()?,
+            join_unterminated: required(dict, "join_unterminated")?.extract()?,
         },
         "regex" => FormatSpec::Regex {
             pattern: required(dict, "pattern")?.extract()?,

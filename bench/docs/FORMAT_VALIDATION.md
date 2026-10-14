@@ -105,8 +105,8 @@ module: every line of the file is one entry. The printed lines are rebuilt from 
 printed, which proves that the file holds what was written. The same run with a terminal (`-t`: lines end with CR LF and
 stderr joins stdout).
 
-**What is compared:** records (one per entry), lines not parsed (0), the message of every record against the `log` value
-without its line break (as a multiset), and the first and last time (nanoseconds cut to microseconds).
+**What is compared:** records (one per printed line), lines not parsed (0), the message of every record against the printed
+line (as a multiset), and the first and last time (those of the first entry of a line; nanoseconds cut to microseconds).
 
 | setting | entries | result |
 |---|---:|---|
@@ -119,9 +119,13 @@ without its line break (as a multiset), and the first and last time (nanoseconds
   and in `inspect`. The documentation said that it was dropped; the templates were right only because the line feed is a
   delimiter. Fixed: a JSON message loses one line break at its end (`\n` or `\r\n`), so a terminal's CR LF goes too
   (`docs/ALGORITHM.md`, a Rust test).
-- **Not a defect, a limit:** the entries of a line longer than 16 KB are read as records of their own (7 here: 6 pieces of
-  the two long lines and the last line, which has no line break). `docker logs` joins them; logfold does not. Such pieces
-  are noise in the templates.
+- **A limit that was fixed in the same change:** the entries of a line longer than 16 KB (Docker cuts it into pieces of
+  16 KB, and only the last piece ends with a line break) were read as records of their own (7 in the first run).
+  `docker logs` shows them as one line, and now so does logfold: `docker-json` joins an entry whose message has no line
+  break at its end with the entries that follow it, up to the one that has. The record has the time of the first
+  piece. The rule works on neighbours: a piece of stdout and an entry of stderr that Docker wrote between two of its
+  pieces would be joined, as `docker logs` prints them. The result does not depend on the chunking of a big file (tested
+  with chunks of 1 byte and more, in the engine and in the streaming `Miner`).
 
 **Not checked:** other drivers (`local`, `journald`, `syslog`), a log that Docker rotates (`max-size`), compressed rotated
 files, entries with `attrs` or `tag`.

@@ -74,12 +74,17 @@ A message that spans several lines is read up to the end of its first line; the 
 quotes inside the message stay as they are.
 """
 
-DOCKER_JSON = JsonFormat(name="docker-json", message_keys=("log",), time_keys=("time",), level_keys=())
+DOCKER_JSON = JsonFormat(
+    name="docker-json", message_keys=("log",), time_keys=("time",), level_keys=(), join_unterminated=True
+)
 """Docker ``json-file`` driver.
 
 A line looks like ``{"log":"user 41 logged in\\n","stream":"stdout","time":"2026-10-06T12:00:00.123456789Z"}``.
 
-The line break at the end of ``log`` is dropped; the stream is not a level.
+The line break at the end of ``log`` is dropped; the stream is not a level. Docker splits a line longer than 16 KB
+into several entries, and only the last of them ends with a line break: logfold joins them into one record, as
+``docker logs`` shows them (the time is the one of the first entry). A line without a line break at the end of the log
+is a record too.
 """
 
 GITHUB_ACTIONS = RegexFormat(

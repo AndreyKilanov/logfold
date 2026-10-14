@@ -1,6 +1,6 @@
 use std::io::Read;
 
-use crate::format::{CompiledFormat, ParsedRecord};
+use crate::format::{CompiledFormat, EntryJoiner, ParsedRecord};
 use crate::lines::LineReader;
 
 /// Number of consumed bytes between two progress callbacks.
@@ -131,16 +131,20 @@ struct Scan<'f, F> {
 impl<F: FnMut(&ParsedRecord<'_>)> Scan<'_, F> {
     fn emit(&mut self, text: &[u8], first_len: usize) {
         match self.format.parse(text, first_len) {
-            Some(record) => match self.time.place(record.timestamp) {
-                Placement::Inside => {
-                    self.counters.records += 1;
-                    self.counters.tz_aware |= record.tz_aware;
-                    (self.on_record)(&record);
-                }
-                Placement::Outside => self.counters.out_of_range += 1,
-                Placement::Untimed => self.counters.untimed += 1,
-            },
+            Some(record) => self.deliver(&record),
             None => self.counters.unparsed += 1,
+        }
+    }
+
+    fn deliver(&mut self, record: &ParsedRecord<'_>) {
+        match self.time.place(record.timestamp) {
+            Placement::Inside => {
+                self.counters.records += 1;
+                self.counters.tz_aware |= record.tz_aware;
+                (self.on_record)(record);
+            }
+            Placement::Outside => self.counters.out_of_range += 1,
+            Placement::Untimed => self.counters.untimed += 1,
         }
     }
 }
@@ -162,6 +166,8 @@ pub fn scan_records<R: Read, F: FnMut(&ParsedRecord<'_>)>(
     let mut record = Vec::new();
     let mut first_len = 0usize;
     let mut open = false;
+    let joins = format.joins_entries();
+    let mut joiner = EntryJoiner::default();
     let mut last_tick = reader.offset();
 
     while let Some(line) = reader.next_line()? {
@@ -200,6 +206,32 @@ pub fn scan_records<R: Read, F: FnMut(&ParsedRecord<'_>)>(
                     }
                 }
             }
+        } else if joins {
+            if start >= window.end && !joiner.is_open() {
+                break;
+            }
+            if is_blank(bytes) {
+                if !leading {
+                    scan.counters.lines += 1;
+                }
+            } else if let Some(entry) = format.parse_entry(bytes) {
+                if leading {
+                    leading = !entry.terminated;
+                } else {
+                    scan.counters.lines += 1;
+                    if let Some(record) = joiner.push(entry, MAX_RECORD_BYTES) {
+                        scan.deliver(&record);
+                    }
+                }
+            } else if leading {
+                leading = false;
+            } else {
+                scan.counters.lines += 1;
+                if let Some(record) = joiner.finish() {
+                    scan.deliver(&record);
+                }
+                scan.counters.unparsed += 1;
+            }
         } else {
             if start >= window.end {
                 break;
@@ -219,6 +251,9 @@ pub fn scan_records<R: Read, F: FnMut(&ParsedRecord<'_>)>(
     }
     if open {
         scan.emit(&record, first_len);
+    }
+    if let Some(record) = joiner.finish() {
+        scan.deliver(&record);
     }
     let delta = reader.offset().saturating_sub(last_tick);
     if delta > 0 {

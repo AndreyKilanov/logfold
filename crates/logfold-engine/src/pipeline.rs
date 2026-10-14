@@ -60,6 +60,35 @@ impl Feeder<'_> {
     }
 }
 
+/// How far back a unit looks for the entry that comes before it.
+const LOOKBACK_BYTES: u64 = 64 << 10;
+
+/// For a format that joins entries: true when the last entry before `unit.start` has no line break at its end, so the
+/// first lines of the unit are the end of a record that the previous unit finishes.
+///
+/// An entry that is longer than [`LOOKBACK_BYTES`], or that cannot be read, counts as one that ends its line.
+fn continues_previous_entry(context: &PipelineContext, unit: &WorkUnit) -> Result<bool, IoError> {
+    if !context.format.joins_entries() {
+        return Ok(false);
+    }
+    let from = unit.start.saturating_sub(LOOKBACK_BYTES);
+    let source = open_source(&unit.path, &unit.info, from)?;
+    let mut reader = LineReader::new(source, from);
+    let mut skip = from > 0;
+    let mut continues = false;
+    while let Some(line) = reader.next_line().map_err(|source| IoError::Read { path: unit.path.clone(), source })? {
+        if line.start >= unit.start {
+            break;
+        }
+        if skip {
+            skip = false;
+        } else if !line.bytes.iter().all(u8::is_ascii_whitespace) {
+            continues = context.format.parse_entry(line.bytes).is_some_and(|entry| !entry.terminated);
+        }
+    }
+    Ok(continues)
+}
+
 /// Scans one unit and hands every record, masked and tokenized, to `on_record` together with its run.
 pub(crate) fn scan_unit<F>(
     context: &PipelineContext,
@@ -74,9 +103,10 @@ where
     let source = open_source(&unit.path, &unit.info, begin)?;
     let reader = LineReader::new(source, begin);
     let mid_file = unit.start > 0;
+    let continues = mid_file && (context.format.multiline() || continues_previous_entry(context, unit)?);
     let window = ScanWindow {
         skip_first_line: mid_file,
-        skip_leading_continuations: mid_file && context.format.multiline(),
+        skip_leading_continuations: continues,
         end: unit.end,
         time: unit.window,
     };

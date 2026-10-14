@@ -447,10 +447,10 @@ def run_dockerjson_cases(args: argparse.Namespace) -> int:
     failed = 0
     for index, case in enumerate(c for c in chosen if args.only is None or args.only in c.name):
         outcome = run_dockerjson(case, index, args.rounds)
-        real = [problem for problem in outcome.problems if not problem.startswith("note: ")]
-        failed += bool(real)
+        failed += bool(outcome.problems)
         verdict = "all numbers match" if not outcome.problems else "; ".join(outcome.problems)
-        print(f"| {case.name} | {outcome.entries} | {verdict} |", flush=True)
+        pieces = f" ({outcome.note})" if outcome.note else ""
+        print(f"| {case.name} | {outcome.entries} | {verdict}{pieces} |", flush=True)
     return failed
 
 

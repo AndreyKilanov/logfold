@@ -10,6 +10,7 @@ mod format {
                 message_keys: vec!["message".into(), "msg".into()],
                 time_keys: vec!["ts".into()],
                 level_keys: vec!["level".into()],
+                join_unterminated: false,
             },
             ts_format: None,
             multiline: false,

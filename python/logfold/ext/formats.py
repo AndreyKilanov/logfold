@@ -51,6 +51,9 @@ class JsonFormat:
         time_keys: Candidate keys of the timestamp.
         level_keys: Candidate keys of the level.
         ts_format: ``strptime``-style format of string timestamps; ISO-8601 when ``None``.
+        join_unterminated: Join an entry whose message does not end with a line break to the entries that follow it, up
+            to the one that does, as one record (the pieces of a long line that Docker splits). The record has the time
+            and the level of the first entry.
     """
 
     name: str = "jsonl"
@@ -59,6 +62,7 @@ class JsonFormat:
     level_keys: tuple[str, ...] = ("level", "severity", "lvl")
     ts_format: str | None = None
     multiline: bool = False
+    join_unterminated: bool = False
 
     def __post_init__(self) -> None:
         """Validate the specification.

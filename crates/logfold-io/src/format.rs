@@ -23,6 +23,9 @@ pub enum FormatSpec {
         time_keys: Vec<String>,
         /// Candidate keys of the level.
         level_keys: Vec<String>,
+        /// Join an entry whose message does not end with a line break to the entries that follow, up to the one that
+        /// does (the pieces of a long line that Docker splits).
+        join_unterminated: bool,
     },
     /// A regular expression with named groups.
     Regex {
@@ -63,8 +66,64 @@ pub struct ParsedRecord<'a> {
 
 enum Kind {
     Plain { record_start: Option<Regex> },
-    Json { message_keys: Vec<String>, time_keys: Vec<String>, level_keys: Vec<String> },
+    Json { message_keys: Vec<String>, time_keys: Vec<String>, level_keys: Vec<String>, join: bool },
     Regex { regex: Regex, message: Option<usize>, time: Option<usize>, level: Option<usize> },
+}
+
+/// One JSON entry read on its own (see [`CompiledFormat::parse_entry`]).
+#[derive(Clone, Debug)]
+pub struct Entry {
+    /// The message as written, with the line break at its end if it has one.
+    pub message: Vec<u8>,
+    /// Timestamp in microseconds since the Unix epoch.
+    pub timestamp: Option<i64>,
+    /// True when the timestamp text carried a time zone.
+    pub tz_aware: bool,
+    /// Normalized level.
+    pub level: Option<Level>,
+    /// True when the message ends with a line break, so the entry ends its line.
+    pub terminated: bool,
+}
+
+/// Joins consecutive entries into one record: from an entry whose message has no line break at its end to the first
+/// one that has. The time and the level are those of the first entry.
+#[derive(Debug, Default)]
+pub struct EntryJoiner {
+    message: Vec<u8>,
+    head: Option<(Option<i64>, bool, Option<Level>)>,
+}
+
+impl EntryJoiner {
+    /// True when entries have been added and the line is not finished.
+    pub fn is_open(&self) -> bool {
+        self.head.is_some()
+    }
+
+    /// Adds an entry; returns the record when this entry ends the line. Of a message longer than `limit` bytes the
+    /// rest is dropped.
+    pub fn push(&mut self, entry: Entry, limit: usize) -> Option<ParsedRecord<'static>> {
+        if self.head.is_none() {
+            self.head = Some((entry.timestamp, entry.tz_aware, entry.level));
+            self.message.clear();
+        }
+        if self.message.len() < limit {
+            self.message.extend_from_slice(&entry.message);
+        }
+        entry.terminated.then(|| self.take())
+    }
+
+    /// Returns the record of the entries that never got their line break (the end of the input, or a line that is not
+    /// an entry), or `None` when nothing is open.
+    pub fn finish(&mut self) -> Option<ParsedRecord<'static>> {
+        self.head.is_some().then(|| self.take())
+    }
+
+    fn take(&mut self) -> ParsedRecord<'static> {
+        let (timestamp, tz_aware, level) = self.head.take().unwrap_or_default();
+        let text = self.message.strip_suffix(b"\n").unwrap_or(&self.message);
+        let text = text.strip_suffix(b"\r").unwrap_or(text);
+        ParsedRecord { message: Cow::Owned(text.to_vec()), timestamp, tz_aware, level }
+    }
 }
 
 /// A format ready to parse records.
@@ -107,7 +166,7 @@ impl CompiledFormat {
                 }
                 Kind::Plain { record_start }
             }
-            FormatSpec::Json { message_keys, time_keys, level_keys } => {
+            FormatSpec::Json { message_keys, time_keys, level_keys, join_unterminated } => {
                 if config.multiline {
                     return Err(IoError::Format("json format does not support multiline".into()));
                 }
@@ -118,6 +177,7 @@ impl CompiledFormat {
                     message_keys: message_keys.clone(),
                     time_keys: time_keys.clone(),
                     level_keys: level_keys.clone(),
+                    join: *join_unterminated,
                 }
             }
             FormatSpec::Regex { pattern, message_group, time_group, level_group } => {
@@ -136,6 +196,38 @@ impl CompiledFormat {
     /// True when continuation lines are joined to the previous record.
     pub fn multiline(&self) -> bool {
         self.multiline
+    }
+
+    /// True when an entry whose message has no line break at its end belongs to the record that follows it.
+    pub fn joins_entries(&self) -> bool {
+        matches!(self.kind, Kind::Json { join: true, .. })
+    }
+
+    /// Reads one JSON entry on its own, without dropping the line break at the end of its message.
+    ///
+    /// Only for a format that [`joins_entries`](Self::joins_entries); `None` means the line is unparsed.
+    pub fn parse_entry(&self, line: &[u8]) -> Option<Entry> {
+        let Kind::Json { message_keys, time_keys, level_keys, .. } = &self.kind else { return None };
+        let value: Value = serde_json::from_slice(line).ok()?;
+        let object = value.as_object()?;
+        let message = message_keys.iter().find_map(|key| object.get(key))?;
+        let (message, terminated) = match message {
+            Value::String(text) => (text.clone().into_bytes(), text.ends_with('\n')),
+            other => (other.to_string().into_bytes(), true),
+        };
+        let parsed_time = time_keys.iter().find_map(|key| object.get(key)).and_then(|v| self.json_time(v));
+        let level = level_keys
+            .iter()
+            .find_map(|key| object.get(key))
+            .and_then(|v| v.as_str())
+            .and_then(|s| Level::parse(s.as_bytes()));
+        Some(Entry {
+            message,
+            timestamp: parsed_time.map(|parsed| parsed.micros),
+            tz_aware: parsed_time.is_some_and(|parsed| parsed.tz_aware),
+            level,
+            terminated,
+        })
     }
 
     /// True when `line` begins a new record (multiline mode).
@@ -160,7 +252,7 @@ impl CompiledFormat {
             Kind::Plain { .. } => {
                 Some(ParsedRecord { message: Cow::Borrowed(text), timestamp: None, tz_aware: false, level: None })
             }
-            Kind::Json { message_keys, time_keys, level_keys } => {
+            Kind::Json { message_keys, time_keys, level_keys, .. } => {
                 let value: Value = serde_json::from_slice(text).ok()?;
                 let object = value.as_object()?;
                 let message = message_keys.iter().find_map(|key| object.get(key))?;
