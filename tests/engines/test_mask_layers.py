@@ -98,7 +98,7 @@ def test_native_layers_match_the_python_reference(text: str, tmp_path: Path) -> 
 @requires_native
 @pytest.mark.parametrize("text", NATIVE_SAMPLES)
 def test_the_built_in_sets_match_the_python_reference(text: str, tmp_path: Path) -> None:
-    rules = resolve_masks(["secrets", "pii"])
+    rules = resolve_masks(["all"])
     assert native_text(text, rules, tmp_path) == " ".join(masked(text, rules).split())
 
 
@@ -135,7 +135,7 @@ PIECES = st.sampled_from(
 def test_native_and_python_agree_on_random_lines(
     pieces: list[str], separator: str, tmp_path_factory: pytest.TempPathFactory
 ) -> None:
-    rules = resolve_masks(["secrets", "pii"])
+    rules = resolve_masks(["all"])
     text = separator.join(pieces)
     tmp_path = tmp_path_factory.mktemp("layers")
     assert native_text(text, rules, tmp_path) == " ".join(masked(text, rules).split())
@@ -144,7 +144,7 @@ def test_native_and_python_agree_on_random_lines(
 @requires_native
 @pytest.mark.parametrize("text", NATIVE_SAMPLES)
 def test_the_native_masker_class_matches_the_reference_on_samples(text: str) -> None:
-    for rules in (LAYERED, resolve_masks(["secrets", "pii"]), DEFAULT_MASKS, (EMAIL, CARD)):
+    for rules in (LAYERED, resolve_masks(["all"]), DEFAULT_MASKS, (EMAIL, CARD)):
         assert Masker(rules).mask(text) == ReferenceMasker(rules).mask(text)
 
 
@@ -152,6 +152,6 @@ def test_the_native_masker_class_matches_the_reference_on_samples(text: str) -> 
 @settings(max_examples=300, deadline=None)
 @given(pieces=st.lists(PIECES, min_size=1, max_size=10), separator=st.sampled_from([" ", "  ", ", ", "; ", ""]))
 def test_the_native_masker_class_matches_the_reference_on_random_lines(pieces: list[str], separator: str) -> None:
-    rules = resolve_masks(["secrets", "pii"])
+    rules = resolve_masks(["all"])
     text = separator.join(pieces)
     assert Masker(rules).mask(text) == ReferenceMasker(rules).mask(text)

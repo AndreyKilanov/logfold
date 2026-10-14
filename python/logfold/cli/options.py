@@ -183,7 +183,7 @@ Masks = Annotated[
     typer.Option(
         "--masks",
         metavar="NAMES",
-        help="Mask sets that run before the default masks, comma-separated, for example secrets,pii "
+        help="Mask sets that run before the default masks, comma-separated, for example secrets,pii, or all "
         "('logfold masks list' shows them).",
         rich_help_panel=PANEL_MINING,
     ),

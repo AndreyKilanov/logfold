@@ -65,19 +65,17 @@ def test_a_canary_is_in_no_output_once_the_sets_are_selected(tmp_path: Path, tem
     log = write(tmp_path / "a.log", lines_for(template, canary))
     results = {}
     for examples in ("masked", "none"):
-        results[examples] = logfold.analyze(
-            str(log), format="plain", engine="native", masks=["secrets", "pii"], examples=examples
-        )
+        results[examples] = logfold.analyze(str(log), format="plain", engine="native", masks=["all"], examples=examples)
     for examples, result in results.items():
         for reporter in ("json", "html", "text", "markdown", "csv"):
             assert canary not in result.render(reporter), (examples, reporter)
     json_state, binary_state = tmp_path / "s.json", tmp_path / "s.bin"
-    logfold.analyze(str(log), format="plain", engine="native", masks=["secrets", "pii"], save_state=json_state)
+    logfold.analyze(str(log), format="plain", engine="native", masks=["all"], save_state=json_state)
     logfold.analyze(
         str(log),
         format="plain",
         engine="native",
-        masks=["secrets", "pii"],
+        masks=["all"],
         save_state=binary_state,
         state_format="binary",
     )
@@ -119,7 +117,7 @@ def test_text_that_looks_like_a_secret_but_is_not_one_is_left_alone(tmp_path: Pa
     ]
     log = write(tmp_path / "b.log", benign)
     plain = logfold.analyze(str(log), format="plain", engine="native", examples="none")
-    masked = logfold.analyze(str(log), format="plain", engine="native", masks=["secrets", "pii"], examples="none")
+    masked = logfold.analyze(str(log), format="plain", engine="native", masks=["all"], examples="none")
     before = sorted(t.text for t in plain.templates)
     after = sorted(t.text for t in masked.templates)
     assert before == after

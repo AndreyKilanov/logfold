@@ -14,6 +14,7 @@ from logfold import ConfigError, MaskRule, MaskSet, StateError
 from logfold.config import DEFAULT_MASKS, MiningConfig, config_fingerprint
 from logfold.errors import UnknownMaskSetError
 from logfold.ext import (
+    ALL_SETS,
     get_mask_set,
     load_mask_set,
     mask_fingerprint,
@@ -22,6 +23,7 @@ from logfold.ext import (
     resolve_masks,
 )
 from logfold.ext.mask_sets import MAX_FILE_BYTES, MAX_RULES
+from logfold.ext.masks import first_layer_is_gated
 
 RULE = MaskRule("order", r"\bORD-[0-9]{6}\b", "<ORDER>", True)
 
@@ -155,9 +157,9 @@ def test_a_file_over_the_size_limit_is_refused_and_a_deep_one_does_not_crash(tmp
 
 
 def test_the_built_in_sets_are_registered_and_valid() -> None:
-    assert {"default", "secrets", "pii"} <= set(mask_set_names())
+    assert {"default", "secrets", "credentials", "pii", "payment"} <= set(mask_set_names())
     assert get_mask_set("default").rules == DEFAULT_MASKS
-    for name in ("secrets", "pii"):
+    for name in ("secrets", "credentials", "pii", "payment"):
         mask_set = get_mask_set(name)
         assert mask_set.name == name
         assert mask_set.rules
@@ -167,12 +169,15 @@ def test_the_built_in_sets_are_registered_and_valid() -> None:
 def test_the_built_in_sets_are_pinned() -> None:
     """Changing a rule changes the fingerprint that saved states hold: raise the version of the set on purpose."""
     pinned = {
-        ("secrets", 1): "3345d8c81c371a62",
-        ("pii", 1): "7a842376b3f63543",
+        ("secrets", 1): "359b7126463ced5f",
+        ("credentials", 1): "da65a995d523271a",
+        ("pii", 1): "3f3133818d3d9823",
+        ("payment", 1): "3702054fd5a67c00",
         ("default", 1): "df12bc959ae1bfe2",
     }
     found = {
-        (name, get_mask_set(name).version): get_mask_set(name).fingerprint for name in ("secrets", "pii", "default")
+        (name, get_mask_set(name).version): get_mask_set(name).fingerprint
+        for name in ("secrets", "credentials", "pii", "payment", "default")
     }
     assert found == pinned
 
@@ -246,7 +251,7 @@ def test_a_selected_set_masks_what_the_default_rules_leave(tmp_path: Path) -> No
     log = write(tmp_path / "a.log", ["user bob@example.com paid with 4111 1111 1111 1111"] * 3)
     plain = logfold.analyze(str(log), format="plain", engine="native")
     assert plain.templates[0].text == "user bob@example.com paid with <NUM> <NUM> <NUM> <NUM>"
-    masked = logfold.analyze(str(log), format="plain", engine="native", masks=["pii"])
+    masked = logfold.analyze(str(log), format="plain", engine="native", masks=["pii", "payment"])
     assert masked.templates[0].text == "user <EMAIL> paid with <CARD>"
     assert masked.run.records == 3
 
@@ -275,7 +280,7 @@ def test_the_default_masks_stay_the_default_without_a_selection(tmp_path: Path) 
 def test_logs_without_secrets_are_not_changed_by_the_built_in_sets(tmp_path: Path) -> None:
     log = write(tmp_path / "a.log", app_lines(400) + nginx_lines(400))
     plain = logfold.analyze(str(log), format="plain", engine="native")
-    masked = logfold.analyze(str(log), format="plain", engine="native", masks=["secrets", "pii"])
+    masked = logfold.analyze(str(log), format="plain", engine="native", masks=["all"])
     assert [(t.text, t.count) for t in plain.templates] == [(t.text, t.count) for t in masked.templates]
 
 
@@ -329,7 +334,7 @@ def test_the_schema_and_the_loader_agree(tmp_path: Path) -> None:
     import jsonschema
 
     validator = jsonschema.Draft202012Validator(json.loads(SET_SCHEMA.read_text("utf-8")))
-    for name in ("secrets", "pii"):
+    for name in ("secrets", "credentials", "pii", "payment"):
         validator.validate(get_mask_set(name).to_dict())
     good = {"name": "orders", "rules": [{"name": "order", "pattern": "ORD-[0-9]+", "token": "<ORDER>"}]}
     bad = [
@@ -382,3 +387,35 @@ def test_a_pattern_that_backtracks_forever_in_python_cannot_hang_a_run(tmp_path:
     )
     assert done.returncode == 0, done.stderr
     assert "a" * 60 in done.stdout
+
+
+def test_all_stands_for_every_built_in_set_in_a_fixed_order() -> None:
+    assert ALL_SETS == ("secrets", "credentials", "pii", "payment")
+    assert resolve_masks(["all"]) == resolve_masks(list(ALL_SETS))
+    assert resolve_masks(["all", "secrets"]) == resolve_masks(["all"])
+    assert resolve_masks("all") == resolve_masks(["all"])
+
+
+@requires_native
+def test_the_cheap_sets_are_gated_and_the_dear_ones_are_not() -> None:
+    """The cost of a set is part of its contract: every rule of a cheap set has a literal that its matches contain.
+
+    If this fails after a change of a pattern, the set got dearer (see bench/docs/MASK_SETS.md): move the rule to a
+    dear set or give it a literal.
+    """
+    for name in ("secrets", "pii"):
+        assert first_layer_is_gated(get_mask_set(name).rules), name
+    assert first_layer_is_gated(resolve_masks(["secrets", "pii"], no_default=True))
+    for name in ("credentials", "payment"):
+        assert not first_layer_is_gated(get_mask_set(name).rules), name
+    assert not first_layer_is_gated(resolve_masks(["all"], no_default=True))
+
+
+@requires_native
+def test_the_cheap_sets_leave_passwords_and_cards_to_the_dear_ones(tmp_path: Path) -> None:
+    line = "user bob@example.com password=hunter22 paid with 4111 1111 1111 1111 key AKIAIOSFODNN7EXAMPLE"
+    log = write(tmp_path / "a.log", [line] * 3)
+    cheap = logfold.analyze(str(log), format="plain", engine="native", masks=["secrets", "pii"], examples="none")
+    assert cheap.templates[0].text == "user <EMAIL> password=hunter22 paid with <NUM> <NUM> <NUM> <NUM> key <KEY>"
+    full = logfold.analyze(str(log), format="plain", engine="native", masks=["all"], examples="none")
+    assert full.templates[0].text == "user <EMAIL> <SECRET> paid with <CARD> key <KEY>"

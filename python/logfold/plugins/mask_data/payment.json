@@ -1,0 +1,20 @@
+{
+  "$schema": "https://github.com/AndreyKilanov/logfold/blob/main/docs/schema/mask-set.schema.json",
+  "name": "payment",
+  "version": 1,
+  "description": "Payment card numbers (Luhn) and IBANs (mod 97). Costs more: a number can start anywhere.",
+  "rules": [
+    {
+      "name": "iban",
+      "pattern": "\\b[A-Z]{2}\\d{2}(?:[A-Z0-9]{11,30}|(?: [A-Z0-9]{4}){2,7}(?: [A-Z0-9]{1,4})?)\\b",
+      "token": "<IBAN>",
+      "check": "iban"
+    },
+    {
+      "name": "card",
+      "pattern": "\\b(?:(?:4\\d{3}|5[1-5]\\d{2}|2[2-7]\\d{2}|35\\d{2}|6(?:011|[25]\\d{2}))[ -]\\d{4}[ -]\\d{4}[ -]\\d{4}|3[47]\\d{2}[ -]\\d{6}[ -]\\d{5}|3[068]\\d{2}[ -]\\d{6}[ -]\\d{4}|4\\d{15}|5[1-5]\\d{14}|2[2-7]\\d{14}|3[47]\\d{13}|35\\d{14}|3[068]\\d{12}|6(?:011|[25]\\d{2})\\d{12})\\b",
+      "token": "<CARD>",
+      "check": "luhn"
+    }
+  ]
+}
