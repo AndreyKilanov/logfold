@@ -207,6 +207,7 @@ class Settings:
         if self.check_fail_on is not None:
             check["fail_on"] = self.check_fail_on
         inspect: dict[str, object] = {name: shared[name] for name in ("format", "multiline") if name in shared}
+        learn = dict(inspect)
         return {
             "analyze": analyze,
             "match": dict(analyze),
@@ -214,6 +215,7 @@ class Settings:
             "stream": {name: value for name, value in shared.items() if not (name == "format" and value == "auto")},
             "diff": diff,
             "inspect": inspect,
+            "learn": learn,
         }
 
 

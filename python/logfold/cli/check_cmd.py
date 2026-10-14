@@ -87,9 +87,10 @@ def _limit(text: str) -> float | None:
 def _header(result: CheckResult) -> str:
     unmatched = result.unmatched
     records = result.diff.after.records
+    new = len(result.diff.new_templates)
     summary = (
         f"{records:,} records, {unmatched.records:,} fit no template of the model ({result.unmatched_share:.2%}), "
-        f"{len(result.diff.new_templates):,} new templates, {len(result.diff.changed):,} changed"
+        f"{new:,} new {'template' if new == 1 else 'templates'}, {len(result.diff.changed):,} changed"
     )
     lines = [f"check {'passed' if result.passed else 'FAILED'}: {summary}"]
     lines.extend(f"  - {finding.message}" for finding in result.findings)

@@ -38,6 +38,9 @@ from logfold.settings import Settings
 FailOn = Literal["new-alerts", "new", "none"]
 DEFAULT_MAX_UNMATCHED = 1.0
 FAIL_ON_CHOICES = ("new-alerts", "new", "none")
+LEVELLESS_WARNING = (
+    "the new templates have no level (the format has none), so fail_on='new-alerts' cannot fail on them: use 'new'"
+)
 
 
 def _model_result(mined: MiningResult, summary: RunSummary, state: str, after: AnalysisResult) -> AnalysisResult:
@@ -229,9 +232,13 @@ def check(
     before = _model_result(mined, summary, os.fspath(state), after)
     compared = diff_saved(before, after, compare, "none" if examples == "none" else "raw")
     findings = _findings(compared, missed, limit, fail_on)
+    levelless = (
+        fail_on == "new-alerts" and compared.new_templates and all(e.level is None for e in compared.new_templates)
+    )
     notes = (
         *_warnings([summary], exec_config, resolved, mining_config, False, mined.metrics.strategy),
         *window_warnings(summary),
+        *([LEVELLESS_WARNING] if levelless else []),
         *(f"check failed: {finding.message}" for finding in findings),
     )
     reported = dataclasses.replace(compared, disappeared=(), warnings=notes)

@@ -180,3 +180,31 @@ def test_a_time_window_without_records_is_an_empty_check(model: Path, tmp_path: 
     kept = checked(model, tmp_path, app_lines(200, 7), until="2030-01-01T00:00:00")
     assert kept.passed
     assert kept.diff.after.records == 200
+
+
+def plain_lines(count: int) -> list[str]:
+    return [f"user u{n % 7} requested /item/{n} in {n % 90} ms" for n in range(count)]
+
+
+def test_a_format_without_levels_cannot_raise_an_alert_and_the_result_says_so(tmp_path: Path) -> None:
+    log = write(tmp_path / "good.log", plain_lines(2000))
+    logfold.analyze(str(log), format="plain", save_state=tmp_path / "model.json")
+    odd = ["disk controller reported unrecoverable media error on sector now"] * 10
+    current = write(tmp_path / "current.log", plain_lines(1990) + odd)
+    gate = logfold.check(tmp_path / "model.json", str(current), format="plain")
+    assert gate.passed
+    assert any("have no level" in warning for warning in gate.diff.warnings)
+    strict = logfold.check(tmp_path / "model.json", str(current), format="plain", fail_on="new")
+    assert [finding.kind for finding in strict.findings] == ["new"]
+    assert not any("have no level" in warning for warning in strict.diff.warnings)
+
+
+def test_an_analysis_report_is_not_a_model(tmp_path: Path) -> None:
+    log = write(tmp_path / "good.log", app_lines(200, 3))
+    report = tmp_path / "report.json"
+    logfold.analyze(str(log), format="app").to_json(report)
+    with pytest.raises(StateError, match="analysis report") as raised:
+        logfold.check(report, str(log), format="app")
+    assert "--save-state" in (raised.value.hint or "")
+    with pytest.raises(StateError, match="analysis report"):
+        logfold.match(report, str(log), format="app")

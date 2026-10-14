@@ -134,7 +134,8 @@ report is written) for each of these findings, and the output says which:
 | `new` | a new template of level WARN or higher | `--fail-on new-alerts` (the default), `new` (any new template), `none` (only report) |
 | `empty` | no record was parsed, so nothing was checked | |
 
-Templates of the model whose share moved significantly are listed as `changed` (`--significance`, default 0.01, and the
+A format without levels (`plain`, nginx, apache) has no alerts, so `--fail-on new-alerts` cannot fail on a new template there; a
+warning says so, and `--fail-on new` makes any new template a finding. Templates of the model whose share moved significantly are listed as `changed` (`--significance`, default 0.01, and the
 `[diff]` thresholds of `logfold.toml`), but are not a finding. Templates of the model that the log lacks are not reported: a
 log shorter than the model does not hold them all. The model must have been mined with the same masks and parameters
 (`--depth`, `--sim-th`, `--max-children`, `--max-templates`, `--delimiters`, `--no-masks`, `--masks`), and with `on_full=pool`,

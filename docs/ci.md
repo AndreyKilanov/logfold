@@ -217,8 +217,9 @@ Check the current major versions of the `actions/*` steps when you copy this.
 
   `check` fails the job (exit code 2) when more than 1% of the records fit no template of the model or a new WARN, ERROR or
   FATAL template appears (`--max-unmatched`, `--fail-on`; see [`logfold check`](cli.md#logfold-check)); the report is written
-  first. Learn and check with the same masks and parameters. Restore and save the model with the cache or an artifact, as
-  the baseline of the action.
+  first. Learn and check with the same format, masks and parameters. A format without levels (`plain`, nginx, apache) has
+  no alerts, so use `--fail-on new` there. Restore and save the model with the cache or an artifact, as the baseline of the
+  action.
 
 ## GitLab CI
 

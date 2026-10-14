@@ -122,3 +122,34 @@ def test_the_commands_are_listed_in_the_help() -> None:
     result = runner.invoke(app, ["--help"])
     assert "check" in result.output
     assert "learn" in result.output
+
+
+def test_learn_reads_the_format_of_the_settings_file(tmp_path: Path) -> None:
+    good = write(tmp_path / "good.log", app_lines(200, 3))
+    settings = tmp_path / "logfold.toml"
+    settings.write_text('format = "plain"\n', encoding="utf-8")
+    learned = runner.invoke(app, ["--config", str(settings), "learn", str(good), "--state", str(tmp_path / "m.json")])
+    assert learned.exit_code == exit_codes.OK, learned.output
+    header = json.loads((tmp_path / "m.json").read_text(encoding="utf-8").splitlines()[0])
+    assert header["format"] == "plain"
+    saved = runner.invoke(
+        app, ["--config", str(settings), "analyze", str(good), "--save-state", str(tmp_path / "a.json"), "-q"]
+    )
+    assert saved.exit_code == exit_codes.OK, saved.output
+    assert json.loads((tmp_path / "a.json").read_text(encoding="utf-8").splitlines()[0])["format"] == "plain"
+
+
+def test_the_summary_counts_one_new_template_in_the_singular(model: Path, tmp_path: Path) -> None:
+    current = write(tmp_path / "current.log", app_lines(200, 7) + PANIC)
+    result = run(model, current, "-q")
+    assert "1 new template," in result.output
+
+
+def test_an_analysis_report_given_as_the_model_says_what_it_is(model: Path, tmp_path: Path) -> None:
+    good = write(tmp_path / "good2.log", app_lines(100, 3))
+    report = tmp_path / "report.json"
+    assert runner.invoke(app, ["analyze", str(good), "-f", "app", "-o", str(report), "-q"]).exit_code == exit_codes.OK
+    result = run(report, good)
+    assert result.exit_code == exit_codes.ERROR
+    assert "analysis report, not a state file" in result.output
+    assert "logfold learn" in result.output

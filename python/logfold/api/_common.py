@@ -9,6 +9,7 @@ from collections.abc import Callable, Sequence
 from typing import Any
 
 from logfold._version import get_version
+from logfold.api.saved import is_saved_analysis
 from logfold.config import (
     DEFAULT_CHUNK_BYTES,
     DEFAULT_MASKS,
@@ -20,7 +21,7 @@ from logfold.config import (
 )
 from logfold.engines.base import MineRequest, MiningResult, RunCounters, StateRequest, TemplateTable
 from logfold.engines.select import select_engine
-from logfold.errors import ConfigError, read_error
+from logfold.errors import ConfigError, StateError, read_error
 from logfold.ext.formats import Format, FormatSpec
 from logfold.ext.mask_selection import MaskSelection, resolve_masks
 from logfold.ext.mask_sets import mask_fingerprint
@@ -173,6 +174,11 @@ def _state_request(
 ) -> StateRequest:
     """Build the state request that carries the header data of the state files, whether or not one is read now."""
     _check_state_format(state_format)
+    if load is not None and is_saved_analysis(load):
+        raise StateError(
+            f"{os.fspath(load)!r} is an analysis report, not a state file",
+            hint="save a state with 'logfold analyze --save-state FILE' or 'logfold learn FILE --state MODEL'",
+        )
     return StateRequest(
         load=None if load is None else os.fspath(load),
         save=None if save is None else os.fspath(save),
