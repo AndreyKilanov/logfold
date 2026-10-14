@@ -27,6 +27,7 @@ from logfold.errors import LogfoldError, write_error
 from logfold.ext.files import write_text
 from logfold.ext.text import printable
 from logfold.model import AnalysisResult, DiffResult
+from logfold.model_check import CheckResult
 from logfold.settings import Settings
 
 
@@ -146,7 +147,7 @@ def note(message: str, quiet: bool) -> None:
 
 
 def write_report(
-    result: AnalysisResult | DiffResult, out: Path, reporter: str, quiet: bool, append: bool = False
+    result: AnalysisResult | DiffResult | CheckResult, out: Path, reporter: str, quiet: bool, append: bool = False
 ) -> None:
     """Write a report file and say so on standard error unless quiet.
 

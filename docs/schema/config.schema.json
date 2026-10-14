@@ -85,6 +85,14 @@
         "fail_on_new_alerts": { "type": "boolean" }
       },
       "additionalProperties": false
+    },
+    "check": {
+      "type": "object",
+      "properties": {
+        "max_unmatched": { "oneOf": [{ "type": "number", "minimum": 0, "maximum": 100 }, { "const": "off" }] },
+        "fail_on": { "enum": ["new-alerts", "new", "none"] }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

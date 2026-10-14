@@ -24,6 +24,7 @@ from logfold.api import (
     Inspection,
     Miner,
     analyze,
+    check,
     diff,
     extract_parameters,
     info,
@@ -47,18 +48,21 @@ from logfold.model import (
     TemplateMatch,
     Unmatched,
 )
+from logfold.model_check import CheckResult, Finding
 from logfold.settings import Settings, load_config
 
 __version__ = get_version()
 
 __all__ = [
     "AnalysisResult",
+    "CheckResult",
     "ConfigError",
     "DiffConfig",
     "DiffEntry",
     "DiffResult",
     "EngineError",
     "ExecutionConfig",
+    "Finding",
     "FormatError",
     "Info",
     "InspectedRecord",
@@ -80,6 +84,7 @@ __all__ = [
     "Unmatched",
     "__version__",
     "analyze",
+    "check",
     "diff",
     "extract_parameters",
     "info",

@@ -205,6 +205,20 @@ Check the current major versions of the `actions/*` steps when you copy this.
   ```
 
   This works for logs, not for saved results (see [`diff` with several baselines](guide.md#compare-with-several-baselines)).
+- **Keep a model and check against it.** When the question is "does this log hold anything that the good runs do not?", save
+  a model once and use `check` instead of `diff`. The model is a state file, which holds the templates and their counts and no
+  example line; the log it was learned from is not needed again, and the model can be learned again from a newer good run:
+
+  ```
+  logfold learn good.log --state model.json --masks secrets,pii           # on the main branch, after a green run
+  logfold check current.log --state model.json --masks secrets,pii \
+      --report github-summary --out "$GITHUB_STEP_SUMMARY" --append -q    # in the other jobs
+  ```
+
+  `check` fails the job (exit code 2) when more than 1% of the records fit no template of the model or a new WARN, ERROR or
+  FATAL template appears (`--max-unmatched`, `--fail-on`; see [`logfold check`](cli.md#logfold-check)); the report is written
+  first. Learn and check with the same masks and parameters. Restore and save the model with the cache or an artifact, as
+  the baseline of the action.
 
 ## GitLab CI
 

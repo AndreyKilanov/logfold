@@ -5,4 +5,5 @@ from __future__ import annotations
 OK = 0
 ERROR = 1
 NEW_TEMPLATES = 2
+CHECK_FAILED = 2
 INTERRUPTED = 130

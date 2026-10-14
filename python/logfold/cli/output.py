@@ -9,6 +9,7 @@ from logfold.errors import ConfigError, LogfoldError
 from logfold.ext import registry
 from logfold.ext.files import check_appendable
 from logfold.model import AnalysisResult, DiffResult
+from logfold.model_check import CheckResult
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,7 +72,7 @@ def resolve_outputs(kind: str, out: Path | None, report: str | None, as_json: bo
     return Outputs(file=file, stdout=stdout)
 
 
-def render_report(result: AnalysisResult | DiffResult, reporter: str, top: int | None = None) -> str:
+def render_report(result: AnalysisResult | DiffResult | CheckResult, reporter: str, top: int | None = None) -> str:
     """Render a result with a named reporter, turning a failing reporter into a clean error.
 
     Args:

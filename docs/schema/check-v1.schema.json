@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/AndreyKilanov/logfold/docs/schema/check-v1.schema.json",
+  "title": "logfold check report, schema version 1",
+  "type": "object",
+  "required": ["schema_version", "kind", "passed", "fail_on", "max_unmatched", "unmatched", "findings", "diff"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "kind": { "const": "check" },
+    "passed": { "type": "boolean" },
+    "fail_on": { "enum": ["new-alerts", "new", "none"] },
+    "max_unmatched": { "type": ["number", "null"], "minimum": 0, "maximum": 100 },
+    "unmatched": {
+      "type": "object",
+      "required": ["records", "share", "by_length"],
+      "properties": {
+        "records": { "type": "integer", "minimum": 0 },
+        "share": { "type": "number", "minimum": 0, "maximum": 1 },
+        "by_length": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "prefixItems": [{ "type": "integer", "minimum": 0 }, { "type": "integer", "minimum": 1 }],
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "message", "value", "threshold"],
+        "properties": {
+          "kind": { "enum": ["unmatched", "new", "empty"] },
+          "message": { "type": "string" },
+          "value": { "type": "number" },
+          "threshold": { "type": ["number", "null"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "diff": { "$ref": "diff-v1.schema.json" }
+  },
+  "additionalProperties": false
+}

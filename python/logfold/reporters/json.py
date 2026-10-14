@@ -6,7 +6,8 @@ import json
 import re
 
 from logfold.model import AnalysisResult, DiffResult
-from logfold.reporters.payload import analysis_payload, diff_payload
+from logfold.model_check import CheckResult
+from logfold.reporters.payload import analysis_payload, check_payload, diff_payload
 
 _C1_AND_DEL = re.compile("[\x7f-\x9f]")
 """``json`` escapes the C0 controls but leaves DEL and the C1 codes (8-bit terminal escapes) raw; escape them too."""
@@ -17,13 +18,13 @@ class JsonReporter:
 
     Attributes:
         name: ``json``.
-        kinds: Supports analysis and diff results.
+        kinds: Supports analysis and diff results; it also renders a check result (:class:`logfold.CheckResult`).
     """
 
     name: str = "json"
     kinds: tuple[str, ...] = ("analysis", "diff")
 
-    def render(self, result: AnalysisResult | DiffResult, **options: object) -> str:
+    def render(self, result: AnalysisResult | DiffResult | CheckResult, **options: object) -> str:
         """Render ``result``.
 
         Args:
@@ -37,7 +38,9 @@ class JsonReporter:
         limit = options.get("limit")
         limit_value = int(limit) if isinstance(limit, int) else None
         indent_value = int(indent) if isinstance(indent, int) else None
-        if isinstance(result, DiffResult):
+        if isinstance(result, CheckResult):
+            payload = check_payload(result, limit_value)
+        elif isinstance(result, DiffResult):
             payload = diff_payload(result, limit_value)
         else:
             payload = analysis_payload(result, limit_value)

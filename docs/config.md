@@ -53,6 +53,7 @@ A command that uses a file says so on standard error (`config: /path/logfold.tom
 | `[analyze]` | `min_count` | `--min-count` of `analyze` and `match` |
 | `[diff]` | `threshold_ratio`, `min_count`, `min_new_count`, `significance`, `matcher`, `recount` | the comparison, as the flags of `diff` |
 | `[diff]` | `fail_on_new`, `fail_on_new_alerts` | the exit code 2 of `diff` |
+| `[check]` | `max_unmatched`, `fail_on` | `--max-unmatched` (a percentage from 0 to 100, or `"off"`) and `--fail-on` of `check`; `significance` comes from `[diff]` |
 
 An unknown key or section, a value of the wrong type or a value out of range stops the command with an error that names the
 file and the key, and suggests the closest known name (`unknown key 'depht' in [mining]`, `did you mean 'depth'?`).
