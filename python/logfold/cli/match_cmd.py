@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from contextlib import ExitStack
 from pathlib import Path
 from typing import Annotated
 
 import typer
 
 import logfold
+from logfold.api.fetch import DEFAULT_TIMEOUT
 from logfold.cli.levels import analysis_note, resolve_level
 from logfold.cli.options import (
     PANEL_INPUT,
@@ -51,6 +53,17 @@ from logfold.cli.runtime import (
     settings_of,
     write_report,
 )
+from logfold.cli.source_options import (
+    DEFAULT_MAX_MB,
+    INPUT_HELP,
+    SourceArgs,
+    SourceMaxMb,
+    SourcePrevious,
+    SourceSince,
+    SourceTail,
+    SourceTimeout,
+    open_inputs,
+)
 from logfold.errors import LogfoldError
 
 EXAMPLES = """Examples:
@@ -78,7 +91,7 @@ def match(
             rich_help_panel=PANEL_INPUT,
         ),
     ],
-    files: Annotated[list[Path], typer.Argument(help="Log files forming one run ('-' reads standard input).")],
+    files: Annotated[list[str], typer.Argument(help=INPUT_HELP)],
     format: Format = "auto",
     multiline: Multiline = None,
     since: Since = None,
@@ -121,13 +134,22 @@ def match(
     masks_file: MasksFile = None,
     examples: Examples = "raw",
     as_json: AsJson = False,
+    source_tail: SourceTail = None,
+    source_since: SourceSince = None,
+    source_previous: SourcePrevious = False,
+    source_timeout: SourceTimeout = DEFAULT_TIMEOUT,
+    source_max_mb: SourceMaxMb = DEFAULT_MAX_MB,
     quiet: Quiet = False,
     debug: Debug = False,
 ) -> None:
     """Assign FILES to the templates of a saved STATE and count the records that fit none; nothing is learned."""
+    stack = ExitStack()
     try:
         settings = settings_of(ctx)
         config_note(settings, quiet)
+        inputs = open_inputs(
+            stack, files, SourceArgs(source_tail, source_since, source_previous, source_timeout, source_max_mb), quiet
+        )
         examples_note(settings, masks, masks_file, examples, quiet)
         outputs = resolve_outputs("analysis", out, report, as_json, append)
         threshold = resolve_level(level, only_alerts)
@@ -153,7 +175,7 @@ def match(
         with progress_reporter(quiet) as progress:
             result = logfold.match(
                 state,
-                [str(f) for f in files],
+                inputs,
                 format=format,
                 multiline=multiline,
                 since=since,
@@ -176,3 +198,5 @@ def match(
             write_report(result if outputs.file == "json" else shown, out, outputs.file, quiet, append)
     except LogfoldError as error:
         raise fail(error, debug) from None
+    finally:
+        stack.close()

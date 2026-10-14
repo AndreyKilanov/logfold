@@ -23,6 +23,7 @@ from logfold.engines.base import MineRequest, MiningResult, RunCounters, StateRe
 from logfold.engines.select import select_engine
 from logfold.errors import ConfigError, StateError, read_error
 from logfold.ext.formats import Format, FormatSpec
+from logfold.ext.labels import label_of
 from logfold.ext.mask_selection import MaskSelection, resolve_masks
 from logfold.ext.mask_sets import mask_fingerprint
 from logfold.ext.masks import Masker, validate_masks
@@ -241,7 +242,7 @@ def _mine(
 
 def _summary(paths: tuple[str, ...], info: RunCounters) -> RunSummary:
     return RunSummary(
-        name=",".join(paths),
+        name=",".join(label_of(path) for path in paths),
         files=info.files,
         lines=info.lines,
         records=info.records,

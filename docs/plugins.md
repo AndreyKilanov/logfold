@@ -1,6 +1,6 @@
 # Plugins
 
-logfold can be extended with four kinds of plugins. A plugin is an ordinary Python package; logfold finds it through
+logfold can be extended with five kinds of plugins. A plugin is an ordinary Python package; logfold finds it through
 entry points as soon as it is installed, with no configuration.
 
 | Kind | Adds | Entry point group | Used as |
@@ -9,6 +9,7 @@ entry points as soon as it is installed, with no configuration.
 | Reporter | one more output format of a result | `logfold.reporters` | `result.render("NAME")` |
 | Diff matcher | a rule that pairs reworded templates in `diff` | `logfold.matchers` | `--matcher NAME`, `matcher="NAME"` |
 | Mask set | rules that hide a kind of value (secrets, personal data, your own ids) before mining | `logfold.masks` | `--masks NAME`, `masks=["NAME"]` |
+| Source | a program that prints the log of one thing (a container, a pod, a service) | `logfold.sources` | `logfold analyze NAME:TARGET`, `logfold.fetch("NAME:TARGET")` |
 
 logfold ships a set of [default plugins](#default-plugins), `logfold plugins` [lists, checks and installs](#managing-plugins)
 more, and [Writing a plugin](#writing-a-plugin) explains how to make your own. A complete, installable package with
@@ -42,6 +43,9 @@ They are part of `pip install logfold`; nothing else has to be installed.
 | mask set | `credentials` | `Authorization` and `Bearer` credentials, passwords and tokens in URLs and `key=value` pairs (words in any case: costs more) |
 | mask set | `pii` | e-mail addresses and international phone numbers (cheap) |
 | mask set | `payment` | payment card numbers (Luhn) and IBANs (mod 97) (a number can start anywhere: costs more) |
+| source | `docker` | `docker:NAME`, the log of a container (`docker logs`) |
+| source | `kubectl` | `kubectl:NAMESPACE/POD[/CONTAINER]`, the log of a pod (`kubectl logs`) |
+| source | `journalctl` | `journalctl:UNIT`, the journal of a systemd unit (Linux only) |
 
 ```
 logfold analyze app.logfmt --format logfmt
@@ -252,6 +256,7 @@ FORMATS = [
 REPORTERS = [Shout]  # classes are created without arguments; instances work too
 MATCHERS = []  # diff matchers: objects with name and match()
 MASKS = []  # mask sets: MaskSet objects
+SOURCES = []  # sources: objects with name, description, platforms and command()
 ```
 
 A folder with an `__init__.py` is loaded as a package, so a bigger plugin can have several files and relative imports.
@@ -481,6 +486,51 @@ the rules that a selection stands for.
 A state remembers which rules it was mined with: a change of a pattern, of the order or of the version of a set makes an
 old state fail with `StateError`, so raise `version` when you change a set.
 
+### A source
+
+A source is the program that prints the log of one thing, such as `docker logs`: the user writes `SOURCE:TARGET` where a
+log file would go ([sources](cli.md#sources-reading-a-log-from-docker-kubectl-or-journalctl)). The plugin **only builds the
+command**; logfold runs it, so the safe parts (the program is looked up on `PATH`, started without a shell and with its
+input closed, stopped after the time limit and the size limit, and its output kept in a private file that is removed) are
+the same for every source and cannot be got wrong.
+
+```python
+import re
+
+from logfold.errors import ConfigError
+from logfold.ext import Command
+
+_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}")
+
+
+class SternSource:
+    name = "stern"  # stern:web
+    description = "the logs of the pods of a deployment, from stern"
+    platforms = ()  # sys.platform prefixes such as ("linux",); empty means everywhere
+
+    def command(self, target, options):
+        if not _NAME.fullmatch(target):
+            raise ConfigError(f"{target!r} is not a valid name")
+        argv = ["stern", "--no-follow"]
+        if options.tail is not None:
+            argv.append(f"--tail={options.tail}")
+        if options.since is not None:
+            argv.append(f"--since={options.since}")
+        return Command((*argv, "--", target))
+
+
+SOURCES = [SternSource]  # in a plugin file; a package uses the entry point group logfold.sources
+```
+
+* `command(target, options)` gets what follows the colon and a `SourceOptions` (`tail`, `since` and `previous`, already
+  checked to be a number and a short time). It returns a `Command(argv, merge_stderr=False)`: the program name without a
+  folder, then its arguments, all non-empty strings. Set `merge_stderr=True` when the program prints part of the log on its
+  error stream (as `docker logs` does); otherwise the error stream is only used for the message of a failure.
+* **The target is untrusted.** Check it against a narrow pattern, never let it start with `-`, put it after `--` where the
+  program understands that, and raise `ConfigError` with a hint when it is not valid. Never build a shell string.
+* **Only read, never follow:** the command must end (no `-f`); a program that does not is stopped by the time limit.
+* `logfold plugins new source NAME` writes a starting point into your plugin folder.
+
 ### Without packaging
 
 For a script or a notebook, register the objects at runtime. Nothing needs to be installed:
@@ -529,7 +579,7 @@ Build and upload like any Python package (`python -m build`, then `twine upload 
 | `failed to load logfold plugin ...` on stderr | the module of the entry point cannot be imported; the traceback follows the message |
 | `FormatError: pattern has no named group` | `message_group`, `time_group` or `level_group` names a group that the pattern does not define |
 | the timestamp column is empty | the `time_group` text does not match `ts_format`; try the pattern and the format on one line first |
-| my file in the plugin folder is not listed | `logfold plugins dir` shows the folder; the file must end in `.py`, must not start with `_` or `.`, and `FORMATS`, `REPORTERS` or `MATCHERS` must be lists; warnings explain the rest (a world-writable file is skipped, `LOGFOLD_NO_USER_PLUGINS` is set) |
+| my file in the plugin folder is not listed | `logfold plugins dir` shows the folder; the file must end in `.py`, must not start with `_` or `.`, and `FORMATS`, `REPORTERS`, `MATCHERS`, `MASKS` or `SOURCES` must be lists; warnings explain the rest (a world-writable file is skipped, `LOGFOLD_NO_USER_PLUGINS` is set) |
 | `logfold plugins install` says that neither pip nor uv is available | the environment has no installer on the path; install the printed package with the one you use |
 | `logfold plugins install` says that the plugin needs logfold X.Y.Z or newer | the catalog entry sets `min_logfold`; upgrade logfold (`pip install -U logfold`) and try again |
 | `reporter 'x' does not support diff results` | add `"diff"` to the reporter's `kinds` and handle `DiffResult` |
@@ -538,4 +588,6 @@ Build and upload like any Python package (`python -m build`, then `twine upload 
 
 A plugin is Python code and runs with your privileges as soon as logfold loads it (reporters and matchers on import and
 use, formats on import). Install plugins only from sources you trust. A format specification is data and cannot run
-code, and the Rust engine matches patterns in linear time; keep patterns anchored and simple.
+code, and the Rust engine matches patterns in linear time; keep patterns anchored and simple. A source only builds the
+list of arguments of a program; logfold starts it (without a shell, read-only, under a time limit and a size limit), but
+the program itself runs with your privileges and your environment, so install a source plugin only if you trust it.

@@ -18,7 +18,8 @@ import logfold
 from logfold.cli import exit_codes
 from logfold.cli.app import app
 from logfold.errors import ConfigError
-from logfold.ext import registry
+from logfold.ext import plugin_folders, registry
+from logfold.ext.sources import SourceOptions
 from logfold.plugins import scaffold
 
 runner = CliRunner()
@@ -72,8 +73,8 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
     base.mkdir()
     monkeypatch.setenv("APPDATA", str(base))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(base))
-    monkeypatch.delenv(registry.ENV_NO_USER_PLUGINS, raising=False)
-    monkeypatch.delenv(registry.ENV_PLUGIN_PATH, raising=False)
+    monkeypatch.delenv(plugin_folders.ENV_NO_USER_PLUGINS, raising=False)
+    monkeypatch.delenv(plugin_folders.ENV_PLUGIN_PATH, raising=False)
     for attribute in ("_formats", "_reporters", "_matchers", "_origins"):
         monkeypatch.setattr(registry, attribute, dict(getattr(registry, attribute)))
     monkeypatch.setattr(registry, "_explicit_dirs", [])
@@ -85,7 +86,7 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
 
 @pytest.fixture
 def plugin_dir(home: Path) -> Path:
-    folder = registry.default_plugin_dir()
+    folder = plugin_folders.default_plugin_dir()
     folder.mkdir(parents=True)
     return folder
 
@@ -99,20 +100,20 @@ def write(folder: Path, name: str, text: str) -> Path:
 
 
 def test_default_folder_is_in_the_user_config(home: Path) -> None:
-    folder = registry.default_plugin_dir()
+    folder = plugin_folders.default_plugin_dir()
     assert folder == home / "logfold" / "plugins"
 
 
 def test_search_folders_follow_the_environment(home: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     extra = tmp_path / "extra"
     other = tmp_path / "other"
-    monkeypatch.setenv(registry.ENV_PLUGIN_PATH, os.pathsep.join([str(extra), str(other), str(extra)]))
-    assert registry.plugin_directories() == [registry.default_plugin_dir(), extra, other]
-    assert Path.cwd() not in registry.plugin_directories()
-    monkeypatch.setenv(registry.ENV_NO_USER_PLUGINS, "1")
-    assert registry.plugin_directories() == []
-    monkeypatch.setenv(registry.ENV_NO_USER_PLUGINS, "0")
-    assert registry.plugin_directories()
+    monkeypatch.setenv(plugin_folders.ENV_PLUGIN_PATH, os.pathsep.join([str(extra), str(other), str(extra)]))
+    assert plugin_folders.plugin_directories() == [plugin_folders.default_plugin_dir(), extra, other]
+    assert Path.cwd() not in plugin_folders.plugin_directories()
+    monkeypatch.setenv(plugin_folders.ENV_NO_USER_PLUGINS, "1")
+    assert plugin_folders.plugin_directories() == []
+    monkeypatch.setenv(plugin_folders.ENV_NO_USER_PLUGINS, "0")
+    assert plugin_folders.plugin_directories()
 
 
 def test_a_dropped_file_provides_a_format_a_reporter_and_a_matcher(plugin_dir: Path, tmp_path: Path) -> None:
@@ -212,8 +213,8 @@ def test_explicit_folders_work_before_and_after_plugins_are_loaded(home: Path, t
 
 
 def test_an_explicit_folder_ignores_the_off_switch(home: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    monkeypatch.setenv(registry.ENV_NO_USER_PLUGINS, "1")
-    default = registry.default_plugin_dir()
+    monkeypatch.setenv(plugin_folders.ENV_NO_USER_PLUGINS, "1")
+    default = plugin_folders.default_plugin_dir()
     default.mkdir(parents=True)
     write(default, "mine.py", PLUGIN)
     chosen = tmp_path / "chosen"
@@ -287,6 +288,11 @@ def test_every_template_loads_and_is_usable(plugin_dir: Path, kind: str, tmp_pat
         orders.write_text("order ORD-123456 shipped\norder ORD-654321 shipped\n", encoding="utf-8")
         masked = logfold.analyze(str(orders), format="plain", engine="native", masks=["my-thing"])
         assert [(t.text, t.count) for t in masked.templates] == [("order <ORDER> shipped", 2)]
+    elif kind == "source":
+        command = registry.get_source("my-thing").command("web-1", SourceOptions(tail=10, since="15m"))
+        assert command.argv == ("my-log-tool", "show", "--last", "10", "--since=15m", "--", "web-1")
+        with pytest.raises(ConfigError, match="not a valid service name"):
+            registry.get_source("my-thing").command("-x", SourceOptions())
     else:
         assert registry.get_matcher("my-thing").match(["retry failed"], ["retry gave up"]) == [(0, 0)]
 
@@ -305,7 +311,7 @@ def test_cli_dir_and_new_write_into_the_plugin_folder(home: Path) -> None:
     assert "does not exist yet" in shown.stdout
     created = runner.invoke(app, ["plugins", "new", "format", "my-fmt"])
     assert created.exit_code == 0, created.output
-    target = registry.default_plugin_dir() / "my_fmt.py"
+    target = plugin_folders.default_plugin_dir() / "my_fmt.py"
     assert target.is_file()
     assert "exists" in runner.invoke(app, ["plugins", "dir"]).stdout
     again = runner.invoke(app, ["plugins", "new", "format", "my-fmt"])
@@ -318,7 +324,7 @@ def test_cli_new_rejects_bad_input(home: Path) -> None:
     for arguments in (["parser", "x"], ["format", "../escape"], ["format", "a b"]):
         result = runner.invoke(app, ["plugins", "new", *arguments])
         assert result.exit_code == exit_codes.ERROR
-    assert not registry.default_plugin_dir().exists()
+    assert not plugin_folders.default_plugin_dir().exists()
 
 
 def test_cli_new_in_a_chosen_folder_and_plugins_dir_option(home: Path, tmp_path: Path) -> None:
@@ -334,7 +340,7 @@ def test_cli_new_in_a_chosen_folder_and_plugins_dir_option(home: Path, tmp_path:
 
 
 def test_the_off_switch_is_reported_by_the_dir_command(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv(registry.ENV_NO_USER_PLUGINS, "1")
+    monkeypatch.setenv(plugin_folders.ENV_NO_USER_PLUGINS, "1")
     assert "switched off" in runner.invoke(app, ["plugins", "dir"]).stdout
 
 

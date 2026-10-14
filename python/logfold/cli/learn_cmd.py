@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from contextlib import ExitStack
 from pathlib import Path
 from typing import Annotated
 
 import typer
 
 import logfold
+from logfold.api.fetch import DEFAULT_TIMEOUT
 from logfold.cli.options import (
     PANEL_INPUT,
     ChunkMb,
@@ -35,6 +37,17 @@ from logfold.cli.options import (
     mining_options,
 )
 from logfold.cli.runtime import config_note, fail, note, progress_reporter, settings_of
+from logfold.cli.source_options import (
+    DEFAULT_MAX_MB,
+    INPUT_HELP,
+    SourceArgs,
+    SourceMaxMb,
+    SourcePrevious,
+    SourceSince,
+    SourceTail,
+    SourceTimeout,
+    open_inputs,
+)
 from logfold.errors import LogfoldError
 from logfold.ext.text import printable
 
@@ -49,7 +62,7 @@ EXAMPLES = """Examples:
 
 def learn(
     ctx: typer.Context,
-    files: Annotated[list[Path], typer.Argument(help="Log files of the good run ('-' reads standard input).")],
+    files: Annotated[list[str], typer.Argument(help=INPUT_HELP)],
     state: Annotated[
         Path,
         typer.Option(
@@ -79,16 +92,25 @@ def learn(
     high_cardinality: HighCardinality = False,
     warm_start: WarmStart = False,
     state_format: StateForm = "json",
+    source_tail: SourceTail = None,
+    source_since: SourceSince = None,
+    source_previous: SourcePrevious = False,
+    source_timeout: SourceTimeout = DEFAULT_TIMEOUT,
+    source_max_mb: SourceMaxMb = DEFAULT_MAX_MB,
     quiet: Quiet = False,
     debug: Debug = False,
 ) -> None:
     """Learn the templates of FILES and save them as a model for 'logfold check' (same as 'analyze --save-state')."""
+    stack = ExitStack()
     try:
         settings = settings_of(ctx)
         config_note(settings, quiet)
+        inputs = open_inputs(
+            stack, files, SourceArgs(source_tail, source_since, source_previous, source_timeout, source_max_mb), quiet
+        )
         with progress_reporter(quiet) as progress:
             result = logfold.analyze(
-                [str(f) for f in files],
+                inputs,
                 format=format,
                 multiline=multiline,
                 since=since,
@@ -123,3 +145,5 @@ def learn(
         )
     except LogfoldError as error:
         raise fail(error, debug) from None
+    finally:
+        stack.close()

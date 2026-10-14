@@ -1,4 +1,4 @@
-"""One list of every format, reporter, diff matcher and mask set: built in, installed, or available from the catalog.
+"""One list of every format, reporter, matcher, mask set and source: built in, installed or in the catalog.
 
 The registry (:mod:`logfold.ext.registry`) knows what is loaded, the catalog (:mod:`logfold.plugins.catalog`) knows what
 could be installed. This module joins them, so that callers do not have to guess plugin names. Nothing here touches the
@@ -21,17 +21,17 @@ if TYPE_CHECKING:
 
 __all__ = ["KINDS", "STATUSES", "PluginInfo", "closest", "list_plugins", "plugin_info", "unknown_name_hint"]
 
-KINDS = ("format", "reporter", "matcher", "mask")
+KINDS = ("format", "reporter", "matcher", "mask", "source")
 STATUSES = ("built-in", "installed", "available")
 _STATUS_ORDER = {status: index for index, status in enumerate(STATUSES)}
 
 
 @dataclass(frozen=True, slots=True)
 class PluginInfo:
-    """One format, reporter, diff matcher or mask set and where it stands.
+    """One format, reporter, diff matcher, mask set or source and where it stands.
 
     Attributes:
-        kind: ``format``, ``reporter``, ``matcher`` or ``mask``.
+        kind: ``format``, ``reporter``, ``matcher``, ``mask`` or ``source``.
         name: The name used in options such as ``--format``.
         status: ``built-in``, ``installed`` (a package, or a file in a plugin folder) or ``available`` (in the catalog,
             not installed).
@@ -108,7 +108,7 @@ def list_plugins(
     """List the plugins with their status.
 
     Args:
-        kind: Keep only ``format``, ``reporter``, ``matcher`` or ``mask``.
+        kind: Keep only ``format``, ``reporter``, ``matcher``, ``mask`` or ``source``.
         status: Keep only plugins with this status, or any of these: ``built-in``, ``installed``, ``available``.
         catalog: Where the ``available`` plugins come from. By default the catalog bundled with logfold, which needs no
             network; load another one with :func:`logfold.plugins.catalog.load`.
@@ -181,7 +181,7 @@ def unknown_name_hint(kind: str, name: str, catalog: Catalog | None = None) -> s
     readable.
 
     Args:
-        kind: ``format``, ``reporter``, ``matcher`` or ``mask``.
+        kind: ``format``, ``reporter``, ``matcher``, ``mask`` or ``source``.
         name: The name that was not found.
         catalog: Catalog to search; the bundled one by default.
 

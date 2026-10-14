@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from contextlib import ExitStack
 from typing import Annotated
 
 import typer
 
 import logfold
+from logfold.api.fetch import DEFAULT_TIMEOUT
 from logfold.cli.levels import analysis_note, resolve_level
 from logfold.cli.options import (
     PANEL_OUTPUT,
@@ -56,6 +57,17 @@ from logfold.cli.runtime import (
     settings_of,
     write_report,
 )
+from logfold.cli.source_options import (
+    DEFAULT_MAX_MB,
+    INPUT_HELP,
+    SourceArgs,
+    SourceMaxMb,
+    SourcePrevious,
+    SourceSince,
+    SourceTail,
+    SourceTimeout,
+    open_inputs,
+)
 from logfold.errors import LogfoldError
 from logfold.ext.text import printable
 
@@ -74,7 +86,7 @@ EXAMPLES = """Examples:
 
 def analyze(
     ctx: typer.Context,
-    files: Annotated[list[Path], typer.Argument(help="Log files forming one run ('-' reads standard input).")],
+    files: Annotated[list[str], typer.Argument(help=INPUT_HELP)],
     format: Format = "auto",
     multiline: Multiline = None,
     since: Since = None,
@@ -132,19 +144,28 @@ def analyze(
     save_state: SaveState = None,
     state_format: StateForm = "json",
     as_json: AsJson = False,
+    source_tail: SourceTail = None,
+    source_since: SourceSince = None,
+    source_previous: SourcePrevious = False,
+    source_timeout: SourceTimeout = DEFAULT_TIMEOUT,
+    source_max_mb: SourceMaxMb = DEFAULT_MAX_MB,
     quiet: Quiet = False,
     debug: Debug = False,
 ) -> None:
     """Fold FILES into message templates and count them."""
+    stack = ExitStack()
     try:
         settings = settings_of(ctx)
         config_note(settings, quiet)
+        inputs = open_inputs(
+            stack, files, SourceArgs(source_tail, source_since, source_previous, source_timeout, source_max_mb), quiet
+        )
         examples_note(settings, masks, masks_file, examples, quiet)
         outputs = resolve_outputs("analysis", out, report, as_json, append)
         threshold = resolve_level(level, only_alerts)
         with progress_reporter(quiet) as progress:
             result = logfold.analyze(
-                [str(f) for f in files],
+                inputs,
                 format=format,
                 multiline=multiline,
                 since=since,
@@ -188,3 +209,5 @@ def analyze(
             write_report(result if outputs.file == "json" else shown, out, outputs.file, quiet, append)
     except LogfoldError as error:
         raise fail(error, debug) from None
+    finally:
+        stack.close()

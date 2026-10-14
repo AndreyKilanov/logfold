@@ -15,7 +15,7 @@ from rich.table import Table
 
 from logfold.cli import runtime
 from logfold.errors import LogfoldError
-from logfold.ext import printable, registry
+from logfold.ext import plugin_folders, printable
 from logfold.plugins import listing as plugin_listing
 from logfold.plugins import scaffold
 
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 plugins_app = typer.Typer(
     name="plugins",
-    help="List, inspect, check and install logfold plugins (formats, reporters, diff matchers, mask sets).",
+    help="List, inspect, check and install logfold plugins (formats, reporters, diff matchers, mask sets, sources).",
     no_args_is_help=True,
     add_completion=False,
 )
@@ -58,12 +58,15 @@ def _load(online: bool, catalog: str | None) -> Catalog:
         raise _fail(error) from None
 
 
-Kind = Annotated[str | None, typer.Option("--kind", "-k", help="Only this kind: format, reporter, matcher or mask.")]
+Kind = Annotated[
+    str | None, typer.Option("--kind", "-k", help="Only this kind: format, reporter, matcher, mask or source.")
+]
 _USAGE = {
     "format": "--format {name}",
     "reporter": "--report {name}",
     "matcher": "--matcher {name}",
     "mask": "--masks {name}",
+    "source": "{name}:TARGET in place of a log file",
 }
 
 
@@ -99,7 +102,7 @@ def list_command(
     catalog: CatalogSource = None,
     as_json: AsJson = False,
 ) -> None:
-    """List formats, reporters, diff matchers and mask sets: built in, installed, and available from the catalog.
+    """List formats, reporters, matchers, mask sets and sources: built in, installed, and available in the catalog.
 
     The catalog bundled with this version of logfold is used and nothing is downloaded; --online fetches the latest one.
     """
@@ -177,23 +180,24 @@ def info_command(
 def show_folders() -> None:
     """Show where logfold looks for your own plugins (Python files and packages)."""
     console = _stdout()
-    default = registry.default_plugin_dir()
+    default = plugin_folders.default_plugin_dir()
     state = "exists" if default.is_dir() else "does not exist yet"
     console.print(f"plugin folder:       {escape(str(default))} ({state})", soft_wrap=True)
-    extra = [part for part in os.environ.get(registry.ENV_PLUGIN_PATH, "").split(os.pathsep) if part]
+    extra = [part for part in os.environ.get(plugin_folders.ENV_PLUGIN_PATH, "").split(os.pathsep) if part]
     shown = escape(os.pathsep.join(extra)) if extra else "not set"
-    console.print(f"{registry.ENV_PLUGIN_PATH}: {shown}", soft_wrap=True)
-    if registry.plugin_directories():
+    console.print(f"{plugin_folders.ENV_PLUGIN_PATH}: {shown}", soft_wrap=True)
+    if plugin_folders.plugin_directories():
         console.print(
-            "Add a plugin with: [bold]logfold plugins new KIND NAME[/bold]  (KIND: format, reporter, matcher, mask)"
+            "Add a plugin with: [bold]logfold plugins new KIND NAME[/bold]  "
+            "(KIND: format, reporter, matcher, mask, source)"
         )
     else:
-        console.print(f"These folders are switched off by {registry.ENV_NO_USER_PLUGINS}.")
+        console.print(f"These folders are switched off by {plugin_folders.ENV_NO_USER_PLUGINS}.")
 
 
 @plugins_app.command("new")
 def new_plugin(
-    kind: Annotated[str, typer.Argument(help="format, reporter, matcher or mask.")],
+    kind: Annotated[str, typer.Argument(help="format, reporter, matcher, mask or source.")],
     name: Annotated[str, typer.Argument(help="Plugin name: letters, digits, '-' and '_'.")],
     folder: Annotated[Path | None, typer.Option("--dir", help="Write here instead of the plugin folder.")] = None,
     force: Annotated[bool, typer.Option("--force", help="Overwrite an existing file.")] = False,
@@ -205,7 +209,7 @@ def new_plugin(
         raise _fail(error) from None
     console = _stdout()
     console.print(f"Wrote {escape(str(target))}", soft_wrap=True)
-    if folder is not None and folder not in registry.plugin_directories():
+    if folder is not None and folder not in plugin_folders.plugin_directories():
         console.print(f"Use it with: [bold]logfold --plugins-dir {escape(str(folder))} ...[/bold]", soft_wrap=True)
     console.print("Edit it, then check that logfold sees it: [bold]logfold plugins list[/bold]")
 

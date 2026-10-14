@@ -7,6 +7,7 @@ import pytest
 
 import logfold
 from corpora import write_corpus_dir
+from fake_sources import fake_source  # noqa: F401 - the fixture of the source tests
 from logfold import _bridge as native
 
 os.environ.setdefault("LOGFOLD_NO_USER_PLUGINS", "1")  # the tests must not depend on the plugins of whoever runs them

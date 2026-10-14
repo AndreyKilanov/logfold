@@ -221,6 +221,21 @@ Check the current major versions of the `actions/*` steps when you copy this.
   no alerts, so use `--fail-on new` there. Restore and save the model with the cache or an artifact, as the baseline of the
   action.
 
+### Reading the log from the cluster
+
+A job that can reach the cluster does not need a dump file: `kubectl:NAMESPACE/POD` reads the log of a pod through the
+`kubectl` of the job ([sources](cli.md#sources-reading-a-log-from-docker-kubectl-or-journalctl)). Bound what it reads, so that
+a log that grew does not stall the job:
+
+```yaml
+- run: |
+    logfold check kubectl:prod/web-7d9 --state model.json --source-since 30m --source-timeout 120 \
+      --report github-summary --out "$GITHUB_STEP_SUMMARY" --append -q
+```
+
+A pod that restarted has two logs: `--source-previous` reads the one that crashed. The job fails with an error (exit code
+1) when the program fails or a limit is hit, which is not the same as the exit code 2 of a finding.
+
 ## GitLab CI
 
 ### The template

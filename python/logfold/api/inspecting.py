@@ -11,6 +11,7 @@ from logfold import _bridge
 from logfold.engines.native import format_to_dict
 from logfold.errors import read_error
 from logfold.ext.formats import FormatSpec
+from logfold.ext.labels import label_of
 from logfold.formats import resolve_format
 from logfold.formats.auto import read_sample
 from logfold.timestamps import micros_to_datetimes
@@ -122,7 +123,7 @@ def inspect_file(
     if answer["first"] is not None:
         first, last = micros_to_datetimes([answer["first"], answer["last"]], answer["tz_aware"])
     return Inspection(
-        path=name,
+        path=label_of(name),
         size=size,
         compressed=compressed,
         spec=resolved.spec,

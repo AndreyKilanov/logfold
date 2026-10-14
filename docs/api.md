@@ -262,6 +262,35 @@ the miner generalized:
 
 Raises `ConfigError` for an invalid masking rule and `EngineError` when the native extension is unavailable.
 
+## `fetch`
+
+```python
+fetch(
+    source, *, tail=None, since=None, previous=False, timeout=300.0, max_bytes=1 << 30,
+) -> ContextManager[Path]
+```
+
+Runs the user's own `docker`, `kubectl` or `journalctl` (or a source that a plugin adds) and gives its output as the path
+of a temporary file that exists inside the `with` block:
+
+```python
+with logfold.fetch("docker:web", tail=50_000) as path:
+    result = logfold.analyze(path)
+result.run.name  # 'docker:web', not the temporary path
+```
+
+`source` is `docker:NAME`, `kubectl:NAMESPACE/POD[/CONTAINER]` or `journalctl:UNIT`. **The functions that analyze a log take
+paths only: a string such as `"docker:web"` given to `analyze()` is a file name, so a call never starts a program by
+surprise.** Only `fetch` does, on your explicit request. It runs the program found on `PATH` (never in the current folder)
+without a shell and with its input closed, reads at most `max_bytes` and waits at most `timeout` seconds; the file is private
+to the user and is removed when the block ends, also on an error or an interrupt. `tail` and `since` ask the program for less
+(`since` as it takes it: `15m`, `2026-10-14T10:00:00`); `previous` reads the previous instance of a `kubectl` container.
+
+Raises `ConfigError` for a text that is not a registered source with a valid target (names are checked against narrow
+patterns) or a limit that is not positive, and `SourceError` when the program is missing, fails (its first 500 characters of
+error text are in the message), runs longer than `timeout`, prints more than `max_bytes` (an error, never a cut) or does not
+exist on this platform (`journalctl` is for Linux). See [`logfold analyze`](cli.md#sources-reading-a-log-from-docker-kubectl-or-journalctl).
+
 ## `inspect_file`
 
 ```python
@@ -449,24 +478,26 @@ them as `\uNNNN`, which parses back to the same text. The values on the result o
 | `RegexFormat`, `JsonFormat`, `PlainFormat` | format specifications (data, compiled by the engine); `FormatSpec` is their union, `Format` the protocol |
 | `Reporter` | protocol of a reporter: `name`, `kinds` (`analysis` and/or `diff`) and `render(result, **options) -> str` |
 | `DiffMatcher` | protocol of a diff matcher |
+| `Source`, `Command`, `SourceOptions` | protocol of a source (the program that prints a log), the command it builds, what to read |
+| `register_source(source)`, `get_source(name)`, `source_names()` | register, look up and list sources |
 | `MaskRule`, `MaskSet`, `DEFAULT_MASKS` | masking rules and sets of them |
 | `load_mask_set(path)`, `register_mask_set(set)`, `get_mask_set(name)`, `mask_set_names()` | read a set file (`ConfigError` when it cannot be used); register, look up and list mask sets |
 | `resolve_masks(selection, no_default=False)`, `mask_fingerprint(rules)` | the rules that a `masks=` selection stands for; the 16 hex digit identity of a rule list |
 | `register_format`, `register_reporter`, `register_matcher` | register at runtime |
 | `add_plugin_directory(path)`, `plugin_directories()`, `default_plugin_dir()` | load the plugins of a folder; the folders that are searched without being asked; the user plugin folder |
-| `plugin_sources()` | every registered format, reporter, matcher and mask set as `(kind, name, source)`, where `source` is `built-in` or the providing package |
+| `plugin_sources()` | every registered format, reporter, matcher, mask set and source as `(kind, name, origin)`, where `source` is `built-in` or the providing package |
 | `get_format`, `get_reporter`, `get_matcher`, `format_names`, `reporter_names`, `matcher_names` | look up registered extensions |
 | `reporter_for_suffix(path)` | the reporter that a report file name selects by its suffix (`UnknownSuffixError` otherwise) |
 | `printable(text)` | show control characters as `\xNN`; use it on every value of a log that your reporter writes as text for people |
 
-Plugins are discovered through the entry-point groups `logfold.formats`, `logfold.reporters`, `logfold.matchers` and `logfold.masks`;
+Plugins are discovered through the entry-point groups `logfold.formats`, `logfold.reporters`, `logfold.matchers`, `logfold.masks` and `logfold.sources`;
 see the [plugins guide](plugins.md).
 
 ## Finding plugins (`logfold.plugins`)
 
 | Name | Purpose |
 |---|---|
-| `list_plugins(kind=None, status=None, catalog=None)` | every format, reporter, diff matcher and mask set as a `PluginInfo`: `built-in`, `installed` (a package or a file in a plugin folder) or `available` (in the catalog, not installed); `status` may be one value or several; the catalog is the bundled one unless you pass another from `logfold.plugins.catalog.load()`, so nothing touches the network |
+| `list_plugins(kind=None, status=None, catalog=None)` | every format, reporter, diff matcher, mask set and source as a `PluginInfo`: `built-in`, `installed` (a package or a file in a plugin folder) or `available` (in the catalog, not installed); `status` may be one value or several; the catalog is the bundled one unless you pass another from `logfold.plugins.catalog.load()`, so nothing touches the network |
 | `plugin_info(name, kind=None, catalog=None)` | the records of one name, one per kind that has it (`UnknownPluginError` with a "did you mean" hint otherwise) |
 | `closest(name, kind=None, catalog=None)` | the installed and catalog names that look most like `name` |
 | `unknown_name_hint(kind, name, catalog=None)` | one sentence for a name that was not found: the install command if the catalog has it, otherwise the closest names, otherwise `None`; never raises |

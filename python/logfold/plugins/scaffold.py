@@ -8,11 +8,11 @@ from pathlib import Path
 from string import Template
 
 from logfold.errors import ConfigError, SourceError
-from logfold.ext import registry
+from logfold.ext import plugin_folders
 
 __all__ = ["KINDS", "module_stem", "render_template", "write_template"]
 
-KINDS = ("format", "reporter", "matcher", "mask")
+KINDS = ("format", "reporter", "matcher", "mask", "source")
 
 _NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_-]{0,48}$")
 
@@ -118,7 +118,45 @@ MASKS = [
 '''
 )
 
-_TEMPLATES = {"format": _FORMAT, "reporter": _REPORTER, "matcher": _MATCHER, "mask": _MASK}
+_SOURCE = Template(
+    '''"""Source plugin "$name": edit command(), then run  logfold analyze $name:TARGET
+
+A source only builds the command; logfold runs it: the program is looked up on PATH, started without a shell and with
+its input closed, stopped after the time limit or too much output, and its output is read from a private temporary
+file that is removed afterwards. Do not follow the log (no -f): the command has to end.
+
+The target comes from the user, so check it against a narrow pattern and never let it start with a dash.
+"""
+
+import re
+
+from logfold.errors import ConfigError
+from logfold.ext import Command
+
+_TARGET = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}")
+
+
+class $cls:
+    name = "$name"
+    description = "the log of a service, from a program of yours"
+    platforms = ()
+
+    def command(self, target, options):
+        if not _TARGET.fullmatch(target):
+            raise ConfigError(f"{target!r} is not a valid service name")
+        argv = ["my-log-tool", "show"]
+        if options.tail is not None:
+            argv += ["--last", str(options.tail)]
+        if options.since is not None:
+            argv.append(f"--since={options.since}")
+        return Command((*argv, "--", target))
+
+
+SOURCES = [$cls]
+'''
+)
+
+_TEMPLATES = {"format": _FORMAT, "reporter": _REPORTER, "matcher": _MATCHER, "mask": _MASK, "source": _SOURCE}
 
 
 def module_stem(name: str) -> str:
@@ -137,7 +175,7 @@ def render_template(kind: str, name: str) -> str:
     """Return the source of a working plugin module.
 
     Args:
-        kind: ``format``, ``reporter``, ``matcher`` or ``mask``.
+        kind: ``format``, ``reporter``, ``matcher``, ``mask`` or ``source``.
         name: Plugin name: letters, digits, ``-`` and ``_``, starting with a letter.
 
     Returns:
@@ -160,7 +198,7 @@ def write_template(kind: str, name: str, folder: str | os.PathLike[str] | None =
     """Write a working plugin template, ready to edit.
 
     Args:
-        kind: ``format``, ``reporter``, ``matcher`` or ``mask``.
+        kind: ``format``, ``reporter``, ``matcher``, ``mask`` or ``source``.
         name: Plugin name: letters, digits, ``-`` and ``_``.
         folder: Where to write; the user plugin folder (see :func:`logfold.ext.default_plugin_dir`) by default. The
             folder is created if needed.
@@ -174,7 +212,7 @@ def write_template(kind: str, name: str, folder: str | os.PathLike[str] | None =
         SourceError: If the file cannot be written.
     """
     source = render_template(kind, name)
-    target_dir = Path(folder) if folder is not None else registry.default_plugin_dir()
+    target_dir = Path(folder) if folder is not None else plugin_folders.default_plugin_dir()
     target = target_dir / f"{module_stem(name)}.py"
     if target.exists() and not force:
         raise ConfigError(
