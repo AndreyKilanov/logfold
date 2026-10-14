@@ -33,15 +33,27 @@ _FREE = frozenset(
 )
 _THROWABLE = frozenset(
     {"ex", "exception", "throwable", "xEx", "xException", "xThrowable", "rEx", "rException", "rThrowable"}
-    | {"wEx", "wException", "wThrowable", "xwEx"}
+    | {"wEx", "wException", "wThrowable", "xwEx", "nopex", "nopexception"}
 )
 _WORDS = _DATE | _LEVEL | _MESSAGE | _TOKEN | _FREE | _THROWABLE | {"n"}
 
+_FULL_DATE = (r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}[,.]\d+", None)
+_OFFSET_DATE = r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[,.]\d+(?:Z|[+-]\d{2}(?::?\d{2})?)"
+_TIME_OF_DAY = (r"\d{2}:\d{2}:\d{2}[,.]\d+", "%H:%M:%S,%f")
 _NAMED_DATES = {
-    "ISO8601": (r"\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}[,.]\d+", None),
+    "ISO8601": _FULL_DATE,
     "ISO8601_BASIC": (r"\d{8}T\d{6}[,.]\d+", "%Y%m%dT%H%M%S,%f"),
-    "ABSOLUTE": (r"\d{2}:\d{2}:\d{2}[,.]\d+", "%H:%M:%S,%f"),
+    "ISO8601_OFFSET_DATE_TIME_HH": (_OFFSET_DATE, "%Y-%m-%dT%H:%M:%S,%f%z"),
+    "ISO8601_OFFSET_DATE_TIME_HHMM": (_OFFSET_DATE, "%Y-%m-%dT%H:%M:%S,%f%z"),
+    "ISO8601_OFFSET_DATE_TIME_HHCMM": (_OFFSET_DATE, "%Y-%m-%dT%H:%M:%S,%f%z"),
+    "DEFAULT": _FULL_DATE,
+    "DEFAULT_MICROS": _FULL_DATE,
+    "DEFAULT_NANOS": _FULL_DATE,
+    "ABSOLUTE": _TIME_OF_DAY,
+    "ABSOLUTE_MICROS": _TIME_OF_DAY,
+    "ABSOLUTE_NANOS": _TIME_OF_DAY,
     "DATE": (r"\d{2} [A-Za-z]{3} \d{4} \d{2}:\d{2}:\d{2}[,.]\d+", "%d %b %Y %H:%M:%S,%f"),
+    "COMPACT": (r"\d{17}", "%Y%m%d%H%M%S%f"),
 }
 
 _JAVA_FIELDS = {
@@ -68,10 +80,12 @@ _REGEX_SPECIAL = frozenset("\\.^$|?*+()[]{}")
 def log4j_format(pattern: str, *, name: str = "log4j", multiline: bool = True) -> RegexFormat:
     """Build a regex format from a log4j, log4j2 or logback conversion pattern.
 
-    Understood: ``%d`` (``ISO8601``, ``ABSOLUTE``, ``DATE`` or a Java date pattern with the usual letters, ``X``/``Z``
-    for an offset), ``%p``/``%level``, ``%m``/``%msg``, ``%c``/``%logger``, ``%t``/``%thread``, the other plain fields
-    (``%C``, ``%F``, ``%L``, ``%M``, ``%r``, ``%X{key}``, ``%x``, ...), ``%ex`` and its relatives (the stack trace is
-    printed on the following lines, which join the record), ``%%`` and a trailing ``%n``. Width and ``-`` modifiers
+    Understood: ``%d`` (the names ``DEFAULT``, ``ISO8601``, ``ISO8601_BASIC``, ``ISO8601_OFFSET_DATE_TIME_HH``,
+    ``ABSOLUTE``, ``DATE``, ``COMPACT`` and their ``_MICROS``/``_NANOS`` forms, or a Java date pattern with the usual
+    letters, ``X``/``Z`` for an offset), ``%p``/``%level``, ``%m``/``%msg``, ``%c``/``%logger``, ``%t``/``%thread``, the
+    other plain fields (``%C``, ``%F``, ``%L``, ``%M``, ``%r``, ``%X{key}``, ``%x``, ...), ``%ex`` and its relatives
+    (the stack trace is printed on the following lines, which join the record), ``%%`` and a trailing ``%n``, which
+    exception converters may follow (the Spring Boot file pattern ends in ``%m%n%wEx``). Width and ``-`` modifiers
     (``%-5p``, ``%5.5p``) are honoured as padding.
 
     Args:
@@ -105,8 +119,8 @@ def log4j_format(pattern: str, *, name: str = "log4j", multiline: bool = True) -
         while (option := _OPTION.match(text, index)) is not None:
             options.append(option.group(1))
             index = option.end()
-        if word == "n" and index >= len(text):
-            continue
+        if word == "n" and _only_throwables(text, index):
+            break
         if word == "n":
             raise FormatError(f"a newline inside the pattern {pattern!r} is not supported: one record is one line")
         field = _field(word, options, state, pattern)
@@ -202,6 +216,20 @@ def _date_field(char: str, chars: str, spec: str, pattern: str) -> tuple[str, st
             hint="use letters y M d H m s S X Z, ISO8601 or ABSOLUTE, or write the format as regex:<pattern>",
         )
     return found
+
+
+def _only_throwables(pattern: str, start: int) -> bool:
+    """Tell whether only exception converters (``%ex``, ``%wEx``) follow: they print on the lines after the record."""
+    index = start
+    while index < len(pattern):
+        match = _SPECIFIER.match(pattern, index) if pattern[index] == "%" else None
+        word = _longest_word(match.group("rest")) if match else ""
+        if match is None or word not in _THROWABLE:
+            return False
+        index = match.start("rest") + len(word)
+        while (option := _OPTION.match(pattern, index)) is not None:
+            index = option.end()
+    return True
 
 
 def _longest_word(letters: str) -> str:

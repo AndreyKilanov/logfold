@@ -74,6 +74,60 @@ def test_date_patterns(date: str, line: str, ts_format: str | None) -> None:
     assert match.group("lvl") == "INFO"
 
 
+@pytest.mark.parametrize(
+    ("date", "line", "ts_format"),
+    [
+        ("DEFAULT", "2026-10-15 20:33:13,030 INFO x", None),
+        ("DEFAULT_MICROS", "2026-10-15 20:33:13,030123 INFO x", None),
+        ("ABSOLUTE_NANOS", "20:33:13,030123456 INFO x", "%H:%M:%S,%f"),
+        ("ISO8601_OFFSET_DATE_TIME_HHMM", "2026-10-15T20:33:13,030+0530 INFO x", "%Y-%m-%dT%H:%M:%S,%f%z"),
+        ("ISO8601_OFFSET_DATE_TIME_HHCMM", "2026-10-15T20:33:13,030Z INFO x", "%Y-%m-%dT%H:%M:%S,%f%z"),
+        ("COMPACT", "20261015203313030 INFO x", "%Y%m%d%H%M%S%f"),
+    ],
+)
+def test_named_dates_of_log4j2(date: str, line: str, ts_format: str | None) -> None:
+    spec = log4j_format(f"%d{{{date}}} %p %m")
+    assert spec.ts_format == ts_format
+    match = re.search(spec.pattern, line)
+    assert match is not None
+    assert match.group("ts") == line.removesuffix(" INFO x")
+    assert match.group("lvl") == "INFO"
+
+
+@pytest.mark.parametrize(
+    ("date", "stamp", "expected"),
+    [
+        ("DEFAULT", "2026-10-15 20:33:13,030", "2026-10-15 20:33:13.030000"),
+        ("DEFAULT_NANOS", "2026-10-15 20:33:13,030123456", "2026-10-15 20:33:13.030123"),
+        ("ABSOLUTE_MICROS", "20:33:13,030123", "1970-01-01 20:33:13.030123"),
+        ("ISO8601_OFFSET_DATE_TIME_HHMM", "2026-10-15T20:33:13,030+0530", "2026-10-15 15:03:13.030000+00:00"),
+        ("COMPACT", "20261015203313030", "2026-10-15 20:33:13.030000"),
+    ],
+)
+def test_named_dates_of_log4j2_give_a_time(tmp_path: Path, date: str, stamp: str, expected: str) -> None:
+    path = write(tmp_path, f"{stamp} INFO hello\n{stamp} ERROR boom\n")
+    seen = logfold.inspect_file(path, format=f"log4j:%d{{{date}}} %p %m%n")
+    assert (seen.records, seen.unparsed) == (2, 0)
+    assert str(seen.first_time) == expected
+
+
+SPRING_BOOT_FILE_PATTERN = "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %5p 1 --- [%15.15t] %-40.40logger{39} : %m%n%wEx"
+
+
+def test_exception_converters_after_the_newline_print_nothing_in_the_line() -> None:
+    spring = log4j_format(SPRING_BOOT_FILE_PATTERN)
+    line = "2026-10-15T20:33:13.030+00:00 ERROR 1 --- [           main] c.example.app.service.OrderService       : boom"
+    match = re.search(spring.pattern, line)
+    assert match is not None
+    assert (match.group("lvl"), match.group("msg")) == ("ERROR", "boom")
+    assert log4j_format("%p %m%n%ex").pattern == log4j_format("%p %m%n").pattern
+
+
+def test_a_newline_followed_by_a_field_is_still_refused() -> None:
+    with pytest.raises(FormatError, match="newline inside"):
+        log4j_format("%p%n%m")
+
+
 def test_date_defaults_to_iso8601() -> None:
     spec = log4j_format("%d %p %m")
     assert re.search(spec.pattern, "2026-10-06 12:00:00,123 INFO x") is not None
