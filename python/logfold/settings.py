@@ -95,12 +95,24 @@ _DIFF = {
     "fail_on_new": _boolean,
     "fail_on_new_alerts": _boolean,
 }
+
+
+def _unmatched_limit(value: object) -> object:
+    if value == "off":
+        return value
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0 <= value <= 100:
+        raise ValueError('a number from 0 to 100 (percent) or "off"')
+    return float(value)
+
+
+_CHECK = {"max_unmatched": _unmatched_limit, "fail_on": _text("new-alerts", "new", "none")}
 _SECTIONS: dict[str, dict[str, _Check]] = {
     "mining": _MINING,
     "execution": _EXECUTION,
     "output": _OUTPUT,
     "analyze": _ANALYZE,
     "diff": _DIFF,
+    "check": _CHECK,
 }
 _MASK_KEYS = {
     "name": _text(),
@@ -131,6 +143,8 @@ class Settings:
         analyze_min_count: ``--min-count`` of ``analyze`` and ``match`` (command line only).
         fail_on_new: ``--fail-on-new`` of ``diff`` (command line only).
         fail_on_new_alerts: ``--fail-on-new-alerts`` of ``diff`` (command line only).
+        check_max_unmatched: ``[check] max_unmatched`` as given: a percentage or ``"off"``; ``None`` when not set.
+        check_fail_on: ``[check] fail_on`` as given; ``None`` when not set.
         source: Path of the file that the settings come from, or ``None`` for the built-in defaults.
         given: The ``(section, key)`` pairs that the file set; the top level has the section ``""``.
     """
@@ -149,6 +163,8 @@ class Settings:
     analyze_min_count: int | None = None
     fail_on_new: bool | None = None
     fail_on_new_alerts: bool | None = None
+    check_max_unmatched: float | str | None = None
+    check_fail_on: str | None = None
     source: str | None = None
     given: frozenset[tuple[str, str]] = frozenset()
 
@@ -183,13 +199,23 @@ class Settings:
             diff["fail_on_new"] = self.fail_on_new
         if self.fail_on_new_alerts is not None:
             diff["fail_on_new_alerts"] = self.fail_on_new_alerts
+        check = dict(shared)
+        if ("diff", "significance") in self.given:
+            check["significance"] = self.diff.significance
+        if self.check_max_unmatched is not None:
+            check["max_unmatched"] = str(self.check_max_unmatched)
+        if self.check_fail_on is not None:
+            check["fail_on"] = self.check_fail_on
         inspect: dict[str, object] = {name: shared[name] for name in ("format", "multiline") if name in shared}
+        learn = dict(inspect)
         return {
             "analyze": analyze,
             "match": dict(analyze),
+            "check": check,
             "stream": {name: value for name, value in shared.items() if not (name == "format" and value == "auto")},
             "diff": diff,
             "inspect": inspect,
+            "learn": learn,
         }
 
 
@@ -297,6 +323,8 @@ def parse_settings(data: Mapping[str, Any], source: str) -> Settings:
         analyze_min_count=tables.get("analyze", {}).get("min_count"),
         fail_on_new=diff_table.get("fail_on_new"),
         fail_on_new_alerts=diff_table.get("fail_on_new_alerts"),
+        check_max_unmatched=tables.get("check", {}).get("max_unmatched"),
+        check_fail_on=tables.get("check", {}).get("fail_on"),
         source=source,
         given=frozenset(given),
     )

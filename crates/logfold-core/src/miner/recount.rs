@@ -85,16 +85,24 @@ impl Recount {
         self.rule
     }
 
-    /// Assigns one record of run `run` using `miner` and updates the statistics.
-    pub fn record(&mut self, miner: &DrainMiner, run: usize, tokens: &TokenView<'_>, rec: &RecordMeta<'_>) {
+    /// Assigns one record of run `run` using `miner`, updates the statistics and tells where the record went.
+    pub fn record(
+        &mut self,
+        miner: &DrainMiner,
+        run: usize,
+        tokens: &TokenView<'_>,
+        rec: &RecordMeta<'_>,
+    ) -> Assignment {
         let n_runs = self.n_runs;
-        let slot = match miner.assign_with(tokens, self.rule) {
+        let assignment = miner.assign_with(tokens, self.rule);
+        let slot = match assignment {
             Assignment::Cluster(index) => self.stats.entry(index).or_insert_with(|| vec![RunStats::default(); n_runs]),
             Assignment::Unmatched(length) => {
                 self.unmatched.entry(length).or_insert_with(|| vec![RunStats::default(); n_runs])
             }
         };
         update_stats(&mut slot[run], rec);
+        assignment
     }
 
     /// Takes the records that matched no cluster out of the statistics: for every run, the pairs `(token count,

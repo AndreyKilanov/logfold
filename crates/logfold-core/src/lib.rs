@@ -23,7 +23,7 @@ pub use compare::{
     overlap_pairs, rules_pairs, token_subset_pairs,
 };
 pub use error::CoreError;
-pub use freeze::{FrozenTemplate, template_id};
+pub use freeze::{FrozenTemplate, model_templates, template_id};
 pub use level::{LEVEL_COUNT, Level};
 pub use mask_check::MaskCheck;
 pub use masker::{MAX_MASK_RULES, MAX_PATTERN_BYTES, MaskHit, MaskRule, MaskScratch, RuleMasker, default_mask_rules};

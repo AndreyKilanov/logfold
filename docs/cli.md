@@ -4,12 +4,13 @@
 logfold [--version] <command> [options]
 ```
 
-Commands: [`analyze`](#logfold-analyze), [`match`](#logfold-match), [`stream`](#logfold-stream), [`diff`](#logfold-diff),
+Commands: [`analyze`](#logfold-analyze), [`learn`](#logfold-learn), [`check`](#logfold-check), [`match`](#logfold-match),
+[`stream`](#logfold-stream), [`diff`](#logfold-diff),
 [`params`](#logfold-params), [`inspect`](#logfold-inspect), [`formats`](#logfold-formats), [`info`](#logfold-info), [`plugins`](#logfold-plugins). Install the command with `pip install "logfold[cli]"`.
 
 `logfold --version` prints the version. `logfold <command> --help` prints the options of a command.
 
-**Settings file.** `analyze`, `match`, `stream`, `diff`, `params` and `inspect` read a [`logfold.toml`](config.md) for the options that you
+**Settings file.** `analyze`, `learn`, `check`, `match`, `stream`, `diff`, `params` and `inspect` read a [`logfold.toml`](config.md) for the options that you
 do not give: `logfold --config FILE <command>` names the file, `logfold --no-config <command>` reads none, and without
 either the first `logfold.toml` from the current folder up to the repository root is used. A flag beats the file; the
 file beats the built-in default. A command that uses a file says so on standard error.
@@ -96,6 +97,62 @@ continuation: the same state as one run over both logs. A smaller input is conti
 typical application; for 100 thousand templates about 12 MB in JSON at the least, since real templates are longer than the
 short ones of that measurement, and about half of it in binary), not on the size of the logs. Treat a state like
 a report of the templates: a template seen once contains the words of its line.
+
+## `logfold learn`
+
+```
+logfold learn FILE... --state MODEL [options]
+```
+
+Learns the templates of FILES (one run) and saves them as a model for `logfold check`: the same as `logfold analyze FILE... --save-state
+MODEL`, without the report (it says how many templates and records the model holds). The model is a [state file](#state-files); a
+`.gz` path is compressed, `--state-format binary` writes the compact form. Use the masks and the parameters that `check` will use.
+Options: `--format`, `--multiline`, `--since`, `--until`, the mining and execution options of [`analyze`](#logfold-analyze),
+`--quiet`, `--debug`.
+
+## `logfold check`
+
+```
+logfold check FILE... --state MODEL [options]
+```
+
+Checks FILES (one run) against a model that `logfold learn` or `analyze --save-state` saved, and fails when the log holds anything
+that the model does not know. The model is only read:
+
+```
+logfold learn good.log --state model.json
+logfold check today.log --state model.json
+```
+
+The records are matched to the templates of the model as in [`match`](#logfold-match); the records that fit none are mined by
+themselves, which gives the **new templates**, with their levels, times and examples. The check fails (exit code 2, after the
+report is written) for each of these findings, and the output says which:
+
+| Finding | When | Option |
+|---|---|---|
+| `unmatched` | more than 1% of the records fit no template of the model | `--max-unmatched PERCENT` (`off` does not check) |
+| `new` | a new template of level WARN or higher | `--fail-on new-alerts` (the default), `new` (any new template), `none` (only report) |
+| `empty` | no record was parsed, so nothing was checked | |
+
+A format without levels (`plain`, nginx, apache) has no alerts, so `--fail-on new-alerts` cannot fail on a new template there; a
+warning says so, and `--fail-on new` makes any new template a finding. Templates of the model whose share moved significantly are listed as `changed` (`--significance`, default 0.01, and the
+`[diff]` thresholds of `logfold.toml`), but are not a finding. Templates of the model that the log lacks are not reported: a
+log shorter than the model does not hold them all. The model must have been mined with the same masks and parameters
+(`--depth`, `--sim-th`, `--max-children`, `--max-templates`, `--delimiters`, `--no-masks`, `--masks`), and with `on_full=pool`,
+otherwise the command stops with an error. The log is read in one pass.
+
+The output is the comparison of the model with the log (the report of [`diff`](#logfold-diff)) under a summary line.
+`--report NAME` and `--out` accept the reporters of `diff` (`github-summary`, `junit`, `chat-message`, `prometheus`, `html`,
+`text`, and your own); `--json` and a `.json` file write the check itself (`passed`, `findings`, `unmatched` and the comparison;
+schema [`check-v1`](schema/check-v1.schema.json)). `--level` and `--only-alerts` hide lower levels from the report, not from the
+findings.
+
+Options: `--format`, `--multiline`, `--since`, `--until`, `--top`, `--level`, `--only-alerts`, `--out`, `--append`, `--report`,
+`--json`, `--examples`, `--quiet`, `--debug` as for [`analyze`](#logfold-analyze), the mining options (`--sim-th`, `--depth`,
+`--max-children`, `--max-templates`, `--on-full`, `--delimiters`, `--no-masks`, `--masks`, `--masks-file`), `--max-unmatched`,
+`--fail-on` and `--significance`. There are no execution options (`--strategy`, `--threads`, `--chunk-mb`, `--engine`),
+`--save-state`, `--load-state`, `--high-cardinality` or `--warm-start`. `max_unmatched` and `fail_on` can be set in the
+[`[check]` section](config.md#keys) of `logfold.toml`.
 
 ## `logfold match`
 
@@ -390,7 +447,7 @@ catalog or a failed pip run exit with code 1.
 |---|---|
 | 0 | success |
 | 1 | error: invalid option, unreadable input, unknown or undetected format, engine unavailable |
-| 2 | `diff` with `--fail-on-new` found new templates, or with `--fail-on-new-alerts` found new WARN/ERROR/FATAL templates |
+| 2 | `diff` with `--fail-on-new` found new templates, or with `--fail-on-new-alerts` found new WARN/ERROR/FATAL templates; `check` found something (the report is written first) |
 | 130 | interrupted (Ctrl+C); `stream` first saves the state and writes the report for what it read |
 
 Errors are printed on standard error as `error: ...`, followed by a `hint: ...` line when there is a next step: the

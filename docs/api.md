@@ -63,6 +63,38 @@ template only when every constant token of the template equals its token (a `<*>
 Drain3 does; the default is the similarity of mining, where at least the share `sim_th` of the tokens must equal, so a record that
 differs from a template in one word can still belong to it. See [`logfold match`](cli.md#logfold-match).
 
+## `check`
+
+```python
+check(
+    state, path, *, max_unmatched="default", fail_on=None, threshold_ratio=None, min_count=None,
+    significance=None, diff_config=None, format=None, multiline=None, depth=None, sim_th=None,
+    max_children=None, max_templates=None, on_full=None, delimiters=None, masks=None, mining=None,
+    execution=None, engine=None, strategy=None, threads=None, chunk_bytes=None, examples="raw",
+    since=None, until=None, config=None, progress=None,
+) -> CheckResult
+```
+
+Checks a log against a saved model: the state of `analyze(..., save_state=...)`, only read. The records are matched to its
+templates as in `match`, and the records that fit none are mined by themselves, which gives the templates that are new to the model
+(see [`logfold check`](cli.md#logfold-check)). `max_unmatched` is the highest share of unmatched records in percent (default 1;
+`None` or `"off"` does not check it), `fail_on` is `"new-alerts"` (default), `"new"` or `"none"`; both default to the `[check]`
+section of `config`. The mining options and the masks must be the ones of the state, and the state must not evict templates
+(`ConfigError`). The log is read in one pass; `strategy`, `threads` and `chunk_bytes` have no effect.
+
+### `CheckResult`
+
+| Field / method | Meaning |
+|---|---|
+| `passed` | `True` when there is no finding |
+| `findings` | `Finding` tuple: `kind` (`unmatched`, `new` or `empty`), `message`, `value`, `threshold` |
+| `unmatched` | `Unmatched`: the records that fit no template of the model |
+| `unmatched_share` | their share of the records, 0 to 1 |
+| `diff` | a `DiffResult`: the model is `before` (its saved counts), the log is `after`; `new_templates` are what the unmatched records form, `changed` the known templates whose share moved significantly, `disappeared` is always empty; `warnings` repeat the findings |
+| `max_unmatched`, `fail_on` | the limits that were used |
+| `filter(min_level=None)` | the report lists only the entries at or above `min_level`; the findings stay |
+| `render`, `to_json`, `save` | `json` writes the check ([schema](schema/check-v1.schema.json)); every other reporter writes `diff` |
+
 ## `Miner`
 
 ```python

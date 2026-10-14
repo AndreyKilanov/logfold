@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use sha2::{Digest, Sha256};
 
-use crate::miner::Cluster;
+use crate::miner::{Cluster, MinerSnapshot};
+use crate::stats::RunStats;
 
 /// A template with its per-run statistics, ready to be handed to callers.
 #[derive(Clone, Debug)]
@@ -38,6 +39,36 @@ pub(crate) fn template_text(tokens: &[Box<[u8]>]) -> String {
         joined.extend_from_slice(token);
     }
     String::from_utf8_lossy(&joined).into_owned()
+}
+
+/// The templates of a saved miner with the counts, times and levels that the saved runs gave them, as a single run.
+///
+/// The clusters with the same text are summed, as [`DrainMiner::freeze`](crate::DrainMiner) does; the order is the same.
+/// No example is kept: a saved state never holds one.
+pub fn model_templates(snapshot: &MinerSnapshot) -> Vec<FrozenTemplate> {
+    let clusters = snapshot.clusters.iter().chain(snapshot.overflow.iter().map(|(_, cluster)| cluster));
+    let mut index_by_text: HashMap<String, usize> = HashMap::new();
+    let mut frozen: Vec<FrozenTemplate> = Vec::new();
+    for cluster in clusters {
+        let history = &cluster.history;
+        let stats = RunStats {
+            count: history.count,
+            first: history.first,
+            last: history.last,
+            levels: history.levels,
+            example: None,
+        };
+        let text = template_text(&cluster.tokens);
+        match index_by_text.get(&text) {
+            Some(&index) => frozen[index].runs[0].absorb(&stats),
+            None => {
+                index_by_text.insert(text.clone(), frozen.len());
+                frozen.push(FrozenTemplate { id: template_id(&text), text, runs: vec![stats] });
+            }
+        }
+    }
+    frozen.sort_by(|a, b| b.total().cmp(&a.total()).then_with(|| a.text.as_bytes().cmp(b.text.as_bytes())));
+    frozen
 }
 
 pub(crate) fn freeze_clusters(clusters: Vec<Cluster>) -> Vec<FrozenTemplate> {

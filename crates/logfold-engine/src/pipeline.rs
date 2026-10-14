@@ -119,5 +119,7 @@ pub(crate) fn recount_unit(
     recount: &mut Recount,
     observer: &dyn ProgressObserver,
 ) -> Result<Counters, EngineError> {
-    scan_unit(context, unit, observer, |run, tokens, meta| recount.record(miner, run, tokens, meta))
+    scan_unit(context, unit, observer, |run, tokens, meta| {
+        recount.record(miner, run, tokens, meta);
+    })
 }

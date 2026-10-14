@@ -253,12 +253,17 @@ class MiningResult:
         metrics: Execution facts.
         unmatched: Set by :meth:`Engine.match`: for every run, the records that matched no template as
             ``(token count, records)`` pairs sorted by token count. ``None`` for a mined result.
+        model: Set by :meth:`Engine.check`: the templates of the saved state with the counts that it saved (one run).
+        new_templates: Set by :meth:`Engine.check`: the templates that the unmatched records form when they are mined
+            by themselves.
     """
 
     runs: tuple[RunCounters, ...]
     templates: TemplateTable
     metrics: RunMetrics
     unmatched: tuple[tuple[tuple[int, int], ...], ...] | None = None
+    model: TemplateTable | None = None
+    new_templates: TemplateTable | None = None
 
 
 ProgressCallback = Callable[[int], None]
@@ -294,5 +299,17 @@ class Engine(Protocol):
 
         Returns:
             The templates that were hit, with the statistics of these records only, and the unmatched records.
+        """
+        ...
+
+    def check(self, request: MineRequest, progress: ProgressCallback | None = None) -> MiningResult:
+        """Match the records of ``request`` to its saved state and mine the records that fit no template by themselves.
+
+        Args:
+            request: What to read; ``request.state.load`` is the state to check against.
+            progress: Optional callback receiving the number of input bytes consumed since the previous call.
+
+        Returns:
+            The result of :meth:`match` plus the templates of the state and the new templates.
         """
         ...

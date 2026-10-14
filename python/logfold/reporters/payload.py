@@ -19,6 +19,7 @@ from logfold.model import (
     Template,
     Unmatched,
 )
+from logfold.model_check import CheckResult
 
 
 def _iso(value: datetime | None) -> str | None:
@@ -150,6 +151,32 @@ def diff_payload(result: DiffResult, limit: int | None = None) -> dict[str, Any]
         "new_templates": entries(result.new_templates),
         "disappeared": entries(result.disappeared),
         "changed": entries(result.changed),
+    }
+
+
+def check_payload(result: CheckResult, limit: int | None = None) -> dict[str, Any]:
+    """Return the JSON form of a check result.
+
+    Args:
+        result: Check result.
+        limit: Keep only the first ``limit`` entries of each category of the comparison; ``None`` keeps all.
+
+    Returns:
+        A JSON-compatible dictionary with ``schema_version`` and ``kind == "check"``; ``diff`` is the diff payload.
+    """
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "kind": "check",
+        "passed": result.passed,
+        "fail_on": result.fail_on,
+        "max_unmatched": result.max_unmatched,
+        "unmatched": {
+            "records": result.unmatched.records,
+            "share": round(result.unmatched_share, 6),
+            "by_length": [list(pair) for pair in result.unmatched.by_length],
+        },
+        "findings": [asdict(finding) for finding in result.findings],
+        "diff": diff_payload(result.diff, limit),
     }
 
 

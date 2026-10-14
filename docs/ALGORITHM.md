@@ -101,7 +101,7 @@ the literals that every match of its rules must contain (a prefix, `@`, `://`); 
 The sets `secrets`, `credentials`, `pii` and `payment` of `logfold.plugins` are first layers of this kind; their rules and their `version` are data
 (`python/logfold/plugins/mask_data/`), and `mask_fingerprint(rules)` (SHA-256 of the canonical JSON of the rules, 16 hex
 digits) names the rules in a state header and in `logfold masks`. `ALGO_VERSION` does not change: with no first layer nothing
-differs from before. The extension contract version is 16 (a rule has an optional `check`).
+differs from before. The extension contract version 16 added the optional `check` of a rule.
 
 
 ## 3. Tokenization
@@ -281,6 +281,24 @@ does not change: the tree and the default rule are the same.
 miner: nothing is trained, no counter changes and an open record is not touched, so the answer for a record is the same
 whatever the other records of the call are. A record that is blank, cannot be parsed or matches nothing has no template.
 The template is named as the miner holds it at that moment, with the identifier `sha256(text)[:16]` of §7.
+
+### Check mode
+
+`check` (`logfold.check`, `logfold check FILE --state MODEL`) is match mode plus one more tree. The records are read once, in
+order, and each is assigned by the similarity rule to the tree of the saved state; a record that matches nothing is counted as
+in match mode **and** is also added to a second, empty miner with the same parameters and masks (the usual training step of
+§4, with `max_templates` and the overflow of §4 as usual). The templates of the second miner, frozen as in §7, are the **new
+templates**: a record that fits no template of the state cannot join one of them while it is mined, so none of them has the
+text or the identifier of a template of the state, and no template of the state changes its text. The state is only read; a
+state mined with `on_full = evict` is refused, because the identifier of a template that is evicted and mined again is not
+stable. The memory beyond the loaded tree is the second tree, which `max_templates` bounds. The files are read in one
+sequential pass whatever the strategy. `ALGO_VERSION` does not change.
+
+The result also carries the **model**: the templates of the state with the counts, times and levels that the saved runs gave
+them (the history of the clusters; clusters of the same text are summed, as in §7; no example). The comparison of the model with
+the run (the model is the first run, the matched and the new templates the second) is the one of §11 with the matcher `exact`,
+so a template of the model that moved by a significant factor is `changed`, and the new templates are exactly `new`;
+`disappeared` is dropped, because a log shorter than the model lacks many of its templates.
 
 
 ## 10. Diff matchers

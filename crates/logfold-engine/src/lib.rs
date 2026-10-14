@@ -7,6 +7,7 @@
 #![forbid(unsafe_code)]
 
 mod adaptive;
+mod checking;
 mod chunked;
 mod error;
 mod inspect;
@@ -19,14 +20,15 @@ mod types;
 
 use std::time::Instant;
 
+pub use checking::check_records;
 pub use error::EngineError;
 pub use inspect::{SampleRecord, SampleReport, inspect_sample};
 pub use logfold_core::{MatchRule, OnFull};
 pub use matching::{match_records, match_records_with};
 pub use session::{Session, SessionConfig};
 pub use types::{
-    DEFAULT_CHUNK_BYTES, ExecutionStrategy, MatchBatch, MatchedTemplate, MineOutput, MineRequest, MiningConfig,
-    NullObserver, ProgressObserver, RunMetrics, RunSummary,
+    CheckOutput, DEFAULT_CHUNK_BYTES, ExecutionStrategy, MatchBatch, MatchedTemplate, MineOutput, MineRequest,
+    MiningConfig, NullObserver, ProgressObserver, RunMetrics, RunSummary,
 };
 
 use logfold_core::{CoreError, DrainMiner, MinerConfig, MinerSnapshot};
@@ -153,7 +155,7 @@ pub fn mine(request: &MineRequest, observer: &dyn ProgressObserver) -> Result<Mi
         wall_recount_s: recount_seconds,
         wall_freeze_s: freeze_seconds,
     };
-    Ok(MineOutput { runs, templates, snapshot, unmatched: None, metrics })
+    Ok(MineOutput { runs, templates, snapshot, unmatched: None, check: None, metrics })
 }
 
 /// The strategy that a request runs with. A miner that evicts templates depends on the order of every record, so it mines

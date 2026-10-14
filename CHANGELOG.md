@@ -42,6 +42,10 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   4 to 12% to a run on 100 MB logs, the others read every byte (12 to 24%). `--masks-file FILE` and the plugin group `logfold.masks` add your own
   sets, `logfold masks list` shows them. A state is tied to the masks it was mined with. Extension contract version 16. See
   `docs/cli.md`, `docs/plugins.md`, `bench/docs/MASK_SETS.md`.
+- `logfold learn` and `logfold check FILE --state MODEL` (library `logfold.check`) compare a log with a saved model and exit with 2 when
+  more than `--max-unmatched` (1%) of its records fit no template of the model or a new WARN+ template appears (`--fail-on`); the reports
+  of `diff` work, the JSON has the schema `check-v1`, `[check]` of `logfold.toml` sets the limits. Extension contract version 17. See
+  `docs/cli.md`, `docs/ci.md`.
 - A guide for moving from Drain3: `docs/migrating-from-drain3.md`.
 - `logfold.extract_parameters(template, message)` and `logfold params TEMPLATE MESSAGE` give the values that a message has at the
   variable parts of a template (`<*>` and masked values such as `<NUM>`), named by the rule or `*`, as written in the message;

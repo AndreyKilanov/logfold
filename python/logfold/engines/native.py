@@ -129,17 +129,22 @@ def request_to_dict(request: MineRequest) -> dict[str, Any]:
     }
 
 
+def _table(columns: dict[str, Any]) -> TemplateTable:
+    return TemplateTable(
+        ids=columns["ids"], texts=columns["texts"], runs=tuple(RunColumns(**run) for run in columns["runs"])
+    )
+
+
 def to_result(answer: dict[str, Any]) -> MiningResult:
     """Convert the plain-data answer of the extension into a mining result."""
     runs = tuple(RunCounters(**run) for run in answer["runs"])
-    columns = answer["templates"]
-    table = TemplateTable(
-        ids=columns["ids"], texts=columns["texts"], runs=tuple(RunColumns(**run) for run in columns["runs"])
-    )
+    table = _table(answer["templates"])
     unmatched = answer.get("unmatched")
     return MiningResult(
         runs=runs,
         templates=table,
+        model=_table(answer["model"]) if "model" in answer else None,
+        new_templates=_table(answer["new_templates"]) if "new_templates" in answer else None,
         metrics=RunMetrics(**answer["metrics"]),
         unmatched=None
         if unmatched is None
@@ -199,3 +204,21 @@ class NativeEngine:
             StateError: If the state file cannot be used.
         """
         return to_result(_bridge.match_state(request_to_dict(request), progress))
+
+    def check(self, request: MineRequest, progress: ProgressCallback | None = None) -> MiningResult:
+        """Check the records of ``request`` against its saved state with the Rust engine.
+
+        Args:
+            request: What to read, with the state to check against.
+            progress: Optional progress callback.
+
+        Returns:
+            The templates that were hit, the unmatched records, the templates of the state and the new templates.
+
+        Raises:
+            ConfigError: If a parameter is invalid or the state evicts templates.
+            FormatError: If the format is invalid.
+            SourceError: If an input cannot be read.
+            StateError: If the state file cannot be used.
+        """
+        return to_result(_bridge.check_state(request_to_dict(request), progress))

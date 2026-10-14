@@ -174,19 +174,19 @@ fn run_columns<'py>(py: Python<'py>, templates: &[FrozenTemplate], run: usize) -
     Ok(item)
 }
 
-fn template_columns<'py>(py: Python<'py>, output: &MineOutput) -> PyResult<Bound<'py, PyDict>> {
+fn template_columns<'py>(py: Python<'py>, templates: &[FrozenTemplate], n_runs: usize) -> PyResult<Bound<'py, PyDict>> {
     let columns = PyDict::new(py);
     let ids = PyList::empty(py);
     let texts = PyList::empty(py);
-    for frozen in &output.templates {
+    for frozen in templates {
         ids.append(&frozen.id)?;
         texts.append(&frozen.text)?;
     }
     columns.set_item("ids", ids)?;
     columns.set_item("texts", texts)?;
     let runs = PyList::empty(py);
-    for run in 0..output.runs.len() {
-        runs.append(run_columns(py, &output.templates, run)?)?;
+    for run in 0..n_runs {
+        runs.append(run_columns(py, templates, run)?)?;
     }
     columns.set_item("runs", runs)?;
     Ok(columns)
@@ -211,9 +211,13 @@ pub(crate) fn build_output<'py>(py: Python<'py>, output: &MineOutput) -> PyResul
         runs.append(item)?;
     }
     result.set_item("runs", runs)?;
-    result.set_item("templates", template_columns(py, output)?)?;
+    result.set_item("templates", template_columns(py, &output.templates, output.runs.len())?)?;
     if let Some(unmatched) = &output.unmatched {
         result.set_item("unmatched", unmatched)?;
+    }
+    if let Some(check) = &output.check {
+        result.set_item("model", template_columns(py, &check.model, 1)?)?;
+        result.set_item("new_templates", template_columns(py, &check.new_templates, output.runs.len())?)?;
     }
     let metrics = PyDict::new(py);
     metrics.set_item("engine", "native")?;

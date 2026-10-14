@@ -19,7 +19,7 @@ try:
 except ImportError:
     _core = None  # type: ignore[assignment]
 
-EXPECTED_CORE_API_VERSION = 16
+EXPECTED_CORE_API_VERSION = 17
 
 
 def is_available() -> bool:
@@ -81,6 +81,28 @@ def match_state(request: dict[str, Any], progress: Callable[[int], None] | None 
         StateError: If the state file cannot be used.
     """
     return _call("match_state", request, progress)
+
+
+def check_state(request: dict[str, Any], progress: Callable[[int], None] | None = None) -> dict[str, Any]:
+    """Check the records of ``request`` against its saved state in the extension, in one call.
+
+    Args:
+        request: The plain-data request of :func:`match_state`.
+        progress: Optional callback receiving the number of input bytes consumed since the previous call.
+
+    Returns:
+        The plain-data answer of :func:`match_state` plus ``model`` (the templates of the state with the counts that it
+        saved, as one run) and ``new_templates`` (what the records that matched no template form when they are mined by
+        themselves).
+
+    Raises:
+        EngineError: If the extension is unavailable.
+        ConfigError: If a parameter is invalid, no state is given or the state evicts templates.
+        FormatError: If the format is invalid.
+        SourceError: If an input cannot be read.
+        StateError: If the state file cannot be used.
+    """
+    return _call("check_state", request, progress)
 
 
 @contextmanager

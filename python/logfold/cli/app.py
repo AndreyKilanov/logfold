@@ -11,7 +11,17 @@ from typing import Annotated
 import typer
 
 import logfold
-from logfold.cli import analyze_cmd, diff_cmd, exit_codes, inspect_cmd, match_cmd, params_cmd, stream_cmd
+from logfold.cli import (
+    analyze_cmd,
+    check_cmd,
+    diff_cmd,
+    exit_codes,
+    inspect_cmd,
+    learn_cmd,
+    match_cmd,
+    params_cmd,
+    stream_cmd,
+)
 from logfold.cli.analyze_cmd import analyze
 from logfold.cli.available_help import AvailableHelpCommand
 from logfold.cli.diff_cmd import diff
@@ -77,6 +87,8 @@ def root(
 
 
 app.command(cls=AvailableHelpCommand, epilog=analyze_cmd.EXAMPLES)(analyze)
+app.command(cls=AvailableHelpCommand, epilog=learn_cmd.EXAMPLES)(learn_cmd.learn)
+app.command(cls=AvailableHelpCommand, epilog=check_cmd.EXAMPLES)(check_cmd.check)
 app.command(cls=AvailableHelpCommand, epilog=match_cmd.EXAMPLES)(match)
 app.command(cls=AvailableHelpCommand, epilog=stream_cmd.EXAMPLES)(stream_cmd.stream)
 app.command(cls=AvailableHelpCommand, epilog=diff_cmd.EXAMPLES)(diff)
