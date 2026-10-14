@@ -243,3 +243,100 @@ proptest! {
         prop_assert!(out.contains("<CARD>"), "{out}");
     }
 }
+
+fn jwt() -> MaskRule {
+    rule("jwt", r"\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]*", "<JWT>", None)
+}
+
+fn key() -> MaskRule {
+    rule("key", r"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b", "<KEY>", None)
+}
+
+fn phone() -> MaskRule {
+    rule("phone", r"\+(?:[1-9]\d{0,2}[ .-](?:[ .()-]{0,2}\d){6,13}|[1-9]\d{9,14})\b", "<PHONE>", None)
+}
+
+fn url_password() -> MaskRule {
+    rule("url_password", r"\b[A-Za-z][A-Za-z0-9+.-]*://[^\s/@:]+:[^\s/@]+@", "<SECRET>", None)
+}
+
+fn password_pair() -> MaskRule {
+    rule(
+        "password_pair",
+        r#"(?i:pwd)["']?[ \t]*[:=][ \t]*["']?[^\s"'&,;)}\]{\[(<][^\s"'&,;)}\]]{2,}"#,
+        "<SECRET>",
+        None,
+    )
+}
+
+fn gated(rules: &[MaskRule]) -> bool {
+    RuleMasker::new(&with_defaults(rules.to_vec())).unwrap().first_layer_is_gated()
+}
+
+#[test]
+fn a_first_layer_is_gated_when_every_rule_has_a_selective_literal() {
+    assert!(!gated(&[]));
+    assert!(gated(&[jwt(), key(), phone(), email(), url_password()]), "prefix literals, '@' and '://' inside");
+    assert!(gated(&[password_pair()]), "words in any case have literals too");
+}
+
+#[test]
+fn a_rule_that_can_start_anywhere_leaves_the_layer_without_a_gate() {
+    assert!(!gated(&[jwt(), email(), card()]));
+    assert!(!gated(&[iban()]));
+    assert!(!gated(&[rule("digits", r"\b\d{13,19}\b", "<D>", None)]));
+}
+
+#[test]
+fn the_oracle_has_no_gate() {
+    let rules = with_defaults(vec![jwt(), email()]);
+    assert!(RuleMasker::new(&rules).unwrap().first_layer_is_gated());
+    assert!(!RuleMasker::with_regex(&rules).unwrap().first_layer_is_gated());
+}
+
+#[test]
+fn words_in_any_case_pass_the_gate() {
+    let rules = with_defaults(vec![password_pair()]);
+    let masker = RuleMasker::new(&rules).unwrap();
+    for text in ["login pwd=hunter22 ok", "PWD: abc123", "pWd = \"abcdef\"", "x Pwd=correcthorse"] {
+        assert_eq!(run(&masker, text), run(&RuleMasker::with_regex(&rules).unwrap(), text), "{text}");
+        assert!(run(&masker, text).contains("<SECRET>"), "{text}");
+    }
+}
+
+fn gate_piece() -> impl Strategy<Value = String> {
+    prop_oneof![
+        Just("eyJabcde.fghijk.lmnop@example.com".to_string()),
+        Just("eyJabcde.fghijk.lmnop".to_string()),
+        Just("AKIAIOSFODNN7EXAMPLE".to_string()),
+        Just("+44 20 7946 0958".to_string()),
+        Just("+442079460958".to_string()),
+        Just("+0000".to_string()),
+        Just("bob@example.com".to_string()),
+        Just("postgres://u:p4ss@db:5432/x".to_string()),
+        Just("http://example.com/a".to_string()),
+        Just("pwd=hunter22".to_string()),
+        Just("PWD: abc123".to_string()),
+        Just("10.0.0.1:80".to_string()),
+        Just("2026-10-04 12:00:01Z".to_string()),
+        "[0-9]{1,8}",
+        "[a-zA-Z@._/:+ =-]{0,8}",
+    ]
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(512))]
+
+    #[test]
+    fn the_gate_never_hides_a_match(pieces in proptest::collection::vec(gate_piece(), 0..10), order in 0usize..5) {
+        let mut head = vec![jwt(), key(), phone(), email(), url_password(), password_pair()];
+        head.rotate_left(order);
+        let rules = with_defaults(head);
+        let gated = RuleMasker::new(&rules).unwrap();
+        prop_assert!(gated.first_layer_is_gated());
+        let oracle = RuleMasker::with_regex(&rules).unwrap();
+        let text = pieces.join(" ");
+        prop_assert_eq!(run(&gated, &text), run(&oracle, &text));
+        prop_assert_eq!(gated.hits(text.as_bytes()), oracle.hits(text.as_bytes()));
+    }
+}

@@ -29,6 +29,25 @@ def _compiled(rules: tuple[MaskRule, ...]) -> _bridge.MaskerHandle:
     return _bridge.MaskerHandle(_plain(rules))
 
 
+def first_layer_is_gated(rules: Sequence[MaskRule]) -> bool:
+    """Tell whether the native masker looks for the literals of ``rules`` before it runs the regex engine.
+
+    A list of rules that all have a literal that every match contains (a prefix, ``@``, ``://``) is gated and costs
+    little on text without such literals; one rule that can start anywhere (a number) turns that off for all.
+
+    Args:
+        rules: Masking rules in priority order.
+
+    Returns:
+        ``True`` when the first layer is gated.
+
+    Raises:
+        ConfigError: If a rule is invalid.
+        EngineError: If the native extension is unavailable.
+    """
+    return _compiled(tuple(rules)).first_layer_is_gated()
+
+
 def validate_masks(masks: Sequence[MaskRule]) -> None:
     """Check that every rule compiles in the engine that applies it and cannot match the empty string.
 

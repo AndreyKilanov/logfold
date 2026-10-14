@@ -209,6 +209,11 @@ class MaskerHandle:
         with _translating():
             self._native = _core.NativeMasker(masks)
 
+    def first_layer_is_gated(self) -> bool:
+        """Tell whether a text that has none of the literals of the rules skips the regex engine (it is faster)."""
+        with _translating():
+            return bool(self._native.first_layer_is_gated())
+
     def mask_many(self, texts: Sequence[str]) -> list[str]:
         """Return the texts with the rules applied; a lone surrogate is read as U+FFFD."""
         batch = list(texts)
