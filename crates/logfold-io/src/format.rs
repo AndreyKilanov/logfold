@@ -102,6 +102,17 @@ impl EntryJoiner {
     /// Adds an entry; returns the record when this entry ends the line. Of a message longer than `limit` bytes the
     /// rest is dropped.
     pub fn push(&mut self, entry: Entry, limit: usize) -> Option<ParsedRecord<'static>> {
+        if self.head.is_none() && entry.terminated {
+            let mut message = entry.message;
+            let kept = without_break_len(&message);
+            message.truncate(kept);
+            return Some(ParsedRecord {
+                message: Cow::Owned(message),
+                timestamp: entry.timestamp,
+                tz_aware: entry.tz_aware,
+                level: entry.level,
+            });
+        }
         if self.head.is_none() {
             self.head = Some((entry.timestamp, entry.tz_aware, entry.level));
             self.message.clear();
@@ -120,8 +131,7 @@ impl EntryJoiner {
 
     fn take(&mut self) -> ParsedRecord<'static> {
         let (timestamp, tz_aware, level) = self.head.take().unwrap_or_default();
-        let text = self.message.strip_suffix(b"\n").unwrap_or(&self.message);
-        let text = text.strip_suffix(b"\r").unwrap_or(text);
+        let text = self.message.get(..without_break_len(&self.message)).unwrap_or_default();
         ParsedRecord { message: Cow::Owned(text.to_vec()), timestamp, tz_aware, level }
     }
 }
@@ -329,4 +339,10 @@ impl CompiledFormat {
 fn without_line_break(text: &str) -> &str {
     let text = text.strip_suffix('\n').unwrap_or(text);
     text.strip_suffix('\r').unwrap_or(text)
+}
+
+/// Length of `bytes` without one line break (`\n` or `\r\n`) at its end.
+fn without_break_len(bytes: &[u8]) -> usize {
+    let text = bytes.strip_suffix(b"\n").unwrap_or(bytes);
+    text.strip_suffix(b"\r").unwrap_or(text).len()
 }
