@@ -22,6 +22,7 @@ from logfold.engines.base import (
 from logfold.errors import FormatError
 from logfold.ext.formats import FormatSpec, JsonFormat, PlainFormat, RegexFormat
 from logfold.model import RunMetrics
+from logfold.model_values import NumericSummary, ValueStats
 
 
 def format_to_dict(spec: FormatSpec) -> dict[str, Any]:
@@ -126,6 +127,7 @@ def request_to_dict(request: MineRequest) -> dict[str, Any]:
         "execution": execution,
         "recount": request.recount,
         "exact": request.exact,
+        "values": request.values,
     }
 
 
@@ -133,6 +135,26 @@ def _table(columns: dict[str, Any]) -> TemplateTable:
     return TemplateTable(
         ids=columns["ids"], texts=columns["texts"], runs=tuple(RunColumns(**run) for run in columns["runs"])
     )
+
+
+def _value_stats(item: dict[str, Any]) -> ValueStats:
+    numeric = item["numeric"]
+    return ValueStats(
+        position=item["position"],
+        name=item["name"],
+        count=item["count"],
+        top=tuple((str(value), int(count)) for value, count in item["top"]),
+        distinct=item["distinct"],
+        capped=item["capped"],
+        other=item["other"],
+        numeric=None if numeric is None else NumericSummary(**numeric),
+    )
+
+
+def _values(items: list[dict[str, Any]]) -> dict[str, tuple[tuple[ValueStats, ...], ...]]:
+    return {
+        item["id"]: tuple(tuple(_value_stats(position) for position in run) for run in item["runs"]) for item in items
+    }
 
 
 def to_result(answer: dict[str, Any]) -> MiningResult:
@@ -144,6 +166,7 @@ def to_result(answer: dict[str, Any]) -> MiningResult:
         runs=runs,
         templates=table,
         model=_table(answer["model"]) if "model" in answer else None,
+        values=_values(answer["values"]) if "values" in answer else None,
         new_templates=_table(answer["new_templates"]) if "new_templates" in answer else None,
         metrics=RunMetrics(**answer["metrics"]),
         unmatched=None

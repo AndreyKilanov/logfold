@@ -26,7 +26,51 @@
           "last_seen": { "type": ["string", "null"] },
           "level": { "enum": ["TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", null] },
           "levels": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 1 } },
-          "example": { "type": ["string", "null"] }
+          "example": { "type": ["string", "null"] },
+          "values": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["position", "name", "count", "top", "distinct", "capped", "other", "numeric"],
+              "properties": {
+                "position": { "type": "integer", "minimum": 0 },
+                "name": { "type": "string" },
+                "count": { "type": "integer", "minimum": 1 },
+                "top": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["value", "count"],
+                    "properties": { "value": { "type": "string" }, "count": { "type": "integer", "minimum": 1 } },
+                    "additionalProperties": false
+                  }
+                },
+                "distinct": { "type": "integer", "minimum": 1 },
+                "capped": { "type": "boolean" },
+                "other": { "type": "integer", "minimum": 0 },
+                "numeric": {
+                  "oneOf": [
+                    { "type": "null" },
+                    {
+                      "type": "object",
+                      "required": ["count", "min", "max", "mean", "p50", "p90", "p99"],
+                      "properties": {
+                        "count": { "type": "integer", "minimum": 1 },
+                        "min": { "type": "number" },
+                        "max": { "type": "number" },
+                        "mean": { "type": "number" },
+                        "p50": { "type": "number" },
+                        "p90": { "type": "number" },
+                        "p99": { "type": "number" }
+                      },
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          }
         },
         "additionalProperties": false
       }

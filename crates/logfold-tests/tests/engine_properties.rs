@@ -29,6 +29,7 @@ fn request(path: PathBuf, strategy: ExecutionStrategy) -> MineRequest {
         recount: false,
         initial: None,
         keep_snapshot: false,
+        values: None,
     }
 }
 

@@ -6,12 +6,14 @@ import re
 from collections.abc import Sequence
 
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 from rich.text import Text
 
 from logfold.ext.text import printable
 from logfold.model import AnalysisResult, DiffEntry, DiffResult
 from logfold.reporters.numbers import format_p_value
+from logfold.reporters.values_text import value_lines
 
 _VARIABLE = re.compile(r"(<[A-Z]+>|<\*>)")
 _LEVEL_STYLE = {"WARN": "yellow", "ERROR": "red", "FATAL": "bold red"}
@@ -60,6 +62,11 @@ def print_analysis(console: Console, result: AnalysisResult, top: int) -> None:
         share = template.count / run.records if run.records else 0.0
         table.add_row(f"{template.count:,}", f"{share:.2%}", level_text(template.level), _template_text(template.text))
     console.print(table)
+    for template in result.top(top):
+        if template.values:
+            console.print(Text.assemble(("values of ", "bold"), _template_text(template.text)))
+            for line in value_lines(template.values):
+                console.print(f"  {escape(line)}", style="dim", highlight=False)
     rest = result.templates[top:]
     if rest:
         covered = sum(template.count for template in rest) / run.records if run.records else 0.0

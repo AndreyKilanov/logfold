@@ -17,6 +17,7 @@ mod plan;
 mod sequential;
 mod session;
 mod types;
+mod valuing;
 
 use std::time::Instant;
 
@@ -28,7 +29,8 @@ pub use matching::{match_records, match_records_with};
 pub use session::{Session, SessionConfig};
 pub use types::{
     CheckOutput, DEFAULT_CHUNK_BYTES, ExecutionStrategy, MatchBatch, MatchedTemplate, MineOutput, MineRequest,
-    MiningConfig, NullObserver, ProgressObserver, RunMetrics, RunSummary,
+    MiningConfig, NullObserver, PositionValues, ProgressObserver, RunMetrics, RunSummary, TemplateValues,
+    ValuesRequest,
 };
 
 use logfold_core::{CoreError, DrainMiner, MinerConfig, MinerSnapshot};
@@ -106,13 +108,21 @@ pub fn mine(request: &MineRequest, observer: &dyn ProgressObserver) -> Result<Mi
     let mine_seconds = mine_started.elapsed().as_secs_f64();
 
     let recount_started = Instant::now();
-    let recounted = if request.recount {
+    let plan = request.values.map(|values| valuing::ValuePlan::new(&miner, values));
+    let mut recounted = if request.recount || plan.is_some() {
+        let plan = plan.as_ref();
         Some(match threads_requested {
-            None => sequential::recount(&context, &miner, &planned, MatchRule::Similar, observer)?.0,
-            Some(requested) => chunked::recount(&context, &miner, &planned, requested, MatchRule::Similar, observer)?.0,
+            None => sequential::recount(&context, &miner, &planned, MatchRule::Similar, plan, observer)?.0,
+            Some(requested) => {
+                chunked::recount(&context, &miner, &planned, requested, MatchRule::Similar, plan, observer)?.0
+            }
         })
     } else {
         None
+    };
+    let values = match (plan, recounted.as_mut()) {
+        (Some(_), Some(recount)) => Some(valuing::summarize(&miner, recount.take_values())),
+        _ => None,
     };
     let recount_seconds = recount_started.elapsed().as_secs_f64();
 
@@ -155,7 +165,7 @@ pub fn mine(request: &MineRequest, observer: &dyn ProgressObserver) -> Result<Mi
         wall_recount_s: recount_seconds,
         wall_freeze_s: freeze_seconds,
     };
-    Ok(MineOutput { runs, templates, snapshot, unmatched: None, check: None, metrics })
+    Ok(MineOutput { runs, templates, snapshot, unmatched: None, check: None, values, metrics })
 }
 
 /// The strategy that a request runs with. A miner that evicts templates depends on the order of every record, so it mines

@@ -170,7 +170,7 @@ impl Session {
             wall_recount_s: 0.0,
             wall_freeze_s: 0.0,
         };
-        MineOutput { runs: vec![run], templates, snapshot: None, unmatched: None, check: None, metrics }
+        MineOutput { runs: vec![run], templates, snapshot: None, unmatched: None, check: None, values: None, metrics }
     }
 
     fn add_record(&mut self, record: &[u8]) -> bool {

@@ -11,6 +11,7 @@ use crate::error::EngineError;
 use crate::pipeline::{PipelineContext, recount_unit, train_unit};
 use crate::plan::ChunkPlan;
 use crate::types::ProgressObserver;
+use crate::valuing::{ValuePlan, new_recount};
 
 /// Runs `work(index)` for `0..total` on `threads` workers and folds the results strictly in index order.
 ///
@@ -223,14 +224,15 @@ pub(crate) fn recount(
     plan: &ChunkPlan,
     threads: usize,
     rule: MatchRule,
+    values: Option<&ValuePlan>,
     observer: &dyn ProgressObserver,
 ) -> Result<(Recount, Vec<Counters>), EngineError> {
     let n_runs = plan.run_bytes.len();
-    let mut accumulator = Recount::with_rule(n_runs, rule);
+    let mut accumulator = new_recount(n_runs, rule, values);
     let mut counters = vec![Counters::default(); n_runs];
     let work = |index: usize| -> Result<(Recount, Counters), EngineError> {
-        let mut partial = Recount::with_rule(n_runs, rule);
-        let unit_counters = recount_unit(context, &plan.units[index], miner, &mut partial, observer)?;
+        let mut partial = new_recount(n_runs, rule, values);
+        let unit_counters = recount_unit(context, &plan.units[index], miner, &mut partial, values, observer)?;
         Ok((partial, unit_counters))
     };
     ordered_reduce(

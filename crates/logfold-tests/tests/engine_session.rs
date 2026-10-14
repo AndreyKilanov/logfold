@@ -77,6 +77,7 @@ fn request(path: &Path, format: FormatConfig, initial: Option<MinerSnapshot>, ke
         recount: false,
         initial,
         keep_snapshot: keep,
+        values: None,
     }
 }
 

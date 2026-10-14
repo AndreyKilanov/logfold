@@ -14,6 +14,7 @@ from logfold.config import MiningConfig
 from logfold.ext.formats import FormatSpec
 from logfold.levels import LEVEL_NAMES, summarize_levels
 from logfold.model import RunMetrics
+from logfold.model_values import ValueStats
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,6 +61,8 @@ class MineRequest:
         windows: One time window per run, or empty for none. A window is ``(since, until)`` in microseconds since the
             Unix epoch, each bound ``None`` when open: a record is mined when ``since <= timestamp < until``. A record
             without a timestamp is left out of a run whose window has a bound.
+        values: The number of the most frequent templates whose values are counted (this needs the pass of ``recount``,
+            which then runs), or ``None`` for none.
     """
 
     runs: tuple[tuple[str, ...], ...]
@@ -73,6 +76,7 @@ class MineRequest:
     windows: tuple[tuple[int | None, int | None], ...] = ()
     state: StateRequest | None = None
     exact: bool = False
+    values: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -256,6 +260,8 @@ class MiningResult:
         model: Set by :meth:`Engine.check`: the templates of the saved state with the counts that it saved (one run).
         new_templates: Set by :meth:`Engine.check`: the templates that the unmatched records form when they are mined
             by themselves.
+        values: Set when the request asked for values: for the tracked templates, by identifier, the statistics of
+            the variable positions of each run.
     """
 
     runs: tuple[RunCounters, ...]
@@ -264,6 +270,7 @@ class MiningResult:
     unmatched: tuple[tuple[tuple[int, int], ...], ...] | None = None
     model: TemplateTable | None = None
     new_templates: TemplateTable | None = None
+    values: dict[str, tuple[tuple[ValueStats, ...], ...]] | None = None
 
 
 ProgressCallback = Callable[[int], None]

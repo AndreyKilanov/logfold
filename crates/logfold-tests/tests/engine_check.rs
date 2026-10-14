@@ -53,6 +53,7 @@ fn request(path: &Path, initial: Option<MinerSnapshot>, keep: bool, on_full: OnF
         recount: false,
         initial,
         keep_snapshot: keep,
+        values: None,
     }
 }
 

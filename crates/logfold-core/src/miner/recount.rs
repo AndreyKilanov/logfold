@@ -5,8 +5,10 @@ use std::collections::{BTreeMap, HashMap};
 use ahash::RandomState;
 
 use crate::freeze::template_text;
+use crate::parameters::Parameter;
 use crate::stats::RunStats;
 use crate::tokenizer::TokenView;
+use crate::values::ValueCollector;
 
 use super::matching::update_stats;
 use super::{DrainMiner, RecordMeta};
@@ -59,6 +61,27 @@ impl DrainMiner {
     pub fn cluster_text(&self, index: u32) -> String {
         template_text(&self.clusters[index as usize].tokens)
     }
+
+    /// The tokens of the cluster `index` of an [`Assignment::Cluster`] as it is now.
+    ///
+    /// # Panics
+    /// Panics when `index` was not given by [`DrainMiner::assign`] of this miner.
+    pub fn cluster_tokens(&self, index: u32) -> &[Box<[u8]>] {
+        &self.clusters[index as usize].tokens
+    }
+
+    /// The indexes of the `limit` clusters with the most records in the current runs, the most frequent first and the
+    /// ones with the same count by their tokens. A cluster without a record is left out.
+    pub fn top_clusters(&self, limit: usize) -> Vec<u32> {
+        let mut ranked: Vec<(u64, u32)> = (0..self.clusters.len() as u32)
+            .map(|index| (self.clusters[index as usize].stats.iter().map(|stats| stats.count).sum(), index))
+            .filter(|(count, _)| *count > 0)
+            .collect();
+        ranked.sort_by(|a, b| {
+            b.0.cmp(&a.0).then_with(|| self.clusters[a.1 as usize].tokens.cmp(&self.clusters[b.1 as usize].tokens))
+        });
+        ranked.into_iter().take(limit).map(|(_, index)| index).collect()
+    }
 }
 
 /// Statistics gathered by assigning records to the clusters of a finished tree (`docs/ALGORITHM.md` §9).
@@ -67,6 +90,7 @@ pub struct Recount {
     pub(crate) n_runs: usize,
     pub(crate) stats: HashMap<u32, Vec<RunStats>, RandomState>,
     pub(crate) unmatched: BTreeMap<usize, Vec<RunStats>>,
+    values: Vec<ValueCollector>,
 }
 
 impl Recount {
@@ -77,7 +101,26 @@ impl Recount {
 
     /// Creates an empty recount for `n_runs` runs that assigns records by `rule`.
     pub fn with_rule(n_runs: usize, rule: MatchRule) -> Self {
-        Recount { rule, n_runs, stats: HashMap::default(), unmatched: BTreeMap::new() }
+        Recount { rule, n_runs, stats: HashMap::default(), unmatched: BTreeMap::new(), values: Vec::new() }
+    }
+
+    /// Makes the recount also collect the values of the variable positions, for [`Recount::add_values`].
+    pub fn with_values(mut self) -> Self {
+        self.values = vec![ValueCollector::default(); self.n_runs];
+        self
+    }
+
+    /// Counts the values that a record of run `run` gave to the variable positions of the cluster `cluster`; does
+    /// nothing unless the recount was made [`with_values`](Recount::with_values).
+    pub fn add_values(&mut self, run: usize, cluster: u32, parameters: &[Parameter]) {
+        if let Some(collector) = self.values.get_mut(run) {
+            collector.add(cluster, parameters);
+        }
+    }
+
+    /// Takes the collected values out, one collector per run (none without [`with_values`](Recount::with_values)).
+    pub fn take_values(&mut self) -> Vec<ValueCollector> {
+        std::mem::take(&mut self.values)
     }
 
     /// The rule by which this recount assigns records.
@@ -131,6 +174,9 @@ impl Recount {
                     self.stats.insert(index, run_stats);
                 }
             }
+        }
+        for (mine, theirs) in self.values.iter_mut().zip(other.values) {
+            mine.merge(theirs);
         }
         for (length, run_stats) in other.unmatched {
             match self.unmatched.get_mut(&length) {

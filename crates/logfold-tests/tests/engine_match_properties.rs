@@ -30,6 +30,7 @@ fn request(path: PathBuf, strategy: ExecutionStrategy, initial: Option<MinerSnap
         recount: false,
         initial,
         keep_snapshot: keep,
+        values: None,
     }
 }
 

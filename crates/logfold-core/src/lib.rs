@@ -17,6 +17,7 @@ mod miner;
 mod parameters;
 mod stats;
 mod tokenizer;
+mod values;
 
 pub use compare::{
     Changed, Comparison, MIN_WORDS, Matcher, Side, Thresholds, compare_runs, jaccard_idf_pairs, jaccard_pairs,
@@ -34,6 +35,9 @@ pub use miner::{
 pub use parameters::{Fit, Parameter, WILDCARD_NAME, extract_parameters};
 pub use stats::RunStats;
 pub use tokenizer::{TokenView, Tokenizer};
+pub use values::{
+    Distribution, MAX_DISTINCT, MAX_VALUE_BYTES, NumericSummary, Slot, TOP_VALUES, ValueCollector, ValueSummary,
+};
 
 /// Version of the algorithm contract in `docs/ALGORITHM.md`.
 pub const ALGO_VERSION: u32 = 1;

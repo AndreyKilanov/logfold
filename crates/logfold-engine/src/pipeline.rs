@@ -7,6 +7,7 @@ use logfold_io::{
 use crate::error::EngineError;
 use crate::plan::WorkUnit;
 use crate::types::{MineRequest, ProgressObserver};
+use crate::valuing::{ValuePlan, record_with_values};
 
 /// Compiled, immutable parts of the pipeline shared by all workers.
 pub(crate) struct PipelineContext {
@@ -117,9 +118,10 @@ pub(crate) fn recount_unit(
     unit: &WorkUnit,
     miner: &DrainMiner,
     recount: &mut Recount,
+    values: Option<&ValuePlan>,
     observer: &dyn ProgressObserver,
 ) -> Result<Counters, EngineError> {
     scan_unit(context, unit, observer, |run, tokens, meta| {
-        recount.record(miner, run, tokens, meta);
+        record_with_values(context, miner, recount, values, run, tokens, meta);
     })
 }

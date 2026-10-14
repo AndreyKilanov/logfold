@@ -14,7 +14,9 @@ from html import escape as _escape
 
 from logfold.ext.text import printable
 from logfold.model import AnalysisResult, DiffEntry, DiffResult, RunMetrics, RunSummary, Template
+from logfold.model_values import ValueStats
 from logfold.reporters.numbers import format_p_value
+from logfold.reporters.values_text import value_lines
 
 DEFAULT_LIMIT = 2000
 _ALERT_LEVELS = ("WARN", "ERROR", "FATAL")
@@ -108,6 +110,12 @@ def _example_html(example: str | None) -> str:
     return f"<details><summary>example</summary><pre>{escape(example)}</pre></details>"
 
 
+def _values_html(values: Sequence[ValueStats] | None) -> str:
+    if not values:
+        return ""
+    return f"<details><summary>values</summary><pre>{escape(chr(10).join(value_lines(values)))}</pre></details>"
+
+
 def escape(text: str, quote: bool = True) -> str:
     """HTML-escape a value; control characters are shown as visible hex escapes, as in the text reports."""
     return _escape(printable(text), quote=quote)
@@ -171,7 +179,8 @@ def _analysis_rows(templates: Sequence[Template], total: int) -> str:
             f'<td class="n"><span class="track"><span class="bar bw{max(1, round(share * _BAR_MAX))}"></span></span>'
             f'<span class="pct">{_percent(share)}</span></td>'
             f"<td>{_level_html(template.level)}</td>"
-            f'<td><div class="t">{_template_html(template.text)}</div>{_example_html(template.example)}</td></tr>'
+            f'<td><div class="t">{_template_html(template.text)}</div>{_values_html(template.values)}'
+            f"{_example_html(template.example)}</td></tr>"
         )
     return "".join(rows)
 

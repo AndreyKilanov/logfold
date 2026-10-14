@@ -47,6 +47,7 @@ fn request(runs: Vec<Vec<PathBuf>>, strategy: ExecutionStrategy) -> MineRequest 
         recount: false,
         initial: None,
         keep_snapshot: false,
+        values: None,
     }
 }
 

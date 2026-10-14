@@ -11,6 +11,7 @@ from collections.abc import Sequence
 from logfold.ext.text import printable
 from logfold.model import AnalysisResult, DiffEntry, DiffResult, Template
 from logfold.reporters.numbers import format_p_value
+from logfold.reporters.values_text import value_lines
 
 DEFAULT_TOP = 20
 TEXT_WIDTH = 100
@@ -35,6 +36,8 @@ def _analysis_lines(result: AnalysisResult, top: int) -> list[str]:
     for template in shown:
         share = template.count / run.records if run.records else 0.0
         lines.append(f"{template.count:>10,}  {share:>7.2%}  {template.level or '':<5}  {_clip(template.text)}")
+        if template.values:
+            lines.extend(f"{'':>26}{line}" for line in value_lines(template.values))
     if len(result.templates) > len(shown):
         lines.append(f"... {len(result.templates) - len(shown):,} more templates")
     return lines

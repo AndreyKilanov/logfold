@@ -48,6 +48,7 @@ journalctl -o json | logfold analyze - --format journald --json > result.json
 | `--report` | | reporter by name (`logfold plugins list`, for example a plugin reporter): with `--out` it replaces the suffix's choice, without `--out` its text is printed instead of the tables; not with `--json` |
 | `--json` | off | print JSON to standard output instead of tables |
 | `--examples` | `raw` | `raw`, `masked` or `none`: how example messages are kept (use `masked` or `none` before sharing) |
+| `--values`, `--values-templates N` | off, 200 | count the values at the variable positions of the N most frequent templates (a second pass, see [Values of the parameters](#values-of-the-parameters)) |
 | `--load-state` FILE | | continue from the miner that an earlier run saved (see [State files](#state-files)); the report counts only this run |
 | `--save-state` FILE | | save the trained miner for a later run (templates and counts, no example lines); a `.gz` path is compressed (a gzip state is read by its content, whatever its name) |
 | `--state-format` | `json` | `json` (readable) or `binary` (compact, for states of hundreds of thousands of templates) |
@@ -73,6 +74,33 @@ Mining and execution options, shared with `diff`:
 | `--threads` | all cores | worker threads of the chunked strategy |
 | `--chunk-mb` | 64 | chunk size in MiB of the chunked strategy |
 | `--warm-start` | off | chunked strategy: train the first chunk alone and start every other chunk from a copy of its tree; fewer stray templates, a serial prefix of one chunk (see the guide) |
+
+### Values of the parameters
+
+`--values` counts the values at the variable positions of the most frequent templates (`--values-templates N`, default 200):
+for each position (a `<*>`, or a value that a default mask replaced, such as `<NUM>`) the most frequent values with their counts
+and how many different values there were, and for numbers the minimum, the maximum, the mean and p50, p90, p99:
+
+```
+logfold analyze access.log --values --top 5
+logfold analyze access.log --values --json | jq '.templates[0].values'
+```
+
+The terminal and text reports print them under the template, the HTML report has a `values` block, and the JSON of a tracked template has
+a `values` list (see [`analysis-v1`](schema/analysis-v1.schema.json)). A few things to know:
+
+- It runs a second pass that assigns every record to the finished templates, so the counts of the templates are those of that pass, as in
+  `diff`, and the run takes about three to four times as long (4 s instead of 1 s on 100 MB of an application log). Memory stays bounded:
+  at most 200 templates, 1000 different values of at most 64 bytes per position, and fixed-size buckets for the numbers (on a log
+  built to be the worst case, 150 templates with two positions of thousands of different values each, 26 MB more; every chunk that is
+  being worked on holds such counters). The second pass itself needs more memory when there are very many templates: +60% on 100 MB with
+  100 000 templates.
+- Percentiles are within about 2.4% of the real number. The values are exact while a position has at most 1000 different ones; above that
+  a value that was not counted early is only in `other`, so a rare value may be missing from the list of a position with many distinct
+  values (the number of distinct values is then marked with a `+`).
+- A value that a mask set of yours hides (`--masks secrets,pii`, `--masks-file`) is never counted. The values of the default rules
+  and of `<*>` are raw text of the log: `--examples masked` shows them with the masking rules applied (a status `200` becomes
+  `<NUM>`), `--examples none` leaves the list of values out and keeps the counts and the numbers.
 
 ### State files
 
@@ -183,7 +211,7 @@ belonging to none. Use it to find the records that no template describes exactly
 Options: `--format`, `--multiline`, `--since`, `--until`, `--top`, `--min-count`, `--level`, `--only-alerts`, `--out`,
 `--append`, `--report`, `--json`, `--examples`, `--quiet`, `--debug` as for [`analyze`](#logfold-analyze), and the mining
 and execution options listed there (`--sim-th`, `--depth`, `--max-children`, `--max-templates`, `--on-full`, `--delimiters`, `--no-masks`, `--strategy`,
-`--threads`, `--chunk-mb`), and `--exact`. There is no `--save-state`, `--load-state`, `--high-cardinality`, `--warm-start` or `--engine`.
+`--threads`, `--chunk-mb`), and `--exact`. There is no `--save-state`, `--load-state`, `--high-cardinality`, `--warm-start`, `--values` or `--engine`.
 
 ## `logfold stream`
 

@@ -5,6 +5,7 @@ use crate::error::EngineError;
 use crate::pipeline::{PipelineContext, recount_unit, train_unit};
 use crate::plan::ChunkPlan;
 use crate::types::ProgressObserver;
+use crate::valuing::{ValuePlan, new_recount};
 
 /// Trains a single tree on all units, in plan order, starting from `start` or from an empty tree.
 pub(crate) fn train(
@@ -30,13 +31,14 @@ pub(crate) fn recount(
     miner: &DrainMiner,
     plan: &ChunkPlan,
     rule: MatchRule,
+    values: Option<&ValuePlan>,
     observer: &dyn ProgressObserver,
 ) -> Result<(Recount, Vec<Counters>), EngineError> {
     let n_runs = plan.run_bytes.len();
-    let mut recount = Recount::with_rule(n_runs, rule);
+    let mut recount = new_recount(n_runs, rule, values);
     let mut counters = vec![Counters::default(); n_runs];
     for unit in &plan.units {
-        let unit_counters = recount_unit(context, unit, miner, &mut recount, observer)?;
+        let unit_counters = recount_unit(context, unit, miner, &mut recount, values, observer)?;
         counters[unit.run].add(&unit_counters);
     }
     Ok((recount, counters))
