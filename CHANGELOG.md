@@ -94,6 +94,9 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   `syslog` and `github-actions` join the lines that continue an entry; `syslog` reads the ISO time of rsyslog; `logfmt`
   reads other `key=value` pairs before `level=` (about 2x slower on the reading stage); `jsonl` knows `log.level` and
   `timeMillis`; a `ts_format` that does not read a text falls back to ISO-8601. Found with logs of other projects.
+- A line with bytes that are not UTF-8 (a log in Latin-1 or Windows-1251) is read by the regex and JSON formats with
+  the bytes replaced; it was counted as not parsed. Found by fuzzing the formats.
+- `RunSummary.lines` is documented as the physical lines read, blank ones included (it said non-blank; the count is not changed).
 
 ## [0.4.0] - 2026-10-07
 

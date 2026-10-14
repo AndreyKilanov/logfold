@@ -87,3 +87,27 @@ def test_github_actions_joins_the_lines_of_a_multi_line_value(tmp_path: Path) ->
     seen = logfold.inspect_file(path, format="github-actions")
     assert (seen.records, seen.unparsed) == (4, 0)
     assert [record.lines for record in seen.shown] == [1, 1, 3, 1]
+
+
+def test_a_line_in_another_encoding_is_not_lost(tmp_path: Path) -> None:
+    lines = [
+        b'1.2.3.4 - - [07/Dec/2016:11:05:07 +0100] "GET /caf\xe9 HTTP/1.1" 200 5',
+        b'1.2.3.4 - - [07/Dec/2016:11:05:08 +0100] "GET /ok HTTP/1.1" 200 5',
+    ]
+    path = tmp_path / "latin1.log"
+    path.write_bytes(b"\n".join(lines) + b"\n")
+    result = logfold.analyze(path, format="nginx")
+    assert (result.run.records, result.run.unparsed) == (2, 0)
+    other = tmp_path / "app.log"
+    other.write_bytes(b"2026-10-04 10:00:00 INFO caf\xe9 started\n2026-10-04 10:00:01 INFO ok\n")
+    result = logfold.analyze(other, format="app")
+    assert (result.run.records, result.run.unparsed) == (2, 0)
+    seen = logfold.inspect_file(other, format="app")
+    assert seen.shown[0].message == "caf\ufffd started"
+
+
+def test_a_json_line_in_another_encoding_is_not_lost(tmp_path: Path) -> None:
+    path = tmp_path / "a.jsonl"
+    path.write_bytes(b'{"message": "caf\xe9 started", "level": "warn"}\n{"message": "ok"}\n')
+    result = logfold.analyze(path, format="jsonl")
+    assert (result.run.records, result.run.unparsed) == (2, 0)

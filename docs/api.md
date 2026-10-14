@@ -389,7 +389,7 @@ G statistic of the change of the share) and `p_value`; both are `None` for new a
 
 ### `RunSummary`, `RunMetrics`, `ResultMeta`
 
-- `RunSummary`: `name`, `files`, `lines` (non-blank physical lines), `records`, `unparsed` (lines that did not become
+- `RunSummary`: `name`, `files`, `lines` (physical lines read, blank ones included), `records`, `unparsed` (lines that did not become
   part of a record), `out_of_range` and `untimed` (records left out by a time window: outside it, or without a timestamp),
   `bytes`, `tz_aware` (naive timestamps are interpreted as UTC), `overflowed` (`max_templates` was
   reached), `evicted` (templates dropped to make room for new ones, `on_full="evict"`; their counts are in the catch-all

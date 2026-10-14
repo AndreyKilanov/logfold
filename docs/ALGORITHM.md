@@ -48,6 +48,10 @@ and optional `level`.
 - **regex**: `pattern` is searched in the first line of the record; no match means the line is unparsed (or a
   continuation in multiline mode). Named groups select `message_group`, `time_group`, `level_group`. The message is
   the message group followed by the continuation lines. Without `message_group` the message is the whole first line.
+  A first line that has bytes which are not UTF-8 (a log in Latin-1 or Windows-1251) and does not match as it is, is
+  matched again with each such byte replaced by U+FFFD, and its message is that text; a pattern with `.` or `\S` cannot
+  match such a byte, so without this every line of such a log would be unparsed. The same holds for `record_start`, and for a JSON line (a string cut in the middle of a character, a log in another
+  encoding): it is read with the bytes replaced.
 
 ### 1.3 Timestamps
 
