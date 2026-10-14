@@ -26,6 +26,14 @@ inputs:
   examples:
     description: "Example lines in saved results and reports: masked, none or raw. The summary of a job is visible to everyone who can read the repository."
     default: masked
+  masks:
+    description: >-
+      Mask sets that hide secrets and personal data before mining, comma-separated, for example secrets,pii, or all
+      (see `logfold masks list`). The baseline of the cache is kept per choice of masks.
+    default: ""
+  masks-file:
+    description: Mask set files (JSON, see docs/plugins.md), comma-separated, paths relative to the workspace. Run after `masks`.
+    default: ""
   html-report:
     description: Name of an artifact with the full HTML report; empty means no report.
     default: ""
@@ -88,14 +96,41 @@ runs:
         fi
         python -m pip install --quiet --disable-pip-version-check "$spec"
 
+    - name: Choose the masks
+      id: masks
+      shell: bash
+      env:
+        INPUT_MASKS: ${{ inputs.masks }}
+        INPUT_MASKS_FILE: ${{ inputs.masks-file }}
+      run: |
+        case "$INPUT_MASKS" in
+          *[!0-9A-Za-z_.,-]*) echo "::error::masks is a comma-separated list of set names"; exit 1 ;;
+        esac
+        files=""
+        if [ -n "$INPUT_MASKS_FILE" ]; then
+          IFS=, read -r -a listed <<< "$INPUT_MASKS_FILE"
+          for file in "${listed[@]}"; do
+            if [ ! -f "$file" ]; then echo "::error::masks-file '$file' is not a file"; exit 1; fi
+            case "$file" in /* | [A-Za-z]:*) full="$file" ;; *) full="$PWD/$file" ;; esac
+            files="${files:+$files,}$full"
+          done
+        fi
+        scope=nomasks
+        if [ -n "$INPUT_MASKS$files" ]; then
+          # a state mined with other masks does not match: the scope names the masks, the files and the rules of this version
+          scope=m$(python -c 'import hashlib, importlib.metadata as m, sys; h = hashlib.sha256(m.version("logfold").encode() + b"\0" + sys.argv[1].encode()); [h.update(b"\0" + open(p, "rb").read()) for p in filter(None, sys.argv[2].split(","))]; print(h.hexdigest()[:12])' "$INPUT_MASKS" "$INPUT_MASKS_FILE")
+        fi
+        echo "files=$files" >> "$GITHUB_OUTPUT"
+        echo "scope=$scope" >> "$GITHUB_OUTPUT"
+
     - name: Restore the baseline
       id: cache
       if: inputs.baseline == ''
       uses: actions/cache/restore@v6
       with:
         path: ${{ runner.temp }}/logfold-baseline/baseline.json
-        key: logfold-baseline-${{ inputs.baseline-key }}-none
-        restore-keys: logfold-baseline-${{ inputs.baseline-key }}-
+        key: logfold-baseline-${{ inputs.baseline-key }}-${{ steps.masks.outputs.scope }}-none
+        restore-keys: logfold-baseline-${{ inputs.baseline-key }}-${{ steps.masks.outputs.scope }}-
 
     - name: Compare with the baseline
       id: diff
@@ -107,6 +142,8 @@ runs:
         INPUT_LEVEL: ${{ inputs.level }}
         INPUT_FORMAT: ${{ inputs.format }}
         INPUT_EXAMPLES: ${{ inputs.examples }}
+        INPUT_MASKS: ${{ inputs.masks }}
+        MASK_FILES: ${{ steps.masks.outputs.files }}
         INPUT_HTML: ${{ inputs.html-report }}
         CACHED_BASELINE: ${{ runner.temp }}/logfold-baseline/baseline.json
         WORK: ${{ runner.temp }}/logfold-work
@@ -119,6 +156,12 @@ runs:
           none) ;;
           *) echo "::error::fail-on is new-alerts, new or none"; exit 1 ;;
         esac
+        masks=()
+        if [ -n "$INPUT_MASKS" ]; then masks=(--masks "$INPUT_MASKS"); fi
+        if [ -n "$MASK_FILES" ]; then
+          IFS=, read -r -a listed <<< "$MASK_FILES"
+          for file in "${listed[@]}"; do masks=("${masks[@]+"${masks[@]}"}" --masks-file "$file"); done
+        fi
         if [ -n "$INPUT_LEVEL" ]; then gate=("${gate[@]+"${gate[@]}"}" --level "$INPUT_LEVEL"); fi
 
         # a saved analysis keeps the name of its log, so the log is named after the branch and the commit and the report
@@ -129,14 +172,14 @@ runs:
         ln -sf "$source_log" "$WORK/$label" 2>/dev/null || cp "$source_log" "$WORK/$label"
 
         current="$WORK/current.json"
-        (cd "$WORK" && logfold analyze "$label" --format "$INPUT_FORMAT" --examples "$INPUT_EXAMPLES" --out "$current" -q)
+        (cd "$WORK" && logfold analyze "$label" --format "$INPUT_FORMAT" --examples "$INPUT_EXAMPLES" --out "$current" ${masks[@]+"${masks[@]}"} -q)
 
         baseline="$INPUT_BASELINE"
         if [ -z "$baseline" ] && [ -f "$CACHED_BASELINE" ]; then baseline="$CACHED_BASELINE"; fi
 
         if [ -z "$baseline" ]; then
           logfold analyze "$INPUT_LOG" --format "$INPUT_FORMAT" --examples "$INPUT_EXAMPLES" \
-            --report github-summary --out "$GITHUB_STEP_SUMMARY" --append -q
+            ${masks[@]+"${masks[@]}"} --report github-summary --out "$GITHUB_STEP_SUMMARY" --append -q
           echo "No baseline yet: this run is only analyzed. A run on the default branch that passes becomes the baseline."
           echo "exit-code=0" >> "$GITHUB_OUTPUT"
           echo "status=first-run" >> "$GITHUB_OUTPUT"
@@ -144,17 +187,22 @@ runs:
           exit 0
         fi
 
-        # a saved analysis is compared with a saved analysis, a log with a log
+        # a saved analysis is compared with a saved analysis (its format, masks and examples were chosen when it was made
+        # and diff refuses to be told them again), a log with a log (both are mined now, with the inputs)
         after="$current"
-        case "$baseline" in *.json) ;; *) after="$INPUT_LOG" ;; esac
+        mining=()
+        case "$baseline" in
+          *.json) ;;
+          *) after="$INPUT_LOG"; mining=(--format "$INPUT_FORMAT" --examples "$INPUT_EXAMPLES" ${masks[@]+"${masks[@]}"}) ;;
+        esac
 
         rc=0
-        logfold diff "$baseline" "$after" --format "$INPUT_FORMAT" \
+        logfold diff "$baseline" "$after" ${mining[@]+"${mining[@]}"} \
           --report github-summary --out "$GITHUB_STEP_SUMMARY" --append \
           ${gate[@]+"${gate[@]}"} -q || rc=$?
 
         if [ -n "$INPUT_HTML" ]; then
-          logfold diff "$baseline" "$after" --format "$INPUT_FORMAT" --out "$WORK/diff.html" -q || true
+          logfold diff "$baseline" "$after" ${mining[@]+"${mining[@]}"} --out "$WORK/diff.html" -q || true
           if [ -f "$WORK/diff.html" ]; then echo "html=true" >> "$GITHUB_OUTPUT"; fi
         fi
 
@@ -196,7 +244,7 @@ runs:
       uses: actions/cache/save@v6
       with:
         path: ${{ runner.temp }}/logfold-baseline/baseline.json
-        key: logfold-baseline-${{ inputs.baseline-key }}-${{ github.run_id }}-${{ github.run_attempt }}
+        key: logfold-baseline-${{ inputs.baseline-key }}-${{ steps.masks.outputs.scope }}-${{ github.run_id }}-${{ github.run_attempt }}
 
     - name: Fail when the gate found something
       if: steps.diff.outputs.exit-code != '' && steps.diff.outputs.exit-code != '0'

@@ -55,6 +55,8 @@ passing job. How it works:
 | `level` | all | Keep this level and above, for example `ERROR` |
 | `format` | `auto` | Log format |
 | `examples` | `masked` | `masked`, `none` or `raw`; the summary and the cache are readable by everyone who can read the repository |
+| `masks` | none | Mask sets that run before mining, for example `secrets,pii` or `all` (see [mask sets](cli.md#mask-sets)) |
+| `masks-file` | none | Mask set files (JSON), comma-separated, paths relative to the workspace |
 | `html-report` | none | Name of an artifact with the full HTML report |
 | `save-baseline` | `auto` | `true`, `false`, or `auto` (the default branch only) |
 | `baseline-key` | `default` | Name of the baseline in the cache (letters, digits, `_` and `.`); give each log of a repository its own |
@@ -62,6 +64,22 @@ passing job. How it works:
 | `python-version` | `3.13` | Python to run it with (3.11 or newer) |
 
 Outputs: `exit-code` (`0`, `2` for a gate, `1` for an error) and `status` (`first-run`, `ok` or `found`).
+
+**Hiding secrets.** `examples: masked` replaces the values of the default masks in the example lines, but a token that is
+part of a message stays in the template text. Choose the sets with `masks` (`secrets` and `pii` cost 4–12% of the run time,
+`all` more) and the summary, the saved baseline and the HTML report show `<KEY>`, `<EMAIL>` and the like instead:
+
+```yaml
+      - uses: AndreyKilanov/logfold@v0.5.0
+        with:
+          log: current.log
+          masks: secrets,pii
+          masks-file: ci/orders.json
+```
+
+The baseline in the cache is kept per choice of masks (the name of the sets, the content of the files and the version of
+logfold): a baseline made with other masks is not restored, so the first run after a change only analyzes. A saved analysis
+that you give as `baseline` keeps the masks it was made with, and `diff` warns when they differ from the current run.
 
 A saved analysis as the baseline is less exact than a baseline log: the two runs are mined apart and not re-counted
 against one template tree, so a reworded message can show up as one new and one disappeared template (see the warning that
@@ -210,8 +228,11 @@ logfold:
 ```
 
 Variables: `LOGFOLD_LOG` (required), `LOGFOLD_FAIL_ON` (default `--fail-on-new-alerts`; set it to `--fail-on-new` or an empty
-string), `LOGFOLD_EXAMPLES` (default `masked`), `LOGFOLD_VERSION` (default the latest release). The baseline is the file
-`.logfold/baseline.json` in the cache `logfold-baseline`.
+string), `LOGFOLD_EXAMPLES` (default `masked`), `LOGFOLD_MASKS` (mask sets, for example `secrets,pii`; default none),
+`LOGFOLD_MASKS_FILE` (mask set files, comma-separated; default none), `LOGFOLD_VERSION` (default the latest release). The
+baseline is the file `.logfold/baseline.json` in the cache `logfold-baseline`, next to `.logfold/baseline.masks` with the
+masks it was made with: a baseline made with other masks is not used (the run only analyzes) until a passing run on the
+default branch replaces it.
 
 The template has been run in a `python` container with the script of the job. It has not been run on a GitLab server:
 check the first pipeline and the artifact paths in your project.
