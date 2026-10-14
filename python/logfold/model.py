@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import dataclasses
 import os
-from collections import Counter
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime
@@ -145,10 +144,11 @@ class AnalysisResult:
     @property
     def levels(self) -> Mapping[str, int]:
         """Records per level name over all templates: only levels that occurred, least severe first."""
-        totals: Counter[str] = Counter()
+        totals: dict[str, int] = {}
         for template in self.templates:
-            totals.update(template.levels)
-        return {name: totals[name] for name in LEVEL_NAMES if totals[name]}
+            for name, count in template.levels.items():
+                totals[name] = totals.get(name, 0) + count
+        return {name: totals[name] for name in LEVEL_NAMES if totals.get(name)}
 
     def filter(self, *, min_level: str | None = None, min_count: int | None = None) -> AnalysisResult:
         """Keep only some templates; the run counters, metrics and meta stay as they were.
