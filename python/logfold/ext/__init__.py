@@ -16,6 +16,7 @@ from logfold.ext.registry import (
     get_mask_set,
     get_matcher,
     get_reporter,
+    get_source,
     mask_set_names,
     matcher_names,
     plugin_sources,
@@ -23,15 +24,19 @@ from logfold.ext.registry import (
     register_mask_set,
     register_matcher,
     register_reporter,
+    register_source,
     reporter_for_suffix,
     reporter_names,
+    source_names,
 )
 from logfold.ext.reporters import Reporter
+from logfold.ext.sources import Command, Source, SourceOptions
 from logfold.ext.text import printable
 
 __all__ = [
     "ALL_SETS",
     "DEFAULT_MASKS",
+    "Command",
     "DiffMatcher",
     "Format",
     "FormatSpec",
@@ -42,6 +47,8 @@ __all__ = [
     "PlainFormat",
     "RegexFormat",
     "Reporter",
+    "Source",
+    "SourceOptions",
     "add_plugin_directory",
     "default_plugin_dir",
     "format_names",
@@ -49,6 +56,7 @@ __all__ = [
     "get_mask_set",
     "get_matcher",
     "get_reporter",
+    "get_source",
     "load_mask_set",
     "log4j_format",
     "mask_fingerprint",
@@ -61,7 +69,9 @@ __all__ = [
     "register_mask_set",
     "register_matcher",
     "register_reporter",
+    "register_source",
     "reporter_for_suffix",
     "reporter_names",
     "resolve_masks",
+    "source_names",
 ]

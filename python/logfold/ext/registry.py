@@ -1,9 +1,10 @@
-"""Registries of formats, reporters and diff matchers, with entry point discovery.
+"""Registries of formats, reporters, diff matchers, mask sets and sources, with entry point discovery.
 
 Third-party packages plug in through the entry point groups ``logfold.formats``, ``logfold.reporters``,
-``logfold.matchers`` and ``logfold.masks``. An entry point may reference a :class:`~logfold.ext.formats.FormatSpec`, a
-:class:`~logfold.ext.formats.Format`, a reporter, a matcher or a :class:`~logfold.ext.mask_sets.MaskSet` object (or a
-zero-argument callable returning one).
+``logfold.matchers``, ``logfold.masks`` and ``logfold.sources``. An entry point may reference a
+:class:`~logfold.ext.formats.FormatSpec`, a :class:`~logfold.ext.formats.Format`, a reporter, a matcher, a
+:class:`~logfold.ext.mask_sets.MaskSet` or a :class:`~logfold.ext.sources.Source` object (or a zero-argument callable
+returning one).
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ from logfold.errors import (
     UnknownMaskSetError,
     UnknownMatcherError,
     UnknownReporterError,
+    UnknownSourceError,
     UnknownSuffixError,
 )
 from logfold.ext.formats import Format, FormatSpec, JsonFormat, PlainFormat, RegexFormat
@@ -28,6 +30,7 @@ from logfold.ext.mask_sets import MaskSet
 from logfold.ext.matchers import DiffMatcher
 from logfold.ext.plugin_folders import import_plugin_modules, plugin_directories
 from logfold.ext.reporters import Reporter
+from logfold.ext.sources import Source
 
 if TYPE_CHECKING:
     from logfold.model import AnalysisResult, DiffResult
@@ -38,6 +41,7 @@ GROUP_FORMATS = "logfold.formats"
 GROUP_REPORTERS = "logfold.reporters"
 GROUP_MATCHERS = "logfold.matchers"
 GROUP_MASKS = "logfold.masks"
+GROUP_SOURCES = "logfold.sources"
 SUFFIX_REPORTERS = {
     ".html": "html",
     ".htm": "html",
@@ -54,6 +58,7 @@ _formats: dict[str, FormatSpec | Format] = {}
 _reporters: dict[str, Reporter] = {}
 _matchers: dict[str, DiffMatcher] = {}
 _mask_sets: dict[str, MaskSet] = {}
+_sources: dict[str, Source] = {}
 _plugins_loaded = False
 _origins: dict[tuple[str, str], PluginOrigin] = {}
 _explicit_dirs: list[Path] = []
@@ -112,6 +117,15 @@ def register_mask_set(mask_set: MaskSet) -> None:
     _mask_sets[mask_set.name] = mask_set
 
 
+def register_source(source: Source) -> None:
+    """Register a source under its ``name`` (replaces an existing registration).
+
+    Args:
+        source: The source.
+    """
+    _sources[source.name] = source
+
+
 def _resolve(obj: Any) -> Any:
     if isinstance(obj, type):
         return obj()
@@ -137,6 +151,7 @@ def load_plugins(force: bool = False) -> None:
         GROUP_REPORTERS: ("reporter", _load_reporter),
         GROUP_MATCHERS: ("matcher", _load_matcher),
         GROUP_MASKS: ("mask", _load_mask_set),
+        GROUP_SOURCES: ("source", _load_source),
     }
     discovered = metadata.entry_points()
     for group, (kind, load) in targets.items():
@@ -184,6 +199,14 @@ def _load_mask_set(_name: str, obj: Any) -> str:
     return mask_set.name
 
 
+def _load_source(_name: str, obj: Any) -> str:
+    source = _resolve(obj)
+    if not isinstance(source, Source):
+        raise TypeError("a source needs name, description, platforms and command()")
+    register_source(source)
+    return str(source.name)
+
+
 def _origin(entry: metadata.EntryPoint) -> PluginOrigin:
     dist = getattr(entry, "dist", None)
     if dist is None:
@@ -192,11 +215,11 @@ def _origin(entry: metadata.EntryPoint) -> PluginOrigin:
 
 
 def plugin_sources() -> list[tuple[str, str, str]]:
-    """Return every registered format, reporter, matcher and mask set with the place it came from.
+    """Return every registered format, reporter, matcher, mask set and source with the place it came from.
 
     Returns:
-        Sorted ``(kind, name, source)`` triples. ``kind`` is ``format``, ``reporter``, ``matcher`` or ``mask``;
-        ``source`` is ``built-in`` or ``<distribution> <version>`` of the installed plugin package.
+        Sorted ``(kind, name, source)`` triples. ``kind`` is ``format``, ``reporter``, ``matcher``, ``mask`` or
+        ``source``; the last item is ``built-in`` or ``<distribution> <version>`` of the installed plugin package.
     """
     load_plugins()
     rows = [
@@ -206,6 +229,7 @@ def plugin_sources() -> list[tuple[str, str, str]]:
             ("reporter", _reporters),
             ("matcher", _matchers),
             ("mask", _mask_sets),
+            ("source", _sources),
         )
         for name in names
     ]
@@ -243,6 +267,7 @@ def _load_directory(directory: Path, warn_if_missing: bool) -> None:
             ("reporter", "REPORTERS", _load_reporter),
             ("matcher", "MATCHERS", _load_matcher),
             ("mask", "MASKS", _load_mask_set),
+            ("source", "SOURCES", _load_source),
         ):
             items = getattr(module, attribute, ())
             if not isinstance(items, (list, tuple)):
@@ -356,6 +381,31 @@ def mask_set_names() -> list[str]:
     """Return the sorted names of all registered mask sets."""
     load_plugins()
     return sorted(_mask_sets)
+
+
+def get_source(name: str) -> Source:
+    """Return the source registered under ``name``.
+
+    Args:
+        name: Source name.
+
+    Returns:
+        The source.
+
+    Raises:
+        UnknownSourceError: If the name is unknown (a :class:`~logfold.errors.ConfigError`).
+    """
+    load_plugins()
+    try:
+        return _sources[name]
+    except KeyError:
+        raise UnknownSourceError(name, _sources) from None
+
+
+def source_names() -> list[str]:
+    """Return the sorted names of all registered sources."""
+    load_plugins()
+    return sorted(_sources)
 
 
 def reporter_for_suffix(path: str | os.PathLike[str]) -> str:

@@ -19,6 +19,7 @@ from logfold.cli import exit_codes
 from logfold.cli.app import app
 from logfold.errors import ConfigError
 from logfold.ext import plugin_folders, registry
+from logfold.ext.sources import SourceOptions
 from logfold.plugins import scaffold
 
 runner = CliRunner()
@@ -287,6 +288,11 @@ def test_every_template_loads_and_is_usable(plugin_dir: Path, kind: str, tmp_pat
         orders.write_text("order ORD-123456 shipped\norder ORD-654321 shipped\n", encoding="utf-8")
         masked = logfold.analyze(str(orders), format="plain", engine="native", masks=["my-thing"])
         assert [(t.text, t.count) for t in masked.templates] == [("order <ORDER> shipped", 2)]
+    elif kind == "source":
+        command = registry.get_source("my-thing").command("web-1", SourceOptions(tail=10, since="15m"))
+        assert command.argv == ("my-log-tool", "show", "--last", "10", "--since=15m", "--", "web-1")
+        with pytest.raises(ConfigError, match="not a valid service name"):
+            registry.get_source("my-thing").command("-x", SourceOptions())
     else:
         assert registry.get_matcher("my-thing").match(["retry failed"], ["retry gave up"]) == [(0, 0)]
 

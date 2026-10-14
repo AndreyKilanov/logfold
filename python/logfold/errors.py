@@ -169,6 +169,24 @@ class UnknownMaskSetError(_UnknownNameError, ConfigError):
         super().__init__("mask set", "mask sets", name, known)
 
 
+class UnknownSourceError(_UnknownNameError, ConfigError):
+    """A source name is not registered.
+
+    Attributes:
+        name: The name that was asked for.
+        known: The registered names, sorted.
+    """
+
+    def __init__(self, name: str, known: Iterable[str]) -> None:
+        """Create the error.
+
+        Args:
+            name: The unknown name.
+            known: The registered names.
+        """
+        super().__init__("source", "sources", name, known)
+
+
 class UnknownPluginError(_UnknownNameError, ConfigError):
     """A plugin name is neither registered nor in the catalog.
 
