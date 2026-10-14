@@ -264,3 +264,41 @@ other people's samples: `journald` (Filebeat's `.export` files are the export fo
 - `docker-json`: the `lines` of one inspected record that was joined from several entries is 1 (the counter of the run is
   right: it counts the physical lines).
 - The classic syslog time has no year (1970).
+
+## Damaged logs (V3)
+
+**The oracle.** None from outside: the properties that must hold for any input. `tests/format_grammars.py` has a
+Hypothesis grammar of valid lines for each of the 17 built-in formats, and a set of damages applied to the bytes of a whole
+log: a line cut anywhere, a CR LF or CR line ending, a byte order mark, a banner and blank lines in front, a tab, a NUL, bytes that are not UTF-8,
+a line of 5,000 or 70,000 bytes, an empty line, a shuffled order (time going backwards), a last line without a line break,
+fields that are missing, several time zones and several `log4j` patterns.
+
+**The properties** (`tests/api/test_format_fuzz.py`, `crates/logfold-tests/tests/engine_format_fuzz.rs`):
+
+- no error and no hang (a deadline of 30 s per case);
+- **conservation**: the lines of the sample are the non-blank lines of the file, and every one of them is in a record or in the
+  count of lines not parsed;
+- the sample reader (`inspect`) and the run (`analyze`) agree on the records and the lines not parsed;
+- **the chunking changes nothing**: lines, records, lines not parsed and records per level are the same for the sequential
+  run and for chunked runs of 1, 3, 17, 64 and 250 bytes on 1 to 4 threads (tiny chunks only for small logs); the Rust test
+  does the same for six format kinds (plain, plain with a record start, regex, multi-line regex, JSON, joined JSON) on
+  arbitrary bytes.
+
+**Volume.** The CI profile is 40 cases for each of 36 checks (a minute). The last run on the final code was 300 cases
+for each check (10,800 cases, 8 minutes) and 3,000 cases of the Rust test (6 kinds, 12 runs each, 7 minutes); all passed. An
+earlier, heavier run (2,000 cases for each check, four processes) found the failures below on the earlier code and was
+stopped for the heat of the processor when they were found; the 20,000 cases that the plan asked for were not run. Set
+`LOGFOLD_FUZZ_EXAMPLES` and `PROPTEST_CASES` for a longer run.
+
+**What this found, and what was fixed:**
+
+- **A line with bytes that are not UTF-8 was not parsed by a regex or a JSON format.** A log in Latin-1 or Windows-1251, or a
+  JSON string cut in the middle of a character, lost every line that has such a byte (`unparsed`), while `inspect` showed the
+  line as read. `.` and `\S` of the regex engine cannot match such a byte, and the JSON reader refuses it. Now a line that
+  does not match as it is, and is not valid UTF-8, is read once more with the bad bytes replaced by U+FFFD
+  (`docs/ALGORITHM.md` §1.2); a line that is valid UTF-8 never pays for it.
+- `RunSummary.lines` was described as the non-blank physical lines; it counts all physical lines, blank ones too. The
+  description was corrected, the count did not change.
+
+**Not covered:** memory of one huge record (the limit is tested by its own tests), a time window (`--since`/`--until`) with
+chunks, `postgresql` multi-line statements of real length, and the Rust-side formats that are not built in.

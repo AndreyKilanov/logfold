@@ -218,7 +218,7 @@ impl CompiledFormat {
     /// Only for a format that [`joins_entries`](Self::joins_entries); `None` means the line is unparsed.
     pub fn parse_entry(&self, line: &[u8]) -> Option<Entry> {
         let Kind::Json { message_keys, time_keys, level_keys, .. } = &self.kind else { return None };
-        let value: Value = serde_json::from_slice(line).ok()?;
+        let value: Value = json_value(line)?;
         let object = value.as_object()?;
         let message = message_keys.iter().find_map(|key| object.get(key))?;
         let (message, terminated) = match message {
@@ -243,9 +243,9 @@ impl CompiledFormat {
     /// True when `line` begins a new record (multiline mode).
     pub fn starts_record(&self, line: &[u8]) -> bool {
         match &self.kind {
-            Kind::Plain { record_start } => record_start.as_ref().is_some_and(|re| re.is_match(line)),
+            Kind::Plain { record_start } => record_start.as_ref().is_some_and(|re| is_match_lossy(re, line)),
             Kind::Json { .. } => line.trim_ascii_start().first() == Some(&b'{'),
-            Kind::Regex { regex, .. } => regex.is_match(line),
+            Kind::Regex { regex, .. } => is_match_lossy(regex, line),
         }
     }
 
@@ -263,7 +263,7 @@ impl CompiledFormat {
                 Some(ParsedRecord { message: Cow::Borrowed(text), timestamp: None, tz_aware: false, level: None })
             }
             Kind::Json { message_keys, time_keys, level_keys, .. } => {
-                let value: Value = serde_json::from_slice(text).ok()?;
+                let value: Value = json_value(text)?;
                 let object = value.as_object()?;
                 let message = message_keys.iter().find_map(|key| object.get(key))?;
                 let message = match message {
@@ -285,29 +285,48 @@ impl CompiledFormat {
             }
             Kind::Regex { regex, message, time, level } => {
                 let (first, continuation) = text.split_at(first_len);
-                let caps = regex.captures(first)?;
-                let head: &[u8] = match message {
-                    Some(index) => caps.get(*index).map_or(&[][..], |m| m.as_bytes()),
-                    None => first,
-                };
-                let message = if continuation.is_empty() {
-                    Cow::Borrowed(head)
-                } else {
-                    let mut joined = Vec::with_capacity(head.len() + continuation.len());
-                    joined.extend_from_slice(head);
-                    joined.extend_from_slice(continuation);
-                    Cow::Owned(joined)
-                };
-                let parsed_time = time.and_then(|i| caps.get(i)).and_then(|m| self.parse_time(m.as_bytes()));
-                let level = level.and_then(|i| caps.get(i)).and_then(|m| Level::parse(m.as_bytes()));
-                Some(ParsedRecord {
-                    message,
-                    timestamp: parsed_time.map(|parsed| parsed.micros),
-                    tz_aware: parsed_time.is_some_and(|parsed| parsed.tz_aware),
-                    level,
-                })
+                if let Some(record) = self.read_regex(regex, (*message, *time, *level), first, continuation) {
+                    return Some(record);
+                }
+                if std::str::from_utf8(first).is_ok() {
+                    return None;
+                }
+                // a line in another encoding (Latin-1, Windows-1251) is read with its invalid bytes replaced
+                let lossy = String::from_utf8_lossy(first).into_owned().into_bytes();
+                let record = self.read_regex(regex, (*message, *time, *level), &lossy, continuation)?;
+                Some(ParsedRecord { message: Cow::Owned(record.message.into_owned()), ..record })
             }
         }
+    }
+
+    fn read_regex<'a>(
+        &self,
+        regex: &Regex,
+        (message, time, level): (Option<usize>, Option<usize>, Option<usize>),
+        first: &'a [u8],
+        continuation: &'a [u8],
+    ) -> Option<ParsedRecord<'a>> {
+        let caps = regex.captures(first)?;
+        let head: &[u8] = match message {
+            Some(index) => caps.get(index).map_or(&[][..], |m| m.as_bytes()),
+            None => first,
+        };
+        let message = if continuation.is_empty() {
+            Cow::Borrowed(head)
+        } else {
+            let mut joined = Vec::with_capacity(head.len() + continuation.len());
+            joined.extend_from_slice(head);
+            joined.extend_from_slice(continuation);
+            Cow::Owned(joined)
+        };
+        let parsed_time = time.and_then(|i| caps.get(i)).and_then(|m| self.parse_time(m.as_bytes()));
+        let level = level.and_then(|i| caps.get(i)).and_then(|m| Level::parse(m.as_bytes()));
+        Some(ParsedRecord {
+            message,
+            timestamp: parsed_time.map(|parsed| parsed.micros),
+            tz_aware: parsed_time.is_some_and(|parsed| parsed.tz_aware),
+            level,
+        })
     }
 
     fn json_time(&self, value: &Value) -> Option<ParsedTimestamp> {
@@ -345,4 +364,21 @@ fn without_line_break(text: &str) -> &str {
 fn without_break_len(bytes: &[u8]) -> usize {
     let text = bytes.strip_suffix(b"\n").unwrap_or(bytes);
     text.strip_suffix(b"\r").unwrap_or(text).len()
+}
+
+/// True when `re` matches `line`, or matches it once the bytes that are not UTF-8 are replaced: a pattern with `.` or
+/// `\S` cannot match such a byte, and a log in another encoding would lose every line that has one.
+fn is_match_lossy(re: &Regex, line: &[u8]) -> bool {
+    re.is_match(line) || (std::str::from_utf8(line).is_err() && re.is_match(String::from_utf8_lossy(line).as_bytes()))
+}
+
+/// Reads one JSON value; bytes that are not UTF-8 (a string that was cut in the middle of a character, a log in another
+/// encoding) are replaced, so that the line is not lost.
+fn json_value(line: &[u8]) -> Option<Value> {
+    serde_json::from_slice(line).ok().or_else(|| {
+        if std::str::from_utf8(line).is_ok() {
+            return None;
+        }
+        serde_json::from_slice(String::from_utf8_lossy(line).as_bytes()).ok()
+    })
 }

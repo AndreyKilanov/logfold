@@ -224,7 +224,7 @@ class RunCounters:
 
     Attributes:
         files: Number of input files.
-        lines: Non-blank physical lines.
+        lines: Physical lines read, blank ones included.
         records: Parsed records.
         unparsed: Lines that did not become part of a record.
         bytes: Total size of the inputs on disk.

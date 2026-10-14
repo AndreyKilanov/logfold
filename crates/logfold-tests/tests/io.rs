@@ -91,6 +91,42 @@ mod format {
     }
 
     #[test]
+    fn a_regex_line_with_a_byte_that_is_not_utf8_is_read_with_the_byte_replaced() {
+        let fmt = CompiledFormat::new(&FormatConfig {
+            spec: FormatSpec::Regex {
+                pattern: r"^(?P<ts>\S+) (?P<lvl>[A-Z]+) (?P<msg>.*)$".into(),
+                message_group: Some("msg".into()),
+                time_group: Some("ts".into()),
+                level_group: Some("lvl".into()),
+            },
+            ts_format: None,
+            multiline: true,
+        })
+        .unwrap();
+        let line = b"1970-01-01T00:00:01Z ERROR caf\xe9 failed";
+        assert!(fmt.starts_record(line));
+        let rec = fmt.parse(line, line.len()).unwrap();
+        assert_eq!(&*rec.message, "caf\u{fffd} failed".as_bytes());
+        assert_eq!(rec.level, Some(Level::Error));
+        assert_eq!(rec.timestamp, Some(1_000_000));
+        let text = b"1970-01-01T00:00:01Z ERROR boom\n  caf\xe9 at frame 1";
+        let rec = fmt.parse(text, "1970-01-01T00:00:01Z ERROR boom".len()).unwrap();
+        assert_eq!(&*rec.message, b"boom\n  caf\xe9 at frame 1");
+        assert!(!fmt.starts_record(b"  caf\xe9 at frame 1"));
+        assert!(fmt.parse(b"caf\xe9", 4).is_none());
+    }
+
+    #[test]
+    fn a_json_line_with_a_byte_that_is_not_utf8_is_read_with_the_byte_replaced() {
+        let fmt = json_format();
+        let line = b"{\"level\":\"warning\",\"msg\":\"caf\xe9 slow\"}";
+        let rec = fmt.parse(line, line.len()).unwrap();
+        assert_eq!(&*rec.message, "caf\u{fffd} slow".as_bytes());
+        assert_eq!(rec.level, Some(Level::Warn));
+        assert!(fmt.parse(b"{\"msg\":", 7).is_none());
+    }
+
+    #[test]
     fn rejects_unknown_group() {
         let result = CompiledFormat::new(&FormatConfig {
             spec: FormatSpec::Regex {
