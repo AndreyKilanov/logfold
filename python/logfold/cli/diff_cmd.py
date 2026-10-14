@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from contextlib import ExitStack
 from pathlib import Path
 from typing import Annotated, Any
 
 import typer
 
 import logfold
+from logfold.api.fetch import DEFAULT_TIMEOUT
 from logfold.cli import exit_codes
 from logfold.cli.levels import diff_note, resolve_level
 from logfold.cli.options import (
@@ -56,6 +58,16 @@ from logfold.cli.runtime import (
     settings_of,
     write_report,
 )
+from logfold.cli.source_options import (
+    DEFAULT_MAX_MB,
+    SourceArgs,
+    SourceMaxMb,
+    SourcePrevious,
+    SourceSince,
+    SourceTail,
+    SourceTimeout,
+    open_inputs,
+)
 from logfold.errors import LogfoldError
 from logfold.model import DiffResult
 
@@ -88,11 +100,14 @@ EXAMPLES = """Examples:
 def diff(
     ctx: typer.Context,
     before: Annotated[
-        Path, typer.Argument(help="Log file of the first run, for example before a deploy, or a saved report.")
+        str,
+        typer.Argument(
+            help="Log file or source (docker:web) of the first run, for example before a deploy, or a saved report."
+        ),
     ],
     after: Annotated[
-        Path | None,
-        typer.Argument(help="Log file of the second run, or a saved report; leave it out with --split-at."),
+        str | None,
+        typer.Argument(help="Log file or source of the second run, or a saved report; leave it out with --split-at."),
     ] = None,
     format: Format = "auto",
     multiline: Multiline = None,
@@ -109,7 +124,7 @@ def diff(
         ),
     ] = None,
     baseline: Annotated[
-        list[Path] | None,
+        list[str] | None,
         typer.Option(
             "--baseline",
             metavar="FILE",
@@ -222,6 +237,11 @@ def diff(
     warm_start: WarmStart = False,
     examples: Examples = "raw",
     as_json: AsJson = False,
+    source_tail: SourceTail = None,
+    source_since: SourceSince = None,
+    source_previous: SourcePrevious = False,
+    source_timeout: SourceTimeout = DEFAULT_TIMEOUT,
+    source_max_mb: SourceMaxMb = DEFAULT_MAX_MB,
     quiet: Quiet = False,
     debug: Debug = False,
 ) -> None:
@@ -230,6 +250,7 @@ def diff(
     Each argument is a log file or a saved report of 'logfold analyze --out result.json'; both must be of one kind.
     With --split-at TIME, give one log file: the records before TIME are compared with the records from TIME on.
     """
+    stack = ExitStack()
     try:
         settings = settings_of(ctx)
         config_note(settings, quiet)
@@ -240,16 +261,21 @@ def diff(
             raise logfold.ConfigError("diff needs two files, or one file and --split-at TIME")
         if split_at is not None and after is not None:
             raise logfold.ConfigError("--split-at compares two parts of one file: give one file and no second argument")
-        second = after if after is not None else before
-        extra = baseline or []
-        for path in (before, second, *extra):
+        given = [before, *([after] if after is not None else []), *(baseline or [])]
+        fetched = open_inputs(
+            stack, given, SourceArgs(source_tail, source_since, source_previous, source_timeout, source_max_mb), quiet
+        )
+        first = Path(fetched[0])
+        second = Path(fetched[1]) if after is not None else first
+        extra = [Path(path) for path in fetched[len(given) - len(baseline or []) :]]
+        for path in (first, second, *extra):
             if not path.is_file():
                 raise logfold.SourceError(f"cannot read '{path}': no such file")
-        if extra and (split_at is not None or any(map(logfold.is_saved_analysis, (before, second, *extra)))):
+        if extra and (split_at is not None or any(map(logfold.is_saved_analysis, (first, second, *extra)))):
             raise logfold.ConfigError("--baseline works with log files only, not with --split-at or saved reports")
         if min_baselines is not None and not extra:
             raise logfold.ConfigError("--min-baselines needs --baseline")
-        saved = (logfold.is_saved_analysis(before), logfold.is_saved_analysis(second))
+        saved = (logfold.is_saved_analysis(first), logfold.is_saved_analysis(second))
         if saved[0] != saved[1]:
             raise logfold.ConfigError("diff compares two log files or two saved analysis reports, not one of each")
         if all(saved):
@@ -279,7 +305,7 @@ def diff(
                 }
             )
             result = _diff_saved(
-                before,
+                first,
                 second,
                 threshold_ratio=threshold_ratio,
                 min_count=min_count,
@@ -291,7 +317,7 @@ def diff(
         else:
             with progress_reporter(quiet) as progress:
                 result = logfold.diff(
-                    str(before),
+                    str(first),
                     None if split_at is not None else str(second),
                     format=format,
                     multiline=multiline,
@@ -336,6 +362,8 @@ def diff(
             write_report(result, out, outputs.file, quiet, append)
     except LogfoldError as error:
         raise fail(error, debug) from None
+    finally:
+        stack.close()
     if fail_on_new and result.new_templates:
         raise typer.Exit(exit_codes.NEW_TEMPLATES)
     if fail_on_new_alerts and result.new_alerts:

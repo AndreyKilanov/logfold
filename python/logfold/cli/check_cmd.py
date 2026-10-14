@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from contextlib import ExitStack
 from pathlib import Path
 from typing import Annotated
 
@@ -10,6 +11,7 @@ import typer
 from rich.markup import escape
 
 import logfold
+from logfold.api.fetch import DEFAULT_TIMEOUT
 from logfold.cli import exit_codes
 from logfold.cli.levels import diff_note, resolve_level
 from logfold.cli.options import (
@@ -52,6 +54,17 @@ from logfold.cli.runtime import (
     stdout_console,
     write_report,
     write_stdout,
+)
+from logfold.cli.source_options import (
+    DEFAULT_MAX_MB,
+    INPUT_HELP,
+    SourceArgs,
+    SourceMaxMb,
+    SourcePrevious,
+    SourceSince,
+    SourceTail,
+    SourceTimeout,
+    open_inputs,
 )
 from logfold.errors import ConfigError, LogfoldError
 from logfold.ext.text import printable
@@ -114,7 +127,7 @@ def _emit(result: CheckResult, top: int, reporter: str | None) -> None:
 
 def check(
     ctx: typer.Context,
-    files: Annotated[list[Path], typer.Argument(help="Log files forming one run ('-' reads standard input).")],
+    files: Annotated[list[str], typer.Argument(help=INPUT_HELP)],
     state: Annotated[
         Path,
         typer.Option(
@@ -173,13 +186,22 @@ def check(
     masks_file: MasksFile = None,
     examples: Examples = "raw",
     as_json: AsJson = False,
+    source_tail: SourceTail = None,
+    source_since: SourceSince = None,
+    source_previous: SourcePrevious = False,
+    source_timeout: SourceTimeout = DEFAULT_TIMEOUT,
+    source_max_mb: SourceMaxMb = DEFAULT_MAX_MB,
     quiet: Quiet = False,
     debug: Debug = False,
 ) -> None:
     """Check FILES against a saved model: report what it does not know and fail when that is too much."""
+    stack = ExitStack()
     try:
         settings = settings_of(ctx)
         config_note(settings, quiet)
+        inputs = open_inputs(
+            stack, files, SourceArgs(source_tail, source_since, source_previous, source_timeout, source_max_mb), quiet
+        )
         examples_note(settings, masks, masks_file, examples, quiet)
         outputs = resolve_outputs("diff", out, report, as_json, append)
         threshold = resolve_level(level, only_alerts)
@@ -205,7 +227,7 @@ def check(
         with progress_reporter(quiet) as progress:
             result = logfold.check(
                 state,
-                [str(f) for f in files],
+                inputs,
                 max_unmatched=_limit(max_unmatched),
                 fail_on=fail_on,  # type: ignore[arg-type]
                 significance=significance,
@@ -227,5 +249,7 @@ def check(
             write_report(shown, out, outputs.file, quiet, append)
     except LogfoldError as error:
         raise fail(error, debug) from None
+    finally:
+        stack.close()
     if not result.passed:
         raise typer.Exit(exit_codes.CHECK_FAILED)

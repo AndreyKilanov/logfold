@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import json
 import sys
-from pathlib import Path
+from contextlib import ExitStack
+from dataclasses import replace
 from typing import Annotated, Any
 
 import typer
@@ -12,10 +13,21 @@ from rich.markup import escape
 from rich.table import Table
 from rich.text import Text
 
+from logfold.api.fetch import DEFAULT_TIMEOUT, split_source
 from logfold.api.inspecting import SAMPLE_LINES, SHOWN_RECORDS, Inspection, inspect_file
 from logfold.cli.options import PANEL_INPUT, PANEL_OUTPUT, Debug, Format, Multiline
 from logfold.cli.render import level_text
 from logfold.cli.runtime import fail, stdout_console
+from logfold.cli.source_options import (
+    DEFAULT_MAX_MB,
+    SourceArgs,
+    SourceMaxMb,
+    SourcePrevious,
+    SourceSince,
+    SourceTail,
+    SourceTimeout,
+    open_inputs,
+)
 from logfold.errors import ConfigError, LogfoldError
 from logfold.ext.text import printable
 
@@ -138,7 +150,10 @@ def inspection_json(found: Inspection) -> dict[str, Any]:
 
 
 def inspect(
-    file: Annotated[Path, typer.Argument(help="Log file to look at (gzip is detected by content).")],
+    file: Annotated[
+        str,
+        typer.Argument(help="Log file to look at (gzip is detected by content), or a source such as docker:web."),
+    ],
     format: Format = "auto",
     multiline: Multiline = None,
     records: Annotated[
@@ -154,6 +169,11 @@ def inspect(
             rich_help_panel=PANEL_INPUT,
         ),
     ] = SAMPLE_LINES,
+    source_tail: SourceTail = None,
+    source_since: SourceSince = None,
+    source_previous: SourcePrevious = False,
+    source_timeout: SourceTimeout = DEFAULT_TIMEOUT,
+    source_max_mb: SourceMaxMb = DEFAULT_MAX_MB,
     as_json: Annotated[
         bool, typer.Option("--json", help="Print JSON instead of text.", rich_help_panel=PANEL_OUTPUT)
     ] = False,
@@ -163,15 +183,22 @@ def inspect(
 
     Only the start of the file is read, so it is quick on any size. Use it to check a format before 'logfold analyze'.
     """
+    stack = ExitStack()
     try:
-        if str(file) == "-":
+        if file == "-":
             raise ConfigError(
                 "inspect needs a file, not standard input",
                 hint="save a sample first, for example: ... | head -n 1000 > sample.log",
             )
-        found = inspect_file(file, format=format, multiline=multiline, limit=records, sample_lines=sample_lines)
+        is_source = split_source(file) is not None
+        args = SourceArgs(source_tail or (sample_lines if is_source else None), source_since, source_previous)
+        args = replace(args, timeout=source_timeout, max_mb=source_max_mb)
+        (path,) = open_inputs(stack, [file], args, quiet=False)
+        found = inspect_file(path, format=format, multiline=multiline, limit=records, sample_lines=sample_lines)
     except LogfoldError as error:
         raise fail(error, debug) from None
+    finally:
+        stack.close()
     if as_json:
         text = json.dumps(inspection_json(found), ensure_ascii=False, indent=2) + "\n"
         sys.stdout.write(printable(text) if sys.stdout.isatty() else text)

@@ -23,6 +23,11 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 - A GitHub Action (`uses: AndreyKilanov/logfold@<tag>`) and a GitLab CI template (`ci/gitlab/logfold.yml`): analyze the
   log, compare it with the baseline of the last good run, write the summary and fail on new alerts; `masks` and
   `masks-file` (`LOGFOLD_MASKS`, `LOGFOLD_MASKS_FILE`) choose the mask sets; see `docs/ci.md`.
+- `docker:NAME`, `kubectl:NAMESPACE/POD[/CONTAINER]` and `journalctl:UNIT` where a command takes a log file
+  (`analyze`, `diff`, `check`, `learn`, `match`, `inspect`) read the log straight from your own program, with
+  `--source-tail`, `--source-since`, `--source-previous`, `--source-timeout` and `--source-max-mb`; `logfold.fetch()` does
+  it in a library call, and a plugin can add sources (group `logfold.sources`, `logfold plugins new source`). Nothing runs
+  unless you write a source. See `docs/cli.md`.
 - `logfold.Miner` takes records in batches (`add_many`, `add_lines`, `result()`, `save_state`) and keeps its templates between
   calls, and `logfold stream [FILE]` mines a log while it is written and prints each template when it first appears. Both read and
   write state files, and the result equals `analyze` over the same records. Extension contract version 11. See `docs/api.md`,

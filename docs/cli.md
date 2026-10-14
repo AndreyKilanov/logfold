@@ -23,8 +23,9 @@ Fold one run into message templates and count them.
 logfold analyze FILES... [options]
 ```
 
-`FILES` are one or more log files that form **a single run**; `-` reads standard input. Gzip files (also multi-member)
-are detected by content, not by extension.
+`FILES` are one or more log files that form **a single run**; `-` reads standard input; `docker:web` and the other
+[sources](#sources-reading-a-log-from-docker-kubectl-or-journalctl) read a log straight from a program. Gzip files (also
+multi-member) are detected by content, not by extension.
 
 ```
 logfold analyze app.log --top 30 --out report.html
@@ -378,6 +379,44 @@ When a format, reporter or matcher name is not found, the error's `hint:` line n
 name (and how to install it) or the closest installed or catalog name. The `--help` of `analyze`, `diff` and `inspect`
 lists the plugins available to install next to `--format`, `--report` and `--matcher`. The catalog is read only for these
 messages and for `--help`; a normal run never touches it.
+
+## Sources: reading a log from `docker`, `kubectl` or `journalctl`
+
+Where a command takes a log file, it also takes a **source**: `SOURCE:TARGET`. logfold then runs your own `docker`,
+`kubectl` or `journalctl`, reads what it prints and analyzes it, so there is no dump file to make and remove. Nothing
+runs unless you write a source: a plain `logfold analyze app.log` still reads a file and starts no program.
+
+| Source | Runs | Notes |
+|---|---|---|
+| `docker:NAME` | `docker logs NAME` | a container name or id; both streams of the container are read |
+| `kubectl:NAMESPACE/POD[/CONTAINER]` | `kubectl logs --namespace NAMESPACE POD` | the namespace is always named; the cluster is the one `kubectl` points to |
+| `journalctl:UNIT` | `journalctl --unit UNIT` | Linux with systemd only; a clear error elsewhere |
+
+```
+logfold analyze docker:web --source-tail 50000
+logfold analyze kubectl:prod/web-7d9 --source-since 1h --source-previous
+logfold diff docker:web-old docker:web-new --fail-on-new-alerts
+logfold check kubectl:prod/web-7d9/app --state model.json
+```
+
+Sources work in `analyze`, `learn`, `check`, `match`, `diff` (both runs and `--baseline`) and `inspect`, together with files
+in one run. A file whose name looks like a source is written `./docker:web`.
+
+* **Options:** `--source-tail N` (the last N lines), `--source-since 15m` or a time (as the program takes it),
+  `--source-previous` (`kubectl`: the previous instance of a restarted container), `--source-timeout SECONDS` (default 300)
+  and `--source-max-mb MB` (default 1024). They need a source among the inputs. Do not confuse `--source-since` (what the
+  program prints) with `--since` (which parsed records are kept).
+* **Limits are errors, not cuts.** A program that runs longer than the timeout is stopped, and so is one that prints more
+  than the size limit; both give an error that says how to read less. A silently cut log would make `diff` and `check` lie.
+* **Read-only and bounded.** The program is started without a shell, with its input closed, and never follows the log
+  (for a live stream use `kubectl logs -f | logfold stream`). The names are checked against narrow patterns before they
+  become arguments. The program is looked up on `PATH`, never in the current folder.
+* **The output lands in a temporary file** that only you can read and that is removed when the command ends, also after an
+  error or Ctrl+C (a killed process cannot clean up: look for `logfold-source-*` in your temporary folder). The log is
+  untrusted input as ever. The result names the source (`docker:web`), not the file.
+* **Your environment is used as is** (`DOCKER_HOST`, `KUBECONFIG`, ...): logfold adds nothing and prints none of it. When
+  the program fails, its first 500 characters of error text are shown, as the program wrote them.
+* More programs can be added by a plugin: see [plugins](plugins.md#a-source).
 
 ## Mask sets
 
