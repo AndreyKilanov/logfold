@@ -78,3 +78,4 @@ def info() -> None:
     console.print(f"formats: {', '.join(facts.formats)}")
     console.print(f"reporters: {', '.join(facts.reporters)}")
     console.print(f"matchers: {', '.join(facts.matchers)}")
+    console.print(f"mask sets: {', '.join(facts.mask_sets)}")

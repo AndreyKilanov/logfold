@@ -26,6 +26,8 @@ from logfold.cli.options import (
     Depth,
     Examples,
     Level,
+    Masks,
+    MasksFile,
     MaxChildren,
     MaxTemplates,
     Multiline,
@@ -40,9 +42,10 @@ from logfold.cli.options import (
     StateForm,
     Top,
     read_delimiters,
+    read_masks,
 )
 from logfold.cli.output import resolve_outputs
-from logfold.cli.runtime import config_note, emit, fail, note, settings_of, write_report, write_stdout
+from logfold.cli.runtime import config_note, emit, examples_note, fail, note, settings_of, write_report, write_stdout
 from logfold.errors import ConfigError, LogfoldError, read_error
 from logfold.ext.text import printable
 
@@ -132,6 +135,8 @@ def stream(
     on_full: OnFull = None,
     delimiters: Delimiters = None,
     no_masks: NoMasks = False,
+    masks: Masks = None,
+    masks_file: MasksFile = None,
     examples: Examples = "raw",
     load_state: Annotated[
         Path | None,
@@ -176,6 +181,7 @@ def stream(
     try:
         settings = settings_of(ctx)
         config_note(settings, quiet)
+        examples_note(settings, masks, masks_file, examples, quiet)
         outputs = resolve_outputs("analysis", out, report, as_json, append)
         threshold = resolve_level(level, only_alerts)
         if save_every is not None and save_state is None:
@@ -189,7 +195,7 @@ def stream(
             max_templates=max_templates,
             on_full=on_full,
             delimiters=read_delimiters(delimiters),
-            masks=[] if no_masks else None,
+            masks=read_masks(no_masks, masks, masks_file),
             load_state=load_state,
             state_format=state_format,
             examples=examples,  # type: ignore[arg-type]

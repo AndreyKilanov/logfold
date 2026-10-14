@@ -70,7 +70,8 @@ def mining_to_dicts(mining: MiningConfig) -> tuple[list[dict[str, Any]], dict[st
         The masking rules and the mining parameters, as the ``masks`` and ``mining`` keys of a request.
     """
     masks = [
-        {"name": rule.name, "pattern": rule.pattern, "token": rule.token, "ascii": rule.ascii} for rule in mining.masks
+        {"name": rule.name, "pattern": rule.pattern, "token": rule.token, "ascii": rule.ascii, "check": rule.check}
+        for rule in mining.masks
     ]
     parameters = {
         "depth": mining.depth,

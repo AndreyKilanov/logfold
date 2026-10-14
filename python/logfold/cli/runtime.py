@@ -117,6 +117,17 @@ def config_note(settings: Settings, quiet: bool) -> None:
         note(f"config: {printable(settings.source)}", quiet)
 
 
+def examples_note(settings: Settings, masks: str | None, masks_file: object, examples: str, quiet: bool) -> None:
+    """Warn that raw examples still hold what the chosen mask sets hide from the templates, unless quiet."""
+    chosen = bool(masks) or bool(masks_file) or bool(settings.mask_sets)
+    if chosen and examples == "raw":
+        note(
+            "the mask sets hide values in templates and saved states, but the examples of the report are still the raw "
+            "lines: use --examples masked (or none) before you share it",
+            quiet,
+        )
+
+
 def given_on_command_line(ctx: typer.Context, name: str) -> bool:
     """Tell whether the user typed the option ``name`` (and it did not come from the settings file or a default)."""
     source = ctx.get_parameter_source(name)

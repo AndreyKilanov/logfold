@@ -22,10 +22,10 @@ from logfold.api._windows import OPEN, TimeBound, labeled, require_time, window,
 from logfold.config import (
     ExamplesMode,
     ExecutionConfig,
-    MaskRule,
     MiningConfig,
 )
 from logfold.ext.formats import Format, FormatSpec
+from logfold.ext.mask_selection import MaskSelection
 from logfold.ext.masks import Masker
 from logfold.formats import resolve_format
 from logfold.model import (
@@ -45,7 +45,7 @@ def analyze(
     max_templates: int | None = None,
     on_full: str | None = None,
     delimiters: str | None = None,
-    masks: Sequence[MaskRule] | None = None,
+    masks: MaskSelection | None = None,
     high_cardinality: bool = False,
     mining: MiningConfig | None = None,
     execution: ExecutionConfig | None = None,
@@ -78,7 +78,7 @@ def analyze(
             tree, the sequential strategy). See :class:`~logfold.MiningConfig`.
         delimiters: The ASCII characters that separate tokens, replacing the default (space, tab, CR, LF); keep the
             whitespace in the string when you add a character, for example the default plus ``_`` or ``=``.
-        masks: Masking rules replacing the defaults.
+        masks: Rules that replace the defaults, or mask sets and names such as ``"secrets"`` that run before them.
         high_cardinality: Mode for data with a huge number of distinct message shapes (unstructured text, random ids):
             caps templates at 5000 unless ``max_templates`` is given, pools the rest into catch-all templates and
             runs sequentially. Much faster and bounded in memory; rare templates are not kept apart.

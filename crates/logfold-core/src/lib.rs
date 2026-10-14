@@ -11,6 +11,7 @@ mod default_masks;
 mod error;
 mod freeze;
 mod level;
+mod mask_check;
 mod masker;
 mod miner;
 mod parameters;
@@ -24,7 +25,8 @@ pub use compare::{
 pub use error::CoreError;
 pub use freeze::{FrozenTemplate, template_id};
 pub use level::{LEVEL_COUNT, Level};
-pub use masker::{MaskHit, MaskRule, MaskScratch, RuleMasker, default_mask_rules};
+pub use mask_check::MaskCheck;
+pub use masker::{MAX_MASK_RULES, MAX_PATTERN_BYTES, MaskHit, MaskRule, MaskScratch, RuleMasker, default_mask_rules};
 pub use miner::{
     Assignment, ClusterHistory, ClusterSnapshot, DrainMiner, MAX_EXAMPLE_BYTES, MatchRule, MinerConfig, MinerSnapshot,
     NodeSnapshot, OnFull, RecordMeta, Recount, WILDCARD,

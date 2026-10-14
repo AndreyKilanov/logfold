@@ -24,6 +24,7 @@ class Info:
         formats: Names of the registered formats, sorted.
         reporters: Names of the registered reporters, sorted.
         matchers: Names of the registered diff matchers, sorted.
+        mask_sets: Names of the registered mask sets, sorted.
     """
 
     version: str
@@ -35,6 +36,7 @@ class Info:
     formats: tuple[str, ...]
     reporters: tuple[str, ...]
     matchers: tuple[str, ...]
+    mask_sets: tuple[str, ...] = ()
 
 
 def info() -> Info:
@@ -54,4 +56,5 @@ def info() -> Info:
         formats=tuple(registry.format_names()),
         reporters=tuple(registry.reporter_names()),
         matchers=tuple(registry.matcher_names()),
+        mask_sets=tuple(registry.mask_set_names()),
     )

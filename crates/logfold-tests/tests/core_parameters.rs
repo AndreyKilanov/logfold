@@ -106,8 +106,13 @@ fn values_keep_their_non_ascii_text() {
 
 #[test]
 fn a_custom_rule_is_named_by_its_name() {
-    let rules =
-        vec![MaskRule { name: "order".into(), pattern: r"ORD-\d+".into(), token: "<ORDER>".into(), ascii: true }];
+    let rules = vec![MaskRule {
+        name: "order".into(),
+        pattern: r"ORD-\d+".into(),
+        token: "<ORDER>".into(),
+        ascii: true,
+        check: None,
+    }];
     let found = run(&rules, "paid <ORDER> by <*>", "paid ORD-9001 by card", Fit::Exact).unwrap();
     assert_eq!(found, [row(1, "order", "ORD-9001"), row(3, "*", "card")]);
 }

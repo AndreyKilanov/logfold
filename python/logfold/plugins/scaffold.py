@@ -12,7 +12,7 @@ from logfold.ext import registry
 
 __all__ = ["KINDS", "module_stem", "render_template", "write_template"]
 
-KINDS = ("format", "reporter", "matcher")
+KINDS = ("format", "reporter", "matcher", "mask")
 
 _NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_-]{0,48}$")
 
@@ -94,7 +94,31 @@ MATCHERS = [$cls]
 '''
 )
 
-_TEMPLATES = {"format": _FORMAT, "reporter": _REPORTER, "matcher": _MATCHER}
+_MASK = Template(
+    '''"""Mask set plugin "$name": edit the rules, then run  logfold analyze FILE --masks $name
+
+A mask set is data: every match of a rule's pattern is replaced with its token before the log is mined, so the report
+and the saved state never hold the value. The set runs before the default masks (numbers, IPs, ...). A rule may
+carry check="luhn" (a payment card number) or check="iban"; a match that fails the check is left alone. Patterns use
+the Rust regex syntax (no look-around, no back-references); a token looks like <NAME>.
+"""
+
+from logfold.ext import MaskRule, MaskSet
+
+MASKS = [
+    MaskSet(
+        name="$name",
+        description="Order and ticket numbers",
+        rules=(
+            MaskRule("order", r"\\bORD-[0-9]{6,}\\b", "<ORDER>", True),
+            MaskRule("ticket", r"\\b[A-Z]{2,5}-[0-9]{1,6}\\b", "<TICKET>", True),
+        ),
+    ),
+]
+'''
+)
+
+_TEMPLATES = {"format": _FORMAT, "reporter": _REPORTER, "matcher": _MATCHER, "mask": _MASK}
 
 
 def module_stem(name: str) -> str:
@@ -113,7 +137,7 @@ def render_template(kind: str, name: str) -> str:
     """Return the source of a working plugin module.
 
     Args:
-        kind: ``format``, ``reporter`` or ``matcher``.
+        kind: ``format``, ``reporter``, ``matcher`` or ``mask``.
         name: Plugin name: letters, digits, ``-`` and ``_``, starting with a letter.
 
     Returns:
@@ -126,6 +150,8 @@ def render_template(kind: str, name: str) -> str:
         raise ConfigError(f"unknown plugin kind {kind!r}; use one of: {', '.join(KINDS)}")
     if not _NAME.match(name):
         raise ConfigError(f"invalid plugin name {name!r}: use letters, digits, '-' and '_', starting with a letter")
+    if kind == "mask" and name != name.lower():
+        raise ConfigError(f"invalid mask set name {name!r}: use lower-case letters, digits, '-' and '_'")
     class_name = "".join(part.capitalize() for part in re.split(r"[-_]", name) if part) + kind.capitalize()
     return _TEMPLATES[kind].substitute(name=name, cls=class_name)
 
@@ -134,7 +160,7 @@ def write_template(kind: str, name: str, folder: str | os.PathLike[str] | None =
     """Write a working plugin template, ready to edit.
 
     Args:
-        kind: ``format``, ``reporter`` or ``matcher``.
+        kind: ``format``, ``reporter``, ``matcher`` or ``mask``.
         name: Plugin name: letters, digits, ``-`` and ``_``.
         folder: Where to write; the user plugin folder (see :func:`logfold.ext.default_plugin_dir`) by default. The
             folder is created if needed.

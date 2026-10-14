@@ -23,6 +23,8 @@ from logfold.cli.options import (
     HighCardinality,
     Level,
     LoadState,
+    Masks,
+    MasksFile,
     MaxChildren,
     MaxTemplates,
     Multiline,
@@ -44,7 +46,16 @@ from logfold.cli.options import (
     mining_options,
 )
 from logfold.cli.output import resolve_outputs
-from logfold.cli.runtime import config_note, emit, fail, note, progress_reporter, settings_of, write_report
+from logfold.cli.runtime import (
+    config_note,
+    emit,
+    examples_note,
+    fail,
+    note,
+    progress_reporter,
+    settings_of,
+    write_report,
+)
 from logfold.errors import LogfoldError
 from logfold.ext.text import printable
 
@@ -94,6 +105,8 @@ def analyze(
     chunk_mb: ChunkMb = None,
     strategy: Strategy = None,
     no_masks: NoMasks = False,
+    masks: Masks = None,
+    masks_file: MasksFile = None,
     high_cardinality: HighCardinality = False,
     warm_start: WarmStart = False,
     examples: Examples = "raw",
@@ -108,6 +121,7 @@ def analyze(
     try:
         settings = settings_of(ctx)
         config_note(settings, quiet)
+        examples_note(settings, masks, masks_file, examples, quiet)
         outputs = resolve_outputs("analysis", out, report, as_json, append)
         threshold = resolve_level(level, only_alerts)
         with progress_reporter(quiet) as progress:
@@ -137,6 +151,8 @@ def analyze(
                     warm_start,
                     on_full,
                     delimiters,
+                    masks,
+                    masks_file,
                 ),
             )
         if save_state is not None:

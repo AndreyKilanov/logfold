@@ -63,7 +63,9 @@ Mining and execution options, shared with `diff`:
 | `--max-templates` | 100000 | template cap; what happens to further records is decided by `--on-full` |
 | `--delimiters` | space, tab, CR, LF | the characters that separate tokens, **replacing** the default; `\t`, `\n`, `\r` and `\\` are read as escapes, so `--delimiters ' \t\n\r_='` also splits at `_` and `=` (keep the whitespace). A state must be used with the same value; `logfold params` needs the space among them |
 | `--on-full` | `pool` | at the cap: `pool` puts the records of a new message shape into catch-all templates, `evict` drops the least recently used templates (a tenth of the cap at a time) and keeps learning; their counts join the catch-all templates, `run.evicted` and a warning say how many were dropped. It mines with one tree, so `--strategy chunked` is refused; a state must be used with the same value |
-| `--no-masks` | off | do not mask numbers, IPs, UUIDs and other values |
+| `--masks` | none | mask sets that run **before** the default masks, comma-separated: `--masks secrets,pii`; `logfold masks list` shows what is installed. A state must be used with the same sets (see [Mask sets](#mask-sets)) |
+| `--masks-file` | none | a mask set from a JSON file (repeat the flag for several); it runs after the sets of `--masks` |
+| `--no-masks` | off | do not mask numbers, IPs, UUIDs and other values; cannot be combined with `--masks` or `--masks-file` |
 | `--high-cardinality` | off | fast bounded mode for data with a huge number of distinct messages (5000 templates, sequential) |
 | `--engine` | `auto` | `auto` or `native`; `python` is deprecated and runs `native` |
 | `--strategy` | `auto` | `auto`, `sequential` (one tree) or `chunked` (parallel); `auto` chunks above 64 MiB, but mines sequentially when the first chunk shows that almost every record is a new template |
@@ -292,14 +294,50 @@ name (and how to install it) or the closest installed or catalog name. The `--he
 lists the plugins available to install next to `--format`, `--report` and `--matcher`. The catalog is read only for these
 messages and for `--help`; a normal run never touches it.
 
+## Mask sets
+
+A mask set is a named list of masking rules that hides a kind of value before the log is mined, so that the templates, the
+saved state and the report never hold it. Two sets ship with logfold:
+
+| Set | Hides | Token |
+|---|---|---|
+| `secrets` | JWTs, `Authorization` headers and `Bearer` tokens, API keys with a known prefix (AWS, GitHub, GitLab, Slack, Stripe, Google, npm, SendGrid, `sk-`), passwords and tokens in URLs and in `password=`, `token=`, `api_key=` pairs, private keys | `<JWT>`, `<KEY>`, `<SECRET>` |
+| `pii` | e-mail addresses, international phone numbers (`+44 20 7946 0958`), payment card numbers (the Luhn check) and IBANs (the mod-97 check) | `<EMAIL>`, `<PHONE>`, `<CARD>`, `<IBAN>` |
+
+```
+logfold analyze app.log --masks secrets,pii --examples masked
+logfold analyze app.log --masks-file ./orders.json --save-state model.json
+logfold masks list
+logfold masks show secrets
+```
+
+The rules of the chosen sets run first, in the order given, and the default masks (numbers, IPs, UUIDs, timestamps, paths,
+hex values) run last over the text that is left, so a card number is `<CARD>` and not four `<NUM>`. A rule may carry a check
+(`luhn` or `iban`): a match that fails it is not masked, so a long number that is not a card stays a number. Rules are
+regular expressions of a linear-time engine; no rule is code.
+
+* `--masks-file FILE` reads a set from a JSON file ([schema](schema/mask-set.schema.json), at most 1 MiB, 256 rules, 4 KiB
+  per pattern); `[mining] masks = ["secrets", "pii"]` in [`logfold.toml`](config.md) names sets; a plugin package can ship
+  sets (see [plugins](plugins.md#mask-sets)). A flag beats the file.
+* A state is tied to the exact rules it was mined with: another set, another version of a set or another order is refused
+  with `StateError`. `logfold masks show NAME` prints the fingerprint that the state header keeps.
+* The sets hide values in templates and states. **The examples of a report are still the raw lines** unless you choose
+  `--examples masked` or `none`; a run that selects sets with raw examples says so on standard error.
+* The sets lower the risk and do not remove it: a rule finds what it can describe (a prefix, a label, a checksum), not a
+  random password without a label, and it can mask something that only looks like a secret (the word `token` followed by a
+  long value). `bench/docs/MASK_SETS.md` lists what they changed on 16 public logs and what they cost: about 17 to 20% of the
+  time of a run on 100 MB logs without secrets.
+* `logfold masks list [--json]` shows the sets that `--masks` accepts, `logfold masks show NAME_OR_FILE [--json]` the rules
+  of one.
+
 ## `logfold info`
 
 Prints the logfold and Python versions, whether the native engine is available (with its core, contract and algorithm
-versions), and the registered formats and reporters. Include its output in bug reports.
+versions), and the registered formats, reporters, matchers and mask sets. Include its output in bug reports.
 
 ## `logfold plugins`
 
-List, check and install plugins (formats, reporters, diff matchers). See the [plugins guide](plugins.md).
+List, check and install plugins (formats, reporters, diff matchers, mask sets). See the [plugins guide](plugins.md).
 
 ```
 logfold plugins list [--installed | --available] [--kind KIND] [--online] [--catalog SOURCE] [--json]
@@ -312,12 +350,12 @@ logfold plugins new KIND NAME [--dir FOLDER] [--force]
 
 | Command | What it does |
 |---|---|
-| `list` | every format, reporter and diff matcher with its status: `built-in`, `installed` (a package or a file in your plugin folder) or `available` (in the catalog, not installed), and the package that provides it |
+| `list` | every format, reporter, diff matcher and mask set with its status: `built-in`, `installed` (a package or a file in your plugin folder) or `available` (in the catalog, not installed), and the package that provides it |
 | `info NAME` | one plugin: what it does, where it comes from, how to install it (available) or use it (installed), for every kind that has this name |
 | `check` | the plugins of the catalog whose package is not installed yet, with an install hint |
 | `install NAME` | shows the package, version constraint and catalog, asks for confirmation and runs `python -m pip install` (or `uv pip install` when the environment has no pip) for a plugin of the catalog; a plugin that needs a newer logfold (`min_logfold`) is refused before the question |
 | `dir` | where logfold looks for your own plugin files, and whether that folder exists |
-| `new KIND NAME` | writes a working plugin template (`format`, `reporter` or `matcher`) into the plugin folder; `--dir` chooses another folder, `--force` overwrites |
+| `new KIND NAME` | writes a working plugin template (`format`, `reporter`, `matcher` or `mask`) into the plugin folder; `--dir` chooses another folder, `--force` overwrites |
 
 | Option | Default | Meaning |
 |---|---|---|
@@ -325,7 +363,7 @@ logfold plugins new KIND NAME [--dir FOLDER] [--force]
 | `--catalog` | | a catalog file or an HTTPS URL; overrides `--online` |
 | `--installed` | off | `list`: only what is built in or installed |
 | `--available` | off | `list`: only the catalog plugins that are not installed |
-| `--kind`, `-k` | | `list`, `info`: only `format`, `reporter` or `matcher` |
+| `--kind`, `-k` | | `list`, `info`: only `format`, `reporter`, `matcher` or `mask` |
 | `--json` | off | print JSON instead of a table (`list`, `info`, `check`) |
 | `--yes`, `-y` | off | do not ask for confirmation (`install`) |
 

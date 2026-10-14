@@ -20,6 +20,10 @@ git-ignored and created on demand); ``--out FILE`` chooses another file and ``--
     python bench/speed.py formats --sizes 10 100
     python bench/speed.py formats --format haproxy log4j
 
+``masks`` times the mask sets against the default masks alone, and prints the overhead of each::
+
+    python bench/speed.py masks bench/data/nginx_100mb.log --repeat 3
+
 ``matchers`` times each native matcher alone on lists of one-sided templates (the cost a plugin matcher adds to a diff)::
 
     python bench/speed.py matchers --sizes 5000 20000 100000
@@ -231,6 +235,45 @@ def diff(args: argparse.Namespace) -> None:
     )
 
 
+def own_rules_file(directory: Path, count: int = 30) -> Path:
+    """A mask set file with ``count`` simple rules of the kind a user writes."""
+    rules = [{"name": f"own{i}", "pattern": rf"\bRULE{i}_[0-9]{{4}}\b", "token": "<OWN>"} for i in range(count)]
+    path = directory / "own.json"
+    path.write_text(json.dumps({"name": "own", "rules": rules}), encoding="utf-8")
+    return path
+
+
+def masks(args: argparse.Namespace) -> None:
+    """``masks``: the default masks alone, then each built-in set and the sets with 30 rules of the user's own."""
+    files = args.files or sorted((ROOT / "bench" / "data").glob("*_100mb.log"))
+    if not files:
+        sys.exit("no input: pass files, or generate some with `python bench/data.py make`")
+    with tempfile.TemporaryDirectory() as directory:
+        own = own_rules_file(Path(directory))
+        flags = {
+            "default masks": [],
+            "+ secrets": ["--masks", "secrets"],
+            "+ pii": ["--masks", "pii"],
+            "+ secrets, pii": ["--masks", "secrets,pii"],
+            "+ secrets, pii, 30 own rules": ["--masks", "secrets,pii", "--masks-file", str(own)],
+        }
+        for path in files:
+            header(f"{path.name} ({path.stat().st_size / 1e6:,.0f} MB, strategy {args.strategy})")
+            common = ["-f", args.format, "--top", "1", "-q", "--engine", "native", "--examples", "none"]
+            variants = {
+                label: logfold("analyze", str(path), *common, "--strategy", args.strategy, *extra)
+                for label, extra in flags.items()
+            }
+            first = len(args.rows)
+            run_variants(variants, path.name, path.stat().st_size, args)
+            timed = [row for row in args.rows[first:] if "wall_median_s" in row]
+            if timed:
+                base = float(timed[0]["wall_median_s"])  # type: ignore[arg-type]
+                print("\n| variant | overhead over the default masks |\n|---|---:|")
+                for row in timed[1:]:
+                    print(f"| {row['variant']} | {float(row['wall_median_s']) / base - 1:+.1%} |")  # type: ignore[arg-type]
+
+
 def templates(rng: random.Random, count: int, vocabulary: int) -> list[str]:
     """Templates like the one-sided templates of a diff: a level, a service, a few words."""
     words = [f"w{i}" for i in range(vocabulary)]
@@ -374,6 +417,16 @@ def parser() -> argparse.ArgumentParser:
     second.add_argument("after", type=Path)
     common(second)
     second.set_defaults(run=diff)
+
+    fifth = sub.add_parser("masks", help="the mask sets against the default masks")
+    fifth.add_argument("files", nargs="*", type=Path, help="log files (default: bench/data/*_100mb.log)")
+    fifth.add_argument("--strategy", default="sequential", choices=("sequential", "chunked", "auto"))
+    fifth.add_argument("--format", default="plain", help="logfold --format (default plain)")
+    fifth.add_argument("--repeat", type=int, default=3, help="runs per variant; the median is shown (default 3)")
+    fifth.add_argument("--timeout", type=float, default=1800, help="seconds before a run is stopped")
+    fifth.add_argument("--threads", type=int, default=CORES, help="threads of the chunked strategy")
+    saving(fifth)
+    fifth.set_defaults(run=masks)
 
     fourth = sub.add_parser("formats", help="each built-in format against plain")
     fourth.add_argument("--format", nargs="+", default=list(GENERATORS), choices=list(GENERATORS))

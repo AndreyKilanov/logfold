@@ -278,3 +278,54 @@ def test_the_schema_and_the_parser_know_the_same_keys(tmp_path: Path) -> None:
 
     jsonschema.Draft202012Validator(schema).validate(tomllib.loads(FULL))
     read_settings(settings_file(tmp_path, FULL))
+
+
+def test_the_masks_key_can_list_mask_set_names(tmp_path: Path) -> None:
+    settings = read_settings(settings_file(tmp_path, '[mining]\nmasks = ["secrets", "pii"]\n'))
+    assert settings.mask_sets == ("secrets", "pii")
+    assert settings.mining.masks == DEFAULT_MASKS
+    assert read_settings(settings_file(tmp_path, '[mining]\nmasks = "none"\n')).mask_sets == ()
+    assert read_settings(settings_file(tmp_path, "[mining]\nmasks = []\n")).mining.masks == ()
+
+
+def test_a_rule_table_may_carry_a_check(tmp_path: Path) -> None:
+    text = '[[mining.masks]]\nname = "card"\npattern = "[0-9]{16}"\ntoken = "<CARD>"\ncheck = "luhn"\n'
+    settings = read_settings(settings_file(tmp_path, text))
+    assert settings.mining.masks == (MaskRule("card", "[0-9]{16}", "<CARD>", False, "luhn"),)
+    with pytest.raises(ConfigError, match="check"):
+        read_settings(settings_file(tmp_path, text.replace("luhn", "crc")))
+
+
+def test_names_and_tables_cannot_be_mixed(tmp_path: Path) -> None:
+    with pytest.raises(ConfigError, match=r"mining.masks"):
+        read_settings(settings_file(tmp_path, '[mining]\nmasks = ["pii", 3]\n'))
+
+
+def test_the_names_are_looked_up_when_a_run_starts(tmp_path: Path) -> None:
+    log = write(tmp_path / "a.log", ["user bob@example.com ok"] * 3)
+    settings = read_settings(settings_file(tmp_path, '[mining]\nmasks = ["pii"]\n'))
+    result = logfold.analyze(str(log), format="plain", engine="native", config=settings)
+    assert result.templates[0].text == "user <EMAIL> ok"
+    own = logfold.analyze(str(log), format="plain", engine="native", config=settings, masks=[])
+    assert own.templates[0].text == "user bob@example.com ok"
+    unknown = read_settings(settings_file(tmp_path, '[mining]\nmasks = ["nope"]\n'))
+    with pytest.raises(ConfigError, match="unknown mask set 'nope'"):
+        logfold.analyze(str(log), format="plain", engine="native", config=unknown)
+
+
+def test_the_schema_accepts_names_and_rules_with_checks() -> None:
+    import json
+    import tomllib
+
+    import jsonschema
+
+    schema = json.loads((Path(__file__).parents[2] / "docs" / "schema" / "config.schema.json").read_text("utf-8"))
+    validator = jsonschema.Draft202012Validator(schema)
+    validator.validate(tomllib.loads('[mining]\nmasks = ["secrets", "pii"]\n'))
+    validator.validate(tomllib.loads("[mining]\nmasks = []\n"))
+    rule = '[[mining.masks]]\nname = "c"\npattern = "x"\ntoken = "<C>"\ncheck = "iban"\n'
+    validator.validate(tomllib.loads(rule))
+    with pytest.raises(jsonschema.ValidationError):
+        validator.validate(tomllib.loads(rule.replace("iban", "crc")))
+    with pytest.raises(jsonschema.ValidationError):
+        validator.validate(tomllib.loads('[mining]\nmasks = ["pii", 3]\n'))

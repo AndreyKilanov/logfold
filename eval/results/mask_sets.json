@@ -1,0 +1,140 @@
+{
+  "sets": [
+    "secrets",
+    "pii"
+  ],
+  "per_dataset": {
+    "Android": {
+      "messages": 2000,
+      "changed": 6,
+      "ga_default": 0.7145,
+      "ga_sets": 0.7145,
+      "templates_default": 151,
+      "templates_sets": 151
+    },
+    "Apache": {
+      "messages": 2000,
+      "changed": 0,
+      "ga_default": 1.0,
+      "ga_sets": 1.0,
+      "templates_default": 6,
+      "templates_sets": 6
+    },
+    "BGL": {
+      "messages": 2000,
+      "changed": 0,
+      "ga_default": 0.9685,
+      "ga_sets": 0.9685,
+      "templates_default": 105,
+      "templates_sets": 105
+    },
+    "Hadoop": {
+      "messages": 2000,
+      "changed": 0,
+      "ga_default": 0.963,
+      "ga_sets": 0.963,
+      "templates_default": 99,
+      "templates_sets": 99
+    },
+    "HDFS": {
+      "messages": 2000,
+      "changed": 1,
+      "ga_default": 0.9975,
+      "ga_sets": 0.9975,
+      "templates_default": 17,
+      "templates_sets": 17
+    },
+    "HealthApp": {
+      "messages": 2000,
+      "changed": 0,
+      "ga_default": 0.9005,
+      "ga_sets": 0.9005,
+      "templates_default": 72,
+      "templates_sets": 72
+    },
+    "HPC": {
+      "messages": 2000,
+      "changed": 0,
+      "ga_default": 0.887,
+      "ga_sets": 0.887,
+      "templates_default": 45,
+      "templates_sets": 45
+    },
+    "Linux": {
+      "messages": 2000,
+      "changed": 1,
+      "ga_default": 0.684,
+      "ga_sets": 0.684,
+      "templates_default": 111,
+      "templates_sets": 111
+    },
+    "Mac": {
+      "messages": 2000,
+      "changed": 4,
+      "ga_default": 0.682,
+      "ga_sets": 0.682,
+      "templates_default": 296,
+      "templates_sets": 296
+    },
+    "OpenSSH": {
+      "messages": 2000,
+      "changed": 0,
+      "ga_default": 0.718,
+      "ga_sets": 0.718,
+      "templates_default": 23,
+      "templates_sets": 23
+    },
+    "OpenStack": {
+      "messages": 2000,
+      "changed": 0,
+      "ga_default": 0.2985,
+      "ga_sets": 0.2985,
+      "templates_default": 31,
+      "templates_sets": 31
+    },
+    "Proxifier": {
+      "messages": 2000,
+      "changed": 0,
+      "ga_default": 0.0255,
+      "ga_sets": 0.0255,
+      "templates_default": 38,
+      "templates_sets": 38
+    },
+    "Spark": {
+      "messages": 2000,
+      "changed": 0,
+      "ga_default": 0.9225,
+      "ga_sets": 0.9225,
+      "templates_default": 33,
+      "templates_sets": 33
+    },
+    "Thunderbird": {
+      "messages": 2000,
+      "changed": 0,
+      "ga_default": 0.9575,
+      "ga_sets": 0.9575,
+      "templates_default": 179,
+      "templates_sets": 179
+    },
+    "Windows": {
+      "messages": 2000,
+      "changed": 0,
+      "ga_default": 0.5665,
+      "ga_sets": 0.5665,
+      "templates_default": 49,
+      "templates_sets": 49
+    },
+    "Zookeeper": {
+      "messages": 2000,
+      "changed": 0,
+      "ga_default": 0.9665,
+      "ga_sets": 0.9665,
+      "templates_default": 46,
+      "templates_sets": 46
+    }
+  },
+  "average": {
+    "ga_default": 0.76575,
+    "ga_sets": 0.76575
+  }
+}

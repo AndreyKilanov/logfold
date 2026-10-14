@@ -370,3 +370,9 @@ engine with a deprecation warning, and will be refused in a later release. State
 
 Log lines are untrusted: HTML reports escape everything and carry a strict Content-Security-Policy. Example messages
 are raw lines; use `--examples masked` or `none` before sharing a report. See `SECURITY.md`.
+
+To keep secrets and personal data out of templates, saved states and examples, choose the mask sets: `--masks secrets,pii`
+(library `masks=["secrets", "pii"]`) hides tokens, API keys, passwords, e-mail addresses, phone numbers, card numbers and
+IBANs, and your own sets (`--masks-file`, a plugin) hide your own identifiers; add `--examples masked` so that the examples
+use the same rules. The sets lower the risk and do not remove it, and a run costs about 17 to 20% more on 100 MB logs. See
+the [mask sets](cli.md#mask-sets) and [writing one](plugins.md#mask-sets).

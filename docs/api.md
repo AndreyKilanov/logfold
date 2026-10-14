@@ -254,7 +254,7 @@ info() -> Info
 
 The facts that a bug report needs, as a frozen dataclass: `version`, `python`, `native_available`, `core_version`,
 `contract_version`, `algo_version` (the last three are `None` without the native extension), and the sorted names of the
-registered `formats`, `reporters` and `matchers`. It is what `logfold info` prints.
+registered `formats`, `reporters`, `matchers` and `mask_sets`. It is what `logfold info` prints.
 
 ## Results
 
@@ -348,11 +348,20 @@ result = analyze("app.log", mining=mining, execution=ExecutionConfig(threads=4))
 | `MiningConfig` | `depth=4` (at least 3), `sim_th=0.4` (`[0, 1]`), `max_children=100`, `max_templates=100000`, `on_full="pool"` (`"evict"` drops the least recently used templates at the cap instead of pooling the new ones; one tree, sequential strategy; a state must be used with the same value), `delimiters=" \t\n\r"` (ASCII), `masks` (the default rules) |
 | `ExecutionConfig` | `engine="auto"` (`auto`, `native`, `python`), `strategy="auto"` (`auto`, `sequential`, `chunked`), `threads=None` (all cores), `chunk_bytes=64 MiB`, `warm_start=False` |
 | `DiffConfig` | `threshold_ratio=2.0`, `min_count=10`, `min_new_count=1`, `recount=True`, `matcher="jaccard"`, `significance=0.01`, `min_baselines=None` |
-| `MaskRule` | `name`, `pattern` (must not match the empty string), `token`, `ascii=False` |
+| `MaskRule` | `name`, `pattern` (must not match the empty string), `token`, `ascii=False`, `check=None` (`"luhn"` or `"iban"`: a match that fails the check is skipped) |
+| `MaskSet` | `name`, `rules` (1 to 256 `MaskRule`), `version=1`, `description=""`; `fingerprint`, `to_dict()`, `MaskSet.from_dict(data)` |
 
 `masks` replaces the default rules, which are applied in this order: `uuid` -> `<UUID>`, `ts` -> `<TS>`, `ip` -> `<IP>`,
 `hex` -> `<HEX>`, `path` -> `<PATH>`, `num` -> `<NUM>`. They are available as `logfold.ext.DEFAULT_MASKS`; extend them
 with `masks=(*DEFAULT_MASKS, MaskRule(...))`.
+
+`masks` also takes **mask sets**, as objects or as the names that `logfold masks list` shows: `masks=["secrets", "pii"]`. The
+rules of the sets run first, in the order given, and the default rules run last over the text that is left, so `masks=["pii"]`
+turns `4111 1111 1111 1111` into `<CARD>` and not into four `<NUM>`. A list of `MaskRule` is the full list and replaces the
+defaults; rules and sets cannot be mixed in one list (`ConfigError`), an unknown name raises `UnknownMaskSetError`, a subclass of
+`ConfigError` with a "did you mean" hint. A state or a saved comparison must be made with the same rules. The sets hide values in
+templates and states; the examples of a result stay raw unless `examples="masked"` or `"none"`. See the
+[plugins guide](plugins.md#mask-sets) for the set files and `bench/docs/MASK_SETS.md` for what the built-in sets cost.
 
 ## Errors
 
@@ -399,22 +408,24 @@ them as `\uNNNN`, which parses back to the same text. The values on the result o
 | `RegexFormat`, `JsonFormat`, `PlainFormat` | format specifications (data, compiled by the engine); `FormatSpec` is their union, `Format` the protocol |
 | `Reporter` | protocol of a reporter: `name`, `kinds` (`analysis` and/or `diff`) and `render(result, **options) -> str` |
 | `DiffMatcher` | protocol of a diff matcher |
-| `MaskRule`, `DEFAULT_MASKS` | masking rules |
+| `MaskRule`, `MaskSet`, `DEFAULT_MASKS` | masking rules and sets of them |
+| `load_mask_set(path)`, `register_mask_set(set)`, `get_mask_set(name)`, `mask_set_names()` | read a set file (`ConfigError` when it cannot be used); register, look up and list mask sets |
+| `resolve_masks(selection, no_default=False)`, `mask_fingerprint(rules)` | the rules that a `masks=` selection stands for; the 16 hex digit identity of a rule list |
 | `register_format`, `register_reporter`, `register_matcher` | register at runtime |
 | `add_plugin_directory(path)`, `plugin_directories()`, `default_plugin_dir()` | load the plugins of a folder; the folders that are searched without being asked; the user plugin folder |
-| `plugin_sources()` | every registered format, reporter and matcher as `(kind, name, source)`, where `source` is `built-in` or the providing package |
+| `plugin_sources()` | every registered format, reporter, matcher and mask set as `(kind, name, source)`, where `source` is `built-in` or the providing package |
 | `get_format`, `get_reporter`, `get_matcher`, `format_names`, `reporter_names`, `matcher_names` | look up registered extensions |
 | `reporter_for_suffix(path)` | the reporter that a report file name selects by its suffix (`UnknownSuffixError` otherwise) |
 | `printable(text)` | show control characters as `\xNN`; use it on every value of a log that your reporter writes as text for people |
 
-Plugins are discovered through the entry-point groups `logfold.formats`, `logfold.reporters` and `logfold.matchers`;
+Plugins are discovered through the entry-point groups `logfold.formats`, `logfold.reporters`, `logfold.matchers` and `logfold.masks`;
 see the [plugins guide](plugins.md).
 
 ## Finding plugins (`logfold.plugins`)
 
 | Name | Purpose |
 |---|---|
-| `list_plugins(kind=None, status=None, catalog=None)` | every format, reporter and diff matcher as a `PluginInfo`: `built-in`, `installed` (a package or a file in a plugin folder) or `available` (in the catalog, not installed); `status` may be one value or several; the catalog is the bundled one unless you pass another from `logfold.plugins.catalog.load()`, so nothing touches the network |
+| `list_plugins(kind=None, status=None, catalog=None)` | every format, reporter, diff matcher and mask set as a `PluginInfo`: `built-in`, `installed` (a package or a file in a plugin folder) or `available` (in the catalog, not installed); `status` may be one value or several; the catalog is the bundled one unless you pass another from `logfold.plugins.catalog.load()`, so nothing touches the network |
 | `plugin_info(name, kind=None, catalog=None)` | the records of one name, one per kind that has it (`UnknownPluginError` with a "did you mean" hint otherwise) |
 | `closest(name, kind=None, catalog=None)` | the installed and catalog names that look most like `name` |
 | `unknown_name_hint(kind, name, catalog=None)` | one sentence for a name that was not found: the install command if the catalog has it, otherwise the closest names, otherwise `None`; never raises |
