@@ -128,6 +128,35 @@ def test_haproxy_with_and_without_the_syslog_prefix(tmp_path: Path) -> None:
     assert result.run.records == 4
 
 
+HAPROXY_REAL_REQUEST = (
+    "172.17.0.1:45034 [14/Oct/2026:19:20:41.871] fe_http be_app/srv1 0/0/-1/-1/3009 503 217 - - SC-- 1/1/0/0/3 0/0 "
+    '"GET /down/3 HTTP/1.1"'
+)
+HAPROXY_REAL_CONNECTION = "172.17.0.1:56804 [14/Oct/2026:19:20:44.886] fe_tcp be_tcp/srv_tcp 1/-1/0 0 CC 1/1/0/0/1 0/0"
+HAPROXY_REAL_HEADERS = {
+    "short": "<6>",
+    "iso": "2026-10-14T19:20:44.882067+00:00 ",
+    "rfc3164": "<134>Oct 14 19:20:51 localhost haproxy[8]: ",
+    "rfc5424": "<134>1 2026-10-14T19:21:20.757049+00:00 - haproxy 8 - - ",
+}
+"""What HAProxy 3.2.25 puts in front of a request or a connection, for each ``log stdout format``."""
+
+
+@pytest.mark.parametrize("form", list(HAPROXY_REAL_HEADERS))
+def test_haproxy_reads_every_syslog_form_that_haproxy_writes(tmp_path: Path, form: str) -> None:
+    header = HAPROXY_REAL_HEADERS[form]
+    notice = header + "Proxy fe_http stopped (cumulated conns: FE: 5, BE: 0)."
+    log = tmp_path / "haproxy.log"
+    log.write_text(lines(header + HAPROXY_REAL_REQUEST, header + HAPROXY_REAL_CONNECTION, notice), encoding="utf-8")
+    result = logfold.analyze(str(log), format="haproxy", engine="native")
+    assert result.run.records == 2
+    assert result.run.unparsed == 1
+    assert {template.text.split(" ")[0] for template in result.templates} == {"fe_http", "fe_tcp"}
+    first = logfold.inspect_file(log, format="haproxy").first_time
+    assert first is not None
+    assert first.isoformat() == "2026-10-14T19:20:41.871000"
+
+
 def test_haproxy_accept_time_selects_a_window(tmp_path: Path) -> None:
     result = analyze(tmp_path, "haproxy", since="2026-10-06T12:00:02")
     assert result.run.records == 2
@@ -158,6 +187,29 @@ def test_postgresql_csv_reads_severity_and_message_columns(tmp_path: Path) -> No
 def test_docker_json_drops_the_line_break_and_the_stream(tmp_path: Path) -> None:
     result = analyze(tmp_path, "docker-json")
     assert templates(result) == {"user <NUM> logged in": (2, None), "disk <NUM> full": (1, None)}
+
+
+def test_docker_json_joins_the_pieces_of_a_long_line_into_one_record(tmp_path: Path) -> None:
+    pieces = ["a" * 16384, "b" * 16384, "c" * 100]
+    rows = [
+        {"log": pieces[0], "stream": "stdout", "time": "2026-10-06T12:00:00.000000001Z"},
+        {"log": pieces[1], "stream": "stdout", "time": "2026-10-06T12:00:00.000000002Z"},
+        {"log": pieces[2] + "\n", "stream": "stdout", "time": "2026-10-06T12:00:00.000000003Z"},
+        {"log": "short line\n", "stream": "stderr", "time": "2026-10-06T12:00:01.000000000Z"},
+        {"log": "last line without a break", "stream": "stdout", "time": "2026-10-06T12:00:02.000000000Z"},
+    ]
+    log = tmp_path / "docker-json.log"
+    log.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+    result = logfold.analyze(str(log), format="docker-json", engine="native")
+    assert (result.run.records, result.run.lines, result.run.unparsed) == (3, 5, 0)
+    seen = logfold.inspect_file(log, format="docker-json", limit=10)
+    assert [(record.message[:3], len(record.message), record.lines) for record in seen.shown] == [
+        ("aaa", 32868, 1),
+        ("sho", 10, 1),
+        ("las", 25, 1),
+    ]
+    assert seen.first_time is not None
+    assert seen.first_time.isoformat() == "2026-10-06T12:00:00+00:00"
 
 
 def test_github_actions_levels_commands_and_the_byte_order_mark(tmp_path: Path) -> None:

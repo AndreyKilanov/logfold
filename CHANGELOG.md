@@ -81,6 +81,12 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 - Reports written with `--out` or `save()` have line feeds only on Windows too (they had carriage returns, which made
   `promtool` and the node exporter reject a `.prom` file).
+- `haproxy` reads the `iso` and `rfc5424` forms of `log ... format` (it read none of their lines), found with real
+  HAProxy 2.8 to 3.2.
+- `docker-json` joins the pieces of a line longer than 16 KB, which Docker splits into several entries, into one record (new
+  field `join_unterminated` of `JsonFormat`; the time is the first piece's).
+- A JSON message loses one line break at its end, so the examples and `inspect` of `docker-json` no longer show a line break
+  (the templates were not affected).
 
 ## [0.4.0] - 2026-10-07
 

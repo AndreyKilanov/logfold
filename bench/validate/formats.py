@@ -407,16 +407,8 @@ def cases(versions: list[int], only: str | None) -> list[Case]:
     return [case for case in chosen if only is None or only in case.label()]
 
 
-def main() -> None:
-    """Run the cases and print one table; exit with 1 when any number differs."""
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("target", nargs="?", default="postgresql", choices=["postgresql"])
-    parser.add_argument("--versions", nargs="+", type=int, default=sorted(POSTGRES_IMAGES))
-    parser.add_argument("--events", type=int, default=20, help="rounds of the emitter (each writes about 9 entries)")
-    parser.add_argument("--only", help="run the cases whose label contains this text")
-    args = parser.parse_args()
-    if not logfold._bridge.is_available():
-        sys.exit("the native extension is not built: run `maturin develop --release`")
+def run_postgresql(args: argparse.Namespace) -> int:
+    """Run the PostgreSQL cases, print their table and return the number that failed."""
     print("| setting | entries | stderr lines | auto picks | result |")
     print("|---|---:|---:|---|---|")
     failed = 0
@@ -425,6 +417,56 @@ def main() -> None:
         failed += bool(outcome.problems)
         verdict = "all numbers match" if not outcome.problems else "; ".join(outcome.problems)
         print(f"| {case.label()} | {outcome.entries} | {outcome.lines} | {outcome.auto} | {verdict} |", flush=True)
+    return failed
+
+
+def run_haproxy_cases(args: argparse.Namespace) -> int:
+    """Run the HAProxy cases, print their table and return the number that failed."""
+    from formats_haproxy import HAPROXY_IMAGES, LOG_FORMATS, HaproxyCase, run_haproxy
+
+    chosen = [HaproxyCase(version, form) for version in HAPROXY_IMAGES for form in LOG_FORMATS]
+    chosen.append(HaproxyCase(max(HAPROXY_IMAGES), "raw", "httplog clf"))
+    print("| setting | requests | log lines | result |")
+    print("|---|---:|---:|---|")
+    failed = 0
+    for index, case in enumerate(c for c in chosen if args.only is None or args.only in c.label()):
+        outcome = run_haproxy(case, index, args.rounds)
+        failed += bool(outcome.problems)
+        verdict = outcome.note or ("all numbers match" if not outcome.problems else "; ".join(outcome.problems))
+        print(f"| {case.label()} | {outcome.requests} | {outcome.lines} | {verdict} |", flush=True)
+    return failed
+
+
+def run_dockerjson_cases(args: argparse.Namespace) -> int:
+    """Run the docker-json cases, print their table and return the number that failed."""
+    from formats_dockerjson import DockerJsonCase, run_dockerjson
+
+    chosen = [DockerJsonCase("json-file"), DockerJsonCase("json-file with a tty (CR LF)", tty=True)]
+    print("| setting | entries | result |")
+    print("|---|---:|---|")
+    failed = 0
+    for index, case in enumerate(c for c in chosen if args.only is None or args.only in c.name):
+        outcome = run_dockerjson(case, index, args.rounds)
+        failed += bool(outcome.problems)
+        verdict = "all numbers match" if not outcome.problems else "; ".join(outcome.problems)
+        pieces = f" ({outcome.note})" if outcome.note else ""
+        print(f"| {case.name} | {outcome.entries} | {verdict}{pieces} |", flush=True)
+    return failed
+
+
+def main() -> None:
+    """Run the cases of the chosen programs and print one table for each; exit with 1 when any number differs."""
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("target", nargs="?", default="postgresql", choices=["postgresql", "haproxy", "docker-json"])
+    parser.add_argument("--versions", nargs="+", type=int, default=sorted(POSTGRES_IMAGES), help="PostgreSQL majors")
+    parser.add_argument("--events", type=int, default=20, help="PostgreSQL: rounds of the emitter")
+    parser.add_argument("--rounds", type=int, default=20, help="HAProxy: rounds of requests")
+    parser.add_argument("--only", help="run the cases whose label contains this text")
+    args = parser.parse_args()
+    if not logfold._bridge.is_available():
+        sys.exit("the native extension is not built: run `maturin develop --release`")
+    runners = {"postgresql": run_postgresql, "haproxy": run_haproxy_cases, "docker-json": run_dockerjson_cases}
+    failed = runners[args.target](args)
     sys.exit(1 if failed else 0)
 
 

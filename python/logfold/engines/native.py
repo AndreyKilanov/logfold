@@ -45,6 +45,7 @@ def format_to_dict(spec: FormatSpec) -> dict[str, Any]:
             "message_keys": list(spec.message_keys),
             "time_keys": list(spec.time_keys),
             "level_keys": list(spec.level_keys),
+            "join_unterminated": spec.join_unterminated,
             "ts_format": spec.ts_format,
             "multiline": False,
         }

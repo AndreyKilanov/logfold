@@ -23,10 +23,10 @@ They are part of `pip install logfold`; nothing else has to be installed.
 |---|---|---|
 | format | `logfmt` | `key=value` lines such as `ts=2026-10-04T10:00:01Z level=warn msg="slow query" took=412ms` |
 | format | `serilog-clef` | Serilog compact JSON (`@t`, `@m` / `@mt`, `@l`) |
-| format | `haproxy` | HAProxy HTTP and TCP logs (`option httplog`, `option tcplog`), with or without the syslog prefix; the message runs from the frontend to the end of the line, so the termination state (`----`, `sH--`) is part of the template |
+| format | `haproxy` | HAProxy HTTP and TCP logs (`option httplog`, `option tcplog`), with or without a syslog prefix (every `log ... format` form: `raw`, `short`, `iso`, `rfc3164`, `rfc5424`; not the CLF form of `option httplog clf`); the message runs from the frontend to the end of the line, so the termination state (`----`, `sH--`) is part of the template |
 | format | `postgresql` | the `stderr` log; any `log_line_prefix` that starts with a timestamp; `DETAIL`, `HINT` and `STATEMENT` lines are records of their own, indented continuation lines of a statement join the record |
 | format | `postgresql-csv` | `csvlog`: severity is the 12th column, the message the 14th |
-| format | `docker-json` | Docker `json-file` driver: `{"log": "...", "stream": "stdout", "time": "..."}` |
+| format | `docker-json` | Docker `json-file` driver: `{"log": "...", "stream": "stdout", "time": "..."}`; the pieces of a line longer than 16 KB that Docker splits are joined into one record |
 | format | `github-actions` | job logs with 7-digit timestamps and a leading byte-order mark; `##[error]`, `##[warning]`, `##[notice]` and `##[debug]` are the level, other `##[...]` commands stay in the message |
 | format | `log4j` | the pattern `%d{ISO8601} %-5p [%t] %c - %m%n`; stack traces join their record; any other pattern: `log4j:<pattern>` |
 | reporter | `markdown` | Markdown tables for an analysis or a diff |

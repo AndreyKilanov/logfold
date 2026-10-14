@@ -14,14 +14,18 @@ __all__ = ["DOCKER_JSON", "GITHUB_ACTIONS", "HAPROXY", "LOG4J", "POSTGRESQL", "P
 HAPROXY = RegexFormat(
     name="haproxy",
     pattern=(
-        r"^(?:[^\[\]]*haproxy\[\d+\]: )?\S+:\d+ \[(?P<ts>\d{2}/[A-Za-z]{3}/\d{4}:\d{2}:\d{2}:\d{2}\.\d+)\] "
+        r"^(?:[^\[\]]*haproxy\[\d+\]: |<\d+>1 \S+ \S+ haproxy \S+ \S+ \S+ |\d{4}-\d{2}-\d{2}T\S+ )?"
+        r"\S+:\d+ \[(?P<ts>\d{2}/[A-Za-z]{3}/\d{4}:\d{2}:\d{2}:\d{2}\.\d+)\] "
         r"(?P<msg>\S+ \S+ .*)$"
     ),
     message_group="msg",
     time_group="ts",
     ts_format="%d/%b/%Y:%H:%M:%S.%f",
 )
-"""HAProxy HTTP and TCP logs (``option httplog`` and ``option tcplog``), with or without the syslog prefix.
+"""HAProxy HTTP and TCP logs (``option httplog`` and ``option tcplog``), with or without a syslog prefix.
+
+Every form of ``log ... format`` is read: ``raw``, ``short`` (``<6>``), ``iso`` (an ISO time in front), ``rfc3164`` and
+``rfc5424``. The CLF form (``option httplog clf``) is not.
 
 The message runs from the frontend to the end of the line: ``fe_http be_app/srv1 0/0/1/12/13 200 1534 - - ---- 3/3/0/0/0
 0/0 "GET /index.html HTTP/1.1"``. The termination state (``----``, ``sH--``) stays in the template, so a change in how
@@ -70,12 +74,17 @@ A message that spans several lines is read up to the end of its first line; the 
 quotes inside the message stay as they are.
 """
 
-DOCKER_JSON = JsonFormat(name="docker-json", message_keys=("log",), time_keys=("time",), level_keys=())
+DOCKER_JSON = JsonFormat(
+    name="docker-json", message_keys=("log",), time_keys=("time",), level_keys=(), join_unterminated=True
+)
 """Docker ``json-file`` driver.
 
 A line looks like ``{"log":"user 41 logged in\\n","stream":"stdout","time":"2026-10-06T12:00:00.123456789Z"}``.
 
-The line break at the end of ``log`` is dropped; the stream is not a level.
+The line break at the end of ``log`` is dropped; the stream is not a level. Docker splits a line longer than 16 KB
+into several entries, and only the last of them ends with a line break: logfold joins them into one record, as
+``docker logs`` shows them (the time is the one of the first entry). A line without a line break at the end of the log
+is a record too.
 """
 
 GITHUB_ACTIONS = RegexFormat(

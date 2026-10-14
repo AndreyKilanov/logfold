@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::time::Instant;
 
 use logfold_core::{Assignment, DrainMiner, MaskRule, MaskScratch, MatchRule, MinerSnapshot, template_id};
-use logfold_io::{Counters, FormatConfig, MAX_LINE_BYTES, MAX_RECORD_BYTES};
+use logfold_io::{Counters, EntryJoiner, FormatConfig, MAX_LINE_BYTES, MAX_RECORD_BYTES, ParsedRecord};
 
 use crate::error::EngineError;
 use crate::pipeline::PipelineContext;
@@ -42,6 +42,7 @@ pub struct Session {
     open: Vec<u8>,
     first_len: usize,
     is_open: bool,
+    joiner: EntryJoiner,
     resumed: bool,
     started: Instant,
 }
@@ -69,6 +70,7 @@ impl Session {
             open: Vec::new(),
             first_len: 0,
             is_open: false,
+            joiner: EntryJoiner::default(),
             resumed,
             started: Instant::now(),
         })
@@ -104,7 +106,7 @@ impl Session {
 
     /// Mines the record that is still open, if any; returns how many records were mined (0 or 1).
     pub fn flush(&mut self) -> u64 {
-        u64::from(self.close_open())
+        u64::from(self.close_open()) + u64::from(self.close_joined())
     }
 
     /// Texts of the templates created since the previous call (or since the session was opened), in creation order.
@@ -213,6 +215,9 @@ impl Session {
     }
 
     fn add_line(&mut self, line: &[u8]) -> bool {
+        if self.context.format.joins_entries() {
+            return self.add_entry_line(line);
+        }
         if !self.context.format.multiline() {
             self.counters.lines += 1;
             return !is_blank(line) && self.mine(line, line.len());
@@ -238,6 +243,31 @@ impl Session {
         false
     }
 
+    fn add_entry_line(&mut self, line: &[u8]) -> bool {
+        self.counters.lines += 1;
+        if is_blank(line) {
+            return false;
+        }
+        match self.context.format.parse_entry(line) {
+            Some(entry) => match self.joiner.push(entry, MAX_RECORD_BYTES) {
+                Some(record) => self.mine_parsed(&record),
+                None => false,
+            },
+            None => {
+                let mined = self.close_joined();
+                self.counters.unparsed += 1;
+                mined
+            }
+        }
+    }
+
+    fn close_joined(&mut self) -> bool {
+        match self.joiner.finish() {
+            Some(record) => self.mine_parsed(&record),
+            None => false,
+        }
+    }
+
     fn close_open(&mut self) -> bool {
         if !self.is_open {
             return false;
@@ -254,9 +284,13 @@ impl Session {
             self.counters.unparsed += 1;
             return false;
         };
+        self.mine_parsed(&record)
+    }
+
+    fn mine_parsed(&mut self, record: &ParsedRecord<'_>) -> bool {
         self.counters.records += 1;
         self.counters.tz_aware |= record.tz_aware;
-        let (tokens, meta) = self.context.prepare(&record, &mut self.scratch, &mut self.spans);
+        let (tokens, meta) = self.context.prepare(record, &mut self.scratch, &mut self.spans);
         self.miner.add(0, &tokens, &meta);
         true
     }
