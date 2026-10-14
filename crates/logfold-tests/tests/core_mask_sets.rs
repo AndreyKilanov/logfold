@@ -340,3 +340,101 @@ proptest! {
         prop_assert_eq!(gated.hits(text.as_bytes()), oracle.hits(text.as_bytes()));
     }
 }
+
+fn assorted_rules() -> Vec<MaskRule> {
+    let unicode = |name: &str, pattern: &str| MaskRule {
+        name: name.into(),
+        pattern: pattern.into(),
+        token: "<U>".into(),
+        ascii: false,
+        check: None,
+    };
+    vec![
+        rule("word", r"(?i:token)=[a-z0-9]{3,}", "<W>", None),
+        rule("alt", r"(?:foo|bar|bazz)-[0-9]{2}", "<A>", None),
+        rule("plus", r"x+yz[0-9]", "<P>", None),
+        rule("opt", r"(?:ab)?cde[0-9]*", "<O>", None),
+        rule("inner", r"[a-z]{2,}://[a-z]+", "<I>", None),
+        rule("at", r"[a-z0-9]+@[a-z]+", "<T>", None),
+        rule("star_then_lit", r"(?:k1|k2)*zq", "<S>", None),
+        rule("hash", r"#[0-9a-f]{4}", "<H>", None),
+        unicode("german", r"(?i:straße)[0-9]"),
+        unicode("accent", r"É[a-z]{2}"),
+        unicode("class", r"[αβγ]{2}ok"),
+        unicode("kelvin", r"(?i:k)elvin"),
+    ]
+}
+
+fn assorted_piece() -> impl Strategy<Value = String> {
+    prop_oneof![
+        Just("TOKEN=abc123".to_string()),
+        Just("tOkEn=zzz".to_string()),
+        Just("foo-12".to_string()),
+        Just("bazz-99".to_string()),
+        Just("xxxyz7".to_string()),
+        Just("cde42".to_string()),
+        Just("abcde".to_string()),
+        Just("http://example".to_string()),
+        Just("a1@host".to_string()),
+        Just("k1k2zq".to_string()),
+        Just("zq".to_string()),
+        Just("#beef".to_string()),
+        Just("STRASSE1".to_string()),
+        Just("Straße5".to_string()),
+        Just("Éab".to_string()),
+        Just("αβok".to_string()),
+        Just("\u{212a}elvin".to_string()),
+        Just("Kelvin".to_string()),
+        "[a-z0-9#@:/=+-]{0,10}",
+        r"\PC{0,6}",
+    ]
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(512))]
+
+    #[test]
+    fn the_gate_is_sound_for_assorted_patterns(
+        pieces in proptest::collection::vec(assorted_piece(), 0..8),
+        which in proptest::collection::vec(0usize..12, 1..6),
+    ) {
+        let all = assorted_rules();
+        let mut chosen: Vec<MaskRule> = Vec::new();
+        for index in which {
+            if !chosen.iter().any(|rule| rule.name == all[index].name) {
+                chosen.push(all[index].clone());
+            }
+        }
+        let rules = with_defaults(chosen);
+        let gated = RuleMasker::new(&rules).unwrap();
+        let oracle = RuleMasker::with_regex(&rules).unwrap();
+        let text = pieces.join(" ");
+        prop_assert_eq!(run(&gated, &text), run(&oracle, &text), "gated: {}", gated.first_layer_is_gated());
+        prop_assert_eq!(gated.hits(text.as_bytes()), oracle.hits(text.as_bytes()));
+    }
+}
+
+#[test]
+fn each_assorted_rule_alone_agrees_with_the_oracle_on_its_own_example() {
+    let examples = [
+        ("word", "x TOKEN=abc123 y"),
+        ("alt", "a bazz-99 b"),
+        ("plus", "xxxyz7"),
+        ("opt", "abcde42"),
+        ("inner", "see http://example"),
+        ("at", "mail a1@host"),
+        ("star_then_lit", "k1k2zq"),
+        ("hash", "id #beef"),
+        ("german", "Straße5 and STRASSE1"),
+        ("accent", "Éab"),
+        ("class", "αβok"),
+        ("kelvin", "\u{212a}elvin"),
+    ];
+    for (name, text) in examples {
+        let rules = with_defaults(assorted_rules().into_iter().filter(|rule| rule.name == name).collect());
+        let gated = RuleMasker::new(&rules).unwrap();
+        let oracle = RuleMasker::with_regex(&rules).unwrap();
+        assert_eq!(run(&gated, text), run(&oracle, text), "{name}");
+        assert_ne!(run(&oracle, text), masked(&default_mask_rules(), text), "{name}: the example must match its rule");
+    }
+}
