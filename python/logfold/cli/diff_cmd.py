@@ -24,6 +24,8 @@ from logfold.cli.options import (
     Format,
     HighCardinality,
     Level,
+    Masks,
+    MasksFile,
     MaxChildren,
     MaxTemplates,
     Multiline,
@@ -46,6 +48,7 @@ from logfold.cli.output import resolve_outputs
 from logfold.cli.runtime import (
     config_note,
     emit,
+    examples_note,
     fail,
     given_on_command_line,
     note,
@@ -213,6 +216,8 @@ def diff(
     chunk_mb: ChunkMb = None,
     strategy: Strategy = None,
     no_masks: NoMasks = False,
+    masks: Masks = None,
+    masks_file: MasksFile = None,
     high_cardinality: HighCardinality = False,
     warm_start: WarmStart = False,
     examples: Examples = "raw",
@@ -228,6 +233,7 @@ def diff(
     try:
         settings = settings_of(ctx)
         config_note(settings, quiet)
+        examples_note(settings, masks, masks_file, examples, quiet)
         outputs = resolve_outputs("diff", out, report, as_json, append)
         threshold = resolve_level(level, only_alerts)
         if split_at is None and after is None:
@@ -263,6 +269,8 @@ def diff(
                     "--chunk-mb": chunk_mb is not None,
                     "--strategy": strategy is not None,
                     "--no-masks": no_masks,
+                    "--masks": masks is not None,
+                    "--masks-file": bool(masks_file),
                     "--high-cardinality": high_cardinality,
                     "--warm-start": warm_start,
                     "--since": since is not None,
@@ -315,6 +323,8 @@ def diff(
                         warm_start,
                         on_full,
                         delimiters,
+                        masks,
+                        masks_file,
                     ),
                 )
         if threshold is not None:

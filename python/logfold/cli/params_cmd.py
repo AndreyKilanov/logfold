@@ -8,7 +8,7 @@ from typing import Annotated
 import typer
 
 import logfold
-from logfold.cli.options import AsJson, Debug, Delimiters, NoMasks, read_delimiters
+from logfold.cli.options import AsJson, Debug, Delimiters, Masks, MasksFile, NoMasks, read_delimiters, read_masks
 from logfold.cli.runtime import config_note, fail, settings_of, write_stdout
 from logfold.errors import ConfigError, LogfoldError
 from logfold.ext.text import printable
@@ -25,6 +25,8 @@ def params(
     template: Annotated[str, typer.Argument(help="Text of a template, as a report shows it.")],
     message: Annotated[str, typer.Argument(help="One record, as written in the log.")],
     no_masks: NoMasks = False,
+    masks: Masks = None,
+    masks_file: MasksFile = None,
     delimiters: Delimiters = None,
     as_json: AsJson = False,
     debug: Debug = False,
@@ -34,7 +36,11 @@ def params(
         settings = settings_of(ctx)
         config_note(settings, True)
         found = logfold.extract_parameters(
-            template, message, masks=[] if no_masks else None, config=settings, delimiters=read_delimiters(delimiters)
+            template,
+            message,
+            masks=read_masks(no_masks, masks, masks_file),
+            config=settings,
+            delimiters=read_delimiters(delimiters),
         )
         if found is None:
             raise ConfigError(

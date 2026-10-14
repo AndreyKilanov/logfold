@@ -16,6 +16,7 @@ from logfold.cli.analyze_cmd import analyze
 from logfold.cli.available_help import AvailableHelpCommand
 from logfold.cli.diff_cmd import diff
 from logfold.cli.info_cmd import formats, info
+from logfold.cli.masks_cmd import masks_app
 from logfold.cli.match_cmd import match
 from logfold.cli.plugins_cmd import plugins_app
 from logfold.cli.runtime import stderr_console
@@ -31,6 +32,7 @@ app = typer.Typer(
     pretty_exceptions_enable=False,
 )
 app.add_typer(plugins_app, name="plugins")
+app.add_typer(masks_app, name="masks")
 
 
 def _version(value: bool) -> None:

@@ -21,6 +21,8 @@ from logfold.cli.options import (
     Examples,
     Format,
     Level,
+    Masks,
+    MasksFile,
     MaxChildren,
     MaxTemplates,
     Multiline,
@@ -39,7 +41,16 @@ from logfold.cli.options import (
     mining_options,
 )
 from logfold.cli.output import resolve_outputs
-from logfold.cli.runtime import config_note, emit, fail, note, progress_reporter, settings_of, write_report
+from logfold.cli.runtime import (
+    config_note,
+    emit,
+    examples_note,
+    fail,
+    note,
+    progress_reporter,
+    settings_of,
+    write_report,
+)
 from logfold.errors import LogfoldError
 
 EXAMPLES = """Examples:
@@ -106,6 +117,8 @@ def match(
     chunk_mb: ChunkMb = None,
     strategy: Strategy = None,
     no_masks: NoMasks = False,
+    masks: Masks = None,
+    masks_file: MasksFile = None,
     examples: Examples = "raw",
     as_json: AsJson = False,
     quiet: Quiet = False,
@@ -115,6 +128,7 @@ def match(
     try:
         settings = settings_of(ctx)
         config_note(settings, quiet)
+        examples_note(settings, masks, masks_file, examples, quiet)
         outputs = resolve_outputs("analysis", out, report, as_json, append)
         threshold = resolve_level(level, only_alerts)
         options = mining_options(
@@ -131,6 +145,8 @@ def match(
             False,
             on_full,
             delimiters,
+            masks,
+            masks_file,
         )
         for name in NOT_FOR_MATCH:
             del options[name]

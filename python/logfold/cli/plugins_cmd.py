@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 plugins_app = typer.Typer(
     name="plugins",
-    help="List, inspect, check and install logfold plugins (formats, reporters, diff matchers).",
+    help="List, inspect, check and install logfold plugins (formats, reporters, diff matchers, mask sets).",
     no_args_is_help=True,
     add_completion=False,
 )
@@ -58,8 +58,13 @@ def _load(online: bool, catalog: str | None) -> Catalog:
         raise _fail(error) from None
 
 
-Kind = Annotated[str | None, typer.Option("--kind", "-k", help="Only this kind: format, reporter or matcher.")]
-_USAGE = {"format": "--format {name}", "reporter": "--report {name}", "matcher": "--matcher {name}"}
+Kind = Annotated[str | None, typer.Option("--kind", "-k", help="Only this kind: format, reporter, matcher or mask.")]
+_USAGE = {
+    "format": "--format {name}",
+    "reporter": "--report {name}",
+    "matcher": "--matcher {name}",
+    "mask": "--masks {name}",
+}
 
 
 def _safe(text: str) -> str:
@@ -94,7 +99,7 @@ def list_command(
     catalog: CatalogSource = None,
     as_json: AsJson = False,
 ) -> None:
-    """List formats, reporters and diff matchers: built in, installed, and available from the catalog.
+    """List formats, reporters, diff matchers and mask sets: built in, installed, and available from the catalog.
 
     The catalog bundled with this version of logfold is used and nothing is downloaded; --online fetches the latest one.
     """
@@ -180,7 +185,7 @@ def show_folders() -> None:
     console.print(f"{registry.ENV_PLUGIN_PATH}: {shown}", soft_wrap=True)
     if registry.plugin_directories():
         console.print(
-            "Add a plugin with: [bold]logfold plugins new KIND NAME[/bold]  (KIND: format, reporter, matcher)"
+            "Add a plugin with: [bold]logfold plugins new KIND NAME[/bold]  (KIND: format, reporter, matcher, mask)"
         )
     else:
         console.print(f"These folders are switched off by {registry.ENV_NO_USER_PLUGINS}.")
@@ -188,7 +193,7 @@ def show_folders() -> None:
 
 @plugins_app.command("new")
 def new_plugin(
-    kind: Annotated[str, typer.Argument(help="format, reporter or matcher.")],
+    kind: Annotated[str, typer.Argument(help="format, reporter, matcher or mask.")],
     name: Annotated[str, typer.Argument(help="Plugin name: letters, digits, '-' and '_'.")],
     folder: Annotated[Path | None, typer.Option("--dir", help="Write here instead of the plugin folder.")] = None,
     force: Annotated[bool, typer.Option("--force", help="Overwrite an existing file.")] = False,

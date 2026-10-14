@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Annotated, Any
 
 import typer
 
 from logfold.errors import ConfigError
+from logfold.ext.mask_sets import MaskSet, load_mask_set
 
 PANEL_INPUT = "Input"
 PANEL_OUTPUT = "Output"
@@ -176,6 +178,25 @@ NoMasks = Annotated[
     bool,
     typer.Option("--no-masks", help="Do not mask numbers, IPs, UUIDs and other values.", rich_help_panel=PANEL_MINING),
 ]
+Masks = Annotated[
+    str | None,
+    typer.Option(
+        "--masks",
+        metavar="NAMES",
+        help="Mask sets that run before the default masks, comma-separated, for example secrets,pii "
+        "('logfold masks list' shows them).",
+        rich_help_panel=PANEL_MINING,
+    ),
+]
+MasksFile = Annotated[
+    list[Path] | None,
+    typer.Option(
+        "--masks-file",
+        metavar="FILE",
+        help="A mask set from a JSON file (see docs/plugins.md); repeat the flag for several. Runs after --masks.",
+        rich_help_panel=PANEL_MINING,
+    ),
+]
 HighCardinality = Annotated[
     bool,
     typer.Option(
@@ -259,6 +280,36 @@ def read_delimiters(text: str | None) -> str | None:
     return "".join(out)
 
 
+def read_masks(
+    no_masks: bool, masks: str | None = None, masks_files: Sequence[Path] | None = None
+) -> list[str | MaskSet] | None:
+    """Turn the mask flags of a command into the ``masks`` argument of the library.
+
+    Args:
+        no_masks: ``--no-masks``.
+        masks: ``--masks``, comma-separated set names.
+        masks_files: ``--masks-file``, once for every file.
+
+    Returns:
+        ``[]`` for ``--no-masks``, the named sets followed by the sets of the files, or ``None`` when no flag was given
+        (the settings file or the defaults then decide).
+
+    Raises:
+        ConfigError: If ``--no-masks`` is combined with another mask flag, a name is empty, or a file cannot be used.
+    """
+    names = [name.strip() for name in masks.split(",")] if masks is not None else []
+    if masks is not None and not all(names):
+        raise ConfigError("--masks needs set names separated by commas", hint="for example --masks secrets,pii")
+    files = list(masks_files or [])
+    if no_masks:
+        if names or files:
+            raise ConfigError("--no-masks cannot be combined with --masks or --masks-file")
+        return []
+    if not names and not files:
+        return None
+    return [*names, *(load_mask_set(path) for path in files)]
+
+
 def mining_options(
     sim_th: float | None,
     depth: int | None,
@@ -273,6 +324,8 @@ def mining_options(
     warm_start: bool,
     on_full: str | None = None,
     delimiters: str | None = None,
+    masks: str | None = None,
+    masks_files: Sequence[Path] | None = None,
 ) -> dict[str, Any]:
     """Turn the mining flags of a command into keyword arguments of ``logfold.analyze`` and ``logfold.diff``.
 
@@ -290,6 +343,8 @@ def mining_options(
         warm_start: ``--warm-start``.
         on_full: ``--on-full``.
         delimiters: ``--delimiters``, with the escapes not yet read.
+        masks: ``--masks``.
+        masks_files: ``--masks-file``.
 
     Returns:
         The keyword arguments, with ``None`` for every option left at its default.
@@ -305,7 +360,7 @@ def mining_options(
         "engine": engine,
         "chunk_bytes": chunk_mb << 20 if chunk_mb else None,
         "strategy": strategy,
-        "masks": [] if no_masks else None,
+        "masks": read_masks(no_masks, masks, masks_files),
         "high_cardinality": high_cardinality,
         "warm_start": True if warm_start else None,
     }
