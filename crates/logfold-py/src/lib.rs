@@ -21,7 +21,7 @@ use logfold_engine::{EngineError, MineRequest};
 use observer::PyObserver;
 
 /// Version of the Python <-> Rust data contract; bump on any incompatible change of the request or result layout.
-const CORE_API_VERSION: u32 = 16;
+const CORE_API_VERSION: u32 = 17;
 
 pyo3::create_exception!(_core, CoreConfigError, pyo3::exceptions::PyException, "Invalid configuration.");
 pyo3::create_exception!(_core, CoreFormatError, pyo3::exceptions::PyException, "Invalid or unusable log format.");
@@ -63,6 +63,19 @@ fn match_state<'py>(
     let exact = request.get_item("exact")?.map(|flag| flag.extract::<bool>()).transpose()?.unwrap_or(false);
     let engine: EngineRun = if exact { match_exactly } else { logfold_engine::match_records };
     execute(py, request, progress, engine)
+}
+
+/// Checks one or more runs against the saved state of `request`: the records are matched, and those that fit no template
+/// are mined by themselves. The request is the one of `match_state`; the result is its result plus `model` (the
+/// templates of the state with the counts it saved) and `new_templates`.
+#[pyfunction]
+#[pyo3(signature = (request, progress=None))]
+fn check_state<'py>(
+    py: Python<'py>,
+    request: &Bound<'py, PyDict>,
+    progress: Option<Py<PyAny>>,
+) -> PyResult<Bound<'py, PyDict>> {
+    execute(py, request, progress, logfold_engine::check_records)
 }
 
 fn match_exactly(
@@ -226,6 +239,7 @@ fn default_masks(py: Python<'_>) -> PyResult<Bound<'_, PyList>> {
 fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(mine, m)?)?;
     m.add_function(wrap_pyfunction!(match_state, m)?)?;
+    m.add_function(wrap_pyfunction!(check_state, m)?)?;
     m.add_function(wrap_pyfunction!(match_templates, m)?)?;
     m.add_function(wrap_pyfunction!(compare_runs, m)?)?;
     m.add_function(wrap_pyfunction!(render_report, m)?)?;

@@ -167,8 +167,20 @@ pub struct MineOutput {
     /// Set by [`crate::match_records`]: for every run, the records that matched no template as pairs `(token count,
     /// records)` sorted by token count. `None` when the run was trained.
     pub unmatched: Option<Vec<Vec<(usize, u64)>>>,
+    /// Set by [`crate::check_records`]. `None` otherwise.
+    pub check: Option<CheckOutput>,
     /// Timings.
     pub metrics: RunMetrics,
+}
+
+/// What [`crate::check_records`] adds to the match of a log against a saved state.
+#[derive(Debug)]
+pub struct CheckOutput {
+    /// The templates of the saved state with the counts of the runs that were saved, as a single run.
+    pub model: Vec<FrozenTemplate>,
+    /// The templates that the records fitting no template of the state form when they are mined by themselves, with
+    /// the statistics of these runs: all of them are new to the state.
+    pub new_templates: Vec<FrozenTemplate>,
 }
 
 /// A template that a record was assigned to, as the miner holds it at that moment.

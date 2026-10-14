@@ -82,5 +82,5 @@ pub fn match_records_with(
         wall_recount_s: match_seconds,
         wall_freeze_s: freeze_seconds,
     };
-    Ok(MineOutput { runs, templates, snapshot: None, unmatched: Some(unmatched), metrics })
+    Ok(MineOutput { runs, templates, snapshot: None, unmatched: Some(unmatched), check: None, metrics })
 }
