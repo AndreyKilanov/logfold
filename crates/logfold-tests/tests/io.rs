@@ -30,6 +30,22 @@ mod format {
     }
 
     #[test]
+    fn json_drops_one_line_break_at_the_end_of_a_message() {
+        let fmt = json_format();
+        for (line, expected) in [
+            (r#"{"message":"line 1\n"}"#, "line 1"),
+            (r#"{"message":"line 1\r\n"}"#, "line 1"),
+            (r#"{"message":"\n"}"#, ""),
+            (r#"{"message":"two\n\n"}"#, "two\n"),
+            (r#"{"message":"inside\nthe text"}"#, "inside\nthe text"),
+            (r#"{"message":"no break"}"#, "no break"),
+        ] {
+            let rec = fmt.parse(line.as_bytes(), line.len()).unwrap();
+            assert_eq!(&*rec.message, expected.as_bytes(), "{line}");
+        }
+    }
+
+    #[test]
     fn regex_groups_and_continuation() {
         let fmt = CompiledFormat::new(&FormatConfig {
             spec: FormatSpec::Regex {

@@ -33,7 +33,7 @@ and optional `level`.
 
 - **plain**: message = the whole record text.
 - **json**: the line must be a JSON object, else the line is unparsed. `message` = first present key of
-  `message_keys` (default `message`, `msg`, `log`); a string is used as is, other scalar JSON values are rendered
+  `message_keys` (default `message`, `msg`, `log`); a string is used as is except that one line break (`\n` or `\r\n`) at its end is dropped, other scalar JSON values are rendered
   as compact JSON; a missing message makes the line unparsed. `timestamp` = first present key of `time_keys`
   (default `timestamp`, `time`, `ts`, `@timestamp`): strings go through §1.3 (a string of 1–18 ASCII digits is
   treated as an integer), numbers are epoch seconds (`|v| < 1e11`), milliseconds (`< 1e14`), microseconds

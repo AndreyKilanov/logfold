@@ -165,7 +165,7 @@ impl CompiledFormat {
                 let object = value.as_object()?;
                 let message = message_keys.iter().find_map(|key| object.get(key))?;
                 let message = match message {
-                    Value::String(text) => text.clone().into_bytes(),
+                    Value::String(text) => without_line_break(text).as_bytes().to_vec(),
                     other => other.to_string().into_bytes(),
                 };
                 let parsed_time = time_keys.iter().find_map(|key| object.get(key)).and_then(|v| self.json_time(v));
@@ -231,4 +231,10 @@ impl CompiledFormat {
             _ => None,
         }
     }
+}
+
+/// Drops one line break (`\n` or `\r\n`) from the end of a message that a JSON log wrote with it.
+fn without_line_break(text: &str) -> &str {
+    let text = text.strip_suffix('\n').unwrap_or(text);
+    text.strip_suffix('\r').unwrap_or(text)
 }
