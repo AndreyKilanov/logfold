@@ -65,3 +65,63 @@ precision of `%t`.
 **Not checked:** `jsonlog` (PostgreSQL 15 and later; not a built-in format), the `syslog` and `eventlog` destinations,
 `log_line_prefix` values that do not start with a timestamp, other `lc_messages` languages, autovacuum and checkpoint
 messages, logs over 100 MB (the check runs on about 40 KB).
+
+## HAProxy (`haproxy`)
+
+**The oracle.** HAProxy 2.8.30, 3.0.29 and 3.2.25 answer numbered requests themselves (`http-request return`, `deny`, a
+backend whose only server is down) and log to their standard output in each form of `log stdout format`. The requests
+come from a second container that shares the network of the first, so no other connection (Docker Desktop's probes of a
+published port showed up as `GET /` and `<BADREQ>` lines) reaches the log. What was sent is the expected result: per
+round `GET` and `POST` answered with 200, `GET` denied with 403, `HEAD` and `GET` to a backend that is down (503, one with
+a 1,500-character query that HAProxy cuts in the log), two plain TCP connections to a `mode tcp` frontend, and one
+garbage request (`<BADREQ>`, 400). 20 rounds: 160 lines per run, and four `Proxy ... stopped` lines of the shutdown.
+
+**What is compared:** the records read by `-f haproxy` (160), the lines not parsed (exactly the shutdown lines, nothing
+else), the accept times (inside the time of the run), and **every record** as `(frontend, backend, status, method, path)`
+as a multiset, read back from the record with a pattern of the script and not of logfold.
+
+| HAProxy | `raw` | `short` (`<6>`) | `iso` | `rfc3164` | `rfc5424` |
+|---|---|---|---|---|---|
+| 2.8.30 | match | match | match | match | match |
+| 3.0.29 | match | match | match | match | match |
+| 3.2.25 | match | match | match | match | match |
+
+`option httplog clf` (3.2.25, `raw`): not supported, as documented; the 40 connection lines of `tcplog` are read, the 120
+CLF request lines are not.
+
+**What this found.** The `iso` (an ISO time in front of the line) and `rfc5424` (`<134>1 time host haproxy pid - - `) forms
+were **not read at all**: 0 records of 160, although the documentation promised the syslog prefix. The pattern allowed
+only the `rfc3164` prefix. Fixed in the format, with a test made of lines that HAProxy wrote (`tests/plugins/test_format_plugins.py`).
+
+**Not checked:** `option httpslog`, `log-format` that you write yourself, syslog over UDP with a real host name, HAProxy 2.4
+and older, logs of the `stats` socket and of the master process.
+
+## Docker `json-file` (`docker-json`)
+
+**The oracle.** A container prints numbered lines on stdout and stderr, empty lines, non-ASCII text, a tab, quotes, a
+backslash, an escape sequence, a line of 50,000 characters (Docker splits it into entries of 16 KB) and a last line without
+a line break. The real `*-json.log` file is read back (`LogPath` of the container) and parsed with Python's `json`
+module: every line of the file is one entry. The printed lines are rebuilt from the entries and compared with what was
+printed, which proves that the file holds what was written. The same run with a terminal (`-t`: lines end with CR LF and
+stderr joins stdout).
+
+**What is compared:** records (one per entry), lines not parsed (0), the message of every record against the `log` value
+without its line break (as a multiset), and the first and last time (nanoseconds cut to microseconds).
+
+| setting | entries | result |
+|---|---:|---|
+| `json-file` | 59 | all numbers match |
+| `json-file` with a terminal (CR LF) | 59 | all numbers match |
+
+**What this found.**
+
+- The message of a record kept the line break of the entry (`line 1 stdout` plus a line feed): in the examples of a report
+  and in `inspect`. The documentation said that it was dropped; the templates were right only because the line feed is a
+  delimiter. Fixed: a JSON message loses one line break at its end (`\n` or `\r\n`), so a terminal's CR LF goes too
+  (`docs/ALGORITHM.md`, a Rust test).
+- **Not a defect, a limit:** the entries of a line longer than 16 KB are read as records of their own (7 here: 6 pieces of
+  the two long lines and the last line, which has no line break). `docker logs` joins them; logfold does not. Such pieces
+  are noise in the templates.
+
+**Not checked:** other drivers (`local`, `journald`, `syslog`), a log that Docker rotates (`max-size`), compressed rotated
+files, entries with `attrs` or `tag`.
