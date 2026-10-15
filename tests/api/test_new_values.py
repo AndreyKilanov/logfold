@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from pathlib import Path
 
@@ -170,3 +171,30 @@ def test_the_reports_show_the_values_and_escape_them(tmp_path: Path) -> None:
     assert "## Values that differ" in markdown
     assert "\x1b" not in markdown
     assert "Values that differ" not in logfold.diff(str(first), str(second)).render("text")
+
+
+def test_a_capped_position_is_shown_as_not_compared_in_every_report(pair: tuple[Path, Path]) -> None:
+    result = compared(pair)
+    assert result.value_changes is not None
+    capped = dataclasses.replace(
+        result.value_changes[0].changes[0],
+        new=(),
+        gone=(),
+        new_distinct=0,
+        gone_distinct=0,
+        shared_distinct=0,
+        before_distinct=1_000_000,
+        after_distinct=1_000_000,
+        capped=True,
+    )
+    result = dataclasses.replace(
+        result, value_changes=(dataclasses.replace(result.value_changes[0], changes=(capped,)),)
+    )
+    assert "not compared" in result.render("text")
+    assert "1,000,000+ before" in result.render("text")
+    assert "not compared" in result.render("html")
+    assert "not compared" in result.render("markdown")
+    position = json.loads(result.render("json"))["value_changes"][0]["positions"][0]
+    assert position["capped"] is True
+    assert position["new"] == []
+    assert position["before_distinct"] == 1_000_000

@@ -73,7 +73,8 @@ fn a_position_over_the_limit_of_the_collector_is_marked_and_gives_no_lists() {
     }
     let set = only_set(collector);
     assert!(set.capped());
-    assert_eq!(set.len(), 5);
+    assert!(set.is_empty());
+    assert_eq!(set.distinct(), 5);
     let change: Change = compare_values(&ValueSet::default(), &set).unwrap();
     assert!(change.capped);
     assert!(change.new.is_empty() && change.gone.is_empty());
@@ -88,7 +89,8 @@ fn a_position_over_its_own_limit_is_marked_too() {
     }
     let set = only_set(collector);
     assert!(set.capped());
-    assert_eq!(set.len(), MAX_PER_POSITION);
+    assert!(set.is_empty());
+    assert_eq!(set.distinct(), MAX_PER_POSITION);
 }
 
 #[test]
@@ -101,6 +103,40 @@ fn the_cap_of_one_position_does_not_spend_the_room_of_the_others() {
     let sets = collector.into_clusters().into_values().next().unwrap();
     assert!(sets[0].1.capped());
     assert!(!sets[1].1.capped());
+}
+
+#[test]
+fn a_position_with_a_new_value_on_every_record_does_not_starve_the_others() {
+    let mut collector = PresenceCollector::new(1000);
+    for record in 0..5000u32 {
+        collector.add(0, 1, NAME, &record.to_le_bytes());
+        collector.add(0, 3, NAME, &(record % 300).to_le_bytes());
+    }
+    let sets = collector.into_clusters().into_values().next().unwrap();
+    let runaway = &sets[0].1;
+    let useful = &sets[1].1;
+    assert!(runaway.capped());
+    assert!(runaway.is_empty());
+    assert!(runaway.distinct() >= 500, "the numbers counted before the cap are kept: {}", runaway.distinct());
+    assert!(!useful.capped());
+    assert_eq!(useful.len(), 300);
+}
+
+#[test]
+fn merging_a_part_that_is_full_of_new_values_caps_it_and_spares_the_others() {
+    let mut part = PresenceCollector::new(usize::MAX);
+    let mut whole = PresenceCollector::new(800);
+    for record in 0..900u32 {
+        part.add(0, 1, NAME, &record.to_le_bytes());
+        part.add(0, 3, NAME, &(record % 100).to_le_bytes());
+        whole.add(0, 3, NAME, &(record % 50).to_le_bytes());
+    }
+    whole.merge(part);
+    let sets = whole.into_clusters().into_values().next().unwrap();
+    let by_position = |position: usize| sets.iter().find(|((at, _), _)| *at == position).unwrap();
+    assert!(by_position(1).1.capped());
+    assert!(!by_position(3).1.capped());
+    assert_eq!(by_position(3).1.len(), 100);
 }
 
 #[test]

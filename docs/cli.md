@@ -349,11 +349,14 @@ the other reports and the gates do not change. A few things to know:
 
 - **Logs only.** It needs the logs: a saved report does not keep the values, and it does not combine with `--baseline` or `--no-recount`.
   `--split-at` works.
-- **Cost.** The values of the compared templates are taken from every record, so a `diff` takes 1.5 to 3 times as long (2.2 s instead of 1.3 s on two
-  100 MB nginx logs, 4.2 s instead of 2.9 s on two application logs, 4.3 s instead of 1.6 s on two logs of many different values). Memory stays bounded: about 30 bytes per different value, with its text
-  (900,000 different values on each side: 112 MB instead of 49 MB for the plain diff).
-- **Limits.** Values are compared by a 64-bit fingerprint. A position with more than 1,000,000 different values in a run (4,000,000 in all positions) is
-  marked `not compared` and gives no lists, because with part of the values missing a value that looks new may only be one that was not counted.
+- **Cost.** The values of the compared templates are taken from every record, so a `diff` takes 1.5 to 3 times as long (2.1 s instead of 1.3 s on two
+  100 MB nginx logs, 4.3 s instead of 2.8 s on two application logs, 4.3 s instead of 1.6 s on two logs of many different values; `python bench/new_values.py pairs`). Memory stays bounded: about 30 bytes
+  per different value with a short text and up to 90 with a long one (900,000 different values on each side: 112 MB instead of 49 MB for the plain diff; at the limits 140 to 350 MB, measured with values of 72 bytes).
+- **Limits.** Values are compared by a 64-bit fingerprint. A position with more than 1,000,000 different values in a run is marked `not compared` and gives no
+  lists, because with part of the values missing a value that looks new may only be one that was not counted. When all positions together hold more than 4,000,000
+  (1,000,000 in the part of the input that one thread reads), the position with the most values is the one that is marked, so that a position that is new on every record (a request
+  id) does not take the room of those that can be compared. Whoever can write to the log can add enough different values to make a position `not compared`; the report says so, and
+  the gates do not depend on the values.
 - **Which values.** The same positions as [`--values`](#values-of-the-parameters): a `<*>` and the values that a default rule replaced; the values that a mask set
   of yours hides are never compared. The values are the raw text of the log: `--examples masked` applies the masking rules to the listed values, `--examples none` keeps
   the numbers and leaves the lists out. `--level` also filters this section by the level of the template.

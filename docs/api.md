@@ -184,7 +184,7 @@ template; shares are normalized by the number of records in each run. `before` a
 template in either run, and `changes`), one for each template that both runs have and whose values differ at a position. A `ValueChange` has
 `position` and `name` as in [`Template.values`](#template), `new` and `gone` (the most frequent values, at most 10, as `(value, records)` pairs), `new_distinct`,
 `gone_distinct`, `shared_distinct`, `before_distinct`, `after_distinct` and `capped`. The values are compared by a 64-bit fingerprint with bounded memory: a position
-with more than 1,000,000 different values in a run (4,000,000 in all positions) is `capped`, has empty lists and lower-bound counts. `examples` decides how the
+with more than 1,000,000 different values in a run is `capped`, has empty lists and lower-bound counts; when all positions together hold more than 4,000,000, the position with the most values is capped first. `examples` decides how the
 values are shown (`masked`: the masking rules applied and the counts summed, `none`: no lists), and `DiffResult.filter(min_level=...)` keeps the templates by their `level`. `value_changes` is `None`
 without `new_values`. `ConfigError` for saved results, `baselines`, `recount=False` and `value_templates < 1`. The gates and the other lists do not depend on it.
 
