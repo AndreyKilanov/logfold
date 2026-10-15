@@ -242,7 +242,7 @@ def diff(
         typer.Option(
             "--new-values",
             help="For the templates that both runs have, list the values of the variable positions that only the "
-            "second run has (new) or only the first (gone); reads the logs once more, see --values-templates.",
+            "second run has (new) or only the first (gone); see --values-templates.",
             rich_help_panel=PANEL_OUTPUT,
         ),
     ] = False,

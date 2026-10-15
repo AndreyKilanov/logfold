@@ -210,10 +210,9 @@ def diff(
             once for each run and one template tree is shared, as for two inputs.
         new_values: Tell which values the variable positions of the templates that both runs have took in the second
             run only (new) and in the first run only (gone): ``DiffResult.value_changes``. It compares the values by a
-            64-bit fingerprint with bounded memory and reads the inputs once more for the text of the values shown, so a
-            diff takes about twice as long; ``examples`` decides how the values are shown. Logs only (not for saved
-            results or ``baselines``) and not with ``recount=False``. A position with more than 1,000,000 different
-            values is marked ``capped`` and gives no lists.
+            64-bit fingerprint with bounded memory, so a diff takes 1.5 to 3 times as long; ``examples`` decides how
+            the values are shown. Logs only (not for saved results or ``baselines``) and not with ``recount=False``.
+            A position with more than 1,000,000 different values is marked ``capped`` and gives no lists.
         value_templates: With ``new_values``, how many of the most frequent templates are compared (default 200).
         config: Settings from a ``logfold.toml`` (:func:`logfold.load_config`): they give the format, ``multiline``, the
             mining and execution configuration and, for ``diff``, the comparison configuration, wherever the call does

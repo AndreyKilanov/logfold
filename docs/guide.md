@@ -118,7 +118,7 @@ for item in d.value_changes:
 logfold diff before.log after.log --new-values
 ```
 
-It reads the logs once more and takes about 2.5 times as long as a plain `diff`; memory is bounded, and a position with more than a million different
+It takes 1.5 to 3 times as long as a plain `diff`; memory is bounded, and a position with more than a million different
 values is reported as not compared instead of a wrong list. Logs only, not saved results or `--baseline`. See [New and gone values](cli.md#new-and-gone-values).
 
 ### Compare saved results

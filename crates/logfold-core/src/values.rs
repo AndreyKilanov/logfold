@@ -7,10 +7,10 @@
 //! divisions only, so they are the same on every platform.
 
 use std::collections::BTreeMap;
-use std::sync::{Arc, OnceLock};
+use std::sync::OnceLock;
 
 use crate::parameters::Parameter;
-use crate::presence::{PresenceCollector, TextCollector, Wanted};
+use crate::presence::PresenceCollector;
 
 /// Longest value that is kept; a longer value is cut (and counted under its first bytes).
 pub const MAX_VALUE_BYTES: usize = 64;
@@ -253,18 +253,17 @@ impl Distribution {
 pub type Slot = (usize, String);
 
 /// The values of the templates (given by the index of their cluster) of one run: their distributions (ADR-016), or the
-/// sets of values that tell the new from the gone ones, or the text of chosen values (ADR-018).
+/// sets of values that tell the new from the gone ones (ADR-018).
 #[derive(Clone, Debug)]
 pub struct ValueCollector {
     clusters: BTreeMap<u32, Vec<(Slot, Distribution)>>,
     distributions: bool,
     presence: Option<PresenceCollector>,
-    texts: Option<TextCollector>,
 }
 
 impl Default for ValueCollector {
     fn default() -> Self {
-        ValueCollector { clusters: BTreeMap::new(), distributions: true, presence: None, texts: None }
+        ValueCollector { clusters: BTreeMap::new(), distributions: true, presence: None }
     }
 }
 
@@ -291,11 +290,6 @@ impl ValueCollector {
         }
     }
 
-    /// A collector that keeps the text of the values in `wanted`, and no distributions.
-    pub fn texts(wanted: Arc<Wanted>) -> Self {
-        ValueCollector { distributions: false, texts: Some(TextCollector::new(wanted)), ..ValueCollector::default() }
-    }
-
     /// Counts the values that a message of the template `cluster` gave to its variable positions.
     pub fn add(&mut self, cluster: u32, parameters: &[Parameter]) {
         if self.distributions {
@@ -307,11 +301,6 @@ impl ValueCollector {
         if let Some(presence) = &mut self.presence {
             for parameter in parameters {
                 presence.add(cluster, parameter.position, &parameter.name, &parameter.value);
-            }
-        }
-        if let Some(texts) = &mut self.texts {
-            for parameter in parameters {
-                texts.add(cluster, parameter.position, &parameter.name, &parameter.value);
             }
         }
     }
@@ -327,9 +316,6 @@ impl ValueCollector {
         if let (Some(mine), Some(theirs)) = (&mut self.presence, other.presence) {
             mine.merge(theirs);
         }
-        if let (Some(mine), Some(theirs)) = (&mut self.texts, other.texts) {
-            mine.merge(theirs);
-        }
     }
 
     /// The distributions by cluster and position, in order.
@@ -340,10 +326,5 @@ impl ValueCollector {
     /// The sets of values, when this collector keeps them.
     pub fn into_presence(self) -> Option<PresenceCollector> {
         self.presence
-    }
-
-    /// The texts of the wanted values, when this collector looks for them.
-    pub fn into_texts(self) -> Option<TextCollector> {
-        self.texts
     }
 }

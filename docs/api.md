@@ -176,7 +176,7 @@ template; shares are normalized by the number of records in each run. `before` a
 | `recount` | `True` | assign every record to the finished tree for consistent counts (costs a second pass) |
 | `matcher` | `"jaccard"` | registered diff matcher name: `jaccard`, `jaccard-idf`, `overlap`, `token_subset`, `exact`, `"rules:FILE"` (pairs from a file) or a plugin's (see [Choosing a matcher](guide.md#choosing-a-matcher)) |
 | `diff_config` | | a full `DiffConfig`; the keyword arguments override its fields |
-| `new_values`, `value_templates` | `False`, 200 | with `new_values=True`, `DiffResult.value_changes` tells which values the variable positions of the `value_templates` most frequent templates that both runs have took in the second run only (new) and in the first only (gone); see [New and gone values](#new-and-gone-values). Logs only, not with `baselines` or `recount=False`; reads the inputs once more |
+| `new_values`, `value_templates` | `False`, 200 | with `new_values=True`, `DiffResult.value_changes` tells which values the variable positions of the `value_templates` most frequent templates that both runs have took in the second run only (new) and in the first only (gone); see [New and gone values](#new-and-gone-values). Logs only, not with `baselines` or `recount=False` |
 
 ### New and gone values
 

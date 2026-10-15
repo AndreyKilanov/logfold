@@ -122,28 +122,7 @@ pub fn mine(request: &MineRequest, observer: &dyn ProgressObserver) -> Result<Mi
     };
     let (values, value_changes) = match (plan.as_ref(), recounted.as_mut()) {
         (Some(plan), Some(recount)) if plan.compares() => {
-            let rescan = |wanted: &valuing::ValuePlan| -> Result<Vec<logfold_core::ValueCollector>, EngineError> {
-                let mut again = match threads_requested {
-                    None => {
-                        sequential::recount(&context, &miner, &planned, MatchRule::Similar, Some(wanted), observer)?.0
-                    }
-                    Some(requested) => {
-                        chunked::recount(
-                            &context,
-                            &miner,
-                            &planned,
-                            requested,
-                            MatchRule::Similar,
-                            Some(wanted),
-                            observer,
-                        )?
-                        .0
-                    }
-                };
-                Ok(again.take_values())
-            };
-            let changes = valuing::value_changes(&miner, plan, recount.take_values(), &rescan)?;
-            (None, Some(changes))
+            (None, Some(valuing::value_changes(&miner, recount.take_values())?))
         }
         (Some(_), Some(recount)) => (Some(valuing::summarize(&miner, recount.take_values())), None),
         _ => (None, None),

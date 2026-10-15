@@ -349,9 +349,9 @@ the other reports and the gates do not change. A few things to know:
 
 - **Logs only.** It needs the logs: a saved report does not keep the values, and it does not combine with `--baseline` or `--no-recount`.
   `--split-at` works.
-- **Cost.** It reads the logs once more, for the text of the values it shows, so a `diff` takes about 2.5 times as long (3.2 s instead of 1.3 s on two
-  100 MB nginx logs, 7.2 s instead of 2.9 s on two application logs). Memory stays bounded: about 20 bytes per different value (900,000 different values on
-  each side: 83 MB instead of 49 MB for the plain diff).
+- **Cost.** The values of the compared templates are taken from every record, so a `diff` takes 1.5 to 3 times as long (2.2 s instead of 1.3 s on two
+  100 MB nginx logs, 4.2 s instead of 2.9 s on two application logs, 4.3 s instead of 1.6 s on two logs of many different values). Memory stays bounded: about 30 bytes per different value, with its text
+  (900,000 different values on each side: 112 MB instead of 49 MB for the plain diff).
 - **Limits.** Values are compared by a 64-bit fingerprint. A position with more than 1,000,000 different values in a run (4,000,000 in all positions) is
   marked `not compared` and gives no lists, because with part of the values missing a value that looks new may only be one that was not counted.
 - **Which values.** The same positions as [`--values`](#values-of-the-parameters): a `<*>` and the values that a default rule replaced; the values that a mask set

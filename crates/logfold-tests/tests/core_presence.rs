@@ -3,12 +3,7 @@
 //! The sets of values that tell the new from the gone ones: exact below the limits, marked above them, and the same
 //! whatever the order in which the parts of the input are merged.
 
-use std::sync::Arc;
-
-use logfold_core::{
-    Change, MAX_PER_POSITION, PresenceCollector, TOP_CHANGES, TextCollector, ValueSet, Wanted, compare_values,
-    fingerprint,
-};
+use logfold_core::{Change, MAX_PER_POSITION, PresenceCollector, TOP_CHANGES, ValueSet, compare_values};
 use proptest::prelude::*;
 
 const NAME: &str = "num";
@@ -27,8 +22,8 @@ fn only_set(collector: PresenceCollector) -> ValueSet {
     collector.into_clusters().into_values().next().unwrap().into_iter().next().unwrap().1
 }
 
-fn keys(values: &[(&str, u64)]) -> Vec<(u64, u64)> {
-    values.iter().map(|(value, count)| (fingerprint(value.as_bytes()), *count)).collect()
+fn listed(values: &[(&str, u64)]) -> Vec<(Vec<u8>, u64)> {
+    values.iter().map(|(value, count)| (value.as_bytes().to_vec(), *count)).collect()
 }
 
 #[test]
@@ -41,10 +36,8 @@ fn the_new_and_the_gone_values_are_told_with_their_counts() {
     assert_eq!(change.shared_distinct, 2);
     assert_eq!(change.distinct, (3, 4));
     assert!(!change.capped);
-    let mut new = keys(&[("d", 4), ("e", 1)]);
-    new.sort_by_key(|entry| std::cmp::Reverse(entry.1));
-    assert_eq!(change.new, new);
-    assert_eq!(change.gone, keys(&[("a", 1)]));
+    assert_eq!(change.new, listed(&[("d", 4), ("e", 1)]));
+    assert_eq!(change.gone, listed(&[("a", 1)]));
 }
 
 #[test]
@@ -69,7 +62,7 @@ fn a_list_keeps_the_most_frequent_values_and_the_total_counts_all_of_them() {
     let change = compare_values(&ValueSet::default(), &set_of(&values)).unwrap();
     assert_eq!(change.new_distinct, 25);
     assert_eq!(change.new.len(), TOP_CHANGES);
-    assert_eq!(change.new.iter().map(|&(_, count)| count).collect::<Vec<_>>(), (16..=25).rev().collect::<Vec<u64>>());
+    assert_eq!(change.new.iter().map(|(_, count)| *count).collect::<Vec<_>>(), (16..=25).rev().collect::<Vec<u64>>());
 }
 
 #[test]
@@ -124,22 +117,13 @@ fn a_collector_does_not_count_a_repeated_value_twice_against_its_limit() {
 }
 
 #[test]
-fn the_texts_of_the_wanted_values_only_are_kept_and_cut_to_the_limit() {
+fn the_text_of_a_value_is_kept_cut_to_the_limit_and_ties_are_ordered_by_text() {
     let long = "x".repeat(200);
-    let mut wanted = Wanted::new();
-    wanted.insert(7, vec![((2, NAME.to_string()), vec![fingerprint(b"keep"), fingerprint(long.as_bytes())])]);
-    let mut collector = TextCollector::new(Arc::new(wanted));
-    for value in ["keep", "skip", long.as_str()] {
-        collector.add(7, 2, NAME, value.as_bytes());
-    }
-    collector.add(8, 2, NAME, b"keep");
-    collector.add(7, 3, NAME, b"keep");
-    let found = collector.into_found();
-    assert_eq!(found.len(), 1);
-    let texts = &found[&7][0].1;
-    assert_eq!(texts.len(), 2);
-    assert_eq!(texts[&fingerprint(b"keep")], b"keep".to_vec());
-    assert_eq!(texts[&fingerprint(long.as_bytes())].len(), 64);
+    let change = compare_values(&ValueSet::default(), &set_of(&[("b", 2), (long.as_str(), 2), ("a", 2)])).unwrap();
+    let texts: Vec<usize> = change.new.iter().map(|(text, _)| text.len()).collect();
+    assert_eq!(change.new[0].0, b"a".to_vec());
+    assert_eq!(change.new[1].0, b"b".to_vec());
+    assert_eq!(texts, vec![1, 1, 64]);
 }
 
 proptest! {
