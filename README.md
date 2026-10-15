@@ -209,6 +209,11 @@ results, crashes, templates that are grouped badly, and runs that are slow or us
 - **Bugs.** Open a [bug report](https://github.com/AndreyKilanov/logfold/issues/new?template=bug_report.yml) with what you expected and what happened, a
   command or Python snippet that reproduces it, the output of `logfold --version` and `logfold info`, and a few lines of
   the input with secrets removed.
+- **A log that is not read correctly.** Lines lost or split wrongly, a field in the wrong place, `-f auto` picking the
+  wrong format: use the [log format form](https://github.com/AndreyKilanov/logfold/issues/new?template=format_problem.yml). Name the program and its version,
+  the log settings you changed, the output of `logfold inspect FILE`, and about 20 real lines with secrets removed. The
+  formats were checked on real programs and on logs of other projects ([the table](https://github.com/AndreyKilanov/logfold/blob/main/docs/guide.md#what-each-format-was-checked-on)), but not on every setting;
+  this form is how the rest gets found.
 
 All issue forms are listed on the [new issue page](https://github.com/AndreyKilanov/logfold/issues/new/choose); how issues are written is described in
 [CONTRIBUTING.md](https://github.com/AndreyKilanov/logfold/blob/main/CONTRIBUTING.md#issues).
