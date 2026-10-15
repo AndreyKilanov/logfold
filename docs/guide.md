@@ -4,6 +4,9 @@ This guide walks through the typical tasks. For the complete lists of options an
 [command-line reference](cli.md) and the [Python API reference](api.md). If you use Drain3 now, start with
 [Migrating from Drain3](migrating-from-drain3.md).
 
+Three pages start from a situation instead of a command: [finding what changed in an incident](incident.md),
+[sharing a log or a report safely](share-a-log.md) and [logfold in a Python program](python.md).
+
 ## Install
 
 ```

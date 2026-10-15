@@ -236,6 +236,9 @@ Template quality: `python eval/quality.py` (grouping accuracy on the 16 Loghub-2
 - [Guide](https://github.com/AndreyKilanov/logfold/blob/main/docs/guide.md): formats, parameters, plugins, engines.
 - [Using logfold in CI](https://github.com/AndreyKilanov/logfold/blob/main/docs/ci.md): GitHub Actions and GitLab CI, job
   summary, gates, where the baseline comes from.
+- [Finding what changed in an incident](https://github.com/AndreyKilanov/logfold/blob/main/docs/incident.md): compare two logs or two parts of one, read the result, look inside a template.
+- [Sharing a log or a report safely](https://github.com/AndreyKilanov/logfold/blob/main/docs/share-a-log.md): mask sets, examples, what stays in a report, how to check it.
+- [logfold in a Python program](https://github.com/AndreyKilanov/logfold/blob/main/docs/python.md): which call does what, with links to the API reference.
 - [Command-line reference](https://github.com/AndreyKilanov/logfold/blob/main/docs/cli.md): commands, options, exit
   codes.
 - [Plugins](https://github.com/AndreyKilanov/logfold/blob/main/docs/plugins.md): using and writing formats, reports and
