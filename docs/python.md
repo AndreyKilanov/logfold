@@ -34,7 +34,7 @@ read: records, unparsed lines, times), `templates` (each with `count`, `share`, 
 
 ```python
 d = logfold.diff("before.log", "after.log")
-if d.new_alerts:                       # new templates at WARN or above
+if d.new_alerts:  # new templates at WARN or above
     for entry in d.new_alerts:
         print(entry.after_count, entry.text)
 d.to_html("diff.html")
@@ -48,7 +48,7 @@ d.to_html("diff.html")
 ## Keep a model and check against it
 
 ```python
-logfold.analyze("good.log", save_state="model.json")      # templates and counts, never an example line
+logfold.analyze("good.log", save_state="model.json")  # templates and counts, never an example line
 
 checked = logfold.check("model.json", "today.log")
 if not checked.passed:
@@ -56,7 +56,7 @@ if not checked.passed:
         print(finding.kind, finding.message)
 
 matched = logfold.match("model.json", "today.log")
-print(matched.run.unmatched.records)                       # records that fit no template
+print(matched.run.unmatched.records)  # records that fit no template
 ```
 
 `check` fails on what the model does not know: too many unmatched records, a new template at WARN or above. The model must
@@ -66,13 +66,13 @@ have been mined with the same masks and parameters, otherwise `StateError` says 
 ## Mine a stream
 
 ```python
-miner = logfold.Miner(format="app")                        # a stream cannot detect its format
-miner.add_many(batch_of_records)                           # one native call per batch
-for text in miner.new_templates():                          # what appeared since the last call
+miner = logfold.Miner(format="app")  # a stream cannot detect its format
+miner.add_many(batch_of_records)  # one native call per batch
+for text in miner.new_templates():  # what appeared since the last call
     print("new:", text)
 
-miner.match(record)                                        # TemplateMatch(id, text) or None; learns nothing
-result = miner.result()                                    # the same result as analyze() over the same records
+miner.match(record)  # TemplateMatch(id, text) or None; learns nothing
+result = miner.result()  # the same result as analyze() over the same records
 miner.save_state("model.json")
 ```
 
