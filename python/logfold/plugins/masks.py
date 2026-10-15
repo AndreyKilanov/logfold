@@ -26,6 +26,7 @@ def _read(name: str) -> MaskSet:
 DEFAULT = MaskSet(
     "default",
     DEFAULT_MASKS,
+    version=2,
     description="Numbers, IPs, UUIDs, timestamps, paths and hex values; always applied last.",
 )
 SECRETS = _read("secrets")

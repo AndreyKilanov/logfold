@@ -173,7 +173,7 @@ def test_the_built_in_sets_are_pinned() -> None:
         ("credentials", 1): "da65a995d523271a",
         ("pii", 1): "3f3133818d3d9823",
         ("payment", 1): "3702054fd5a67c00",
-        ("default", 1): "df12bc959ae1bfe2",
+        ("default", 2): "88a3e5749e0c4bfa",
     }
     found = {
         (name, get_mask_set(name).version): get_mask_set(name).fingerprint

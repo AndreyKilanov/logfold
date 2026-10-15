@@ -4,7 +4,9 @@ This document is the contract of the Rust engine (`logfold-core`, `logfold-io`, 
 in `tests/fixtures/golden` and the property tests of `logfold-tests` hold the sequential strategy to it: the templates,
 counts, timestamps, levels and examples are exactly the ones described here. All comparisons use integer arithmetic.
 
-`ALGO_VERSION = 1`. Any change to the rules below bumps it.
+`ALGO_VERSION = 2`. Any change to the rules below bumps it. Version 2 took the sign out of the `num` rule (§2): in version 1 a
+`+` or `-` joined a number only when a letter or digit stood right before it (`db-1` became `db<NUM>`, `10-20` became
+`<NUM><NUM>`), and never after a space or `=`.
 
 ## 1. Records
 
@@ -87,7 +89,7 @@ empty string. Inline flags must be scoped (`(?i:...)`) and back-references are u
 | ip | `\b\d{1,3}(?:\.\d{1,3}){3}(?::\d+)?\b` | `<IP>` |
 | hex | `\b0[xX][0-9a-fA-F]+\b` | `<HEX>` |
 | path | `(?:/[\w.\-]+){2,}` | `<PATH>` |
-| num | `\b[+-]?\d+(?:\.\d+)?\b` | `<NUM>` |
+| num | `\b\d+(?:\.\d+)?\b` | `<NUM>` |
 
 ### 2.1 Layers and checks (mask sets)
 

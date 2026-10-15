@@ -1,5 +1,5 @@
 {
- "generated_by": "python engine, logfold 0.4.0",
+ "generated_by": "native engine, logfold 0.4.0",
  "cases": {
   "corpus/app": {
    "run": {
@@ -2948,8 +2948,8 @@
   "diff/recount": {
    "new": [
     {
-     "id": "9971a402c21e24a6",
-     "text": "database connection lost to replica<NUM>",
+     "id": "6341d7cffdd5e647",
+     "text": "database connection lost to replica-<NUM>",
      "before_count": 0,
      "after_count": 80,
      "before_share": 0.0,
@@ -2992,8 +2992,8 @@
   "diff/no_recount": {
    "new": [
     {
-     "id": "9971a402c21e24a6",
-     "text": "database connection lost to replica<NUM>",
+     "id": "6341d7cffdd5e647",
+     "text": "database connection lost to replica-<NUM>",
      "before_count": 0,
      "after_count": 80,
      "before_share": 0.0,

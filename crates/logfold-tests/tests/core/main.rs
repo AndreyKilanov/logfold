@@ -23,6 +23,14 @@ mod masker {
     }
 
     #[test]
+    fn a_sign_is_never_part_of_a_number() {
+        assert_eq!(masked("host db-1 and db-2"), "host db-<NUM> and db-<NUM>");
+        assert_eq!(masked("range 10-20 end"), "range <NUM>-<NUM> end");
+        assert_eq!(masked("sum a+1 and +7"), "sum a+<NUM> and +<NUM>");
+        assert_eq!(masked("temp -5 and x=-5"), "temp -<NUM> and x=-<NUM>");
+    }
+
+    #[test]
     fn leaves_embedded_digits() {
         assert_eq!(masked("user42 failed"), "user42 failed");
     }

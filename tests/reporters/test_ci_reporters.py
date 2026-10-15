@@ -50,7 +50,7 @@ def test_github_summary_of_a_diff(real_diff: DiffResult) -> None:
     assert f"**{len(real_diff.new_alerts):,} new WARN+ template" in text
     assert "| new | WARN+ | disappeared | changed | unchanged | records |" in text
     assert "### New templates" in text
-    assert "- **ERROR** 80 `database connection lost to replica<NUM>`" in text
+    assert "- **ERROR** 80 `database connection lost to replica-<NUM>`" in text
     assert text.endswith("\n")
 
 

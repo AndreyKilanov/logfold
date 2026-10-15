@@ -14,9 +14,9 @@ const TOKEN_NUM: &[u8] = b"<NUM>";
 const CLASS_NONE: u8 = 0;
 const CLASS_HEX_LETTER: u8 = 1;
 const CLASS_DIGIT: u8 = 2;
-const CLASS_SLASH_OR_SIGN: u8 = 3;
+const CLASS_SLASH: u8 = 3;
 
-/// What a byte can start: nothing, a uuid only (hex letters), a rule that needs a digit, or path / signed number.
+/// What a byte can start: nothing, a uuid only (hex letters), a rule that needs a digit, or a path.
 const fn class_table() -> [u8; 256] {
     let mut table = [CLASS_NONE; 256];
     let mut byte = 0usize;
@@ -26,8 +26,8 @@ const fn class_table() -> [u8; 256] {
             CLASS_DIGIT
         } else if matches!(b, b'a'..=b'f' | b'A'..=b'F') {
             CLASS_HEX_LETTER
-        } else if matches!(b, b'/' | b'+' | b'-') {
-            CLASS_SLASH_OR_SIGN
+        } else if b == b'/' {
+            CLASS_SLASH
         } else {
             CLASS_NONE
         };
@@ -196,22 +196,6 @@ fn path(buf: &[u8], at: usize) -> Option<usize> {
     (segments >= 2).then_some(end)
 }
 
-fn number(buf: &[u8], at: usize) -> Option<usize> {
-    let byte = buf[at];
-    let start_digits = if byte == b'+' || byte == b'-' {
-        if !word_before(buf, at) {
-            return None;
-        }
-        at + 1
-    } else {
-        if word_before(buf, at) {
-            return None;
-        }
-        at
-    };
-    number_after(buf, start_digits, digits(buf, start_digits))
-}
-
 /// The number rule once the integer part `[start_digits, integer_end)` is known.
 fn number_after(buf: &[u8], start_digits: usize, integer_end: usize) -> Option<usize> {
     if integer_end == start_digits {
@@ -237,9 +221,6 @@ fn matched(buf: &[u8], at: usize) -> Option<(usize, &'static [u8])> {
     let byte = buf[at];
     if byte == b'/' {
         return path(buf, at).map(|end| (end, TOKEN_PATH));
-    }
-    if byte == b'+' || byte == b'-' {
-        return number(buf, at).map(|end| (end, TOKEN_NUM));
     }
     if buf.get(at + 8) == Some(&b'-')
         && let Some(end) = uuid(buf, at)
@@ -293,7 +274,7 @@ fn next_dash_start(input: &[u8], from: usize) -> usize {
 ///
 /// Only positions that can start a match are examined (`matched` decides at them): a hex letter can only start a uuid
 /// and a digit inside a word only a uuid or a timestamp, and both need a `-` at a fixed distance, so those positions are
-/// found from the dashes; every other digit, `/`, `+` and `-` is examined.
+/// found from the dashes; every other digit and every `/` is examined.
 struct Matches<'a> {
     input: &'a [u8],
     position: usize,
@@ -316,7 +297,7 @@ impl Iterator for Matches<'_> {
         while position < input.len() {
             let examine = match CLASS[input[position] as usize] {
                 CLASS_NONE => false,
-                CLASS_SLASH_OR_SIGN => true,
+                CLASS_SLASH => true,
                 class => {
                     if self.dash_start < position {
                         self.dash_start = next_dash_start(input, position);
@@ -352,7 +333,7 @@ pub(crate) fn mask_default(input: &[u8], out: &mut Vec<u8>) -> bool {
     while position < input.len() {
         let examine = match CLASS[input[position] as usize] {
             CLASS_NONE => false,
-            CLASS_SLASH_OR_SIGN => true,
+            CLASS_SLASH => true,
             class => {
                 if dash_start < position {
                     dash_start = next_dash_start(input, position);

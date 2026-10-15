@@ -42,7 +42,7 @@ logger = logging.getLogger("logfold")
 PathLike = str | os.PathLike[str]
 Progress = Callable[[int], None]
 UNPARSED_WARNING_RATIO = 0.10
-ALGO_VERSION = 1
+ALGO_VERSION = 2
 
 
 def _paths(value: PathLike | Sequence[PathLike], what: str) -> tuple[str, ...]:

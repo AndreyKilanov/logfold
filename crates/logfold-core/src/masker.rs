@@ -48,7 +48,7 @@ pub fn default_mask_rules() -> Vec<MaskRule> {
         rule("ip", r"\b\d{1,3}(?:\.\d{1,3}){3}(?::\d+)?\b", "<IP>"),
         rule("hex", r"\b0[xX][0-9a-fA-F]+\b", "<HEX>"),
         rule("path", r"(?:/[\w.\-]+){2,}", "<PATH>"),
-        rule("num", r"\b[+-]?\d+(?:\.\d+)?\b", "<NUM>"),
+        rule("num", r"\b\d+(?:\.\d+)?\b", "<NUM>"),
     ]
 }
 
