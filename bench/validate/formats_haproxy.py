@@ -18,6 +18,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from formats import docker
+from keep_logs import keep
 
 import logfold
 
@@ -154,6 +155,7 @@ def run_haproxy(case: HaproxyCase, index: int, rounds: int) -> HaproxyOutcome:
             docker("rm", "-f", name, check=False)
         log = Path(folder) / "haproxy.log"
         log.write_text(text, encoding="utf-8", newline="\n")
+        keep(log, "haproxy", f"{index}-{case.label()}")
         check_log(case, log, rounds, (started, ended), outcome)
     return outcome
 
