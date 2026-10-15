@@ -411,7 +411,8 @@ class CsvReporter:
 | `kinds` | `"analysis"`, `"diff"` or both; `render` is called only for these kinds |
 | `render(result, **options)` | returns the document as text; `options` are whatever the caller passes (`top=10`) |
 
-Tell `AnalysisResult` and `DiffResult` apart with `isinstance(result, DiffResult)`. Log lines are untrusted input:
+Tell `AnalysisResult` and `DiffResult` apart with `isinstance(result, DiffResult)`. A `DiffResult` made with `diff(new_values=True)` also has
+`value_changes` (`None` otherwise): the values that only one run has, which a reporter may show. Log lines are untrusted input:
 templates and examples can contain markup, so escape them for the format you produce (the built-in HTML reporter
 escapes everything; the CSV reporter relies on the `csv` module's quoting). For text that people read in a terminal, pass
 values taken from a log through `logfold.ext.printable`, which shows control characters (escape sequences, bell) as `\xNN`
