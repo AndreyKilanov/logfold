@@ -22,6 +22,7 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 
 from formats import docker
+from keep_logs import keep as keep_log
 
 import logfold
 
@@ -258,6 +259,7 @@ def run_case(name: str, case: JavaCase, index: int, rounds: int) -> JavaOutcome:
     with tempfile.TemporaryDirectory() as folder:
         log, oracle, console = run_emitter(name, case, index, rounds, Path(folder))
         events = read_events(oracle)
+        keep_log(log, "log4j", f"{index}-{name}", f"log4j:{case.pattern}")
         compare(case, log, events, outcome)
         try:
             outcome.auto = logfold.analyze(log, format="auto").meta.format

@@ -56,7 +56,7 @@ precision of `%t`.
 **Behaviors that the check confirmed or showed, not defects:**
 
 - `-f auto` does not recognize either PostgreSQL format: it refuses with the list of best guesses (the format has to be
-  named, as the documentation says). The detection matrix is a later step of the task.
+  named, as the documentation says). See "Format auto-detection (V4)" below.
 - `LOG`, `DEBUGn` and the `DETAIL`, `HINT`, `CONTEXT`, `STATEMENT`, `QUERY` and `LOCATION` lines have no level, as
   documented; the server's `NOTICE` and `INFO` read as `INFO`, `WARNING` as `WARN`, `PANIC` as `FATAL`.
 - Under `log_error_verbosity=verbose` the SQLSTATE and a colon (`00000: `) stay at the start of the message, so they are
@@ -180,7 +180,7 @@ wall-clock time in the zone of the JVM, `UTC`, `Asia/Kolkata` and `America/New_Y
 **Behaviors that the check confirmed or showed, not defects:**
 
 - `-f auto` does not pick `log4j`: it refuses and lists the best guesses (the pattern is a setting of the program, so the
-  format has to be named). The detection matrix is a later step of the task.
+  format has to be named). See "Format auto-detection (V4)" below.
 - log4j2 with `%m%ex%n` writes the first line of the exception **right after the message** on the same line
   (`evt 1 exceptionjava.lang.RuntimeException: outer 1`), so that is the message of the record. No parser can tell the
   two apart; `%m%n%ex` writes them on separate lines. The check expects the glued form for this pattern.
@@ -302,3 +302,86 @@ stopped for the heat of the processor when they were found; the 20,000 cases tha
 
 **Not covered:** memory of one huge record (the limit is tested by its own tests), a time window (`--since`/`--until`) with
 chunks, `postgresql` multi-line statements of real length, and the Rust-side formats that are not built in.
+
+## Format auto-detection (V4)
+
+**What is asked.** `-f auto` is the default of every command. A refusal is harmless (the user names the format); a wrong
+pick is not, because the log is then parsed quietly with the wrong format. The matrix asks the detector about every file
+in several damaged forms and sorts the answer.
+
+**The files** (209, each with the format that is meant for it): 71 logs that real programs wrote (the runs above:
+PostgreSQL 13 to 17 in both formats, HAProxy in each form, Docker `json-file`, log4j2, logback and log4j 1.x; kept with
+`LOGFOLD_KEEP_LOGS=<folder>`), 114 logs of other projects (the V2 samples and the workflow logs), the 16 Loghub-2k sets
+and the first 20,000 lines of the four Loghub-2.0 logs, and four generated datasets. For the files that no built-in
+format reads (Loghub except the syslog and `app` shaped ones, GitHub Actions, PostgreSQL, log4j) the meant format is
+"none".
+
+**The damaged forms** (8 per file, 1,672 cases): clean, a byte order mark, CR LF, 50 blank lines first, a four-line
+start-up banner first, the first 12 bytes cut off, and 100 or 200 lines of plain text first.
+
+**The answers:** *correct* (the format meant for the file; `nginx` and `apache` are one pattern), *compatible* (another
+format that reads the same records, lines not parsed and levels, or `haproxy` read as `syslog`: HAProxy writes through
+syslog, so its log is a syslog log and the line stays whole), *refused* (explicit error), **wrong** (any other format).
+
+| source | files | correct | compatible | refused | wrong |
+|---|---:|---:|---:|---:|---:|
+| real programs | 71 | 12 | 18 | 538 | 0 |
+| other projects | 114 | 143 | 14 | 755 | 0 |
+| Loghub-2k, Loghub-2.0, generated | 24 | 36 | 0 | 156 | 0 |
+
+(The four right columns count cases, 8 per file.)
+
+By the format of the clean file, with what the detector said: `nginx` 4 of 4, `apache` 4 of 5 (the fifth is Apache's
+`ssl_request_log`, a custom `LogFormat`), `syslog` 10 of 10, `app` 2 of 2, `docker-json` 5 of 5, `k8s` 1 of 1, `jsonl`
+14 of 19 (Elasticsearch's pretty-printed and nested JSON is refused), `haproxy` 7 of 20 read as `syslog` and the rest
+refused (a log in `short` or CLF form has no syslog prefix), `nginx-error` refused (PHP warnings continue the entry),
+and **always refused**: `postgresql`, `postgresql-csv`, `log4j`, `logfmt`, `github-actions` and the 18 files that no
+format reads. The plugin formats are not candidates by design (their patterns are settings of the program).
+
+**The threshold.** `CONFIDENCE_THRESHOLD` is 0.8: the share of the 200 sampled lines that the best format accounts for.
+The same 1,672 cases decided at other thresholds:
+
+| threshold | correct | compatible | refused | wrong |
+|---:|---:|---:|---:|---:|
+| 0.5 | 238 | 38 | 1,390 | 6 |
+| 0.6 | 215 | 35 | 1,417 | 5 |
+| 0.7 | 195 | 33 | 1,444 | 0 |
+| **0.8** | 191 | 32 | 1,449 | 0 |
+| 0.9 | 170 | 32 | 1,470 | 0 |
+| 0.95 | 164 | 30 | 1,478 | 0 |
+| 1.0 | 133 | 21 | 1,518 | 0 |
+
+The wrong picks at 0.5 and 0.6 are one file: HAProxy 3.2's `option httplog clf` log, where 120 of 160 lines are CLF
+request lines that `nginx` reads (0.61) and 40 are connection lines that it does not. From 0.7 up nothing is wrong, and
+0.8 keeps a margin of 0.19 above the highest wrong score for 4 cases fewer than 0.7. The threshold stays.
+
+**What this found.**
+
+- **A Docker `json-file` log was detected as `jsonl`** (every one of its lines is a JSON object with a message key `log`,
+  and `jsonl` was first). `jsonl` does not join the pieces of a line that Docker cut at 16 KB, so one long line became
+  several records. Fixed: `docker-json` is a candidate, ahead of `jsonl`, and needs `log` ending in a line break, `stream` and `time` (a file
+  with a `log` key only, or with messages cut of their line break by a collector, stays `jsonl`: `docker-json` would join
+  all its entries into one record; found by the skeptic pass). The detector reads the candidate from the registry, as a shipped plugin format.
+- The test inputs of Fluent Bit's Docker mode have only the `log` key; they are parser inputs, not Docker's files, and
+  `jsonl` is the right answer for them (the matrix counts them as `jsonl`).
+- Nothing else was picked wrongly in 1,672 cases.
+
+**Limits that were found and are written down, not fixed:**
+
+- The detector looks at the first 200 non-blank lines and wants 80% of them. A banner or a stack trace of more than 40
+  lines at the start (the 100 and 200 lines of text above) makes it refuse every file: the answer is always the explicit
+  error, never a wrong format, but the user has to name the format.
+- A byte order mark or a cut first line costs one line of the sample: a file of three to six lines (the small samples of
+  other projects) drops under 0.8 and is refused; a real log does not notice it. The same mark costs the engine its first
+  line: a regex format does not skip it, so the first line of such a file is not parsed (4 records and 1 line not parsed
+  of 5 lines of `app`).
+- A log with CR line endings only is one line for every format.
+
+**CI.** `tests/api/test_autodetect_matrix.py`: for every format a Hypothesis strategy writes a damaged log (the grammars and
+damages of the fuzz test above); the answer must be one that `ALLOWED` lists for the format or a refusal (40 cases each in
+CI; 1,500 cases each were run once, no failure). Run the matrix with `python bench/validate/autodetect.py` (add `--json
+FILE` to keep every case); the logs of the real programs are needed first (`LOGFOLD_KEEP_LOGS=bench/data/formats/real python
+bench/validate/formats.py <postgresql|haproxy|docker-json|log4j>`).
+
+**Not checked:** logs over 100 MB (only the first 20,000 lines of each file are read, as the detector reads 200), gzip
+files, other encodings than UTF-8, formats that the user defines.

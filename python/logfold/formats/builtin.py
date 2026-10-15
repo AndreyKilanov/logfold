@@ -79,7 +79,17 @@ BUILTIN_FORMATS: dict[str, FormatSpec] = {
     "app": APP,
 }
 
-DETECTION_ORDER: tuple[str, ...] = ("journald", "jsonl", "k8s", "nginx", "nginx-error", "app", "syslog")
+DETECTION_ORDER: tuple[str, ...] = (
+    "journald",
+    "docker-json",
+    "jsonl",
+    "k8s",
+    "nginx",
+    "nginx-error",
+    "app",
+    "syslog",
+)
+"""Candidates of ``-f auto``; on equal scores the first wins. ``docker-json`` is a shipped plugin format."""
 
 
 def register_builtin_formats() -> None:

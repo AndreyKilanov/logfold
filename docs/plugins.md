@@ -52,7 +52,8 @@ logfold analyze app.logfmt --format logfmt
 logfold diff before.logfmt after.logfmt --format logfmt --matcher jaccard
 ```
 
-None of the format plugins is picked by `--format auto`: name the one you need (`--format haproxy`).
+`--format auto` picks only `docker-json` among the format plugins (a line with `log` ending in a line break, `stream` and `time`): name the
+one you need for the others (`--format haproxy`).
 
 ### log4j and logback patterns
 

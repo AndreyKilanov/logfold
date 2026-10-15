@@ -35,6 +35,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
+from keep_logs import keep
+
 import logfold
 
 POSTGRES_IMAGES = {
@@ -368,6 +370,8 @@ def run_case(case: Case, index: int, events: int) -> Outcome:
         emit(name, events)
         stderr_log, csv_log = collect(name, Path(folder))
         rows, spans = read_csv(csv_log)
+        keep(stderr_log, "postgresql", f"{index}-{case.label()}")
+        keep(csv_log, "postgresql-csv", f"{index}-{case.label()}")
         want = expectation(rows)
         outcome.entries, outcome.lines = want.entries, want.lines
         problems = outcome.problems

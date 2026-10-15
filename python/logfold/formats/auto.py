@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Protocol
 
 from logfold.errors import FormatDetectionError, FormatError, read_error
+from logfold.ext import registry
 from logfold.ext.formats import FormatSpec, JsonFormat, RegexFormat
 from logfold.formats.builtin import BUILTIN_FORMATS, DETECTION_ORDER
 
@@ -95,13 +96,37 @@ class Detection:
     multiline_hint: bool = False
 
 
+def _is_docker_entry(value: dict[str, object]) -> bool:
+    """Tell whether a JSON object has the keys of an entry of Docker's ``json-file`` driver."""
+    return isinstance(value.get("log"), str) and "stream" in value and "time" in value
+
+
+def _mostly_unterminated(spec: JsonFormat, lines: Sequence[str], hits: Sequence[bool]) -> bool:
+    """Tell whether most matching entries have no line break at the end of the message.
+
+    A format that joins such entries would merge every line of a file whose messages never end with a break (Docker's
+    lines with the break cut off by a collector) into one record, so the file is not read with it. The pieces of a
+    long line that Docker splits are a few entries of many.
+    """
+    ended = total = 0
+    for line, hit in zip(lines, hits, strict=True):
+        if hit:
+            value = json.loads(line)
+            message = next(value[key] for key in spec.message_keys if key in value)
+            total += 1
+            ended += isinstance(message, str) and message.endswith(chr(10))
+    return total > 0 and ended * 2 < total
+
+
 def _matches(spec: FormatSpec, line: str) -> bool:
     if isinstance(spec, JsonFormat):
         try:
             value = json.loads(line)
         except ValueError:
             return False
-        return isinstance(value, dict) and any(key in value for key in spec.message_keys)
+        if not isinstance(value, dict) or not any(key in value for key in spec.message_keys):
+            return False
+        return _is_docker_entry(value) if spec.join_unterminated else True
     if isinstance(spec, RegexFormat):
         return re.search(spec.pattern, line) is not None
     return False
@@ -111,6 +136,8 @@ def _score(spec: FormatSpec, lines: Sequence[str]) -> tuple[float, bool]:
     if not lines:
         return 0.0, False
     hits = [_matches(spec, line) for line in lines]
+    if isinstance(spec, JsonFormat) and spec.join_unterminated and _mostly_unterminated(spec, lines, hits):
+        return 0.0, False
     total = sum(hits) / len(lines)
     body = [hit for line, hit in zip(lines, hits, strict=True) if not line[:1].isspace()]
     if body and len(body) < len(lines):
@@ -118,6 +145,20 @@ def _score(spec: FormatSpec, lines: Sequence[str]) -> tuple[float, bool]:
         if body_score >= INDENT_CONTINUATION_SCORE:
             return body_score, True
     return total, False
+
+
+def candidates() -> dict[str, FormatSpec]:
+    """Return the formats that ``auto`` chooses from, in detection order.
+
+    A candidate that is not built in is a shipped plugin format; one that the registry no longer knows is left out.
+    """
+    found: dict[str, FormatSpec] = {}
+    for name in DETECTION_ORDER:
+        try:
+            found[name] = BUILTIN_FORMATS[name] if name in BUILTIN_FORMATS else registry.get_format(name)
+        except FormatError:
+            continue
+    return found
 
 
 def detect_format(paths: Sequence[str]) -> Detection:
@@ -135,10 +176,11 @@ def detect_format(paths: Sequence[str]) -> Detection:
     lines = read_sample(paths[0])
     if not lines:
         return Detection(BUILTIN_FORMATS["plain"], 1.0)
-    scored = {name: _score(BUILTIN_FORMATS[name], lines) for name in DETECTION_ORDER}
-    best_name = max(DETECTION_ORDER, key=lambda name: scored[name][0])
+    specs = candidates()
+    scored = {name: _score(spec, lines) for name, spec in specs.items()}
+    best_name = max(specs, key=lambda name: scored[name][0])
     best_score, hint = scored[best_name]
     if best_score < CONFIDENCE_THRESHOLD:
         ranked = sorted(scored.items(), key=lambda item: -item[1][0])[:3]
         raise FormatDetectionError(paths[0], tuple((name, score) for name, (score, _hint) in ranked))
-    return Detection(BUILTIN_FORMATS[best_name], best_score, hint)
+    return Detection(specs[best_name], best_score, hint)

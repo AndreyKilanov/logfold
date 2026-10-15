@@ -18,6 +18,7 @@ from datetime import datetime
 from pathlib import Path
 
 from formats import docker
+from keep_logs import keep
 
 import logfold
 
@@ -124,6 +125,7 @@ def run_dockerjson(case: DockerJsonCase, index: int, rounds: int) -> DockerJsonO
     with tempfile.TemporaryDirectory() as scratch:
         log = Path(scratch) / f"{name}-json.log"
         log.write_text(text, encoding="utf-8", newline="")
+        keep(log, "docker-json", f"{index}-{'tty' if case.tty else 'plain'}")
         check_log(case, log, rounds, outcome)
     return outcome
 
