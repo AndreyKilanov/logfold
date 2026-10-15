@@ -5,6 +5,8 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-15
+
 ### Added
 
 - State files: `analyze --save-state FILE` saves the trained miner and `--load-state FILE` continues from it (library: `save_state`,

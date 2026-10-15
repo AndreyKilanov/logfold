@@ -473,7 +473,7 @@ checksum = "32a66949e030da00e8c7d4434b251670a91556f4144941d37452769c25d58a53"
 
 [[package]]
 name = "logfold-bench"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "criterion",
  "logfold-core",
@@ -483,7 +483,7 @@ dependencies = [
 
 [[package]]
 name = "logfold-core"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "ahash",
  "aho-corasick",
@@ -497,7 +497,7 @@ dependencies = [
 
 [[package]]
 name = "logfold-engine"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "logfold-core",
  "logfold-io",
@@ -506,7 +506,7 @@ dependencies = [
 
 [[package]]
 name = "logfold-io"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "flate2",
  "logfold-core",
@@ -521,7 +521,7 @@ dependencies = [
 
 [[package]]
 name = "logfold-py"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "logfold-core",
  "logfold-engine",
@@ -532,11 +532,11 @@ dependencies = [
 
 [[package]]
 name = "logfold-report"
-version = "0.4.0"
+version = "0.5.0"
 
 [[package]]
 name = "logfold-tests"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "flate2",
  "logfold-core",

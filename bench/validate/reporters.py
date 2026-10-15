@@ -37,7 +37,7 @@ DATA = HERE.parent / "data" / "validate"
 PROMETHEUS_IMAGE = "prom/prometheus:v3.15.0"
 NODE_EXPORTER_IMAGE = "prom/node-exporter:v1.12.1"
 JENKINS_IMAGE = "jenkins/jenkins:2.580.1-lts-jdk21"
-JUNIT_PLUGIN = "junit:1434.vde2d24df0c4c"
+JUNIT_PLUGIN = "junit:1442.vb_b_a_467df2767"
 XSD_URL = (
     "https://raw.githubusercontent.com/jenkinsci/xunit-plugin/0afa700702a6617f483cfd9407711976dc0bd74a/"
     "src/main/resources/org/jenkinsci/plugins/xunit/types/model/xsd/junit-10.xsd"
