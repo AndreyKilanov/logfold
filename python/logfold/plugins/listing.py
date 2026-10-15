@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 from logfold.errors import ConfigError, LogfoldError, UnknownPluginError
 from logfold.ext import registry
+from logfold.plugins.validation import format_checks
 
 if TYPE_CHECKING:
     from logfold.plugins.catalog import Catalog, CatalogEntry
@@ -44,6 +45,8 @@ class PluginInfo:
         homepage: ``https`` link of an available plugin, if the catalog has one.
         min_logfold: Oldest logfold version an available plugin works with, if the catalog says.
         compatible: ``False`` if an available plugin needs a newer logfold than the running one; it cannot be installed.
+        checked: For a built-in format, what it was checked on (real programs, other projects' logs, damaged logs).
+        not_checked: For a built-in format, what was not tried and the limits that were found.
     """
 
     kind: str
@@ -58,6 +61,8 @@ class PluginInfo:
     homepage: str | None = None
     min_logfold: str | None = None
     compatible: bool = True
+    checked: str = ""
+    not_checked: str = ""
 
 
 def _summary(package: str) -> str:
@@ -74,7 +79,17 @@ def _registered(catalog: Catalog) -> list[PluginInfo]:
     for kind, name, source in registry.plugin_sources():
         origin = origins.get((kind, name))
         if origin is None:
-            rows.append(PluginInfo(kind, name, "built-in", source))
+            checks = format_checks(name) if kind == "format" else None
+            rows.append(
+                PluginInfo(
+                    kind,
+                    name,
+                    "built-in",
+                    source,
+                    checked=checks.checked if checks else "",
+                    not_checked=checks.not_checked if checks else "",
+                )
+            )
             continue
         entry = by_package.get(origin.package or "")
         description = entry.description if entry is not None else _summary(origin.package) if origin.package else ""

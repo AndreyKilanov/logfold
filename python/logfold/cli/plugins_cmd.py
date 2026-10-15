@@ -91,6 +91,10 @@ def _row(info: PluginInfo) -> dict[str, object]:
     }
 
 
+def _detail(info: PluginInfo) -> dict[str, object]:
+    return {**_row(info), "checked": info.checked, "not_checked": info.not_checked}
+
+
 @plugins_app.command("list")
 def list_command(
     installed: Annotated[bool, typer.Option("--installed", help="Only what is built in or installed.")] = False,
@@ -151,7 +155,7 @@ def info_command(
     except LogfoldError as error:
         raise _fail(error) from None
     if as_json:
-        sys.stdout.write(json.dumps([_row(row) for row in rows], indent=2) + "\n")
+        sys.stdout.write(json.dumps([_detail(row) for row in rows], indent=2) + "\n")
         return
     console = _stdout()
     for number, row in enumerate(rows):
@@ -165,6 +169,10 @@ def info_command(
             console.print(f"package:  {_safe(row.package)}{' ' + row.version if row.version else ''}", soft_wrap=True)
         if row.homepage:
             console.print(f"homepage: {_safe(row.homepage)}", soft_wrap=True)
+        if row.checked:
+            console.print(f"checked on:   {_safe(row.checked)}", soft_wrap=True)
+        if row.not_checked:
+            console.print(f"not checked:  {_safe(row.not_checked)}", soft_wrap=True)
         if row.min_logfold:
             note = "" if row.compatible else " (newer than the logfold you run: it cannot be installed)"
             console.print(f"needs:    logfold {_safe(row.min_logfold)} or newer{note}")

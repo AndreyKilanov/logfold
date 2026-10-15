@@ -485,7 +485,7 @@ logfold plugins new KIND NAME [--dir FOLDER] [--force]
 | Command | What it does |
 |---|---|
 | `list` | every format, reporter, diff matcher and mask set with its status: `built-in`, `installed` (a package or a file in your plugin folder) or `available` (in the catalog, not installed), and the package that provides it |
-| `info NAME` | one plugin: what it does, where it comes from, how to install it (available) or use it (installed), for every kind that has this name |
+| `info NAME` | one plugin: what it does, where it comes from, how to install it (available) or use it (installed), for every kind that has this name; for a built-in format also what it was checked on and what was not (`checked`, `not_checked` in `info --json`) |
 | `check` | the plugins of the catalog whose package is not installed yet, with an install hint |
 | `install NAME` | shows the package, version constraint and catalog, asks for confirmation and runs `python -m pip install` (or `uv pip install` when the environment has no pip) for a plugin of the catalog; a plugin that needs a newer logfold (`min_logfold`) is refused before the question |
 | `dir` | where logfold looks for your own plugin files, and whether that folder exists |

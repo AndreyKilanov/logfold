@@ -506,7 +506,8 @@ see the [plugins guide](plugins.md).
 `PluginInfo` has `kind`, `name`, `status`, `source`, `package`, `version`, `description`, and for available plugins
 `requirement` (what pip installs), `install` (the `logfold plugins install` command), `homepage`, `min_logfold` and
 `compatible` (`False` when the plugin needs a newer logfold than the one you run; `logfold.plugins.catalog.install()`
-refuses it with a `ConfigError`).
+refuses it with a `ConfigError`). For a built-in format, `checked` and `not_checked` say what it was checked on (a real
+program, logs of other projects, damaged logs) and what was not; they are empty for anything else.
 
 ## Compatibility
 
