@@ -14,7 +14,7 @@ from logfold.ext import registry
 from logfold.ext.files import check_appendable, write_text
 from logfold.levels import LEVEL_NAMES, at_least, normalize_level
 from logfold.model_run import ResultMeta, RunMetrics, RunSummary, Unmatched
-from logfold.model_values import ValueStats
+from logfold.model_values import TemplateValueChanges, ValueStats
 
 SCHEMA_VERSION = 1
 
@@ -295,6 +295,8 @@ class DiffResult:
         metrics: Execution facts.
         meta: Provenance.
         warnings: Human readable warnings.
+        value_changes: With ``diff(new_values=True)``: for the templates that both runs have, the variable positions
+            whose values are new or gone (empty when none differ); ``None`` when it was not asked for.
     """
 
     new_templates: tuple[DiffEntry, ...]
@@ -307,6 +309,7 @@ class DiffResult:
     metrics: RunMetrics
     meta: ResultMeta
     warnings: tuple[str, ...] = ()
+    value_changes: tuple[TemplateValueChanges, ...] | None = None
 
     @property
     def new_alerts(self) -> tuple[DiffEntry, ...]:
@@ -345,6 +348,9 @@ class DiffResult:
             new_templates=keep(self.new_templates),
             disappeared=keep(self.disappeared),
             changed=keep(self.changed),
+            value_changes=None
+            if self.value_changes is None
+            else tuple(item for item in self.value_changes if at_least(item.level, level)),
         )
 
     def render(self, reporter: str, **options: object) -> str:

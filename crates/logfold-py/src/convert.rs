@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 use logfold_core::{FrozenTemplate, Level, MaskCheck, MaskRule, OnFull};
 use logfold_engine::{
-    EngineError, ExecutionStrategy, MineOutput, MineRequest, MiningConfig, PositionValues, TemplateValues,
-    ValuesRequest,
+    EngineError, ExecutionStrategy, MineOutput, MineRequest, MiningConfig, PositionValues, TemplateChanges,
+    TemplateValues, ValuesRequest,
 };
 use logfold_io::{FormatConfig, FormatSpec, TimeWindow};
 use pyo3::exceptions::PyKeyError;
@@ -128,9 +128,7 @@ pub(crate) fn parse_request(dict: &Bound<'_, PyDict>) -> PyResult<(MineRequest, 
         recount: required(dict, "recount")?.extract()?,
         initial: None,
         keep_snapshot: false,
-        values: optional(dict, "values")?
-            .map(|value| value.extract::<usize>().map(|templates| ValuesRequest { templates }))
-            .transpose()?,
+        values: parse_values(dict)?,
     };
     Ok((request, state))
 }
@@ -199,6 +197,14 @@ fn template_columns<'py>(py: Python<'py>, templates: &[FrozenTemplate], n_runs: 
     Ok(columns)
 }
 
+/// The values request: the number of templates, and `values_compare` to tell the new values from the gone ones.
+fn parse_values(dict: &Bound<'_, PyDict>) -> PyResult<Option<ValuesRequest>> {
+    let compare = optional(dict, "values_compare")?.map(|value| value.extract::<bool>()).transpose()?.unwrap_or(false);
+    optional(dict, "values")?
+        .map(|value| value.extract::<usize>().map(|templates| ValuesRequest { templates, compare }))
+        .transpose()
+}
+
 fn position_dict<'py>(py: Python<'py>, position: &PositionValues) -> PyResult<Bound<'py, PyDict>> {
     let summary = &position.summary;
     let item = PyDict::new(py);
@@ -250,6 +256,41 @@ fn values_list<'py>(py: Python<'py>, values: &[TemplateValues]) -> PyResult<Boun
     Ok(list)
 }
 
+fn counted<'py>(py: Python<'py>, values: &[(Vec<u8>, u64)]) -> PyResult<Bound<'py, PyList>> {
+    let list = PyList::empty(py);
+    for (value, count) in values {
+        list.append((String::from_utf8_lossy(value).into_owned(), *count))?;
+    }
+    Ok(list)
+}
+
+/// The new and gone values: for each template the identifier, the text and the positions that differ.
+fn changes_list<'py>(py: Python<'py>, changes: &[TemplateChanges]) -> PyResult<Bound<'py, PyList>> {
+    let list = PyList::empty(py);
+    for template in changes {
+        let item = PyDict::new(py);
+        item.set_item("id", &template.id)?;
+        item.set_item("text", &template.text)?;
+        let positions = PyList::empty(py);
+        for change in &template.positions {
+            let position = PyDict::new(py);
+            position.set_item("position", change.position)?;
+            position.set_item("name", &change.name)?;
+            position.set_item("new", counted(py, &change.new)?)?;
+            position.set_item("gone", counted(py, &change.gone)?)?;
+            position.set_item("new_distinct", change.new_distinct)?;
+            position.set_item("gone_distinct", change.gone_distinct)?;
+            position.set_item("shared_distinct", change.shared_distinct)?;
+            position.set_item("distinct", change.distinct)?;
+            position.set_item("capped", change.capped)?;
+            positions.append(position)?;
+        }
+        item.set_item("positions", positions)?;
+        list.append(item)?;
+    }
+    Ok(list)
+}
+
 /// Converts the engine output into plain Python containers.
 pub(crate) fn build_output<'py>(py: Python<'py>, output: &MineOutput) -> PyResult<Bound<'py, PyDict>> {
     let result = PyDict::new(py);
@@ -275,6 +316,9 @@ pub(crate) fn build_output<'py>(py: Python<'py>, output: &MineOutput) -> PyResul
     }
     if let Some(values) = &output.values {
         result.set_item("values", values_list(py, values)?)?;
+    }
+    if let Some(changes) = &output.value_changes {
+        result.set_item("value_changes", changes_list(py, changes)?)?;
     }
     if let Some(check) = &output.check {
         result.set_item("model", template_columns(py, &check.model, 1)?)?;

@@ -14,7 +14,7 @@ from logfold.config import MiningConfig
 from logfold.ext.formats import FormatSpec
 from logfold.levels import LEVEL_NAMES, summarize_levels
 from logfold.model import RunMetrics
-from logfold.model_values import ValueStats
+from logfold.model_values import TemplateValueChanges, ValueStats
 
 
 @dataclass(frozen=True, slots=True)
@@ -63,6 +63,7 @@ class MineRequest:
             without a timestamp is left out of a run whose window has a bound.
         values: The number of the most frequent templates whose values are counted (this needs the pass of ``recount``,
             which then runs), or ``None`` for none.
+        compare_values: With ``values`` and two runs: tell the new values from the gone ones instead of counting them.
     """
 
     runs: tuple[tuple[str, ...], ...]
@@ -77,6 +78,7 @@ class MineRequest:
     state: StateRequest | None = None
     exact: bool = False
     values: int | None = None
+    compare_values: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -262,6 +264,8 @@ class MiningResult:
             by themselves.
         values: Set when the request asked for values: for the tracked templates, by identifier, the statistics of
             the variable positions of each run.
+        value_changes: Set when the request asked to compare the values of two runs: the templates of both runs
+            whose values differ (without the level, which the caller adds).
     """
 
     runs: tuple[RunCounters, ...]
@@ -271,6 +275,7 @@ class MiningResult:
     model: TemplateTable | None = None
     new_templates: TemplateTable | None = None
     values: dict[str, tuple[tuple[ValueStats, ...], ...]] | None = None
+    value_changes: tuple[TemplateValueChanges, ...] | None = None
 
 
 ProgressCallback = Callable[[int], None]

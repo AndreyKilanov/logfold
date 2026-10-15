@@ -228,10 +228,10 @@ pub(crate) fn recount(
     observer: &dyn ProgressObserver,
 ) -> Result<(Recount, Vec<Counters>), EngineError> {
     let n_runs = plan.run_bytes.len();
-    let mut accumulator = new_recount(n_runs, rule, values);
+    let mut accumulator = new_recount(n_runs, rule, values, false);
     let mut counters = vec![Counters::default(); n_runs];
     let work = |index: usize| -> Result<(Recount, Counters), EngineError> {
-        let mut partial = new_recount(n_runs, rule, values);
+        let mut partial = new_recount(n_runs, rule, values, true);
         let unit_counters = recount_unit(context, &plan.units[index], miner, &mut partial, values, observer)?;
         Ok((partial, unit_counters))
     };

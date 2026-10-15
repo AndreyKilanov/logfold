@@ -10,8 +10,10 @@ from rich.markup import escape
 from rich.table import Table
 from rich.text import Text
 
+from logfold.ext.changes_text import change_lines
 from logfold.ext.text import printable
 from logfold.model import AnalysisResult, DiffEntry, DiffResult
+from logfold.model_values import TemplateValueChanges
 from logfold.reporters.numbers import format_p_value
 from logfold.reporters.values_text import value_lines
 
@@ -105,6 +107,20 @@ def _entries_table(title: str, entries: Sequence[DiffEntry], top: int, console: 
         console.print(f"[dim]... {len(entries) - top:,} more; --top {len(entries)} shows them all[/dim]")
 
 
+def _changes(console: Console, changes: Sequence[TemplateValueChanges], top: int) -> None:
+    console.print(f"{chr(10)}[bold cyan]Values that differ[/bold cyan] ({len(changes):,} templates)", highlight=False)
+    if not changes:
+        console.print("[dim]none[/dim]")
+        return
+    for item in changes[:top]:
+        console.print(Text.assemble(("  ", ""), _template_text(item.text), (f"  {item.level or ''}", "dim")))
+        for change in item.changes:
+            for line in change_lines(change):
+                console.print(f"    {escape(line)}", style="dim", highlight=False)
+    if len(changes) > top:
+        console.print(f"[dim]... {len(changes) - top:,} more; --top {len(changes)} shows them all[/dim]")
+
+
 def print_diff(console: Console, result: DiffResult, top: int) -> None:
     """Print a summary line and tables of new, changed and disappeared templates.
 
@@ -127,3 +143,5 @@ def print_diff(console: Console, result: DiffResult, top: int) -> None:
     _entries_table("New templates", result.new_templates, top, console, "green")
     _entries_table("Changed templates", result.changed, top, console, "magenta")
     _entries_table("Disappeared templates", result.disappeared, top, console, "yellow")
+    if result.value_changes is not None:
+        _changes(console, result.value_changes, top)

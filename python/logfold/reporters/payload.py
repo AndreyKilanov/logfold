@@ -20,7 +20,7 @@ from logfold.model import (
     Unmatched,
 )
 from logfold.model_check import CheckResult
-from logfold.model_values import NumericSummary, ValueStats
+from logfold.model_values import NumericSummary, TemplateValueChanges, ValueStats
 
 
 def _iso(value: datetime | None) -> str | None:
@@ -142,6 +142,42 @@ def analysis_payload(result: AnalysisResult, limit: int | None = None) -> dict[s
     }
 
 
+def changes_payload(changes: tuple[TemplateValueChanges, ...], limit: int | None = None) -> list[dict[str, Any]]:
+    """Return the JSON form of the new and gone values of a diff.
+
+    Args:
+        changes: The templates whose values differ.
+        limit: Keep only the first ``limit`` templates; ``None`` keeps all.
+
+    Returns:
+        A list with one item per template: ``id``, ``text``, ``level`` and ``positions``.
+    """
+    shown = changes if limit is None else changes[:limit]
+    return [
+        {
+            "id": item.id,
+            "text": item.text,
+            "level": item.level,
+            "positions": [
+                {
+                    "position": change.position,
+                    "name": change.name,
+                    "new": [{"value": value, "count": count} for value, count in change.new],
+                    "gone": [{"value": value, "count": count} for value, count in change.gone],
+                    "new_distinct": change.new_distinct,
+                    "gone_distinct": change.gone_distinct,
+                    "shared_distinct": change.shared_distinct,
+                    "before_distinct": change.before_distinct,
+                    "after_distinct": change.after_distinct,
+                    "capped": change.capped,
+                }
+                for change in item.changes
+            ],
+        }
+        for item in shown
+    ]
+
+
 def diff_payload(result: DiffResult, limit: int | None = None) -> dict[str, Any]:
     """Return the JSON form of a diff result.
 
@@ -157,7 +193,7 @@ def diff_payload(result: DiffResult, limit: int | None = None) -> dict[str, Any]
         shown = items if limit is None else items[:limit]
         return [entry_payload(entry) for entry in shown]
 
-    return {
+    payload = {
         "schema_version": SCHEMA_VERSION,
         "kind": "diff",
         "meta": asdict(result.meta),
@@ -177,6 +213,9 @@ def diff_payload(result: DiffResult, limit: int | None = None) -> dict[str, Any]
         "disappeared": entries(result.disappeared),
         "changed": entries(result.changed),
     }
+    if result.value_changes is not None:
+        payload["value_changes"] = changes_payload(result.value_changes, limit)
+    return payload
 
 
 def check_payload(result: CheckResult, limit: int | None = None) -> dict[str, Any]:

@@ -1,15 +1,25 @@
-//! The distributions of the values of the most frequent templates, collected in the pass that assigns records to the
-//! finished tree (ADR-016).
+//! The values of the most frequent templates, collected in the pass that assigns records to the finished tree: their
+//! distributions (ADR-016) or, for two runs, which values are new and which are gone (ADR-018).
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use logfold_core::{
-    Assignment, Distribution, DrainMiner, Fit, RecordMeta, Recount, Slot, TokenView, ValueCollector, WILDCARD_NAME,
-    default_mask_rules, extract_parameters, template_id,
+    Assignment, Distribution, DrainMiner, Fit, MAX_PER_CHUNK, MAX_PER_RUN, RecordMeta, Recount, Slot, TokenView,
+    ValueCollector, ValueSet, WILDCARD_NAME, compare_values, default_mask_rules, extract_parameters, template_id,
 };
 
+use crate::error::EngineError;
 use crate::pipeline::PipelineContext;
-use crate::types::{PositionValues, TemplateValues, ValuesRequest};
+use crate::types::{PositionChange, PositionValues, TemplateChanges, TemplateValues, ValuesRequest};
+
+/// What the pass that assigns records collects.
+#[derive(Clone, Copy)]
+enum Collect {
+    /// The distributions of the values (ADR-016).
+    Distributions,
+    /// The sets of values, to tell the new from the gone ones (ADR-018).
+    Presence,
+}
 
 /// The templates whose values are collected, with their tokens.
 pub(crate) struct ValuePlan {
@@ -17,6 +27,7 @@ pub(crate) struct ValuePlan {
     /// The names of the rules whose values are collected: the default rules. A value that a mask set of the user hides
     /// (a key, an e-mail address) is never counted, so a report cannot show it.
     names: Vec<String>,
+    collect: Collect,
 }
 
 impl ValuePlan {
@@ -27,7 +38,21 @@ impl ValuePlan {
             .into_iter()
             .map(|index| (index, miner.cluster_tokens(index).to_vec()))
             .collect();
-        ValuePlan { templates, names: default_mask_rules().into_iter().map(|rule| rule.name).collect() }
+        let collect = if request.compare { Collect::Presence } else { Collect::Distributions };
+        ValuePlan { templates, names: default_mask_rules().into_iter().map(|rule| rule.name).collect(), collect }
+    }
+
+    /// Whether the plan compares two runs.
+    pub(crate) fn compares(&self) -> bool {
+        matches!(self.collect, Collect::Presence)
+    }
+
+    /// The collector of one run; a chunk in work (`partial`) keeps fewer values than the total of a run.
+    fn collector(&self, partial: bool) -> ValueCollector {
+        match &self.collect {
+            Collect::Distributions => ValueCollector::default(),
+            Collect::Presence => ValueCollector::presence(if partial { MAX_PER_CHUNK } else { MAX_PER_RUN }),
+        }
     }
 
     /// Counts the values of `record`, which `recount` has just assigned to `assignment`.
@@ -50,10 +75,18 @@ impl ValuePlan {
     }
 }
 
-/// A recount for `n_runs` runs that also collects the values when there is a plan.
-pub(crate) fn new_recount(n_runs: usize, rule: logfold_core::MatchRule, plan: Option<&ValuePlan>) -> Recount {
+/// A recount for `n_runs` runs that also collects the values when there is a plan; `partial` for the part of one chunk.
+pub(crate) fn new_recount(
+    n_runs: usize,
+    rule: logfold_core::MatchRule,
+    plan: Option<&ValuePlan>,
+    partial: bool,
+) -> Recount {
     let recount = Recount::with_rule(n_runs, rule);
-    if plan.is_some() { recount.with_values() } else { recount }
+    match plan {
+        Some(plan) => recount.with_collector(plan.collector(partial)),
+        None => recount,
+    }
 }
 
 /// Assigns the record to the finished tree and, for a template that is tracked, counts its values.
@@ -110,4 +143,67 @@ pub(crate) fn summarize(miner: &DrainMiner, collectors: Vec<ValueCollector>) -> 
                 .collect(),
         })
         .collect()
+}
+
+/// The sets of the two runs of a template, summed over the clusters that have its text.
+#[derive(Default)]
+struct Group {
+    runs: [BTreeMap<Slot, ValueSet>; 2],
+    present: [bool; 2],
+}
+
+/// Groups the sets of the two runs by the text of the template.
+fn group_by_text(miner: &DrainMiner, collectors: [ValueCollector; 2]) -> BTreeMap<String, Group> {
+    let mut groups: BTreeMap<String, Group> = BTreeMap::new();
+    for (run, collector) in collectors.into_iter().enumerate() {
+        let Some(presence) = collector.into_presence() else { continue };
+        for (cluster, slots) in presence.into_clusters() {
+            let group = groups.entry(miner.cluster_text(cluster)).or_default();
+            group.present[run] = true;
+            for (slot, set) in slots {
+                group.runs[run].entry(slot).or_default().merge(&set);
+            }
+        }
+    }
+    groups
+}
+
+/// Turns the sets of the two runs into the values that are new and gone, by the text of the template, for the templates
+/// that both runs have.
+pub(crate) fn value_changes(
+    miner: &DrainMiner,
+    collectors: Vec<ValueCollector>,
+) -> Result<Vec<TemplateChanges>, EngineError> {
+    let pair: [ValueCollector; 2] =
+        collectors.try_into().map_err(|_| EngineError::Config("comparing the values needs exactly two runs".into()))?;
+    let empty = ValueSet::default();
+    let mut found = Vec::new();
+    for (text, group) in group_by_text(miner, pair) {
+        if !(group.present[0] && group.present[1]) {
+            continue;
+        }
+        let slots: BTreeSet<&Slot> = group.runs[0].keys().chain(group.runs[1].keys()).collect();
+        let positions: Vec<PositionChange> = slots
+            .into_iter()
+            .filter_map(|slot| {
+                let before = group.runs[0].get(slot).unwrap_or(&empty);
+                let after = group.runs[1].get(slot).unwrap_or(&empty);
+                compare_values(before, after).map(|change| PositionChange {
+                    position: slot.0,
+                    name: slot.1.clone(),
+                    new: change.new,
+                    gone: change.gone,
+                    new_distinct: change.new_distinct,
+                    gone_distinct: change.gone_distinct,
+                    shared_distinct: change.shared_distinct,
+                    distinct: change.distinct,
+                    capped: change.capped,
+                })
+            })
+            .collect();
+        if !positions.is_empty() {
+            found.push(TemplateChanges { id: template_id(&text), text, positions });
+        }
+    }
+    Ok(found)
 }

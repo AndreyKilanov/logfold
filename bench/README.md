@@ -1,11 +1,12 @@
 # Benchmarks
 
-Seven scripts; the flags choose what is measured. They print Markdown tables and save the raw numbers of every run to `bench/results/`.
+Eight scripts; the flags choose what is measured. They print Markdown tables and save the raw numbers of every run to `bench/results/`.
 
 | script | what it does |
 |---|---|
 | [`data.py`](data.py) | the inputs: `make` writes seeded datasets, `loghub2` downloads the four large real logs |
 | [`speed.py`](speed.py) | speed and memory: `analyze` (logfold variants and the competitors), `diff`, `formats` (each built-in format against `plain`), `matchers` (each native matcher alone) |
+| [`new_values.py`](new_values.py) | what `diff --new-values` costs against `diff` on the generated pairs, and a stress log with a request id on every line, on which the position of the users must still be compared whatever the strategy |
 | [`reporters.py`](reporters.py) | time and memory of the reporters on results with 5, 20 and 100 thousand templates, built in memory |
 | [`stream.py`](stream.py) | the streaming interfaces: `logfold stream` and `logfold.Miner` (`add_many`, `add_lines`, `add_log_message`) against `analyze` and a Drain3 loop on one file; prints a table and does not save the raw numbers |
 | [`state_parallel.py`](state_parallel.py) | continuing a saved state in parallel against continuing it sequentially, on 100 MB logs |
@@ -36,6 +37,8 @@ python bench/speed.py analyze FILE --tools drain3 logdrain logdelta  # the compe
 python bench/speed.py diff bench/data/app_100mb.log bench/data/app_100mb_b.log
 python bench/speed.py formats --format haproxy log4j --sizes 10 100
 python bench/speed.py matchers --sizes 5000 20000 100000
+python bench/new_values.py pairs                                      # diff against diff --new-values
+python bench/new_values.py stress --lines 1500000                     # a request id on every line
 python bench/reporters.py --sizes 5000 20000 100000
 python bench/stream.py run bench/data/app_100mb.log --variants analyze stream add_many add_lines add_log_message drain3
 

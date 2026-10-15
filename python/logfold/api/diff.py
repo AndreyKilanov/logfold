@@ -22,6 +22,7 @@ from logfold.api._common import (
 )
 from logfold.api._matching import native_spec, resolve_matcher
 from logfold.api._native_classify import classify_native, table_side
+from logfold.api._values import DEFAULT_VALUE_TEMPLATES, finish_changes, worst_levels
 from logfold.api._windows import (
     OPEN,
     TimeBound,
@@ -97,6 +98,27 @@ def _baselines(
     return (before, *(_paths(item, "diff() baselines") for item in more))
 
 
+def _check_new_values(
+    before: PathLike | Sequence[PathLike] | AnalysisResult,
+    after: PathLike | Sequence[PathLike] | AnalysisResult | None,
+    baselines: Sequence[PathLike | Sequence[PathLike]] | None,
+    compare: DiffConfig,
+    value_templates: int,
+) -> None:
+    """Refuse the combinations that ``new_values`` cannot answer."""
+    if isinstance(before, AnalysisResult) or isinstance(after, AnalysisResult):
+        raise ConfigError(
+            "new_values needs the logs: a saved analysis result does not keep the values",
+            hint="compare the logs themselves: logfold diff BEFORE.log AFTER.log --new-values",
+        )
+    if baselines:
+        raise ConfigError("new_values compares two runs, so it cannot be combined with baselines")
+    if not compare.recount:
+        raise ConfigError("new_values reads every record against the finished template tree, so it needs recount")
+    if value_templates < 1:
+        raise ConfigError("value_templates must be at least 1")
+
+
 def diff(
     before: PathLike | Sequence[PathLike] | AnalysisResult,
     after: PathLike | Sequence[PathLike] | AnalysisResult | None = None,
@@ -131,6 +153,8 @@ def diff(
     since: TimeBound = None,
     until: TimeBound = None,
     split_at: TimeBound = None,
+    new_values: bool = False,
+    value_templates: int = DEFAULT_VALUE_TEMPLATES,
     config: Settings | None = None,
     progress: Progress | None = None,
 ) -> DiffResult:
@@ -184,6 +208,12 @@ def diff(
         split_at: Compare two parts of one input: ``before`` is the only input, the records before this time are the
             first run and the records from this time on are the second run (``after`` is left out). The input is read
             once for each run and one template tree is shared, as for two inputs.
+        new_values: Tell which values the variable positions of the templates that both runs have took in the second
+            run only (new) and in the first run only (gone): ``DiffResult.value_changes``. It compares the values by a
+            64-bit fingerprint with bounded memory, so a diff takes 1.5 to 3 times as long; ``examples`` decides how
+            the values are shown. Logs only (not for saved results or ``baselines``) and not with ``recount=False``.
+            A position with more than 1,000,000 different values is marked ``capped`` and gives no lists.
+        value_templates: With ``new_values``, how many of the most frequent templates are compared (default 200).
         config: Settings from a ``logfold.toml`` (:func:`logfold.load_config`): they give the format, ``multiline``, the
             mining and execution configuration and, for ``diff``, the comparison configuration, wherever the call does
             not name them itself.
@@ -209,6 +239,8 @@ def diff(
         min_baselines,
     )
     resolved_matcher = resolve_matcher(compare.matcher)
+    if new_values:
+        _check_new_values(before, after, baselines, compare, value_templates)
     if after is None:
         if split_at is None:
             raise ConfigError("diff() needs two inputs, or one input and split_at")
@@ -248,7 +280,17 @@ def diff(
         mining, depth, sim_th, max_children, max_templates, masks, high_cardinality, on_full, delimiters
     )
     exec_config = _execution(execution, engine, strategy, threads, chunk_bytes, high_cardinality, warm_start)
-    mined = _mine(runs, spec, mining_config, exec_config, progress, compare.recount, windows)
+    mined = _mine(
+        runs,
+        spec,
+        mining_config,
+        exec_config,
+        progress,
+        compare.recount,
+        windows,
+        values=value_templates if new_values else None,
+        compare_values=new_values,
+    )
     pooled = pool_baselines(mined, len(runs) - 1, required_baselines(len(runs) - 1, compare.min_baselines))
     table = pooled.table
     before_names = tuple(name for run in runs[:-1] for name in run)
@@ -282,6 +324,10 @@ def diff(
             scrub(reported.new), scrub(reported.disappeared), scrub(reported.changed), reported.unchanged
         )
     unchanged = reported.unchanged + pooled.unstable
+    value_changes = None
+    if new_values:
+        levels = worst_levels(table.ids, table.runs[0].level, table.runs[1].level)
+        value_changes = finish_changes(mined.value_changes or (), levels, examples, masker)
 
     return DiffResult(
         new_templates=reported.new,
@@ -306,4 +352,5 @@ def diff(
             *window_warnings(before_summary),
             *window_warnings(after_summary),
         ),
+        value_changes=value_changes,
     )

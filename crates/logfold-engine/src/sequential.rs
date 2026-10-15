@@ -35,7 +35,7 @@ pub(crate) fn recount(
     observer: &dyn ProgressObserver,
 ) -> Result<(Recount, Vec<Counters>), EngineError> {
     let n_runs = plan.run_bytes.len();
-    let mut recount = new_recount(n_runs, rule, values);
+    let mut recount = new_recount(n_runs, rule, values, false);
     let mut counters = vec![Counters::default(); n_runs];
     for unit in &plan.units {
         let unit_counters = recount_unit(context, unit, miner, &mut recount, values, observer)?;

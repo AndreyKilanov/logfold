@@ -43,10 +43,58 @@
     },
     "new_templates": { "$ref": "#/$defs/entries" },
     "disappeared": { "$ref": "#/$defs/entries" },
-    "changed": { "$ref": "#/$defs/entries" }
+    "changed": { "$ref": "#/$defs/entries" },
+    "value_changes": {
+      "description": "Only with --new-values: the templates of both runs whose values differ at a variable position.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "text", "level", "positions"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[0-9a-f]{16}$" },
+          "text": { "type": "string" },
+          "level": { "type": ["string", "null"] },
+          "positions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "position", "name", "new", "gone", "new_distinct", "gone_distinct", "shared_distinct",
+                "before_distinct", "after_distinct", "capped"
+              ],
+              "properties": {
+                "position": { "type": "integer", "minimum": 0 },
+                "name": { "type": "string" },
+                "new": { "$ref": "#/$defs/counted_values" },
+                "gone": { "$ref": "#/$defs/counted_values" },
+                "new_distinct": { "type": "integer", "minimum": 0 },
+                "gone_distinct": { "type": "integer", "minimum": 0 },
+                "shared_distinct": { "type": "integer", "minimum": 0 },
+                "before_distinct": { "type": "integer", "minimum": 0 },
+                "after_distinct": { "type": "integer", "minimum": 0 },
+                "capped": { "type": "boolean" }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
   },
   "additionalProperties": false,
   "$defs": {
+    "counted_values": {
+      "description": "The most frequent values with the records that gave them; empty with --examples none and for a capped position.",
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "required": ["value", "count"],
+        "properties": { "value": { "type": "string" }, "count": { "type": "integer", "minimum": 1 } },
+        "additionalProperties": false
+      }
+    },
     "entries": {
       "type": "array",
       "items": {

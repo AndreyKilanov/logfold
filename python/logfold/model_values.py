@@ -1,4 +1,8 @@
-"""The distribution of the values at a variable position of a template (``analyze(values=True)``)."""
+"""The values at the variable positions of a template.
+
+Their distribution (``analyze(values=True)``) and which of them are new or gone between two runs
+(``diff(new_values=True)``).
+"""
 
 from __future__ import annotations
 
@@ -60,3 +64,55 @@ class ValueStats:
     capped: bool
     other: int
     numeric: NumericSummary | None
+
+
+@dataclass(frozen=True, slots=True)
+class ValueChange:
+    """How the values of one variable position differ between the two runs of a ``diff``.
+
+    A value is new when the second run has it and the first does not, gone when it is the other way round. The lists
+    hold the most frequent ones (at most 10, a value cut at 64 bytes); with ``examples="none"`` they are empty and the
+    numbers remain, with ``examples="masked"`` the values have the masking rules applied and are summed.
+
+    Attributes:
+        position: Index of the token in the template.
+        name: ``*`` or the name of the masking rule.
+        new: The most frequent new values with the records that gave them, most frequent first and then by text.
+        gone: The most frequent gone values with their records in the first run.
+        new_distinct: How many different values are new.
+        gone_distinct: How many different values are gone.
+        shared_distinct: How many different values both runs have.
+        before_distinct: How many different values the first run has.
+        after_distinct: How many different values the second run has.
+        capped: ``True`` when the position had more different values than the memory limit allows (1,000,000 for one
+            position, 4,000,000 for a run). The lists are then empty and the numbers are lower bounds, because a value
+            that looks new may only be one that was not counted.
+    """
+
+    position: int
+    name: str
+    new: tuple[tuple[str, int], ...]
+    gone: tuple[tuple[str, int], ...]
+    new_distinct: int
+    gone_distinct: int
+    shared_distinct: int
+    before_distinct: int
+    after_distinct: int
+    capped: bool
+
+
+@dataclass(frozen=True, slots=True)
+class TemplateValueChanges:
+    """The positions of a template, present in both runs, whose values differ.
+
+    Attributes:
+        id: Identifier of the template (see :class:`logfold.Template`).
+        text: Text of the template.
+        level: The most severe level of the template in either run, or ``None``.
+        changes: The positions that differ, in order.
+    """
+
+    id: str
+    text: str
+    level: str | None
+    changes: tuple[ValueChange, ...]

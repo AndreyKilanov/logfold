@@ -62,6 +62,8 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 - `logfold plugins info NAME` says what each built-in format was checked on and what was not (`PluginInfo.checked` and
   `not_checked`, additive keys of `plugins info --json`); the same table is in `docs/guide.md`, the account with the numbers in
   `bench/docs/FORMAT_VALIDATION.md`.
+- `diff --new-values` lists the values of each variable position that only the second run has (new) or only the first (gone), for the
+  templates that both runs have (`DiffResult.value_changes`; 1.5 to 3 times the time; contract 19). See `docs/cli.md`.
 
 ### Changed
 

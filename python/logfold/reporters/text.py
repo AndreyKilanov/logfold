@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from logfold.ext.changes_text import changes_lines
 from logfold.ext.text import printable
 from logfold.model import AnalysisResult, DiffEntry, DiffResult, Template
 from logfold.reporters.numbers import format_p_value
@@ -74,6 +75,8 @@ def _diff_lines(result: DiffResult, top: int) -> list[str]:
     lines.extend(_entries("New templates", result.new_templates, top))
     lines.extend(_entries("Changed templates", result.changed, top))
     lines.extend(_entries("Disappeared templates", result.disappeared, top))
+    if result.value_changes is not None:
+        lines.extend(changes_lines(result.value_changes, top))
     return lines
 
 
