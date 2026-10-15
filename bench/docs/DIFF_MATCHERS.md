@@ -215,6 +215,58 @@ with `overlap` for the stationary pair; 174, 144, 152 and 137 for the adjacent p
 no false merge in `novel`. `overlap` mixes up more siblings than `jaccard` and joined different messages once in `novel`. Neither
 solves the sibling mix-ups: the siblings of this family differ in the number of `<*>` or in a host name, not in a rare word.
 
+### All four logs with the full window, and the thresholds
+
+The same method on HDFS, BGL, Spark and Thunderbird with the full window (3 million lines per side; BGL 2.3 million,
+Thunderbird 2.7 million), from `python bench/accuracy.py --window 3000000 --thresholds jaccard=0.5,0.7 jaccard-idf=0.3,0.4,0.6,0.7 overlap=0.6,0.7,0.9`.
+Reported templates on saved results, the pair with no change (stationary) and the drifting pair (adjacent):
+
+| log | pair | `exact` | `jaccard` | `jaccard-idf` | `overlap` |
+|---|---|---:|---:|---:|---:|
+| hdfs | stationary | 14 | 9 | 9 | 6 |
+| bgl | stationary | 95 | 60 | 75 | 64 |
+| spark | stationary | 71 | 37 | 41 | 31 |
+| thunderbird | stationary | 905 | 266 | 713 | 696 |
+| hdfs | adjacent | 26 | 12 | 12 | 10 |
+| bgl | adjacent | 174 | 144 | 152 | 137 |
+| spark | adjacent | 117 | 60 | 63 | 58 |
+| thunderbird | adjacent | 2,061 | 1,733 | 2,035 | 2,002 |
+
+On live diffs (one shared tree and a recount) the four give the same counts within a few templates, except Thunderbird
+(stationary: 200 with `exact`, 110 with `jaccard`, 198 and 197 with the new ones).
+
+The reachable twins (swap and extend, saved) are 11 in HDFS, 119 in BGL, 14 in Spark and none in Thunderbird, whose one-sided templates
+carry none of the picked words, so Thunderbird only tells about false alarms and the number of pairs. Twins found in `swap` and `extend`
+on saved results, out of 144 reachable, the three matchers with their default thresholds next to the best other threshold:
+
+| matcher | twins | mixed up with a sibling | joined with a non-twin | `novel`: twin pairs (false merges) | `novel`: mixed up / joined | Thunderbird stationary, reported |
+|---|---:|---:|---:|---:|---:|---:|
+| `jaccard` 0.5 | 129 | 15 | 1 | 0 | 3 / 0 | 217 |
+| `jaccard` 0.6 (default) | 128 | 11 | 1 | 0 | 0 / 0 | 266 |
+| `jaccard` 0.7 | 126 | 8 | 1 | 0 | 0 / 0 | 700 |
+| `jaccard-idf` 0.3 | 128 | 14 | 0 | **2** | 3 / 0 | 711 |
+| `jaccard-idf` 0.4 | 126 | 10 | 0 | 0 | 0 / 0 | 711 |
+| `jaccard-idf` 0.5 (default) | 123 | 10 | 0 | 0 | 0 / 0 | 713 |
+| `jaccard-idf` 0.6 | 121 | 8 | 0 | 0 | 0 / 0 | 719 |
+| `jaccard-idf` 0.7 | 119 | 6 | 0 | 0 | 0 / 0 | 729 |
+| `overlap` 0.6 | 125 | 19 | 4 | 0 | 20 / 8 | 204 |
+| `overlap` 0.7 | 125 | 19 | 4 | 0 | 9 / 7 | 212 |
+| `overlap` 0.8 (default) | 124 | 17 | 3 | 0 | 5 / 5 | 696 |
+| `overlap` 0.9 | 117 | 12 | 2 | 0 | 1 / 1 | 748 |
+
+What it says:
+
+- **The defaults stay.** No other threshold is clearly better. `jaccard` 0.6 keeps the Thunderbird alarms low (266 against 700 at
+  0.7) without the sibling mix-ups of 0.5 (15 against 11, and three in `novel`).
+- `jaccard-idf` 0.4 finds three twins more than 0.5 (one each in BGL swap, BGL extend and Spark extend) and is not worse in any cell,
+  but 0.3 already joins two different messages in `novel`, and a gain of one twin per log from three reworded words is
+  inside what another choice of words could change. 0.4 is the candidate if `jaccard-idf` ever gets a new default; it needs the pairs of
+  real releases first.
+- `overlap` 0.9 removes most of its false joins (5 to 1 in `novel`, 2 live to 0) and costs 7 twins of 124; the alarms on
+  Thunderbird are higher than with `jaccard-idf` (748 against 713). Use it, through a subclass, where hiding a real change is worse than a missed pair.
+  Below 0.8 `overlap` mixes up siblings up to 20 times and joins with a non-twin up to 8 times in `novel`.
+- The windows are the same log, not two releases; the twin counts come from three words per log.
+
 ## Which one to choose
 
 | | exact | token_subset | jaccard (default) |
@@ -235,8 +287,8 @@ The 0.4.0 matchers are alternatives, not replacements: neither `jaccard-idf` nor
 
 ## Limits of this evidence
 
-- Four logs, one machine, the first million lines or so of each (200,000 for the 0.4.0 matchers, with five reachable twins per
-  mode: their rewording counts show a direction, not a rate). Only Thunderbird has enough one-sided templates to move the live
+- Four logs, one machine, the first million lines or so of each (the 0.4.0 table above used 200,000, with five reachable twins per
+  mode: its rewording counts show a direction, not a rate; the full-window table has 144 reachable twins, 119 of them from BGL). Only Thunderbird has enough one-sided templates to move the live
   counts; the rewording tests have 57-73 reachable twins per cell, mostly from BGL and Thunderbird.
 - `novel` keeps the numbers and addresses and replaces all words; a real new message that shares most of its words with an old one
   is harder, and only the adjacent pairs probe that. The 1 pair out of 206 that joined a template with a non-rewording shows
