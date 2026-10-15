@@ -8,10 +8,14 @@ pub const INITIAL_WINDOW: usize = 4 << 20;
 /// their offsets, are the same as without the limit (`docs/ALGORITHM.md` §1.1).
 pub const MAX_LINE_BYTES: usize = 16 << 20;
 
+/// UTF-8 byte order mark. At the very start of a stream it is not part of the first line.
+const UTF8_BOM: [u8; 3] = [0xEF, 0xBB, 0xBF];
+
 /// One physical line without its terminator.
 #[derive(Clone, Copy, Debug)]
 pub struct Line<'a> {
-    /// Line bytes without `\n` and without one trailing `\r`, at most [`MAX_LINE_BYTES`] of them.
+    /// Line bytes without `\n` and without one trailing `\r`, at most [`MAX_LINE_BYTES`] of them. The first line of a
+    /// stream (offset 0) is also without a UTF-8 byte order mark; `start` and the offsets that follow still count it.
     pub bytes: &'a [u8],
     /// Byte offset of the first byte of the line in the stream.
     pub start: u64,
@@ -105,9 +109,11 @@ impl<R: Read> LineReader<R> {
             stop -= 1;
         }
         let start = self.offset;
+        let from =
+            if start == 0 && self.buf[begin..stop].starts_with(&UTF8_BOM) { begin + UTF8_BOM.len() } else { begin };
         self.pos += consumed;
         self.offset += consumed as u64;
-        Line { bytes: &self.buf[begin..stop], start }
+        Line { bytes: &self.buf[from..stop], start }
     }
 
     #[expect(clippy::indexing_slicing, reason = "`pos <= end <= buf.len()` holds after every refill")]

@@ -326,7 +326,7 @@ syslog, so its log is a syslog log and the line stays whole), *refused* (explici
 | source | files | correct | compatible | refused | wrong |
 |---|---:|---:|---:|---:|---:|
 | real programs | 71 | 12 | 18 | 538 | 0 |
-| other projects | 114 | 143 | 14 | 755 | 0 |
+| other projects | 114 | 154 | 17 | 741 | 0 |
 | Loghub-2k, Loghub-2.0, generated | 24 | 36 | 0 | 156 | 0 |
 
 (The four right columns count cases, 8 per file.)
@@ -343,13 +343,13 @@ The same 1,672 cases decided at other thresholds:
 
 | threshold | correct | compatible | refused | wrong |
 |---:|---:|---:|---:|---:|
-| 0.5 | 238 | 38 | 1,390 | 6 |
-| 0.6 | 215 | 35 | 1,417 | 5 |
-| 0.7 | 195 | 33 | 1,444 | 0 |
-| **0.8** | 191 | 32 | 1,449 | 0 |
-| 0.9 | 170 | 32 | 1,470 | 0 |
-| 0.95 | 164 | 30 | 1,478 | 0 |
-| 1.0 | 133 | 21 | 1,518 | 0 |
+| 0.5 | 240 | 40 | 1,386 | 6 |
+| 0.6 | 223 | 37 | 1,407 | 5 |
+| 0.7 | 206 | 36 | 1,430 | 0 |
+| **0.8** | 202 | 35 | 1,435 | 0 |
+| 0.9 | 189 | 35 | 1,448 | 0 |
+| 0.95 | 186 | 34 | 1,452 | 0 |
+| 1.0 | 164 | 28 | 1,480 | 0 |
 
 The wrong picks at 0.5 and 0.6 are one file: HAProxy 3.2's `option httplog clf` log, where 120 of 160 lines are CLF
 request lines that `nginx` reads (0.61) and 40 are connection lines that it does not. From 0.7 up nothing is wrong, and
@@ -371,10 +371,10 @@ request lines that `nginx` reads (0.61) and 40 are connection lines that it does
 - The detector looks at the first 200 non-blank lines and wants 80% of them. A banner or a stack trace of more than 40
   lines at the start (the 100 and 200 lines of text above) makes it refuse every file: the answer is always the explicit
   error, never a wrong format, but the user has to name the format.
-- A byte order mark or a cut first line costs one line of the sample: a file of three to six lines (the small samples of
-  other projects) drops under 0.8 and is refused; a real log does not notice it. The same mark costs the engine its first
-  line: a regex format does not skip it, so the first line of such a file is not parsed (4 records and 1 line not parsed
-  of 5 lines of `app`).
+- A cut first line costs one line of the sample: a file of three to six lines (the small samples of other projects) drops
+  under 0.8 and is refused; a real log does not notice it. A byte order mark did the same, and cost the engine the first
+  line of the log too (a regex or JSON format did not skip it: 4 records and 1 line not parsed of 5 lines of `app`); that
+  was fixed after this matrix found it, and the table above is the run after the fix.
 - A log with CR line endings only is one line for every format.
 
 **CI.** `tests/api/test_autodetect_matrix.py`: for every format a Hypothesis strategy writes a damaged log (the grammars and

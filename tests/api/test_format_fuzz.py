@@ -37,6 +37,7 @@ SETTINGS = settings(
 )
 LOG4J_PATTERNS = ["log4j", "log4j:%d{ISO8601} %-5p [%t] %c - %m%n", "log4j:[%d] %p %m (%c)%n"]
 BLANK = b" \t\n\x0c\r"
+UTF8_BOM = bytes([0xEF, 0xBB, 0xBF])
 HUGE = 10_000_000
 SMALL_LOG = 3000
 MAX_UNITS = 60
@@ -57,8 +58,11 @@ def chunk_for(data: bytes, chunk: int) -> int:
 
 
 def non_blank_lines(data: bytes) -> int:
-    """Count the lines that the engine counts: split on a line feed, a line of ASCII white space only is blank."""
-    return sum(1 for line in data.split(b"\n") if line.strip(BLANK))
+    """Count the lines that the engine counts: split on a line feed, a line of ASCII white space only is blank.
+
+    A UTF-8 byte order mark at the start of the log is not part of its first line.
+    """
+    return sum(1 for line in data.removeprefix(UTF8_BOM).split(b"\n") if line.strip(BLANK))
 
 
 def summary(result: logfold.AnalysisResult) -> tuple[int, int, int, dict[str, int]]:

@@ -175,6 +175,20 @@ mod lines {
     fn empty_stream_has_no_lines() {
         assert!(collect(b"").is_empty());
     }
+
+    #[test]
+    fn drops_the_byte_order_mark_of_the_stream_and_keeps_the_offsets() {
+        let lines = collect(b"\xef\xbb\xbfab\n\xef\xbb\xbfcd\n");
+        assert_eq!(lines, vec![(b"ab".to_vec(), 0), (b"\xef\xbb\xbfcd".to_vec(), 6)]);
+        assert_eq!(collect(b"\xef\xbb\xbf\n"), vec![(Vec::new(), 0)]);
+        assert_eq!(collect(b"\xef\xbb"), vec![(b"\xef\xbb".to_vec(), 0)]);
+    }
+
+    #[test]
+    fn keeps_a_mark_at_a_chunk_that_does_not_start_the_stream() {
+        let mut reader = LineReader::new(&b"\xef\xbb\xbfcd\n"[..], 100);
+        assert_eq!(reader.next_line().unwrap().unwrap().bytes, b"\xef\xbb\xbfcd");
+    }
 }
 
 mod records {
