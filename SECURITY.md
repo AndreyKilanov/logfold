@@ -11,7 +11,6 @@ logfold reads log files that may contain attacker-controlled text and writes rep
 
 - Inputs are untrusted. Memory use depends on the number of templates, not on the file size; `max_templates` caps it.
 - Regular expressions supplied by the user run in the Rust `regex` engine (linear time, no catastrophic backtracking).
-  The pure-Python reference engine uses Python's `re`, which can backtrack: do not feed it untrusted patterns.
 - HTML reports escape every log-derived value, embed no network resources and carry a strict Content-Security-Policy.
 - Plugins are Python code and run with your privileges once installed. `logfold plugins install` installs only names from
   a catalog, validates the catalog strictly (safe names and version constraints, printable text, size limits), shows
