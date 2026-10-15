@@ -15,6 +15,8 @@ and optional `level`.
 ### 1.1 Framing
 
 - Lines are split on `\n`; one trailing `\r` is removed from each line. A final line without `\n` is a line.
+  A UTF-8 byte order mark at the very start of the stream (offset 0) is not part of the first line; offsets still count
+  its three bytes. A mark anywhere else stays in its line.
 - **Size limits.** The content of a line (after the line feed and one trailing `\r` are removed) is at most 16 MiB
   (`MAX_LINE_BYTES`): a longer line keeps its first 16 MiB, and the rest of it is read and dropped. The lines of the
   stream and their offsets are the same as without the limit. A multi-line record takes a continuation line only while

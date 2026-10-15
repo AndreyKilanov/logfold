@@ -99,6 +99,8 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 - `RunSummary.lines` is documented as the physical lines read, blank ones included (it said non-blank; the count is not changed).
 - `--format auto` picks `docker-json` for a Docker `json-file` log (`log` ending in a line break, `stream`, `time`); it read
   it as `jsonl`, which did not join the pieces of a long line. Found by checking the detection against logs of real programs and other projects.
+- A UTF-8 byte order mark at the start of a log is skipped. The first line of a log that Windows tools wrote was not parsed
+  by a regex or JSON format, and a small file with the mark was refused by `--format auto`.
 
 ## [0.4.0] - 2026-10-07
 

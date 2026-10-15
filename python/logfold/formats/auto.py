@@ -20,6 +20,7 @@ MAX_SAMPLE_LINE_BYTES = 1 << 20
 MAX_SAMPLE_BYTES = 8 << 20
 CONFIDENCE_THRESHOLD = 0.8
 INDENT_CONTINUATION_SCORE = 0.9
+BOM = chr(0xFEFF)
 
 
 class _LineReader(Protocol):
@@ -70,8 +71,10 @@ def read_sample(path: str, limit: int = SAMPLE_LINES) -> list[str]:
         opener = gzip.open if magic[:2] == b"\x1f\x8b" else open
         lines: list[str] = []
         with opener(path, "rb") as stream:
-            for raw in _sample_lines(stream):
+            for number, raw in enumerate(_sample_lines(stream)):
                 line = raw.rstrip(b"\r\n").decode("utf-8", "replace")
+                if number == 0:
+                    line = line.removeprefix(BOM)
                 if line.strip():
                     lines.append(line)
                 if len(lines) >= limit:
