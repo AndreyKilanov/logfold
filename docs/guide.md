@@ -201,6 +201,33 @@ three differ most. The exit-code gates (`--fail-on-new`, `--fail-on-new-alerts`)
 `changed`, so use `--matcher exact` for a gate that must fail on every new text. Measurements on four large real logs, and how they were made, are in
 [`bench/docs/DIFF_MATCHERS.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/docs/DIFF_MATCHERS.md).
 
+## Check a log against a model
+
+A saved model is what a good run looked like: its templates and their counts, never an example line. `check` compares a new log with it and
+fails when the log holds anything the model does not know, without reading the good log again:
+
+```
+logfold learn good.log --state model.json
+logfold check today.log --state model.json
+```
+
+```python
+import logfold
+
+logfold.analyze("good.log", save_state="model.json")
+checked = logfold.check("model.json", "today.log")
+if not checked.passed:
+    for finding in checked.findings:
+        print(finding.kind, finding.message)
+```
+
+The check fails (exit code 2, after the report is written) for each of these findings, and the output says which: more than 1% of the records fit no
+template of the model (`--max-unmatched`), a new template of level WARN or higher (`--fail-on new-alerts`, or `new` for any new template), or no record
+was read at all. The templates that the log has and the model does not are the new ones, with their counts, times and an example; the templates of
+the model whose share moved a lot are listed as changed. `logfold match model.json today.log` only counts the records that fit no template, and
+`logfold analyze today.log --load-state model.json --save-state model.json` continues a model with a new log. Use the same masks and parameters when
+you learn and when you check; otherwise the command stops and says so. See [`check`](cli.md#logfold-check) and [`match`](cli.md#logfold-match).
+
 ## Mine a stream
 
 A program that produces records while it runs (a service, a test harness, `tail -F`, `kubectl logs -f`) does not need a

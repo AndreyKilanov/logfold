@@ -15,7 +15,7 @@ from typer.testing import CliRunner
 
 from logfold.cli.app import app
 from logfold.plugins import listing
-from logfold.plugins.validation import CHECKS, format_checks, markdown_table
+from logfold.plugins.validation import CHECKS, README_GROUPS, format_checks, markdown_table, readme_table
 
 ROOT = Path(__file__).resolve().parents[2]
 GUIDE = ROOT / "docs" / "guide.md"
@@ -48,6 +48,28 @@ def test_the_guide_table_is_the_one_the_code_writes() -> None:
     match = re.search(r"<!-- format-checks:start -->\n(.*?)\n<!-- format-checks:end -->", text, re.DOTALL)
     assert match is not None
     assert match.group(1) == markdown_table(), "run: python -m logfold.plugins.validation, and paste it into the guide"
+
+
+def test_every_format_is_in_exactly_one_group_of_the_readme_table() -> None:
+    listed = [name for _, names in README_GROUPS for name in names]
+    assert sorted(listed) == FORMATS
+
+
+def test_the_english_readme_has_the_table_the_code_writes() -> None:
+    text = (ROOT / "README.md").read_text(encoding="utf-8")
+    match = re.search(r"<!-- format-checks:start -->\n(.*?)\n<!-- format-checks:end -->", text, re.DOTALL)
+    assert match is not None
+    assert match.group(1) == readme_table(), "run: python -m logfold.plugins.validation --readme"
+
+
+def test_the_russian_readme_groups_the_same_formats_in_the_same_order() -> None:
+    text = (ROOT / "README.ru.md").read_text(encoding="utf-8")
+    match = re.search(r"<!-- format-checks:start -->\n(.*?)\n<!-- format-checks:end -->", text, re.DOTALL)
+    assert match is not None
+    rows = match.group(1).splitlines()[2:]
+    assert [re.findall(r"`([^`]+)`", row.rsplit("|", 2)[-2]) for row in rows] == [
+        list(names) for _, names in README_GROUPS
+    ]
 
 
 def test_the_validation_summary_has_a_row_for_every_format() -> None:
