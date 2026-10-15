@@ -1,7 +1,7 @@
 """Log formats of servers, databases, containers and CI that ship with logfold as default plugins.
 
-Like :mod:`logfold.plugins.formats`, they are data: the engine compiles each description into a parser. None of them is
-picked by ``--format auto``; name one with ``--format``.
+Like :mod:`logfold.plugins.formats`, they are data: the engine compiles each description into a parser. Only
+``docker-json`` is picked by ``--format auto``; name the others with ``--format``.
 """
 
 from __future__ import annotations

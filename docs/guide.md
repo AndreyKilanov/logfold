@@ -264,7 +264,7 @@ guesses instead of guessing wrong silently.
 | `serilog-clef` | Serilog compact JSON (default plugin); `@m`/`@mt`, `@t`, `@l` |
 | `haproxy` | HAProxy HTTP and TCP logs, with or without the syslog prefix (default plugin) |
 | `postgresql`, `postgresql-csv` | PostgreSQL server log, `stderr` and `csvlog` (default plugins) |
-| `docker-json` | Docker `json-file` driver lines: `log`, `time` (default plugin) |
+| `docker-json` | Docker `json-file` driver lines: `log`, `stream`, `time` (default plugin; picked by `auto`) |
 | `github-actions` | GitHub Actions job logs; `##[error]`, `##[warning]`, `##[debug]` are levels (default plugin) |
 | `log4j` | log4j and logback output in the pattern `%d{ISO8601} %-5p [%t] %c - %m%n` (default plugin) |
 | `log4j:<pattern>` | log4j or logback output in your own conversion pattern, for example `log4j:%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n` |

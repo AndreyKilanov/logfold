@@ -97,6 +97,8 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 - A line with bytes that are not UTF-8 (a log in Latin-1 or Windows-1251) is read by the regex and JSON formats with
   the bytes replaced; it was counted as not parsed. Found by fuzzing the formats.
 - `RunSummary.lines` is documented as the physical lines read, blank ones included (it said non-blank; the count is not changed).
+- `--format auto` picks `docker-json` for a Docker `json-file` log (`log` ending in a line break, `stream`, `time`); it read
+  it as `jsonl`, which did not join the pieces of a long line. Found by checking the detection against logs of real programs and other projects.
 
 ## [0.4.0] - 2026-10-07
 
