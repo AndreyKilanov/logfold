@@ -26,6 +26,7 @@ Usage::
 
     python bench/accuracy.py --window 3000000        # the 0.3.0 evaluation
     python bench/accuracy.py --window 200000 --logs hdfs bgl
+    python bench/accuracy.py --thresholds jaccard-idf=0.4,0.6 overlap=0.7,0.9   # variants named jaccard-idf@0.4, ...
 """
 
 from __future__ import annotations
@@ -42,8 +43,8 @@ from pathlib import Path
 from typing import Any
 
 import logfold
-from logfold.comparison.matchers import WILDCARD
 from logfold.ext import registry
+from logfold.plugins.matchers import JaccardIdfMatcher, JaccardMatcher, OverlapMatcher
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "bench" / "data" / "loghub2"
@@ -52,6 +53,26 @@ MATCHERS = ("exact", "token_subset", "jaccard", "jaccard-idf", "overlap")
 SOURCES = ("live", "saved")
 WORD = re.compile(r"^[A-Za-z]{4,}$")
 MODES = ("swap", "extend", "novel")
+WILDCARD = "<*>"
+THRESHOLD_BASES = {"jaccard": JaccardMatcher, "jaccard-idf": JaccardIdfMatcher, "overlap": OverlapMatcher}
+
+
+def register_variants(specs: list[str]) -> tuple[str, ...]:
+    """Register a matcher per threshold of ``NAME=T1,T2`` and return the new names (``NAME@T1``, ``NAME@T2``)."""
+    names: list[str] = []
+    for spec in specs:
+        base, _, values = spec.partition("=")
+        if base not in THRESHOLD_BASES or not values:
+            raise SystemExit(
+                f"--thresholds: expected NAME=T1,T2 with NAME one of {sorted(THRESHOLD_BASES)}, got {spec!r}"
+            )
+        for value in values.split(","):
+            variant = type(
+                f"{base}@{value}", (THRESHOLD_BASES[base],), {"name": f"{base}@{value}", "threshold": float(value)}
+            )
+            registry.register_matcher(variant())
+            names.append(f"{base}@{value}")
+    return tuple(names)
 
 
 def read_lines(path: Path, count: int) -> list[str]:
@@ -319,9 +340,14 @@ def main() -> None:
     parser.add_argument("--block", type=int, default=1000, help="block size of the stationary split")
     parser.add_argument("--words", type=int, default=3, help="reworded words per log")
     parser.add_argument("--logs", nargs="+", default=list(LOGS), choices=LOGS)
+    parser.add_argument(
+        "--thresholds", nargs="+", default=[], metavar="NAME=T1,T2", help="also measure these thresholds of a matcher"
+    )
     parser.add_argument("--out", type=Path, help="write the raw numbers here (default: a new file in bench/results/)")
     parser.add_argument("--no-save", action="store_true", help="do not write the raw numbers")
     args = parser.parse_args()
+    global MATCHERS  # noqa: PLW0603
+    MATCHERS = (*MATCHERS, *register_variants(args.thresholds))
     report: dict[str, Any] = {
         "logfold": logfold.__version__,
         "python": platform.python_version(),
