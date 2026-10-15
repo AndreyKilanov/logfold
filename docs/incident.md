@@ -90,6 +90,9 @@ logfold analyze after.log --level ERROR --values --top 1
 Here it is every database host and not one of them. [`--values`](cli.md#values-of-the-parameters) takes a second pass, a few times
 slower than the plain run. To read the values of one message, use [`logfold params`](cli.md#logfold-params).
 
+A template that is the same in both runs can still change in its values. To see which numbers or names only one run has, add `--new-values` to the
+`diff` of step 2: [new and gone values](cli.md#new-and-gone-values).
+
 ## 6. Read the log from where it is
 
 With `docker`, `kubectl` or `journalctl` installed, name the source instead of dumping a file:

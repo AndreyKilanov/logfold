@@ -29,8 +29,8 @@ pub use matching::{match_records, match_records_with};
 pub use session::{Session, SessionConfig};
 pub use types::{
     CheckOutput, DEFAULT_CHUNK_BYTES, ExecutionStrategy, MatchBatch, MatchedTemplate, MineOutput, MineRequest,
-    MiningConfig, NullObserver, PositionValues, ProgressObserver, RunMetrics, RunSummary, TemplateValues,
-    ValuesRequest,
+    MiningConfig, NullObserver, PositionChange, PositionValues, ProgressObserver, RunMetrics, RunSummary,
+    TemplateChanges, TemplateValues, ValuesRequest,
 };
 
 use logfold_core::{CoreError, DrainMiner, MinerConfig, MinerSnapshot};
@@ -120,9 +120,33 @@ pub fn mine(request: &MineRequest, observer: &dyn ProgressObserver) -> Result<Mi
     } else {
         None
     };
-    let values = match (plan, recounted.as_mut()) {
-        (Some(_), Some(recount)) => Some(valuing::summarize(&miner, recount.take_values())),
-        _ => None,
+    let (values, value_changes) = match (plan.as_ref(), recounted.as_mut()) {
+        (Some(plan), Some(recount)) if plan.compares() => {
+            let rescan = |wanted: &valuing::ValuePlan| -> Result<Vec<logfold_core::ValueCollector>, EngineError> {
+                let mut again = match threads_requested {
+                    None => {
+                        sequential::recount(&context, &miner, &planned, MatchRule::Similar, Some(wanted), observer)?.0
+                    }
+                    Some(requested) => {
+                        chunked::recount(
+                            &context,
+                            &miner,
+                            &planned,
+                            requested,
+                            MatchRule::Similar,
+                            Some(wanted),
+                            observer,
+                        )?
+                        .0
+                    }
+                };
+                Ok(again.take_values())
+            };
+            let changes = valuing::value_changes(&miner, plan, recount.take_values(), &rescan)?;
+            (None, Some(changes))
+        }
+        (Some(_), Some(recount)) => (Some(valuing::summarize(&miner, recount.take_values())), None),
+        _ => (None, None),
     };
     let recount_seconds = recount_started.elapsed().as_secs_f64();
 
@@ -165,7 +189,7 @@ pub fn mine(request: &MineRequest, observer: &dyn ProgressObserver) -> Result<Mi
         wall_recount_s: recount_seconds,
         wall_freeze_s: freeze_seconds,
     };
-    Ok(MineOutput { runs, templates, snapshot, unmatched: None, check: None, values, metrics })
+    Ok(MineOutput { runs, templates, snapshot, unmatched: None, check: None, values, value_changes, metrics })
 }
 
 /// The strategy that a request runs with. A miner that evicts templates depends on the order of every record, so it mines

@@ -15,6 +15,7 @@ mod mask_check;
 mod masker;
 mod miner;
 mod parameters;
+mod presence;
 mod stats;
 mod tokenizer;
 mod values;
@@ -33,6 +34,10 @@ pub use miner::{
     NodeSnapshot, OnFull, RecordMeta, Recount, WILDCARD,
 };
 pub use parameters::{Fit, Parameter, WILDCARD_NAME, extract_parameters};
+pub use presence::{
+    Change, MAX_PER_CHUNK, MAX_PER_POSITION, MAX_PER_RUN, PresenceCollector, TOP_CHANGES, TextCollector, ValueSet,
+    Wanted, compare as compare_values, fingerprint,
+};
 pub use stats::RunStats;
 pub use tokenizer::{TokenView, Tokenizer};
 pub use values::{

@@ -290,6 +290,8 @@ see below), plus:
 | `--significance` | 0.01 | highest p-value of a `changed` template that is still reported (0 < P <= 1); `1` keeps every template that passes the ratio and count thresholds |
 | `--matcher` | `jaccard` | `jaccard`, `jaccard-idf`, `overlap`, `token_subset`, `exact` or `rules:FILE` (your own pairs); plugins add more ([how to choose](guide.md#choosing-a-matcher)) |
 | `--recount` / `--no-recount` | on | assign every record to the finished template tree; `--no-recount` is faster but can show spurious differences |
+| `--new-values` | off | for the templates that both runs have, list the values of each variable position that only the second run has (new) and only the first (gone); see [New and gone values](#new-and-gone-values) |
+| `--values-templates` N | 200 | with `--new-values`: how many of the most frequent templates are compared |
 | `--fail-on-new` | off | exit with code 2 when new templates are found |
 | `--fail-on-new-alerts` | off | exit with code 2 when new templates with level WARN, ERROR or FATAL are found |
 
@@ -323,6 +325,38 @@ reports like `--min-count` does (a `.json` file from `--out` stays complete) and
 templates were hidden. In `diff` they filter the new, disappeared and changed lists, every report and the gates: `--fail-on-new
 --level ERROR` exits with code 2 only when a new template at ERROR or above exists. A format without levels (nginx, apache,
 plain) is an error with a hint, not an empty result.
+
+### New and gone values
+
+A template that is the same in both runs can still hide a change: `added item <NUM> to the catalog` is there yesterday and today, and the
+numbers are new products. `--new-values` lists, for the `--values-templates` most frequent templates that **both** runs have, the values of
+each variable position that only the second run has (**new**) or only the first (**gone**):
+
+```
+logfold diff before.log after.log --new-values
+```
+
+```
+Values that differ (1 templates)
+  added item <NUM> to the catalog
+    [2] num: 30 new, 30 gone, 20 in both (50 before, 50 after)
+          new:  53 x3, 56 x3, 59 x3, 62 x3, 65 x3, ... 25 more
+          gone: 11 x3, 14 x3, 17 x3, 2 x3, 20 x3, ... 25 more
+```
+
+The text, terminal, HTML and Markdown reports show it, the JSON report has `value_changes` ([`diff-v1`](schema/diff-v1.schema.json)),
+the other reports and the gates do not change. A few things to know:
+
+- **Logs only.** It needs the logs: a saved report does not keep the values, and it does not combine with `--baseline` or `--no-recount`.
+  `--split-at` works.
+- **Cost.** It reads the logs once more, for the text of the values it shows, so a `diff` takes about 2.5 times as long (3.2 s instead of 1.3 s on two
+  100 MB nginx logs, 7.2 s instead of 2.9 s on two application logs). Memory stays bounded: about 20 bytes per different value (900,000 different values on
+  each side: 83 MB instead of 49 MB for the plain diff).
+- **Limits.** Values are compared by a 64-bit fingerprint. A position with more than 1,000,000 different values in a run (4,000,000 in all positions) is
+  marked `not compared` and gives no lists, because with part of the values missing a value that looks new may only be one that was not counted.
+- **Which values.** The same positions as [`--values`](#values-of-the-parameters): a `<*>` and the values that a default rule replaced; the values that a mask set
+  of yours hides are never compared. The values are the raw text of the log: `--examples masked` applies the masking rules to the listed values, `--examples none` keeps
+  the numbers and leaves the lists out. `--level` also filters this section by the level of the template.
 
 ## `logfold params`
 

@@ -15,6 +15,7 @@ from logfold.cli.levels import diff_note, resolve_level
 from logfold.cli.options import (
     PANEL_DIFF,
     PANEL_INPUT,
+    PANEL_OUTPUT,
     Append,
     AsJson,
     ChunkMb,
@@ -236,6 +237,24 @@ def diff(
     high_cardinality: HighCardinality = False,
     warm_start: WarmStart = False,
     examples: Examples = "raw",
+    new_values: Annotated[
+        bool,
+        typer.Option(
+            "--new-values",
+            help="For the templates that both runs have, list the values of the variable positions that only the "
+            "second run has (new) or only the first (gone); reads the logs once more, see --values-templates.",
+            rich_help_panel=PANEL_OUTPUT,
+        ),
+    ] = False,
+    values_templates: Annotated[
+        int,
+        typer.Option(
+            "--values-templates",
+            min=1,
+            help="With --new-values: how many of the most frequent templates are compared.",
+            rich_help_panel=PANEL_OUTPUT,
+        ),
+    ] = 200,
     as_json: AsJson = False,
     source_tail: SourceTail = None,
     source_since: SourceSince = None,
@@ -302,6 +321,7 @@ def diff(
                     "--since": since is not None,
                     "--until": until is not None,
                     "--split-at": split_at is not None,
+                    "--new-values": new_values,
                 }
             )
             result = _diff_saved(
@@ -333,6 +353,8 @@ def diff(
                     matcher=matcher,
                     recount=recount,
                     examples=examples,  # type: ignore[arg-type]
+                    new_values=new_values,
+                    value_templates=values_templates,
                     progress=progress,
                     config=settings,
                     **mining_options(

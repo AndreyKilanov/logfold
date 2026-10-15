@@ -9,9 +9,12 @@ from __future__ import annotations
 
 import csv
 import io
+from collections.abc import Sequence
 
+from logfold.ext.changes_text import change_lines
 from logfold.ext.text import printable
 from logfold.model import AnalysisResult, DiffEntry, DiffResult
+from logfold.model_values import TemplateValueChanges
 
 __all__ = ["CsvReporter", "MarkdownReporter"]
 
@@ -38,6 +41,18 @@ def _diff_sections(result: DiffResult) -> tuple[tuple[str, tuple[DiffEntry, ...]
         ("changed", result.changed),
         ("disappeared", result.disappeared),
     )
+
+
+def _md_changes(changes: Sequence[TemplateValueChanges], top: int) -> list[str]:
+    """The section of the new and gone values of a diff."""
+    lines = ["", "## Values that differ", ""]
+    if not changes:
+        return [*lines, "none"]
+    for item in changes[:top]:
+        lines.extend([f"### `{_md(item.text)}`", ""])
+        lines.extend(f"- {_md(line.strip())}" for change in item.changes for line in change_lines(change))
+        lines.append("")
+    return lines
 
 
 class MarkdownReporter:
@@ -91,6 +106,8 @@ class MarkdownReporter:
             lines.extend(
                 f"| {e.before_count:,} | {e.after_count:,} | {e.level or ''} | `{_md(e.text)}` |" for e in entries[:top]
             )
+        if result.value_changes is not None:
+            lines.extend(_md_changes(result.value_changes, top))
         return "\n".join(lines) + "\n"
 
 

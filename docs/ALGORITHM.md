@@ -567,3 +567,24 @@ counts of the templates are then those of that pass, and the values of a positio
 
 `ALGO_VERSION` does not change: the tree and the assignment are the same, the values are an addition to the result. The extension
 contract version is 18.
+
+## 16. New and gone values
+
+`diff(new_values=True)` tells, for the templates that both runs have, which values a variable position took in the second run only (new) and
+in the first only (gone) (ADR-018). It uses the pass of §9 and the positions of §15 (the same tracked templates, the same names, the values of a mask set of the user never
+collected), for exactly two runs.
+
+- **Sets:** for every run, template (cluster) and position, a map from the 64-bit fingerprint of the whole value to the number of records that gave it. The
+  fingerprint is SipHash-1-3 with a zero key; the value is cut at 64 bytes only when it is shown. A value is new when its fingerprint is in the set of the
+  second run and not in the first, gone the other way round; clusters of the same text are summed.
+- **Limits:** a position keeps at most 1,000,000 different values for a run, a run at most 4,000,000 in all positions, and the part of the input that one
+  chunk reads at most 1,000,000. A position that went over a limit is `capped`: it gets no lists, because a value that looks new may only be one that was
+  not counted, and its numbers of different values are lower bounds. Which positions are capped depends on the order of the input as in §15 (the same for a fixed chunk size
+  whatever the number of threads); below the limits the sums and unions do not depend on any order.
+- **Lists:** the 10 most frequent new and the 10 most frequent gone values of a position, by records (more first) and then by the fingerprint, with the numbers of new,
+  gone and shared different values. A position with no new and no gone value is left out, and so is a template that only one run has.
+- **Text:** the text of the listed values comes from a second pass of §9 that collects only the values with those fingerprints (at most 64 bytes each); a value whose
+  text that pass does not find (the input changed between the passes) is shown as `#` and its fingerprint.
+
+`ALGO_VERSION` does not change. The extension contract version is 19.
+

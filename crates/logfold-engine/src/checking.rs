@@ -89,6 +89,7 @@ pub fn check_records(request: &MineRequest, observer: &dyn ProgressObserver) -> 
         unmatched: Some(unmatched),
         check: Some(CheckOutput { model, new_templates }),
         values: None,
+        value_changes: None,
         metrics,
     })
 }

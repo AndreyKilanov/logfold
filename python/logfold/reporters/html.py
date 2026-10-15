@@ -12,9 +12,10 @@ import re
 from collections.abc import Sequence
 from html import escape as _escape
 
+from logfold.ext.changes_text import change_lines
 from logfold.ext.text import printable
 from logfold.model import AnalysisResult, DiffEntry, DiffResult, RunMetrics, RunSummary, Template
-from logfold.model_values import ValueStats
+from logfold.model_values import TemplateValueChanges, ValueStats
 from logfold.reporters.numbers import format_p_value
 from logfold.reporters.values_text import value_lines
 
@@ -256,6 +257,24 @@ def _diff_section(title: str, entries: Sequence[DiffEntry], kind: str, limit: in
     )
 
 
+def _changes_section(changes: Sequence[TemplateValueChanges] | None, limit: int) -> str:
+    """The section of the new and gone values of a diff; empty when they were not asked for."""
+    if changes is None:
+        return ""
+    if not changes:
+        return '<h2>Values that differ (0)</h2><div class="empty">Nothing to report.</div>'
+    shown = changes[:limit]
+    note = ""
+    if len(changes) > len(shown):
+        note = f'<div class="warn">Showing {_count(len(shown))} of {_count(len(changes))}.</div>'
+    blocks = "".join(
+        f"<details><summary>{_template_html(item.text)}</summary>"
+        f"<pre>{escape(chr(10).join(line for change in item.changes for line in change_lines(change)))}</pre></details>"
+        for item in shown
+    )
+    return f'<h2>Values that differ ({_count(len(changes))})</h2>{note}<div class="wrap">{blocks}</div>'
+
+
 def _diff_body(result: DiffResult, limit: int) -> str:
     counts = "".join(
         [
@@ -272,6 +291,7 @@ def _diff_body(result: DiffResult, limit: int) -> str:
             _diff_section("New templates", result.new_templates, "new", limit, "new"),
             _diff_section("Changed templates", result.changed, "changed", limit, "changed"),
             _diff_section("Disappeared templates", result.disappeared, "gone", limit, "gone"),
+            _changes_section(result.value_changes, limit),
         ]
     )
     return (

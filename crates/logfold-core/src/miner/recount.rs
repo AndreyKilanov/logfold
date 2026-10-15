@@ -105,8 +105,13 @@ impl Recount {
     }
 
     /// Makes the recount also collect the values of the variable positions, for [`Recount::add_values`].
-    pub fn with_values(mut self) -> Self {
-        self.values = vec![ValueCollector::default(); self.n_runs];
+    pub fn with_values(self) -> Self {
+        self.with_collector(ValueCollector::default())
+    }
+
+    /// Makes the recount collect the values with a copy of `collector` for every run.
+    pub fn with_collector(mut self, collector: ValueCollector) -> Self {
+        self.values = vec![collector; self.n_runs];
         self
     }
 

@@ -7,9 +7,10 @@
 //! divisions only, so they are the same on every platform.
 
 use std::collections::BTreeMap;
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
 use crate::parameters::Parameter;
+use crate::presence::{PresenceCollector, TextCollector, Wanted};
 
 /// Longest value that is kept; a longer value is cut (and counted under its first bytes).
 pub const MAX_VALUE_BYTES: usize = 64;
@@ -251,19 +252,29 @@ impl Distribution {
 /// parameter (`*` for a generalized position, the name of the masking rule otherwise).
 pub type Slot = (usize, String);
 
-/// The distributions of the templates (given by the index of their cluster) of one run.
-#[derive(Clone, Debug, Default)]
+/// The values of the templates (given by the index of their cluster) of one run: their distributions (ADR-016), or the
+/// sets of values that tell the new from the gone ones, or the text of chosen values (ADR-018).
+#[derive(Clone, Debug)]
 pub struct ValueCollector {
     clusters: BTreeMap<u32, Vec<(Slot, Distribution)>>,
+    distributions: bool,
+    presence: Option<PresenceCollector>,
+    texts: Option<TextCollector>,
 }
 
-/// Finds the distribution of a position in the few that a template has, or makes it; the list stays sorted by position.
-fn slot_of<'a>(slots: &'a mut Vec<(Slot, Distribution)>, position: usize, name: &str) -> &'a mut Distribution {
+impl Default for ValueCollector {
+    fn default() -> Self {
+        ValueCollector { clusters: BTreeMap::new(), distributions: true, presence: None, texts: None }
+    }
+}
+
+/// Finds the entry of a position in the few that a template has, or makes it; the list stays sorted by position.
+pub(crate) fn slot_of<'a, T: Default>(slots: &'a mut Vec<(Slot, T)>, position: usize, name: &str) -> &'a mut T {
     let found = slots.binary_search_by(|((at, called), _)| at.cmp(&position).then_with(|| called.as_str().cmp(name)));
     let index = match found {
         Ok(index) => index,
         Err(index) => {
-            slots.insert(index, ((position, name.to_string()), Distribution::default()));
+            slots.insert(index, ((position, name.to_string()), T::default()));
             index
         }
     };
@@ -271,11 +282,37 @@ fn slot_of<'a>(slots: &'a mut Vec<(Slot, Distribution)>, position: usize, name: 
 }
 
 impl ValueCollector {
+    /// A collector that keeps the sets of values, at most `limit` different values in all, and no distributions.
+    pub fn presence(limit: usize) -> Self {
+        ValueCollector {
+            distributions: false,
+            presence: Some(PresenceCollector::new(limit)),
+            ..ValueCollector::default()
+        }
+    }
+
+    /// A collector that keeps the text of the values in `wanted`, and no distributions.
+    pub fn texts(wanted: Arc<Wanted>) -> Self {
+        ValueCollector { distributions: false, texts: Some(TextCollector::new(wanted)), ..ValueCollector::default() }
+    }
+
     /// Counts the values that a message of the template `cluster` gave to its variable positions.
     pub fn add(&mut self, cluster: u32, parameters: &[Parameter]) {
-        let slots = self.clusters.entry(cluster).or_default();
-        for parameter in parameters {
-            slot_of(slots, parameter.position, &parameter.name).add(&parameter.value);
+        if self.distributions {
+            let slots = self.clusters.entry(cluster).or_default();
+            for parameter in parameters {
+                slot_of(slots, parameter.position, &parameter.name).add(&parameter.value);
+            }
+        }
+        if let Some(presence) = &mut self.presence {
+            for parameter in parameters {
+                presence.add(cluster, parameter.position, &parameter.name, &parameter.value);
+            }
+        }
+        if let Some(texts) = &mut self.texts {
+            for parameter in parameters {
+                texts.add(cluster, parameter.position, &parameter.name, &parameter.value);
+            }
         }
     }
 
@@ -287,10 +324,26 @@ impl ValueCollector {
                 slot_of(mine, position, &name).merge(&distribution);
             }
         }
+        if let (Some(mine), Some(theirs)) = (&mut self.presence, other.presence) {
+            mine.merge(theirs);
+        }
+        if let (Some(mine), Some(theirs)) = (&mut self.texts, other.texts) {
+            mine.merge(theirs);
+        }
     }
 
     /// The distributions by cluster and position, in order.
     pub fn into_clusters(self) -> BTreeMap<u32, BTreeMap<Slot, Distribution>> {
         self.clusters.into_iter().map(|(cluster, slots)| (cluster, slots.into_iter().collect())).collect()
+    }
+
+    /// The sets of values, when this collector keeps them.
+    pub fn into_presence(self) -> Option<PresenceCollector> {
+        self.presence
+    }
+
+    /// The texts of the wanted values, when this collector looks for them.
+    pub fn into_texts(self) -> Option<TextCollector> {
+        self.texts
     }
 }

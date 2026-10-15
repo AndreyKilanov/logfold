@@ -11,7 +11,8 @@ SHOWN_VALUES = 5
 VALUE_WIDTH = 40
 
 
-def _clip(text: str) -> str:
+def clip_value(text: str) -> str:
+    """Make a value fit on one line: control characters shown, white space folded, cut at the width."""
     flat = " ".join(printable(text).split()) or "(blank)"
     return flat if len(flat) <= VALUE_WIDTH else flat[: VALUE_WIDTH - 1] + "…"
 
@@ -40,7 +41,7 @@ def value_lines(values: Sequence[ValueStats]) -> list[str]:
     lines = []
     for item in values:
         distinct = f"{item.distinct:,}{'+' if item.capped else ''} distinct"
-        listed = ", ".join(f"{_clip(value)} x{count:,}" for value, count in item.top[:SHOWN_VALUES])
+        listed = ", ".join(f"{clip_value(value)} x{count:,}" for value, count in item.top[:SHOWN_VALUES])
         rest = len(item.top) - SHOWN_VALUES
         tail = f", ... {rest} more listed" if rest > 0 else ""
         lines.append(f"[{item.position}] {printable(item.name)} ({item.count:,} values, {distinct}): {listed}{tail}")

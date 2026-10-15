@@ -115,6 +115,43 @@ pub struct MineRequest {
 pub struct ValuesRequest {
     /// The number of the most frequent templates that get their values counted.
     pub templates: usize,
+    /// Compare the values of two runs instead of counting them: which values are new and which are gone (ADR-018). The
+    /// result is [`MineOutput::value_changes`] and [`MineOutput::values`] stays empty; it needs exactly two runs.
+    pub compare: bool,
+}
+
+/// How the values of one variable position differ between the two runs.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PositionChange {
+    /// Index of the token in the template.
+    pub position: usize,
+    /// The name of the masking rule, or `*` for a position that the miner generalized.
+    pub name: String,
+    /// The most frequent values only the second run has, with their records, by records then text.
+    pub new: Vec<(Vec<u8>, u64)>,
+    /// The most frequent values only the first run has.
+    pub gone: Vec<(Vec<u8>, u64)>,
+    /// How many different values only the second run has.
+    pub new_distinct: u64,
+    /// How many different values only the first run has.
+    pub gone_distinct: u64,
+    /// How many different values both runs have.
+    pub shared_distinct: u64,
+    /// How many different values the first and the second run have.
+    pub distinct: (u64, u64),
+    /// A limit of memory was hit: the lists are empty and the numbers are lower bounds.
+    pub capped: bool,
+}
+
+/// The positions of a template whose values differ between the two runs.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TemplateChanges {
+    /// `sha256(text)[:16 hex]`, the identifier that reports use.
+    pub id: String,
+    /// Template text, tokens joined by a single space.
+    pub text: String,
+    /// The positions in order.
+    pub positions: Vec<PositionChange>,
 }
 
 /// The values of one variable position of a template in one run.
@@ -203,6 +240,8 @@ pub struct MineOutput {
     pub check: Option<CheckOutput>,
     /// The values of the templates that [`MineRequest::values`] asked for, by the text of the template; `None` without it.
     pub values: Option<Vec<TemplateValues>>,
+    /// The new and gone values of the templates that both runs have, when [`ValuesRequest::compare`] was asked for.
+    pub value_changes: Option<Vec<TemplateChanges>>,
     /// Timings.
     pub metrics: RunMetrics,
 }

@@ -102,6 +102,25 @@ it is never reported as new, disappeared or changed. Baselines are logs only, no
 their number. Three to five recent good runs are enough to tell stable templates from noise; more than ten give a
 warning.
 
+### Compare the values
+
+A template that exists in both runs can hide a change in its values (`added item <NUM> to the catalog` with new product numbers).
+`--new-values` lists, for each variable position of the shared templates, the values that only the second run has and the values that only the first has:
+
+```python
+d = diff("before.log", "after.log", new_values=True)
+for item in d.value_changes:
+    for change in item.changes:
+        print(item.text, change.name, change.new_distinct, "new", change.gone_distinct, "gone", change.new[:3])
+```
+
+```
+logfold diff before.log after.log --new-values
+```
+
+It reads the logs once more and takes about 2.5 times as long as a plain `diff`; memory is bounded, and a position with more than a million different
+values is reported as not compared instead of a wrong list. Logs only, not saved results or `--baseline`. See [New and gone values](cli.md#new-and-gone-values).
+
 ### Compare saved results
 
 Analyze each log once, keep the JSON, and compare the reports later without the logs:

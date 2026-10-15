@@ -63,6 +63,10 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   `not_checked`, additive keys of `plugins info --json`); the same table is in `docs/guide.md`, the account with the numbers in
   `bench/docs/FORMAT_VALIDATION.md`.
 
+- `logfold diff --new-values` and `diff(new_values=True)` list, for the templates that both runs have, the values of each variable position that only the
+  second run has (new) or only the first (gone), with bounded memory (`DiffResult.value_changes`, `ValueChange`; `--values-templates N`); a diff takes about 2.5 times as long.
+  Logs only, not with `--baseline`. Extension contract version 19, additive key `value_changes` of `diff-v1`. See `docs/cli.md`.
+
 ### Changed
 
 - The `format` argument of `analyze`, `match` and `diff` is `None` by default (the same as `"auto"`), so that a

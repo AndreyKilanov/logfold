@@ -51,9 +51,11 @@ fn values_of<'a>(output: &'a MineOutput, prefix: &str) -> &'a TemplateValues {
 fn the_values_of_the_positions_are_counted_exactly() {
     let dir = tempfile::tempdir().unwrap();
     let log = write_log(&dir, 2000);
-    let output =
-        mine(&request(&log, ExecutionStrategy::Sequential, Some(ValuesRequest { templates: 10 })), &NullObserver)
-            .unwrap();
+    let output = mine(
+        &request(&log, ExecutionStrategy::Sequential, Some(ValuesRequest { templates: 10, compare: false })),
+        &NullObserver,
+    )
+    .unwrap();
 
     let access = values_of(&output, "GET");
     assert_eq!(access.text, "GET <*> <NUM> <NUM>");
@@ -85,9 +87,11 @@ fn the_values_of_the_positions_are_counted_exactly() {
 fn only_the_most_frequent_templates_are_tracked() {
     let dir = tempfile::tempdir().unwrap();
     let log = write_log(&dir, 2000);
-    let output =
-        mine(&request(&log, ExecutionStrategy::Sequential, Some(ValuesRequest { templates: 1 })), &NullObserver)
-            .unwrap();
+    let output = mine(
+        &request(&log, ExecutionStrategy::Sequential, Some(ValuesRequest { templates: 1, compare: false })),
+        &NullObserver,
+    )
+    .unwrap();
     let tracked: Vec<&str> = output.values.as_ref().unwrap().iter().map(|t| t.text.as_str()).collect();
     assert_eq!(tracked, ["GET <*> <NUM> <NUM>"]);
 }
@@ -106,7 +110,7 @@ fn the_values_do_not_depend_on_the_number_of_threads_at_a_fixed_chunk_size() {
     let log = write_log(&dir, 6000);
     let run = |threads: usize| {
         let strategy = ExecutionStrategy::Chunked { chunk_bytes: 8 * 1024, threads };
-        mine(&request(&log, strategy, Some(ValuesRequest { templates: 10 })), &NullObserver).unwrap()
+        mine(&request(&log, strategy, Some(ValuesRequest { templates: 10, compare: false })), &NullObserver).unwrap()
     };
     let one = run(1);
     let four = run(4);
@@ -118,14 +122,16 @@ fn the_values_do_not_depend_on_the_number_of_threads_at_a_fixed_chunk_size() {
 fn the_sequential_and_the_chunked_runs_count_the_same_values_below_the_cap() {
     let dir = tempfile::tempdir().unwrap();
     let log = write_log(&dir, 6000);
-    let sequential =
-        mine(&request(&log, ExecutionStrategy::Sequential, Some(ValuesRequest { templates: 10 })), &NullObserver)
-            .unwrap();
+    let sequential = mine(
+        &request(&log, ExecutionStrategy::Sequential, Some(ValuesRequest { templates: 10, compare: false })),
+        &NullObserver,
+    )
+    .unwrap();
     let chunked = mine(
         &request(
             &log,
             ExecutionStrategy::Chunked { chunk_bytes: 8 * 1024, threads: 3 },
-            Some(ValuesRequest { templates: 10 }),
+            Some(ValuesRequest { templates: 10, compare: false }),
         ),
         &NullObserver,
     )
@@ -155,7 +161,7 @@ fn the_values_that_a_mask_set_of_the_user_hides_are_never_counted() {
         check: None,
     }];
     masks.extend(default_mask_rules());
-    let mut asked = request(&path, ExecutionStrategy::Sequential, Some(ValuesRequest { templates: 5 }));
+    let mut asked = request(&path, ExecutionStrategy::Sequential, Some(ValuesRequest { templates: 5, compare: false }));
     asked.masks = masks;
 
     let output = mine(&asked, &NullObserver).unwrap();

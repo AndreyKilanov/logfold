@@ -22,7 +22,7 @@ from logfold.engines.base import (
 from logfold.errors import FormatError
 from logfold.ext.formats import FormatSpec, JsonFormat, PlainFormat, RegexFormat
 from logfold.model import RunMetrics
-from logfold.model_values import NumericSummary, ValueStats
+from logfold.model_values import NumericSummary, TemplateValueChanges, ValueChange, ValueStats
 
 
 def format_to_dict(spec: FormatSpec) -> dict[str, Any]:
@@ -129,6 +129,7 @@ def request_to_dict(request: MineRequest) -> dict[str, Any]:
         "recount": request.recount,
         "exact": request.exact,
         "values": request.values,
+        "values_compare": request.compare_values,
     }
 
 
@@ -158,6 +159,32 @@ def _values(items: list[dict[str, Any]]) -> dict[str, tuple[tuple[ValueStats, ..
     }
 
 
+def _value_changes(items: list[dict[str, Any]]) -> tuple[TemplateValueChanges, ...]:
+    return tuple(
+        TemplateValueChanges(
+            id=item["id"],
+            text=item["text"],
+            level=None,
+            changes=tuple(
+                ValueChange(
+                    position=position["position"],
+                    name=position["name"],
+                    new=tuple((str(value), int(count)) for value, count in position["new"]),
+                    gone=tuple((str(value), int(count)) for value, count in position["gone"]),
+                    new_distinct=position["new_distinct"],
+                    gone_distinct=position["gone_distinct"],
+                    shared_distinct=position["shared_distinct"],
+                    before_distinct=position["distinct"][0],
+                    after_distinct=position["distinct"][1],
+                    capped=position["capped"],
+                )
+                for position in item["positions"]
+            ),
+        )
+        for item in items
+    )
+
+
 def to_result(answer: dict[str, Any]) -> MiningResult:
     """Convert the plain-data answer of the extension into a mining result."""
     runs = tuple(RunCounters(**run) for run in answer["runs"])
@@ -168,6 +195,7 @@ def to_result(answer: dict[str, Any]) -> MiningResult:
         templates=table,
         model=_table(answer["model"]) if "model" in answer else None,
         values=_values(answer["values"]) if "values" in answer else None,
+        value_changes=_value_changes(answer["value_changes"]) if "value_changes" in answer else None,
         new_templates=_table(answer["new_templates"]) if "new_templates" in answer else None,
         metrics=RunMetrics(**answer["metrics"]),
         unmatched=None

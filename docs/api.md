@@ -154,6 +154,7 @@ diff(
     threshold_ratio=None, min_count=None, min_new_count=None, recount=None,
     matcher=None, significance=None, baselines=None, min_baselines=None,
     diff_config=None, since=None, until=None, split_at=None,
+    new_values=False, value_templates=200,
     <all mining and execution arguments of analyze>,
 ) -> DiffResult
 ```
@@ -175,6 +176,17 @@ template; shares are normalized by the number of records in each run. `before` a
 | `recount` | `True` | assign every record to the finished tree for consistent counts (costs a second pass) |
 | `matcher` | `"jaccard"` | registered diff matcher name: `jaccard`, `jaccard-idf`, `overlap`, `token_subset`, `exact`, `"rules:FILE"` (pairs from a file) or a plugin's (see [Choosing a matcher](guide.md#choosing-a-matcher)) |
 | `diff_config` | | a full `DiffConfig`; the keyword arguments override its fields |
+| `new_values`, `value_templates` | `False`, 200 | with `new_values=True`, `DiffResult.value_changes` tells which values the variable positions of the `value_templates` most frequent templates that both runs have took in the second run only (new) and in the first only (gone); see [New and gone values](#new-and-gone-values). Logs only, not with `baselines` or `recount=False`; reads the inputs once more |
+
+### New and gone values
+
+`diff(..., new_values=True)` fills `DiffResult.value_changes`: a tuple of `TemplateValueChanges` (`id`, `text`, `level`, the most severe level of the
+template in either run, and `changes`), one for each template that both runs have and whose values differ at a position. A `ValueChange` has
+`position` and `name` as in [`Template.values`](#template), `new` and `gone` (the most frequent values, at most 10, as `(value, records)` pairs), `new_distinct`,
+`gone_distinct`, `shared_distinct`, `before_distinct`, `after_distinct` and `capped`. The values are compared by a 64-bit fingerprint with bounded memory: a position
+with more than 1,000,000 different values in a run (4,000,000 in all positions) is `capped`, has empty lists and lower-bound counts. `examples` decides how the
+values are shown (`masked`: the masking rules applied and the counts summed, `none`: no lists), and `DiffResult.filter(min_level=...)` keeps the templates by their `level`. `value_changes` is `None`
+without `new_values`. `ConfigError` for saved results, `baselines`, `recount=False` and `value_templates < 1`. The gates and the other lists do not depend on it.
 
 ### Comparing saved results
 
@@ -365,6 +377,7 @@ bound), `other` (values not counted one by one) and `numeric`, a `NumericSummary
 | `changed` | present in both with a share ratio of at least `threshold_ratio` and a p-value of at most `significance`; largest `score` first |
 | `unchanged` | number of templates present in both runs without a significant change (including the ones the test dropped) |
 | `new_alerts` | the new templates whose most severe level is WARN, ERROR or FATAL |
+| `value_changes` | with `new_values=True`: the new and gone values of the shared templates (`TemplateValueChanges`), otherwise `None` |
 | `before`, `after` | `RunSummary` of each run |
 | `config` | the `DiffConfig` used |
 | `metrics`, `meta`, `warnings` | as in `AnalysisResult` |

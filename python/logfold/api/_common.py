@@ -219,6 +219,7 @@ def _mine(
     exact: bool = False,
     checking: bool = False,
     values: int | None = None,
+    compare_values: bool = False,
 ) -> MiningResult:
     engine = select_engine(execution)
     request = MineRequest(
@@ -234,6 +235,7 @@ def _mine(
         state=state,
         exact=exact,
         values=values,
+        compare_values=compare_values,
     )
     if checking:
         return engine.check(request, progress)
