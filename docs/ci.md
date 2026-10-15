@@ -66,7 +66,7 @@ passing job. How it works:
 Outputs: `exit-code` (`0`, `2` for a gate, `1` for an error) and `status` (`first-run`, `ok` or `found`).
 
 **Hiding secrets.** `examples: masked` replaces the values of the default masks in the example lines, but a token that is
-part of a message stays in the template text. Choose the sets with `masks` (`secrets` and `pii` cost 4–12% of the run time,
+part of a message stays in the template text. Choose the sets with `masks` (`secrets` and `pii` cost 5–15% of the run time,
 `all` more) and the summary, the saved baseline and the HTML report show `<KEY>`, `<EMAIL>` and the like instead:
 
 ```yaml

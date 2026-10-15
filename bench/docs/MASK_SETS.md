@@ -16,14 +16,15 @@ Whole run, overhead over the default masks:
 | Input | Default masks | `secrets` | `pii` | `secrets` + `pii` | `credentials` | `payment` | `all` |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | `app_10mb.log` | 0.39 s | +2% | 0% | +1% | +2% | +2% | +7% |
-| `app_100mb.log` | 0.84 s | +7% | +1% | +10% | +19% | +20% | +20% |
-| `nginx_100mb.log` | 1.00 s | +3% | +2% | +4% | +15% | +12% | +11% |
-| `loghub_100mb.log` | 1.25 s | +9% | +6% | +11% | +13% | +13% | +17% |
+| `app_100mb.log` | 0.89 s | +6% | +1% | +7% | +17% | +17% | +21% |
+| `nginx_100mb.log` | 0.97 s | +4% | +2% | +6% | +15% | +14% | +20% |
+| `loghub_100mb.log` | 1.22 s | +9% | +7% | +15% | +17% | +17% | +21% |
 
 The runs are noisy by several points (the default masks of `nginx` took 0.92 s in another run, `all` on `app` +24%). Memory does not change (a few
 MB). The 10 MB runs are mostly the start of the interpreter.
 
-**`secrets` + `pii` cost 4 to 12% on logs without secrets (a second run: 7 to 12%), under the 15% that was wanted. The other
+**`secrets` + `pii` cost 5 to 15% on logs without secrets (the first run of 2026-10-14: 4 to 12%; the three 100 MB rows were measured again on
+2026-10-15 with seven repeats, after the number mask lost its sign, and `loghub` reached the 15% that was wanted). The other
 two sets, and `all`, cost 11 to 24%.** A set of your own with rules that have no literal (a number of 16 digits) costs like them; so do more than
 64 literals in all.
 
@@ -83,7 +84,7 @@ with the default masks and with `--masks all`, and scores grouping accuracy as `
 |---|---:|---:|
 | Average grouping accuracy | 0.7658 | 0.7658 |
 | Datasets where it differs | | 0 of 16 |
-| Messages changed | | 13 of 32,000 |
+| Messages changed | | 12 of 32,000 |
 
 The changed messages:
 

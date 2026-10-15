@@ -10,6 +10,16 @@ e-mail to the maintainer listed in `pyproject.toml`. Do not open a public issue.
 logfold reads log files that may contain attacker-controlled text and writes reports that people open.
 
 - Inputs are untrusted. Memory use depends on the number of templates, not on the file size; `max_templates` caps it.
+  `--values` and `--new-values` keep bounded counters as well (at most 1,000 different values per position for `--values`, and
+  1,000,000 per position and 4,000,000 per run for `--new-values`; a position over its limit is reported as not compared).
+- A saved state is untrusted too: it is read with a checksum and limits on the number of templates, nodes and bytes, and a state that is
+  damaged, too large, from another algorithm version or mined with other masks is refused with a `StateError`.
+- `docker:`, `kubectl:` and `journalctl:` sources run your own program only when you write a source, without a shell and with its input
+  closed, looked up on `PATH` and never in the current folder, after the name was checked against a narrow pattern; the output is
+  limited by a timeout and a size, and it lands in a temporary file that only you can read and that is removed afterwards.
+- A `logfold.toml` is data of at most 64 KiB with no key that loads a plugin, runs a program or uses the network; a file that came with
+  a cloned repository can only change how a run is done and what it reports, and the command says that it used one. A mask set file is
+  data as well (at most 1 MiB and 256 rules, regular expressions of the linear-time engine).
 - Regular expressions supplied by the user run in the Rust `regex` engine (linear time, no catastrophic backtracking).
 - HTML reports escape every log-derived value, embed no network resources and carry a strict Content-Security-Policy.
 - Plugins are Python code and run with your privileges once installed. `logfold plugins install` installs only names from

@@ -217,6 +217,8 @@ solves the sibling mix-ups: the siblings of this family differ in the number of 
 
 ### All four logs with the full window, and the thresholds
 
+The sweep was run twice, before and after the number mask lost its sign (`ALGO_VERSION` 2, 2026-10-15); every count of the tables below is the same in both runs.
+
 The same method on HDFS, BGL, Spark and Thunderbird with the full window (3 million lines per side; BGL 2.3 million,
 Thunderbird 2.7 million), from `python bench/accuracy.py --window 3000000 --thresholds jaccard=0.5,0.7 jaccard-idf=0.3,0.4,0.6,0.7 overlap=0.6,0.7,0.9`.
 Reported templates on saved results, the pair with no change (stationary) and the drifting pair (adjacent):

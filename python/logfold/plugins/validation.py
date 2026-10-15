@@ -11,7 +11,7 @@ from __future__ import annotations
 import sys
 from dataclasses import dataclass
 
-__all__ = ["CHECKS", "FormatChecks", "format_checks", "markdown_table"]
+__all__ = ["CHECKS", "README_GROUPS", "FormatChecks", "format_checks", "markdown_table", "readme_table"]
 
 FUZZED = (
     "Damaged logs (fuzzing: cut lines, CR LF, bytes that are not UTF-8, long lines); "
@@ -119,6 +119,21 @@ CHECKS: dict[str, FormatChecks] = {
 }
 
 
+README_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    (
+        "The real program, every record compared with what it wrote (HAProxy 2.8 to 3.2, PostgreSQL 13 to 17, "
+        "log4j2, logback and log4j 1.x, Docker 28)",
+        ("haproxy", "postgresql", "postgresql-csv", "log4j", "docker-json"),
+    ),
+    ("The job logs of this project's own GitHub Actions runs", ("github-actions",)),
+    (
+        "Samples and logs of other projects (Filebeat, Fluent Bit, Loki, Loghub) and generated logs",
+        ("nginx", "apache", "nginx-error", "syslog", "k8s", "jsonl", "logfmt", "app"),
+    ),
+    ("Damaged logs only (fuzzing); no real program or samples yet", ("plain", "journald", "serilog-clef")),
+)
+
+
 def format_checks(name: str) -> FormatChecks | None:
     """Return what the built-in format ``name`` was checked on, or ``None`` for any other name."""
     return CHECKS.get(name)
@@ -134,5 +149,15 @@ def markdown_table() -> str:
     return chr(10).join(rows)
 
 
+def readme_table() -> str:
+    """Return the short table of the README: what kind of check each group of formats had, from :data:`README_GROUPS`.
+
+    ``python -m logfold.plugins.validation --readme`` prints it, to paste between the markers of the README.
+    """
+    rows = ["| Checked on | Formats |", "|---|---|"]
+    rows += [f"| {kind} | {', '.join(f'`{name}`' for name in names)} |" for kind, names in README_GROUPS]
+    return chr(10).join(rows)
+
+
 if __name__ == "__main__":
-    sys.stdout.write(markdown_table() + chr(10))
+    sys.stdout.write((readme_table() if "--readme" in sys.argv[1:] else markdown_table()) + chr(10))

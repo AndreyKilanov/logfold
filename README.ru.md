@@ -1,7 +1,7 @@
-<p align="center"><a href="README.md">English</a> · <b>Русский</b></p>
+<p align="center"><a href="https://github.com/AndreyKilanov/logfold/blob/main/README.md">English</a> · <b>Русский</b></p>
 
 <p align="center">
-  <img src="docs/assets/logo.png" alt="logfold" width="240">
+  <img src="https://raw.githubusercontent.com/AndreyKilanov/logfold/main/docs/assets/logo.png" alt="logfold" width="240">
 </p>
 
 <h3 align="center">Библиотека и утилита для больших логов: сворачивает строки в шаблоны и сравнивает два запуска.</h3>
@@ -25,20 +25,113 @@ logfold читает лог и заменяет переменные части 
 не отправляются.
 
 ```
-$ logfold diff before.log after.log --out diff.html --fail-on-new
-before.log -> after.log: 1,265,631 -> 1,246,573 records, 2 new (2 WARN+), 1 disappeared, 3 changed, 9 unchanged, native engine, 3.41s
+$ logfold diff before.log after.log --fail-on-new-alerts
+before.log -> after.log: 364 -> 600 records, 1 new (1 WARN+), 0 disappeared, 1 changed, 2 unchanged, native engine, 0.01s
 
-New templates (2)
-    before      after    change  level  template
-         0     44,102       new  ERROR  circuit breaker opened for upstream <IP>
-         0     44,310       new  WARN   queue depth <NUM> exceeds limit on worker-<NUM>
+New templates (1)
+    before       after    change  level  template
+         0         180       new  ERROR  db connection timeout after <*> <*>
+
+Changed templates (1)
+    before       after    change       p  level  template
+         4          60     x9.10  <0.001  WARN   retry <NUM> for order <NUM>
+$ echo $?
+2
 ```
+
+## Попробовать за минуту
+
+```
+pip install "logfold[cli]"
+logfold analyze app.log --out report.html                 # шаблоны одного лога со счётчиками и примерами
+logfold diff before.log after.log --out diff.html         # что новое, пропало или изменилось между двумя запусками
+```
+
+Отчёт — один HTML-файл: без сетевых запросов, со строгой политикой безопасности содержимого, и каждое значение из лога
+экранируется.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/AndreyKilanov/logfold/main/docs/assets/report-diff.png" alt="HTML-отчёт logfold diff: новые, изменившиеся и пропавшие шаблоны и значения, которые различаются" width="820">
+</p>
+
+## Что вы хотите сделать
+
+### Остановить задание в CI на новой ошибке
+
+```yaml
+      - uses: AndreyKilanov/logfold@v0.5.0
+        with:
+          log: current.log
+```
+
+Действие сравнивает лог запуска с последним хорошим, пишет сводку задания и завершает его с ошибкой, если появился новый
+шаблон уровня WARN, ERROR или FATAL. Без GitHub: `logfold diff good.log current.log --fail-on-new-alerts` (код выхода 2) или
+сохранённая модель: `logfold learn good.log --state model.json` и `logfold check current.log --state model.json`. Рецепты для GitHub Actions
+и GitLab CI: [logfold в CI](https://github.com/AndreyKilanov/logfold/blob/main/docs/ci.md).
+
+### Найти, что изменилось при инциденте
+
+```
+logfold diff app.log --split-at 2026-10-06T12:00           # лог до времени против лога после него
+logfold diff before.log after.log --new-values             # значения, которые есть только в одном запуске
+logfold diff docker:web-old docker:web-new                 # читать прямо из docker, kubectl или journalctl
+```
+
+[Что изменилось при инциденте](https://github.com/AndreyKilanov/logfold/blob/main/docs/incident.md) идёт по шагам и объясняет,
+как читать результат.
+
+### Безопасно поделиться логом или отчётом
+
+```
+logfold analyze app.log --masks all --examples none --out report.html
+```
+
+Наборы масок прячут ключи, токены, пароли, адреса почты, телефоны, номера карт и IBAN до того, как лог разобран, а
+`--examples none` убирает примеры строк. Они снижают риск, но не убирают его: имена и слова сообщений остаются.
+[Как безопасно поделиться логом или отчётом](https://github.com/AndreyKilanov/logfold/blob/main/docs/share-a-log.md) говорит, что
+скрывает каждая опция и как проверить файл перед отправкой.
+
+### Пользоваться из Python
+
+```python
+from logfold import analyze, check, diff
+
+result = analyze("app.log")  # формат определяется сам
+for template in result.top(10):
+    print(template.count, template.level, template.text)
+
+comparison = diff("before.log", "after.log")
+comparison.new_alerts  # новые шаблоны WARN, ERROR и FATAL
+comparison.to_html("diff.html")
+
+analyze("good.log", save_state="model.json")  # модель: шаблоны и счётчики, примеров строк в ней нет
+check("model.json", "today.log").passed
+```
+
+Результаты — неизменяемые датаклассы. [logfold в программе на Python](https://github.com/AndreyKilanov/logfold/blob/main/docs/python.md)
+говорит, какой вызов за что отвечает, и ведёт к справочнику.
+
+### Держать модель, проверять лог, следить за потоком
+
+```
+logfold learn good.log --state model.json                  # сохранить, как выглядит хороший запуск
+logfold check today.log --state model.json                 # код выхода 2, если в логе есть то, чего модель не знает
+logfold match model.json today.log                         # сколько записей не подошло ни к одному шаблону
+tail -F app.log | logfold stream -f app                    # печатать каждый новый шаблон при первом появлении
+```
+
+В Python то же делает `logfold.Miner`: он принимает записи пачками и говорит, к какому шаблону подходит запись.
+
+### Переходите с Drain3
+
+Какие вызовы и настройки соответствуют друг другу и чем результат отличается, написано в
+[переходе с Drain3](https://github.com/AndreyKilanov/logfold/blob/main/docs/migrating-from-drain3.md).
 
 ## Что делает
 
 - **Шаблоны.** `user alice failed login from 10.0.0.7` и остальные такие же строки сводятся к одной записи
-  `user <*> failed login from <IP>`. Алгоритм совместим с Drain3. Средняя точность группировки на 16 наборах Loghub-2k:
-  Drain3 0,7658, logfold в последовательном режиме 0,7658, в параллельном 0,7643.
+  `user <*> failed login from <IP>`. Алгоритм совместим с Drain3: на 16 наборах Loghub-2k средняя точность группировки
+  0,7658 в последовательном режиме (как у Drain3) и 0,7643 в параллельном.
 - **Сравнение двух запусков.** Доли шаблонов считаются от числа записей в каждом запуске, поэтому разный размер логов не
   мешает. Шаблон считается изменившимся, если его доля выросла или упала не меньше чем в 2 раза и хотя бы в одном из
   запусков у него не меньше 10 записей (оба порога настраиваются) и G-тест показывает, что изменение вряд ли случайно
@@ -46,23 +139,27 @@ New templates (2)
 - **Один лог и несколько baseline.** `diff app.log --split-at ВРЕМЯ` сравнивает часть одного лога до времени с частью
   после него (`--since` и `--until` ограничивают любую команду диапазоном времени). `--baseline` (повторяемый) объединяет
   несколько хороших запусков: шаблон считается новым, только если его нет ни в одном из них, и редкие сообщения не шумят.
+- **Значения.** `analyze --values` считает значения на переменных позициях (частые значения и перцентили чисел);
+  `diff --new-values` показывает значения, которые есть только в одном из двух запусков, для шаблонов, которые есть в обоих.
 - **Код выхода для CI.** `--fail-on-new` завершает команду с кодом 2, если появились новые шаблоны,
   `--fail-on-new-alerts` — если среди них есть WARN, ERROR или FATAL. Переформулированное сообщение, которое
   сопоставление по умолчанию связало со старым, считается изменённым, а не новым; `--matcher exact` делает проверку строгой.
   `--out ФАЙЛ --append` дописывает текстовый или Markdown-отчёт в конец файла, а не заменяет его: так несколько шагов
-  задания пишут одну сводку (`$GITHUB_STEP_SUMMARY`); см. [logfold в CI](https://github.com/AndreyKilanov/logfold/blob/main/docs/ci.md).
-- **Память.** Файл читается потоком, расход памяти не зависит от его размера. Входы: файлы, gzip, стандартный ввод,
-  несколько файлов как один запуск.
+  задания пишут одну сводку (`$GITHUB_STEP_SUMMARY`).
+- **Можно делиться.** Наборы масок (`secrets`, `pii`, `credentials`, `payment`, `all`, ваши файлы) прячут значения до того, как
+  они попадут в шаблон, сохранённую модель или отчёт; `--examples masked` или `none` решает судьбу примеров строк. HTML-отчёт
+  экранирует всё.
+- **Входы.** Файлы, gzip, стандартный ввод, несколько файлов как один запуск, а также `docker:ИМЯ`, `kubectl:NAMESPACE/POD` и
+  `journalctl:UNIT`: чтение через ваши собственные программы, только для чтения и с ограничениями. Файл читается потоком,
+  расход памяти не зависит от его размера.
 - **Параллельность.** Большой файл режется на куски (по умолчанию 64 МиБ), деревья кусков сливаются по порядку. При
   фиксированном размере куска результат не зависит от числа потоков. Стратегия выбирается автоматически: большой файл
   обрабатывается параллельно, а последовательно, если первый кусок показывает, что почти каждая строка — новое сообщение
-  (`--strategy auto`, по умолчанию). `--warm-start` запускает каждый кусок с дерева первого: заметно меньше лишних
-  шаблонов ценой того, что первый кусок обрабатывается отдельно.
-- **Маски значений.** По умолчанию заменяются UUID, время, IP, hex, пути и числа; правила можно менять.
-- **Отчёты.** HTML (один файл, без сетевых запросов, со строгим CSP), JSON с версионируемой схемой, текст, Markdown, CSV.
-  В отчёт по умолчанию попадают примеры сырых строк; `--examples masked` или `none` убирает их.
-- **Расширения.** Форматы логов, отчёты и сопоставления шаблонов для `diff` подключаются плагинами через точки входа
-  или из папки с `.py`-файлами.
+  (`--strategy auto`, по умолчанию).
+- **Отчёты.** HTML, JSON с версионируемой схемой, текст, Markdown, CSV; для конвейеров `github-summary`, `junit`,
+  `chat-message` и `prometheus`.
+- **Настройки и расширения.** `logfold.toml` хранит параметры, которые вы повторяете. Форматы логов, отчёты, сопоставления
+  шаблонов, наборы масок и источники подключаются плагинами через точки входа или из папки с `.py`-файлами.
 
 ## Установка
 
@@ -74,129 +171,89 @@ pip install "logfold[cli]"
 уже собранные пакеты, поэтому pip ничего не компилирует и Rust устанавливать не нужно. На других системах pip соберёт
 пакет из исходников, для этого понадобится компилятор Rust. Без `[cli]` ставится только библиотека.
 
-## Быстрый старт
+## Форматы и на чём каждый проверен
 
-Разобрать лог:
+`logfold formats` показывает список форматов. `--format auto` (по умолчанию) выбирает формат по образцу файла: nginx, apache,
+syslog, journald, Kubernetes, JSON lines, logfmt и другие; если не уверен, перечисляет кандидатов и просит указать
+`--format`. `logfold inspect app.log` показывает, как читается файл: формат, первые записи, уровни. Строки стека с отступом
+присоединяются к записи, которая их начала.
 
-```
-logfold analyze app.log --top 30 --out report.html
-logfold analyze app.log --only-alerts     # только шаблоны WARN, ERROR и FATAL
-logfold inspect app.log                   # как читается файл: формат, первые записи, уровни
-tail -F app.log | logfold stream -f app  # разбирать по мере записи, печатать каждый новый шаблон
-```
+Каждый формат сравнивали с чем-то вне этого проекта, и таблица говорит, с чем. Проверка не обещает, что формат читает любой
+лог этой программы: настройки программы, которые не пробовали, и найденные пределы перечислены в
+[таблице руководства](https://github.com/AndreyKilanov/logfold/blob/main/docs/guide.md#what-each-format-was-checked-on)
+и в `logfold plugins info ИМЯ`.
 
-Формат определяется по образцу файла (nginx, apache, syslog, journald, Kubernetes, JSON-строки, logfmt и другие). Если
-уверенности нет, команда выводит варианты и просит указать `--format`. Строки стек-трейса с отступом присоединяются к
-записи, с которой они начались.
+<!-- format-checks:start -->
+| Проверено на | Форматы |
+|---|---|
+| Настоящая программа, каждая запись сверена с тем, что она записала (HAProxy 2.8–3.2, PostgreSQL 13–17, log4j2, logback и log4j 1.x, Docker 28) | `haproxy`, `postgresql`, `postgresql-csv`, `log4j`, `docker-json` |
+| Журналы заданий собственных запусков GitHub Actions этого проекта | `github-actions` |
+| Образцы и логи других проектов (Filebeat, Fluent Bit, Loki, Loghub) и сгенерированные логи | `nginx`, `apache`, `nginx-error`, `syslog`, `k8s`, `jsonl`, `logfmt`, `app` |
+| Только повреждённые логи (fuzzing); настоящей программы и образцов пока нет | `plain`, `journald`, `serilog-clef` |
+<!-- format-checks:end -->
 
-Сравнить два запуска:
+Свой формат: `--format regex:<шаблон>` или `log4j:<шаблон>`. Лог другой программы со временем и уровнем в тех же местах читает
+`app` (`<время> УРОВЕНЬ сообщение`).
 
-```
-logfold diff before.log after.log --out diff.html --fail-on-new-alerts
-logfold diff app.log --split-at 2026-10-06T12:00    # часть одного лога до времени против части после него
-logfold diff good1.log after.log --baseline good2.log --baseline good3.log   # новый = нет ни в одном хорошем запуске
-logfold diff before.log after.log --report github-summary --out "$GITHUB_STEP_SUMMARY" --append   # в CI: добавить в сводку задания
-```
-
-Коды выхода: `0` — успех, `1` — ошибка, `2` — найдено то, что запрошено флагами `--fail-on-*`.
-
-Сравнить сохранённые результаты, не читая логи заново:
-
-```
-logfold analyze before.log --out before.json
-logfold analyze after.log  --out after.json
-logfold diff before.json after.json
-```
-
-JSON-файл, записанный через `--out`, содержит все шаблоны, поэтому подходит для такого сравнения.
-
-## Из Python
-
-```python
-from logfold import analyze, diff, load_analysis
-
-result = analyze("app.log")  # формат определяется сам
-for template in result.top(10):
-    print(template.count, template.level, template.text)
-result.to_html("report.html")
-result.filter(min_level="WARN").save("alerts.md")  # отчёт выбирается по суффиксу
-
-comparison = diff("before.log", "after.log")
-comparison.new_templates
-comparison.new_alerts  # новые шаблоны уровня WARN/ERROR/FATAL
-comparison.to_html("diff.html")
-
-# сравнение сохранённых результатов
-diff(load_analysis("before.json"), load_analysis("after.json"))
-```
-
-`analyze()` и `diff()` возвращают неизменяемые dataclass-объекты. Чтобы разбирать записи по мере появления, без файла,
-используйте `logfold.Miner`; результат тот же, что у `analyze()` над теми же записями:
-
-```python
-from logfold import Miner
-
-miner = Miner(format="app")  # у потока нельзя определить формат, назовите его (по умолчанию plain)
-miner.add_many(batch_of_lines)  # пачка — один вызов в Rust; add_log_message(line) — вызов на каждую запись
-miner.new_templates()  # шаблоны, созданные с прошлого вызова
-miner.result().top(10)
-miner.save_state("model.json")  # его читают analyze(load_state=...), match() и Miner(load_state=...)
-```
-
-## Форматы и параметры
+## Параметры
 
 | | |
 |---|---|
-| Форматы | `nginx`, `apache`, `nginx-error`, `syslog`, `journald`, `k8s` (CRI/containerd), `jsonl`, `app` (`<время> УРОВЕНЬ сообщение`), `logfmt`, `serilog-clef`, `haproxy`, `postgresql`, `postgresql-csv`, `docker-json`, `github-actions`, `log4j` (или свой `log4j:<шаблон>`), `plain`, свой `regex:<шаблон>`. Список: `logfold formats`. |
-| Многострочные записи | `--multiline`; при `--format auto` включается сам, если найдены строки с отступом. |
-| Схлопывание | `--depth` (4), `--sim-th` (0,4), `--max-children` (100), `--max-templates` (100000), `--on-full evict` (при пределе вытеснять наименее давно использованные шаблоны вместо складывания новых в общий), `--delimiters` (символы, разделяющие токены). Значения по умолчанию те же, что у Drain3. |
-| Выполнение | `--strategy auto` (по умолчанию; параллельные куски, последовательно для логов из уникальных сообщений), `sequential`, `chunked`; `--threads`, `--chunk-mb`; `--warm-start` (по желанию, только для chunked). |
-| Логи с почти уникальными строками | `--high-cardinality`: не больше 5000 шаблонов, остальное попадает в сводные, выполняется последовательно. На файле в 10 МБ с 84 тысячами разных строк 2,0 с превращаются в 0,14 с. |
-| Параметры | `logfold params ШАБЛОН СООБЩЕНИЕ` (Python: `logfold.extract_parameters`) даёт значения одного сообщения в переменных частях шаблона: имя правила (`num`, `ip`, ...) или `*` и значение как оно записано. |
-| Потоки | `logfold stream` разбирает лог по мере записи (`tail -F app.log \| logfold stream`) и печатает каждый шаблон, когда он впервые появился; в Python `logfold.Miner` принимает пачки записей через `add_many`. |
-| Отчёты | HTML, JSON, текст, Markdown, CSV; для конвейеров `github-summary`, `junit` (`.xml`), `chat-message` и `prometheus` (`.prom`); суффикс `--out` выбирает формат, `--report ИМЯ` выбирает отчёт явно, в том числе плагинный. |
-| Сопоставление для `diff` | `jaccard` (по умолчанию), `jaccard-idf`, `overlap`, `rules:ФАЙЛ` (свои пары), `token_subset`, `exact`: связывают переформулированное сообщение с его прежней версией, чтобы оно не считалось одновременно новым и пропавшим. |
-| Плагины | `logfold plugins list` (встроенные, установленные, доступные из каталога), `info ИМЯ`, `check`, `install ИМЯ`, `new`; для неизвестного имени подсказка с командой установки. |
-| Скрипты | `--json` печатает JSON в stdout, коды выхода стабильны, формат JSON описан схемой в `docs/schema`. |
+| Многострочные записи | `--multiline`; с `--format auto` включается сам, если найдены строки с отступом. |
+| Свёртка | `--depth` (4), `--sim-th` (0,4), `--max-children` (100), `--max-templates` (100000), `--on-full evict` (при пределе вытеснять давно не использованные шаблоны вместо складывания новых в общие), `--delimiters` (символы-разделители токенов). Значения по умолчанию те же, что в Drain3. |
+| Выполнение | `--strategy auto` (по умолчанию; параллельные куски, последовательно для логов из уникальных сообщений), `sequential`, `chunked`; `--threads`, `--chunk-mb`; `--warm-start` (по желанию, только chunked: заметно меньше лишних шаблонов ценой того, что первый кусок обрабатывается отдельно). |
+| Логи из почти уникальных строк | `--high-cardinality`: не более 5000 шаблонов, остальное уходит в общие шаблоны, работает последовательно. |
+| Маски | маски по умолчанию заменяют UUID, время, IP, hex, пути и числа; `--masks secrets,pii`, `--masks all`, `--masks-file ФАЙЛ` добавляют наборы, которые идут первыми (`logfold masks list`). |
+| Значения | `analyze --values`, `diff --new-values` (`--values-templates N`); `logfold params ШАБЛОН СООБЩЕНИЕ` (Python: `logfold.extract_parameters`) даёт значения одного сообщения на переменных местах шаблона. |
+| Диапазон времени | `--since`, `--until`; `diff --split-at ВРЕМЯ`. |
+| Уровни | `--level ERROR` оставляет шаблоны, у которых наибольший уровень не ниже указанного; `--only-alerts` — то же, что `--level WARN`. |
+| Сохранённые результаты | `logfold analyze before.log --out before.json`, затем `logfold diff before.json after.json` сравнивает их без повторного чтения логов. |
+| Модели и потоки | `learn`, `check`, `match`, `stream`; `--save-state` и `--load-state` продолжают запуск с сохранённой модели, в том числе параллельно. |
+| Отчёты | суффикс `--out` выбирает формат (`.html`, `.json`, `.txt`, `.md`, `.csv`, `.xml` для JUnit, `.prom`), `--report ИМЯ` выбирает явно, в том числе из плагина. |
+| Сопоставления для `diff` | `jaccard` (по умолчанию), `jaccard-idf`, `overlap`, `rules:ФАЙЛ` (ваши пары), `token_subset`, `exact`: они связывают переформулированное сообщение с прежним, чтобы оно не считалось и новым, и пропавшим. |
+| Плагины | `logfold plugins list` (встроенные, установленные, доступные), `info ИМЯ`, `check`, `install ИМЯ`, `new`; неизвестное имя формата, отчёта или сопоставления получает подсказку с ближайшим именем или командой установки. |
+| Скрипты | `--json` печатает JSON в стандартный вывод, коды выхода стабильны (`0`, `1`, `2` для находки `--fail-on-*`), формат JSON описан схемой в `docs/schema`. |
+
+Все команды и опции: [справочник командной строки](https://github.com/AndreyKilanov/logfold/blob/main/docs/cli.md).
 
 ## Скорость
 
-Замеры на одной машине (8 ядер, Windows 11); протокол зафиксирован до запусков, подробности и данные в
+Измерено на одной машине (8 ядер, Windows 11) на этой версии; протокол — в
+[`bench/PROTOCOL.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/PROTOCOL.md), сравнение с другими инструментами — в
 [`bench/RESULTS.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/RESULTS.md).
 
-| | logfold, 16 потоков | [Drain3](https://github.com/logpai/Drain3) (Python) |
+| | 1 поток | 16 потоков |
 |---|---:|---:|
-| лог доступа nginx, 100 МБ | 0,38 с | 5,26 с |
-| лог приложения, 100 МБ | 0,41 с | 9,03 с |
-| лог доступа nginx с маскированием значений | 0,45 с | 26,82 с |
-| HDFS, 1,57 ГБ, настоящий лог | 0,94 с | не измерялось |
-| `diff` двух логов по 100 МБ | 0,7 с | `diff` нет |
+| `analyze`, access-лог nginx, 100 МБ | 0,93 с | 0,45 с |
+| `analyze`, лог приложения, 100 МБ | 0,83 с | 0,45 с |
+| `diff` двух логов по 100 МБ | 2,55 с | 0,69 с |
 
-На настоящих логах от 0,7 до 1,6 ГБ пик памяти от 42 до 51 МБ с одним потоком и от 107 до 129 МБ с 16 потоками.
+Пиковая память: 46 МБ в один поток и 97–110 МБ в 16 потоков на файлах по 100 МБ, с размером файла она не растёт. Наборы масок
+добавляют 5–15% (`secrets` и `pii`) или 11–24% (`all`); `--values` работает в три–четыре раза дольше `analyze`, а
+`diff --new-values` — в 1,5–3 раза дольше `diff`.
 
 ## Ограничения
 
-> [!WARNING]
-> Учтите до того, как запускать logfold на больших логах и сравнивать результаты.
+> **Предупреждение.** Помните об этом, прежде чем запускать logfold на больших логах и сравнивать результаты.
 >
-> - Скорость измерялась только на Windows 11; на Linux и macOS проверялась корректность, но не скорость.
+> - Скорость измерена только на Windows 11; на Linux и macOS проверяется корректность, а скорость нет.
 > - Параллельный режим строит дерево на каждый кусок и сливает их, поэтому на логах без масок он может вернуть больше
->   шаблонов, чем последовательный (HDFS без масок: 341 против 43; `--warm-start` доводит до 45 ценой
->   последовательного первого куска). На логах с очень большим числом разных сообщений
->   стратегия `auto` по умолчанию замечает это по первому куску и переходит на последовательный режим; ещё быстрее
->   `--high-cardinality`.
-> - Сохранённые результаты сравниваются без пересчёта по общему дереву шаблонов, поэтому одно и то же событие может
->   попасть и в новые, и в пропавшие; для этого есть сопоставление (по умолчанию `jaccard`).
+>   шаблонов, чем последовательный (HDFS без масок: 341 против 43; `--warm-start` снижает до 45 ценой отдельного первого
+>   куска). На логах с очень большим числом разных сообщений стратегия `auto` по умолчанию замечает это после первого куска и
+>   переходит на последовательный режим; `--high-cardinality` делает его ещё быстрее.
+> - Сохранённые результаты сравниваются без пересчёта по общему дереву шаблонов, поэтому одно и то же событие может попасть
+>   и в новые, и в пропавшие; для этого и нужно сопоставление (по умолчанию `jaccard`).
+> - Наборы масок снижают риск, когда вы делитесь логом, но не убирают его, а формат проверен на том, что сказано в таблице
+>   выше, а не на всех настройках программы.
 
 ## Замеры и сообщения об ошибках
 
-logfold измерялся на одной машине (Windows 11, 8 ядер). Если вы можете запустить его на другом железе (Linux, macOS,
-ARM, более медленный диск, больше ядер) или на своих логах, будем рады получить цифры. Также нам нужны сообщения о
-неверных результатах, падениях, плохой группировке шаблонов и о запусках, которые идут медленно или расходуют слишком
-много памяти.
+logfold измеряли на одной машине (Windows 11, 8 ядер). Если вы можете запустить его на другом железе (Linux, macOS, ARM,
+более медленный диск, больше ядер) или на своих логах, мы будем рады цифрам. Нам также нужны сообщения о неверных
+результатах, падениях, плохо сгруппированных шаблонах и запусках, которые медленны или съедают слишком много памяти.
 
-- **Замеры.** Запустите бенчмарк по описанию в [`bench/README.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/README.md) (протокол лежит в
-  [`bench/PROTOCOL.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/PROTOCOL.md)) или засеките время своей команды и создайте
+- **Замеры.** Запустите бенчмарк, как описано в [`bench/README.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/README.md) (протокол —
+  в [`bench/PROTOCOL.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/PROTOCOL.md)), или засеките свою команду и создайте
   [issue о производительности](https://github.com/AndreyKilanov/logfold/issues/new?template=performance.yml). Укажите время выполнения, скорость и пиковую
   память, команду, размер и формат входа, процессор и число ядер, объём памяти, тип диска, ОС, версию logfold и число
   потоков.
@@ -206,29 +263,16 @@ ARM, более медленный диск, больше ядер) или на 
 - **Лог читается неверно.** Потерялись строки или запись разрезана не там, поле попало не туда, `-f auto` выбрал не тот
   формат: заполните [форму о формате](https://github.com/AndreyKilanov/logfold/issues/new?template=format_problem.yml). Укажите программу и её версию, изменённые настройки журнала, вывод
   `logfold inspect FILE` и около 20 настоящих строк без секретов. Форматы проверены на настоящих программах и на логах
-  других проектов ([таблица](https://github.com/AndreyKilanov/logfold/blob/main/docs/guide.md#what-each-format-was-checked-on)), но не на всех настройках; эта форма — способ найти остальное.
+  других проектов, но не на всех настройках; эта форма — способ найти остальное.
 
 Все формы собраны на [странице создания issue](https://github.com/AndreyKilanov/logfold/issues/new/choose); как оформлять issues, описано в
 [CONTRIBUTING.md](https://github.com/AndreyKilanov/logfold/blob/main/CONTRIBUTING.md#issues). Issues принимаются на английском.
-
-## Чем отличается от других
-
-| | logfold | [Drain3](https://github.com/logpai/Drain3) | [logdrain](https://github.com/vnvo/logdrain) | [logdelta](https://github.com/antonsoo/logdelta) |
-|---|---|---|---|---|
-| Язык | ядро на Rust, Python API и CLI | Python | Rust | Rust |
-| Качество шаблонов | как у Drain3 на Loghub-2k | эталон | Drain | на основе Drain |
-| Сравнение двух запусков | да (`diff`, доли нормируются, пересчёт) | нет | нет (онлайн-сигнал «создан шаблон») | да (`diff`, несколько baseline, блоки) |
-| Python API | да | да | нет | нет |
-| Многопоточный разбор одного большого файла | да, детерминированно | нет | для CLI не описано | не описано |
-| Отчёты | JSON, HTML, текст, Markdown, CSV | - | текст, JSON, CSV | терминал, JSON, Markdown |
-
-Качество шаблонов: `python eval/quality.py` (точность группировки на 16 наборах Loghub-2k).
 
 ## Документация
 
 Документация написана на английском.
 
-- [Руководство](https://github.com/AndreyKilanov/logfold/blob/main/docs/guide.md): форматы, параметры, плагины, движки.
+- [Руководство](https://github.com/AndreyKilanov/logfold/blob/main/docs/guide.md): типичные задачи, форматы, параметры, плагины, движки.
 - [logfold в CI](https://github.com/AndreyKilanov/logfold/blob/main/docs/ci.md): GitHub Actions и GitLab CI, сводка
   задачи, проверки, откуда брать baseline.
 - [Что изменилось при инциденте](https://github.com/AndreyKilanov/logfold/blob/main/docs/incident.md): сравнить два лога или две части одного, прочитать результат, заглянуть в шаблон.
@@ -236,6 +280,7 @@ ARM, более медленный диск, больше ядер) или на 
 - [logfold в программе на Python](https://github.com/AndreyKilanov/logfold/blob/main/docs/python.md): какой вызов за что отвечает, со ссылками на справочник API.
 - [Справочник командной строки](https://github.com/AndreyKilanov/logfold/blob/main/docs/cli.md): команды, опции, коды
   выхода.
+- [Файл настроек](https://github.com/AndreyKilanov/logfold/blob/main/docs/config.md): `logfold.toml`.
 - [Плагины](https://github.com/AndreyKilanov/logfold/blob/main/docs/plugins.md): использование и написание форматов,
   отчётов и сопоставлений; пример пакета —
   [`examples/logfold-example-plugin`](https://github.com/AndreyKilanov/logfold/tree/main/examples/logfold-example-plugin).

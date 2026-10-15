@@ -24,6 +24,9 @@ Data: `app_100mb.log` (105 MB, 1.27 million lines, 12 templates) and its first 1
 
 ## Results
 
+Repeated on 2026-10-15 with `ALGO_VERSION` 2 (the number mask has no sign): `analyze` 0.87 s, `add_lines` 1.03 s, `stream` 1.20 s, `add_many` 1.24 s, `add_log_message` 3.11 s,
+Drain3 22.54 s; the same ratios and the same 12 templates, within the noise of the machine. The tables below are the first run.
+
 100 MB:
 
 | Variant | Wall | Speed | CPU | Peak memory | Against `analyze` |

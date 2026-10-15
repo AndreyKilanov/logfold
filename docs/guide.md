@@ -201,6 +201,33 @@ three differ most. The exit-code gates (`--fail-on-new`, `--fail-on-new-alerts`)
 `changed`, so use `--matcher exact` for a gate that must fail on every new text. Measurements on four large real logs, and how they were made, are in
 [`bench/docs/DIFF_MATCHERS.md`](https://github.com/AndreyKilanov/logfold/blob/main/bench/docs/DIFF_MATCHERS.md).
 
+## Check a log against a model
+
+A saved model is what a good run looked like: its templates and their counts, never an example line. `check` compares a new log with it and
+fails when the log holds anything the model does not know, without reading the good log again:
+
+```
+logfold learn good.log --state model.json
+logfold check today.log --state model.json
+```
+
+```python
+import logfold
+
+logfold.analyze("good.log", save_state="model.json")
+checked = logfold.check("model.json", "today.log")
+if not checked.passed:
+    for finding in checked.findings:
+        print(finding.kind, finding.message)
+```
+
+The check fails (exit code 2, after the report is written) for each of these findings, and the output says which: more than 1% of the records fit no
+template of the model (`--max-unmatched`), a new template of level WARN or higher (`--fail-on new-alerts`, or `new` for any new template), or no record
+was read at all. The templates that the log has and the model does not are the new ones, with their counts, times and an example; the templates of
+the model whose share moved a lot are listed as changed. `logfold match model.json today.log` only counts the records that fit no template, and
+`logfold analyze today.log --load-state model.json --save-state model.json` continues a model with a new log. Use the same masks and parameters when
+you learn and when you check; otherwise the command stops and says so. See [`check`](cli.md#logfold-check) and [`match`](cli.md#logfold-match).
+
 ## Mine a stream
 
 A program that produces records while it runs (a service, a test harness, `tail -F`, `kubectl logs -f`) does not need a
@@ -422,6 +449,6 @@ are raw lines; use `--examples masked` or `none` before sharing a report. See `S
 To keep secrets and personal data out of templates, saved states and examples, choose the mask sets: `--masks all`
 (library `masks=["all"]`) hides private keys, tokens, API keys, passwords, e-mail addresses, phone numbers, card numbers and
 IBANs, and your own sets (`--masks-file`, a plugin) hide your own identifiers; add `--examples masked` so that the examples
-use the same rules. The sets are split by cost: `secrets` and `pii` add about 4 to 12% to a run on 100 MB logs, `all` about 11
+use the same rules. The sets are split by cost: `secrets` and `pii` add about 5 to 15% to a run on 100 MB logs, `all` about 11
 to 24% (`credentials` and `payment` read every byte). The sets lower the risk and do not remove it. See the
 [mask sets](cli.md#mask-sets) and [writing one](plugins.md#mask-sets).

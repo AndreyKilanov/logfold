@@ -120,7 +120,7 @@ used with the same masks and parameters (`--depth`, `--sim-th`, `--max-children`
 the run stops with an error that says so. Continuing needs the native engine. An input of more than one chunk (64 MiB by default,
 `--chunk-mb`) is continued **in parallel** by default: every chunk starts from a copy of the loaded tree, the result does not
 depend on the number of threads and, on six of seven 100 MB logs, has exactly the templates of the sequential run, 3 to 5 times
-faster; on a log of many rare messages (Thunderbird) it has more than twice the templates, in 0.5 percent of the records
+faster; on a log of many rare messages (Thunderbird) it has more than twice the templates, in 0.6 percent of the records
 (`bench/docs/STATE_PARALLEL.md`), and a warning says that the continuation was parallel. `--strategy sequential` is the exact
 continuation: the same state as one run over both logs. A smaller input is continued in one piece. The size of a state depends on the number of templates (kilobytes for a
 typical application; for 100 thousand templates about 12 MB in JSON at the least, since real templates are longer than the
@@ -468,7 +468,7 @@ saved state and the report never hold it. Four sets ship with logfold, split by 
 | `payment` | payment card numbers (the Luhn check) and IBANs (the mod-97 check) | `<CARD>`, `<IBAN>` | 12 to 24% |
 
 `--masks all` chooses every set that the installed version ships (today these four; a state keeps the rules it was mined with, so a version that adds a set refuses the states of `all` made before). **Choose `credentials` if you want `password=...` hidden: `secrets` and `pii` alone do not
-hide passwords, cards or IBANs.** The two cheap sets run together for about 4 to 12%; the others read every byte of every
+hide passwords, cards or IBANs.** The two cheap sets run together for about 5 to 15%; the others read every byte of every
 line (a word in any case, a number that can start anywhere), and one of them costs as much as all together.
 
 ```
