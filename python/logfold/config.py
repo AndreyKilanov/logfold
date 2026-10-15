@@ -57,7 +57,7 @@ DEFAULT_MASKS: tuple[MaskRule, ...] = (
     MaskRule("ip", r"\b\d{1,3}(?:\.\d{1,3}){3}(?::\d+)?\b", "<IP>", True),
     MaskRule("hex", r"\b0[xX][0-9a-fA-F]+\b", "<HEX>", True),
     MaskRule("path", r"(?:/[\w.\-]+){2,}", "<PATH>", True),
-    MaskRule("num", r"\b[+-]?\d+(?:\.\d+)?\b", "<NUM>", True),
+    MaskRule("num", r"\b\d+(?:\.\d+)?\b", "<NUM>", True),
 )
 
 

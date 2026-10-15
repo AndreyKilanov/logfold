@@ -230,7 +230,7 @@ def test_the_fingerprint_of_the_default_settings_is_pinned() -> None:
     """A state is refused when the fingerprint of its settings differs, so changing how it is computed (a new field of
     MiningConfig, another masks default) would silently invalidate every saved state: change this value on purpose, with
     a changelog entry, never by accident."""
-    assert config_fingerprint(MiningConfig()) == "721277182c26"
+    assert config_fingerprint(MiningConfig()) == "157d32fa472b"
 
 
 @pytest.mark.parametrize(

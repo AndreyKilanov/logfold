@@ -231,6 +231,9 @@ ARM, более медленный диск, больше ядер) или на 
 - [Руководство](https://github.com/AndreyKilanov/logfold/blob/main/docs/guide.md): форматы, параметры, плагины, движки.
 - [logfold в CI](https://github.com/AndreyKilanov/logfold/blob/main/docs/ci.md): GitHub Actions и GitLab CI, сводка
   задачи, проверки, откуда брать baseline.
+- [Что изменилось при инциденте](https://github.com/AndreyKilanov/logfold/blob/main/docs/incident.md): сравнить два лога или две части одного, прочитать результат, заглянуть в шаблон.
+- [Как безопасно поделиться логом или отчётом](https://github.com/AndreyKilanov/logfold/blob/main/docs/share-a-log.md): наборы масок, примеры, что остаётся в отчёте, как проверить.
+- [logfold в программе на Python](https://github.com/AndreyKilanov/logfold/blob/main/docs/python.md): какой вызов за что отвечает, со ссылками на справочник API.
 - [Справочник командной строки](https://github.com/AndreyKilanov/logfold/blob/main/docs/cli.md): команды, опции, коды
   выхода.
 - [Плагины](https://github.com/AndreyKilanov/logfold/blob/main/docs/plugins.md): использование и написание форматов,

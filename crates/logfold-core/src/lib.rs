@@ -40,4 +40,4 @@ pub use values::{
 };
 
 /// Version of the algorithm contract in `docs/ALGORITHM.md`.
-pub const ALGO_VERSION: u32 = 1;
+pub const ALGO_VERSION: u32 = 2;

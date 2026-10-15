@@ -56,7 +56,7 @@ def test_chat_message_of_a_diff(real_diff: DiffResult) -> None:
     assert re.fullmatch(r"logfold: `[^`]*app_before\.log` -> `[^`]*app_after\.log`", lines[0])
     assert lines[1] == "1 new WARN+ template of 1 new, 0 disappeared, 1 changed."
     assert lines[2] == "New templates:"
-    assert lines[3] == "- ERROR 80 x `database connection lost to replica<NUM>`"
+    assert lines[3] == "- ERROR 80 x `database connection lost to replica-<NUM>`"
 
 
 def test_chat_message_of_an_analysis(analysis: AnalysisResult) -> None:

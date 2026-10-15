@@ -565,7 +565,7 @@ def test_matcher_changes_the_diff(monkeypatch):
 
 Look at how the engine reads a sample with `logfold inspect FILE --format NAME` (or `logfold.inspect_file`) and assert
 the counts and the templates that `analyze` returns. The example package does this, see
-[`tests/test_example_plugin.py`](../tests/test_example_plugin.py). Also test that every entry point in `pyproject.toml`
+[`tests/plugins/test_example_plugin.py`](../tests/plugins/test_example_plugin.py). Also test that every entry point in `pyproject.toml`
 resolves to an existing attribute.
 
 ### Publishing
