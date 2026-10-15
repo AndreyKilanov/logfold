@@ -1,0 +1,50 @@
+name: Log format not read correctly
+description: Lines are lost or split wrongly, a field lands in the wrong place, or -f auto picks the wrong format
+labels: ["type:bug", "area:formats"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Real lines are the most useful thing you can send. Remove secrets, addresses and personal data first, and read
+        the lines yourself before pasting: the issue is public.
+  - type: input
+    id: program
+    attributes:
+      label: Program and version
+      description: "The program that wrote the log, for example `nginx 1.27` or `PostgreSQL 16`."
+    validations:
+      required: true
+  - type: textarea
+    id: settings
+    attributes:
+      label: Log settings of that program
+      description: "The `log_format`, layout pattern, `log_line_prefix` or the equivalent, if you changed the default."
+  - type: input
+    id: format
+    attributes:
+      label: Format given and format found
+      description: "The `-f` value you used, and the format that `logfold inspect FILE` reports."
+    validations:
+      required: true
+  - type: textarea
+    id: lines
+    attributes:
+      label: About 20 lines, secrets removed
+      description: "Include a line that was read wrongly and the lines around it. Keep multi-line records whole."
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: "How the line should have been split into time, level and message, or which format should have been picked."
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: "Output of `logfold --version`, Python version, OS."
+    validations:
+      required: true

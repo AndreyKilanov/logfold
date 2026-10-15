@@ -203,6 +203,10 @@ ARM, более медленный диск, больше ядер) или на 
 - **Ошибки.** Создайте [issue об ошибке](https://github.com/AndreyKilanov/logfold/issues/new?template=bug_report.yml): что ожидали и что получилось, команда или
   фрагмент на Python, который воспроизводит проблему, вывод `logfold --version` и `logfold info`, несколько строк входа
   без секретов.
+- **Лог читается неверно.** Потерялись строки или запись разрезана не там, поле попало не туда, `-f auto` выбрал не тот
+  формат: заполните [форму о формате](https://github.com/AndreyKilanov/logfold/issues/new?template=format_problem.yml). Укажите программу и её версию, изменённые настройки журнала, вывод
+  `logfold inspect FILE` и около 20 настоящих строк без секретов. Форматы проверены на настоящих программах и на логах
+  других проектов ([таблица](https://github.com/AndreyKilanov/logfold/blob/main/docs/guide.md#what-each-format-was-checked-on)), но не на всех настройках; эта форма — способ найти остальное.
 
 Все формы собраны на [странице создания issue](https://github.com/AndreyKilanov/logfold/issues/new/choose); как оформлять issues, описано в
 [CONTRIBUTING.md](https://github.com/AndreyKilanov/logfold/blob/main/CONTRIBUTING.md#issues). Issues принимаются на английском.

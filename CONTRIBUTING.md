@@ -59,7 +59,8 @@ stable. Dependencies are checked weekly by `cargo deny`, `cargo audit` and `pip-
 
 Use the templates in `.github/ISSUE_TEMPLATE/`. Labels: `type:*`, `area:*`, `priority:p0|p1|p2`, `good first issue`
 (see `.github/labels.yml`). A bug report needs a reproducer (command, a few sample lines with secrets removed,
-`logfold info` output); a performance issue needs numbers and hardware.
+`logfold info` output); a performance issue needs numbers and hardware; a log that is read wrongly goes into the
+format form (program and version, its log settings, about 20 real lines with secrets removed).
 
 ## Pull requests and definition of done
 
