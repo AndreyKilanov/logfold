@@ -59,6 +59,9 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 - `logfold.extract_parameters(template, message)` and `logfold params TEMPLATE MESSAGE` give the values that a message has at the
   variable parts of a template (`<*>` and masked values such as `<NUM>`), named by the rule or `*`, as written in the message;
   also `Miner.extract_parameters` and `logfold.Parameter`. Extension contract version 12. See `docs/api.md`, `docs/cli.md`.
+- `logfold plugins info NAME` says what each built-in format was checked on and what was not (`PluginInfo.checked` and
+  `not_checked`, additive keys of `plugins info --json`); the same table is in `docs/guide.md`, the account with the numbers in
+  `bench/docs/FORMAT_VALIDATION.md`.
 
 ### Changed
 

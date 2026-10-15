@@ -2,11 +2,49 @@
 
 The tests of the formats read logs that we generated from our own idea of the format. If we misread a format, the
 generator and the parser are wrong in the same way and the tests still pass. This page records the checks where **a real
-program writes the log and the expected result comes from the program**, not from us. It grows with each format; the
-final table of the task joins them.
+program writes the log and the expected result comes from the program**, not from us. The summary below joins all the checks, one row for each
+format.
 
 Run: `python bench/validate/formats.py` (needs `docker` and the extension built with `maturin develop --release`; the
 containers are named `logfold-validate-*` and removed at the end; the first run pulls the images).
+
+## Summary
+
+One row for each format. The source of the truth is what the result was compared with: a real program that wrote the log
+(the expected result comes from the program, not from us), logs that other projects wrote with their own expectation, or
+nothing from outside (only damaged logs, see "Damaged logs (V3)", which every format passed). The two last texts of each
+format, "checked on" and "not checked", are also in `logfold plugins info NAME` and in `docs/guide.md`.
+
+| format | source of the truth | versions | result | `-f auto` |
+|---|---|---|---|---|
+| `plain` | none: every line is a record | | damaged logs only | the answer for an empty file |
+| `nginx` | Filebeat nginx module test logs | the samples carry no version | 3 of 3 | picked, 4 of 4 files |
+| `apache` | Filebeat apache module test logs | the samples carry no version | 4 of 5 (a custom `LogFormat` is not combined) | picked as `nginx` (same pattern) |
+| `nginx-error` | Filebeat nginx error test log | | 1 of 1 | refused |
+| `syslog` | Filebeat system module test logs | rsyslog, macOS, SUSE samples | 7 of 7 | picked, 10 of 10 |
+| `k8s` | Filebeat CRI sample | | 1 of 1 | picked, 1 of 1 |
+| `journald` | none | | damaged logs only | picked when the lines have `MESSAGE` (no file in the matrix) |
+| `jsonl` | Filebeat Elasticsearch, Logstash and MongoDB logs | | 8 of 14 (pretty-printed and nested JSON is not read) | picked, 14 of 19 |
+| `app` | none from outside; the Hadoop set of Loghub has the shape | | damaged logs only | picked, 2 of 2 |
+| `logfmt` | Loki test logs | | 2 of 2 | not a candidate |
+| `serilog-clef` | none | | damaged logs only | not a candidate |
+| `haproxy` | real HAProxy in Docker; Filebeat samples | 2.8.30, 3.0.29, 3.2.25 | all numbers match in 5 forms; samples 3 of 4 | read as `syslog` |
+| `postgresql` | real PostgreSQL in Docker (the server's csvlog); Filebeat samples | 13.23, 14.24, 15.19, 16.15, 17.11; samples 9.5 to 13 | all numbers match in 15 settings; samples 12 of 12 | refused |
+| `postgresql-csv` | real PostgreSQL in Docker (the server's stderr log); Filebeat samples | the same; samples 11 and 13 | all numbers match; samples 10 of 10 | refused |
+| `log4j` | real Java programs in Docker (their own record of each event); Filebeat Kafka logs | log4j2 2.25.2, logback 1.5.18, reload4j 1.2.25; Java 17 and 21 | all numbers match in 23 settings; samples 8 of 8 | refused |
+| `docker-json` | real Docker (what the container printed); Filebeat and Fluent Bit tests | Docker 28.3 | all numbers match, with and without a terminal; samples 8 of 8 | picked, 5 of 5 |
+| `github-actions` | this project's own workflow logs | runs of 2026-10 | 39 of 39 | refused |
+
+**What these checks found and fixed** (each with a test): `haproxy` did not read the `iso` and `rfc5424` forms;
+`docker-json` kept the line break in the message and did not join the pieces of a line over 16 KB; `log4j` refused the
+date names of log4j2 and the exception after `%n`; `nginx` and `apache` did not read a list of addresses or a virtual host
+in front; `nginx-error`, `syslog` and `github-actions` did not join continuation lines; `logfmt` needed `level=` right
+after the time; `jsonl` did not know `log.level` and `timeMillis`; `syslog` did not read the ISO time; the regex and JSON
+formats lost a line with bytes that are not UTF-8; `-f auto` read a Docker log as `jsonl`; a regex or JSON format lost
+the first line of a log that starts with a byte order mark.
+
+**What is not covered at all:** a real nginx, Apache, syslog daemon, journald, Serilog or logfmt program; the account for
+each format below says what else was left out.
 
 ## PostgreSQL (`postgresql`, `postgresql-csv`)
 
