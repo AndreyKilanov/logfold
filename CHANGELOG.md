@@ -44,7 +44,7 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   value; `extract_parameters` and `logfold params` refuse a set without the space. See `docs/cli.md`.
 - Mask sets `secrets`, `credentials`, `pii` and `payment` (`--masks all` takes all; library `masks=[...]`, `[mining] masks` in
   `logfold.toml`) hide keys, tokens, passwords, e-mails, phones, cards (Luhn) and IBANs before mining; `secrets` and `pii` add about
-  4 to 12% to a run on 100 MB logs, the others read every byte (12 to 24%). `--masks-file FILE` and the plugin group `logfold.masks` add your own
+  5 to 15% to a run on 100 MB logs, the others read every byte (12 to 24%). `--masks-file FILE` and the plugin group `logfold.masks` add your own
   sets, `logfold masks list` shows them. A state is tied to the masks it was mined with. Extension contract version 16. See
   `docs/cli.md`, `docs/plugins.md`, `bench/docs/MASK_SETS.md`.
 - `logfold learn` and `logfold check FILE --state MODEL` (library `logfold.check`) compare a log with a saved model and exit with 2 when
@@ -55,7 +55,9 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   values with their counts and, for numbers, min, max, mean and p50/p90/p99, in the text, HTML and JSON reports (`Template.values`). It
   runs a second pass (about three to four times the time), keeps memory bounded and never counts a value that a mask set of yours hides.
   Extension contract version 18. See `docs/cli.md`, `docs/ALGORITHM.md` §15.
-- A guide for moving from Drain3: `docs/migrating-from-drain3.md`.
+- A guide for moving from Drain3: `docs/migrating-from-drain3.md`. Pages that start from a situation: `docs/incident.md` (what changed in
+  an incident), `docs/share-a-log.md` (sharing a log or a report safely) and `docs/python.md` (logfold in a Python program); an issue form
+  for a log that is read wrongly; the README is rewritten around what a reader wants to do.
 - `logfold.extract_parameters(template, message)` and `logfold params TEMPLATE MESSAGE` give the values that a message has at the
   variable parts of a template (`<*>` and masked values such as `<NUM>`), named by the rule or `*`, as written in the message;
   also `Miner.extract_parameters` and `logfold.Parameter`. Extension contract version 12. See `docs/api.md`, `docs/cli.md`.
@@ -79,11 +81,14 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
   with a `ConfigError`; a short listing of 100 thousand templates takes up to 75 ms more.
 - `inspect` reads the sample in the extension, so a format is read exactly as `analyze` reads it (a pattern that only
   Python's `re` accepts, such as a lookahead, is now refused).
+- The levels of a result are totalled without `Counter.update` per template: an analysis report of 100 thousand templates is built 33 to 38% faster.
 - A record that fits no template is found out up to 100 times faster in `match`, `diff` and `Miner.match_many` when the log has
   tens of thousands of templates (50,000 templates: 1 ms per record before, 0.01 ms now); the results are the same.
 
 ### Fixed
 
+- After a warm merge of chunks (`--warm-start`, or continuing a state in parallel) a template that had fallen to three literals or
+  fewer is found again by the exact search (`match(exact=True)`); the merge had not listed it.
 - Reports written with `--out` or `save()` have line feeds only on Windows too (they had carriage returns, which made
   `promtool` and the node exporter reject a `.prom` file).
 - `haproxy` reads the `iso` and `rfc5424` forms of `log ... format` (it read none of their lines), found with real

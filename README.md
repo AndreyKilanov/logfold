@@ -226,7 +226,7 @@ Measured on one machine (8 cores, Windows 11) with this version; the protocol is
 | `diff` of two 100 MB logs | 2.55 s | 0.69 s |
 
 Peak memory is 46 MB with one thread and 97 to 110 MB with 16, on files of 100 MB, and does not grow with the size of the file. The
-mask sets add 4 to 12% (`secrets` and `pii`) or 11 to 24% (`all`); `--values` takes three to four times as long as `analyze`, and
+mask sets add 5 to 15% (`secrets` and `pii`) or 11 to 24% (`all`); `--values` takes three to four times as long as `analyze`, and
 `diff --new-values` 1.5 to 3 times as long as `diff`.
 
 ## Limitations

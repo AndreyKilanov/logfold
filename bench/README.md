@@ -23,6 +23,22 @@ Eight scripts; the flags choose what is measured. They print Markdown tables and
 
 Quality of the grouping (accuracy against ground truth) is measured separately by `eval/quality.py`.
 
+## Which numbers are current
+
+Every page says which code it measured and keeps its tables as they were measured. The number mask lost its sign in 0.5.0
+(`ALGO_VERSION` 2), which changes the text of some templates and the speed of the default masks by a few percent, so before the 0.5.0 release the
+pages that could be affected were measured again where that is cheap (100 MB inputs and 3 million lines per side); the runs of gigabytes are not repeated.
+
+| page | measured with | status for 0.5.0 |
+|---|---|---|
+| [`RESULTS.md`](RESULTS.md), [`LOGHUB2.md`](docs/LOGHUB2.md) | 0.2.0 and later changes | not repeated (competitors, runs of 0.7 to 1.6 GB); the current speed on 100 MB is in the README |
+| [`ADAPTIVE.md`](docs/ADAPTIVE.md), [`WARM_START.md`](docs/WARM_START.md) | 0.3.0 development code | not repeated; the runs without masks, which the README quotes, do not depend on the number mask |
+| [`DIFF_MATCHERS.md`](docs/DIFF_MATCHERS.md) | 0.4.0 and 0.5.0 development code | the full-window sweep was run again on 2026-10-15 with `ALGO_VERSION` 2: every count is the same |
+| [`FORMAT_PLUGINS.md`](docs/FORMAT_PLUGINS.md), [`REPORT_PLUGINS.md`](docs/REPORT_PLUGINS.md) | 0.4.0 development code | not repeated (the ratio to `-f plain` and the reporters do not depend on the number mask) |
+| [`MASK_SETS.md`](docs/MASK_SETS.md) | 0.5.0 development code | repeated on 2026-10-15: costs and accuracy |
+| [`STATE_PARALLEL.md`](docs/STATE_PARALLEL.md), [`STREAM.md`](docs/STREAM.md), [`STATE_FILES.md`](docs/STATE_FILES.md) | 0.5.0 development code | `STATE_PARALLEL.md` and `STREAM.md` repeated on 2026-10-15; the sizes of the states depend on the number and the length of the templates, which the mask changes by a few bytes |
+| [`FORMAT_VALIDATION.md`](docs/FORMAT_VALIDATION.md) | real programs, 2026-10-14 and 15 | does not depend on the number mask |
+
 ## Examples
 
 ```
