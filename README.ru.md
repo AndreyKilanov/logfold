@@ -12,6 +12,7 @@
   <a href="https://pypi.org/project/logfold/"><img alt="Python versions" src="https://img.shields.io/pypi/pyversions/logfold"></a>
   <a href="https://github.com/AndreyKilanov/logfold/blob/main/LICENSE"><img alt="License: MIT" src="https://img.shields.io/github/license/AndreyKilanov/logfold"></a>
   <a href="https://github.com/AndreyKilanov/logfold/blob/main/docs/ALGORITHM.md"><img alt="Rust core" src="https://img.shields.io/badge/core-Rust-orange"></a>
+  <a href="https://hub.xerj.org/contributors/AndreyKilanov"><img alt="XERJ Corpus Hub contributor" src="https://hub.xerj.org/contributors/AndreyKilanov/badge.svg"></a>
 </p>
 
 ---
