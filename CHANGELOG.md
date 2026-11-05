@@ -5,6 +5,13 @@ project uses [Semantic Versioning](https://semver.org/). Before 1.0, breaking ch
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-05
+
+### Security
+
+- The bundled zstd crates are updated (`zstd` 0.14.3, `zstd-safe` 8.2.0, `zstd-sys` 2.1.2), fixing RUSTSEC-2026-0391,
+  RUSTSEC-2026-0398 and RUSTSEC-2026-0403 in the streaming decompression of `.zst` input.
+
 ## [0.5.0] - 2026-10-15
 
 ### Added
